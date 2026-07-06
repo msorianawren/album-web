@@ -1,54 +1,68 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
+import { requireAdmin } from "@/lib/auth";
+import { apiError, apiSuccess, toServerError } from "@/lib/errors";
+import { getAlbums } from "@/lib/albums";
 import { supabase } from "@/lib/supabase";
-import { albumSchema } from "@/lib/validation";
+import { slugify } from "@/lib/utils";
+import { albumCreateSchema, searchParamsSchema } from "@/lib/validators";
 
-export async function GET() {
-  const { data, error } = await supabase
-    .from("albums")
-    .select("*")
-    .order("created_at", { ascending: false });
+export async function GET(request: NextRequest) {
+  const parsed = searchParamsSchema.safeParse(
+    Object.fromEntries(request.nextUrl.searchParams),
+  );
 
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  if (!parsed.success) {
+    return apiError("INVALID_INPUT", "Invalid album filters.", 400);
   }
 
-  return NextResponse.json(data);
+  const albums = await getAlbums(parsed.data);
+  return apiSuccess({ albums });
 }
 
 export async function POST(request: NextRequest) {
-  const body = await request.json();
-  const parsed = albumSchema.safeParse(body);
-
-  if (!parsed.success) {
-    return NextResponse.json(
-      { error: "Invalid album payload", details: parsed.error.flatten() },
-      { status: 400 },
-    );
+  const session = await requireAdmin(request);
+  if (!session) {
+    return apiError("FORBIDDEN", "Only the admin can create albums.", 403);
   }
 
-  const ownerId = parsed.data.owner_id ?? process.env.DEFAULT_OWNER_ID;
-  if (!ownerId) {
-    return NextResponse.json(
-      { error: "owner_id is required until authenticated create is enabled." },
-      { status: 400 },
-    );
+  try {
+    const body = await request.json();
+    const parsed = albumCreateSchema.safeParse(body);
+
+    if (!parsed.success) {
+      return apiError(
+        "INVALID_INPUT",
+        "Invalid album payload.",
+        400,
+        parsed.error.flatten(),
+      );
+    }
+
+    const slug = parsed.data.slug ?? slugify(parsed.data.title);
+    const { data, error } = await supabase
+      .from("albums")
+      .insert({
+        owner_id: session.userId,
+        title: parsed.data.title,
+        slug,
+        description: parsed.data.description,
+        status: parsed.data.status,
+        cover_url: parsed.data.cover_url,
+      })
+      .select("*")
+      .single();
+
+    if (error) {
+      const status = error.code === "23505" ? 409 : 500;
+      return apiError(
+        status === 409 ? "CONFLICT" : "SERVER_ERROR",
+        error.message,
+        status,
+      );
+    }
+
+    return apiSuccess({ album: data }, { status: 201 });
+  } catch (error) {
+    return toServerError(error);
   }
-
-  const { data, error } = await supabase
-    .from("albums")
-    .insert({
-      owner_id: ownerId,
-      title: parsed.data.title,
-      slug: parsed.data.slug,
-      description: parsed.data.description,
-      is_public: parsed.data.is_public,
-    })
-    .select("*")
-    .single();
-
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
-
-  return NextResponse.json(data, { status: 201 });
 }

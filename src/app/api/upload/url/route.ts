@@ -1,27 +1,33 @@
 import { randomUUID } from "node:crypto";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
+import { getMediaTypeFromMime } from "@/lib/config";
+import { requireAdmin } from "@/lib/auth";
+import { apiError, apiSuccess } from "@/lib/errors";
 import { getR2Bucket, r2 } from "@/lib/r2";
-import { supportedImageTypes } from "@/lib/validation";
 
 export const runtime = "nodejs";
 
 export async function POST(request: NextRequest) {
+  const session = await requireAdmin(request);
+  if (!session) {
+    return apiError("FORBIDDEN", "Only the admin can request upload URLs.", 403);
+  }
+
   const body = await request.json();
   const albumId = String(body.albumId ?? "");
   const contentType = String(body.contentType ?? "");
+  const mediaType = getMediaTypeFromMime(contentType);
 
-  if (!albumId) {
-    return NextResponse.json({ error: "albumId is required" }, { status: 400 });
-  }
+  if (!albumId) return apiError("INVALID_INPUT", "albumId is required.", 400);
+  if (!mediaType) return apiError("INVALID_INPUT", "Unsupported media type.", 400);
 
-  if (!supportedImageTypes.includes(contentType as (typeof supportedImageTypes)[number])) {
-    return NextResponse.json({ error: "Unsupported image type" }, { status: 415 });
-  }
-
-  const extension = contentType.split("/").at(1)?.replace("jpeg", "jpg") ?? "jpg";
-  const key = `albums/${albumId}/original/${randomUUID()}.${extension}`;
+  const extension =
+    contentType.split("/").at(1)?.replace("jpeg", "jpg").replace("quicktime", "mov") ??
+    "bin";
+  const folder = mediaType === "image" ? "images" : "videos";
+  const key = `albums/${albumId}/${folder}/${randomUUID()}/original.${extension}`;
   const signedUrl = await getSignedUrl(
     r2,
     new PutObjectCommand({
@@ -32,5 +38,5 @@ export async function POST(request: NextRequest) {
     { expiresIn: 3600 },
   );
 
-  return NextResponse.json({ key, signedUrl, expiresIn: 3600 });
+  return apiSuccess({ key, signedUrl, expiresIn: 3600 });
 }

@@ -2,44 +2,44 @@
 
 import { useCallback, useState } from "react";
 import { Camera } from "lucide-react";
-import { PhotoCard } from "@/components/gallery/PhotoCard";
-import { Lightbox } from "@/components/gallery/Lightbox";
+import { MediaCard } from "@/components/media/MediaCard";
+import { MediaViewer } from "@/components/media/MediaViewer";
 import { Button } from "@/components/ui/Button";
-import type { AlbumImage } from "@/lib/types";
+import type { Media } from "@/lib/types";
 
-interface MasonryGridProps {
-  images: AlbumImage[];
+interface MediaGridProps {
+  media: Media[];
+  downloadAllowed: boolean;
 }
 
-export function MasonryGrid({ images }: MasonryGridProps) {
+export function MediaGrid({ media, downloadAllowed }: MediaGridProps) {
   const [currentIndex, setCurrentIndex] = useState<number | null>(null);
 
   const handleNext = useCallback(() => {
     setCurrentIndex((index) =>
-      index === null ? null : (index + 1) % images.length,
+      index === null ? null : (index + 1) % media.length,
     );
-  }, [images.length]);
+  }, [media.length]);
 
   const handlePrevious = useCallback(() => {
     setCurrentIndex((index) =>
-      index === null ? null : (index - 1 + images.length) % images.length,
+      index === null ? null : (index - 1 + media.length) % media.length,
     );
-  }, [images.length]);
+  }, [media.length]);
 
-  if (!images.length) {
+  if (!media.length) {
     return (
       <section className="mx-auto flex w-full max-w-[1440px] flex-col items-center px-4 py-20 text-center sm:px-8 lg:px-12">
         <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-3xl bg-surface">
           <Camera className="h-7 w-7 text-text-secondary" aria-hidden="true" />
         </div>
         <h2 className="text-2xl font-semibold text-text-primary">
-          No photos yet
+          No media yet
         </h2>
         <p className="mt-3 max-w-md text-text-secondary">
-          Upload JPG, PNG, WebP, HEIC, or AVIF files to start filling this
-          album.
+          Photos and videos will appear here once the owner uploads them.
         </p>
-        <Button className="mt-6">Upload photos</Button>
+        <Button className="mt-6">Check again later</Button>
       </section>
     );
   }
@@ -47,18 +47,20 @@ export function MasonryGrid({ images }: MasonryGridProps) {
   return (
     <section className="mx-auto w-full max-w-[1440px] px-4 pb-20 sm:px-8 lg:px-12">
       <div className="columns-2 gap-4 md:columns-3 lg:columns-4">
-        {images.map((image, index) => (
-          <PhotoCard
-            key={image.id}
-            image={image}
+        {media.map((item, index) => (
+          <MediaCard
+            key={item.id}
+            media={item}
             index={index}
+            downloadAllowed={downloadAllowed}
             onOpen={setCurrentIndex}
           />
         ))}
       </div>
-      <Lightbox
-        images={images}
+      <MediaViewer
+        media={media}
         currentIndex={currentIndex}
+        downloadAllowed={downloadAllowed}
         onClose={() => setCurrentIndex(null)}
         onNext={handleNext}
         onPrevious={handlePrevious}

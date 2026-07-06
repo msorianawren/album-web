@@ -1,8 +1,11 @@
 import { notFound } from "next/navigation";
 import { AlbumHeader } from "@/components/albums/AlbumHeader";
+import { LockedAlbumState } from "@/components/albums/LockedAlbumState";
+import { UpdatingNotice } from "@/components/albums/UpdatingNotice";
 import { AppHeader } from "@/components/AppHeader";
-import { MasonryGrid } from "@/components/gallery/MasonryGrid";
-import { UploadZone } from "@/components/upload/UploadZone";
+import { CommentSection } from "@/components/comments/CommentSection";
+import { LikeButton } from "@/components/media/LikeButton";
+import { MediaGrid } from "@/components/media/MediaGrid";
 import { getAlbum } from "@/lib/albums";
 
 interface AlbumPageProps {
@@ -21,8 +24,18 @@ export default async function AlbumPage({ params }: AlbumPageProps) {
     <main className="min-h-screen bg-background">
       <AppHeader />
       <AlbumHeader album={album} />
-      <MasonryGrid images={album.images} />
-      <UploadZone />
+      {album.locked ? (
+        <LockedAlbumState album={album} />
+      ) : (
+        <>
+          {album.status === "updating" ? <UpdatingNotice /> : null}
+          <section className="mx-auto flex w-full max-w-[1440px] justify-end px-4 pb-6 sm:px-8 lg:px-12">
+            <LikeButton albumId={album.id} />
+          </section>
+          <MediaGrid media={album.media} downloadAllowed={album.download_allowed} />
+          <CommentSection albumId={album.id} />
+        </>
+      )}
     </main>
   );
 }

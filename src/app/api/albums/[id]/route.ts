@@ -1,72 +1,89 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
+import { getAlbum } from "@/lib/albums";
+import { requireAdmin } from "@/lib/auth";
+import { apiError, apiSuccess, toServerError } from "@/lib/errors";
+import { deleteR2Objects } from "@/lib/r2";
 import { supabase } from "@/lib/supabase";
-import { albumUpdateSchema } from "@/lib/validation";
+import { albumUpdateSchema } from "@/lib/validators";
 
 interface AlbumRouteProps {
   params: Promise<{ id: string }>;
 }
 
-function albumQuery(id: string) {
-  const column = /^\d+$/.test(id) ? "id" : "slug";
-  return supabase.from("albums").select("*").eq(column, id).single();
+export async function GET(request: NextRequest, { params }: AlbumRouteProps) {
+  const { id } = await params;
+  const session = await requireAdmin(request);
+  const album = await getAlbum(id, { isAdmin: Boolean(session?.isAdmin) });
+
+  if (!album) return apiError("NOT_FOUND", "Album not found.", 404);
+  return apiSuccess({ album });
 }
 
-export async function GET(_request: NextRequest, { params }: AlbumRouteProps) {
-  const { id } = await params;
-  const { data: album, error } = await albumQuery(id);
-
-  if (error || !album) {
-    return NextResponse.json({ error: "Album not found" }, { status: 404 });
+export async function PATCH(request: NextRequest, { params }: AlbumRouteProps) {
+  const session = await requireAdmin(request);
+  if (!session) {
+    return apiError("FORBIDDEN", "Only the admin can update albums.", 403);
   }
 
-  const { data: images, error: imagesError } = await supabase
-    .from("images")
-    .select("*")
-    .eq("album_id", album.id)
-    .order("created_at", { ascending: true });
+  try {
+    const { id } = await params;
+    const parsed = albumUpdateSchema.safeParse(await request.json());
 
-  if (imagesError) {
-    return NextResponse.json({ error: imagesError.message }, { status: 500 });
+    if (!parsed.success) {
+      return apiError(
+        "INVALID_INPUT",
+        "Invalid album update.",
+        400,
+        parsed.error.flatten(),
+      );
+    }
+
+    const { data, error } = await supabase
+      .from("albums")
+      .update(parsed.data)
+      .eq("id", id)
+      .select("*")
+      .single();
+
+    if (error) return apiError("SERVER_ERROR", error.message, 500);
+    return apiSuccess({ album: data });
+  } catch (error) {
+    return toServerError(error);
   }
-
-  return NextResponse.json({ ...album, images });
 }
 
-export async function PUT(request: NextRequest, { params }: AlbumRouteProps) {
-  const { id } = await params;
-  const body = await request.json();
-  const parsed = albumUpdateSchema.safeParse(body);
+export async function DELETE(request: NextRequest, { params }: AlbumRouteProps) {
+  const session = await requireAdmin(request);
+  if (!session) {
+    return apiError("FORBIDDEN", "Only the admin can delete albums.", 403);
+  }
 
-  if (!parsed.success) {
-    return NextResponse.json(
-      { error: "Invalid album update", details: parsed.error.flatten() },
-      { status: 400 },
+  const { id } = await params;
+  const { data: mediaRows, error: mediaError } = await supabase
+    .from("media")
+    .select("r2_key,thumbnail_r2_key,poster_r2_key")
+    .eq("album_id", id);
+
+  if (mediaError) return apiError("SERVER_ERROR", mediaError.message, 500);
+
+  const { error } = await supabase.from("albums").delete().eq("id", id);
+  if (error) return apiError("SERVER_ERROR", error.message, 500);
+
+  try {
+    await deleteR2Objects(
+      (mediaRows ?? []).flatMap((item) => [
+        item.r2_key,
+        item.thumbnail_r2_key,
+        item.poster_r2_key,
+      ]),
+    );
+  } catch {
+    return apiError(
+      "UPLOAD_FAILED",
+      "Album was deleted, but some R2 objects may still need cleanup.",
+      500,
     );
   }
 
-  const column = /^\d+$/.test(id) ? "id" : "slug";
-  const { data, error } = await supabase
-    .from("albums")
-    .update(parsed.data)
-    .eq(column, id)
-    .select("*")
-    .single();
-
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
-
-  return NextResponse.json(data);
-}
-
-export async function DELETE(_request: NextRequest, { params }: AlbumRouteProps) {
-  const { id } = await params;
-  const column = /^\d+$/.test(id) ? "id" : "slug";
-  const { error } = await supabase.from("albums").delete().eq(column, id);
-
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
-
-  return new NextResponse(null, { status: 204 });
+  return apiSuccess({ deleted: true });
 }

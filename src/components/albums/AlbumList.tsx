@@ -27,18 +27,39 @@ export function AlbumList({ albums }: AlbumListProps) {
   }
 
   return (
-    <section className="mx-auto w-full max-w-[1440px] px-4 pb-20 sm:px-8 lg:px-12">
+    <section
+      id="albums"
+      className="mx-auto w-full max-w-[1440px] px-4 pb-20 sm:px-8 lg:px-12"
+    >
       <div className="mb-7 flex items-end justify-between gap-4">
         <div>
           <h2 className="text-2xl font-semibold text-text-primary">
-            Recent Albums
+            Featured Albums
           </h2>
           <p className="mt-2 text-sm text-text-secondary">
-            Public and private collections, optimized for fast browsing.
+            Browse public, updating, and locked private collections.
           </p>
         </div>
       </div>
-      <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+      <form className="mb-8 grid gap-3 rounded-3xl border border-border bg-surface p-4 md:grid-cols-[1fr_180px_auto]">
+        <input
+          name="q"
+          placeholder="Search album title or description"
+          className="h-11 rounded-xl border border-border bg-background px-4 text-sm outline-none focus:ring-2 focus:ring-ring"
+        />
+        <select
+          name="status"
+          className="h-11 rounded-xl border border-border bg-background px-4 text-sm outline-none focus:ring-2 focus:ring-ring"
+          defaultValue=""
+        >
+          <option value="">All statuses</option>
+          <option value="public">Public</option>
+          <option value="updating">Updating</option>
+          <option value="private">Private</option>
+        </select>
+        <Button type="submit">Search</Button>
+      </form>
+      <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {albums.map((album) => (
           <AlbumCard key={album.id} album={album} />
         ))}

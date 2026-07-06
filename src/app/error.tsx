@@ -1,7 +1,6 @@
 "use client";
 
 import { RotateCcw } from "lucide-react";
-import { AppHeader } from "@/components/AppHeader";
 import { Button } from "@/components/ui/Button";
 
 export default function Error({
@@ -12,7 +11,9 @@ export default function Error({
 }) {
   return (
     <main className="min-h-screen bg-background">
-      <AppHeader />
+      <div className="border-b border-border px-4 py-5 text-center text-lg font-semibold text-text-primary">
+        Album Web
+      </div>
       <section className="mx-auto flex min-h-[60vh] w-full max-w-[1440px] flex-col items-center justify-center px-4 text-center sm:px-8 lg:px-12">
         <h1 className="text-3xl font-semibold text-text-primary">
           Album could not load

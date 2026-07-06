@@ -1,8 +1,10 @@
-import { randomUUID } from "node:crypto";
-import { NextRequest, NextResponse } from "next/server";
-import { processAndStoreImage } from "@/lib/image-pipeline";
+import { NextRequest } from "next/server";
+import { requireAdmin } from "@/lib/auth";
+import { apiError, apiSuccess, toServerError } from "@/lib/errors";
+import { uploadMediaFile } from "@/lib/media";
 import { supabase } from "@/lib/supabase";
-import { maxUploadSize, supportedImageTypes } from "@/lib/validation";
+import { getMediaTypeFromMime, getUploadLimit } from "@/lib/config";
+import { normalizeMedia } from "@/lib/albums";
 
 export const runtime = "nodejs";
 
@@ -13,43 +15,51 @@ interface ImagesRouteProps {
 export async function GET(_request: NextRequest, { params }: ImagesRouteProps) {
   const { id } = await params;
   const { data, error } = await supabase
-    .from("images")
+    .from("media")
     .select("*")
     .eq("album_id", id)
-    .order("created_at", { ascending: true });
+    .order("sort_order", { ascending: true });
 
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
-
-  return NextResponse.json(data);
+  if (error) return apiError("SERVER_ERROR", error.message, 500);
+  return apiSuccess({ media: (data ?? []).map((row) => normalizeMedia(row)) });
 }
 
 export async function POST(request: NextRequest, { params }: ImagesRouteProps) {
-  const { id: albumId } = await params;
-  const formData = await request.formData();
-  const file = formData.get("file");
-
-  if (!(file instanceof File)) {
-    return NextResponse.json({ error: "file is required" }, { status: 400 });
+  const session = await requireAdmin(request);
+  if (!session) {
+    return apiError("FORBIDDEN", "Only the admin can upload media.", 403);
   }
 
-  if (!supportedImageTypes.includes(file.type as (typeof supportedImageTypes)[number])) {
-    return NextResponse.json({ error: "Unsupported image type" }, { status: 415 });
+  try {
+    const { id: albumId } = await params;
+    const formData = await request.formData();
+    const files = formData
+      .getAll("file")
+      .concat(formData.getAll("files"))
+      .filter((value): value is File => value instanceof File);
+
+    if (!files.length) return apiError("INVALID_INPUT", "file is required.", 400);
+
+    const media = [];
+    for (const file of files) {
+      const mediaType = getMediaTypeFromMime(file.type);
+      if (!mediaType) return apiError("INVALID_INPUT", "Unsupported media type.", 400);
+      if (file.size > getUploadLimit(mediaType)) {
+        return apiError("INVALID_INPUT", "File exceeds upload limit.", 400);
+      }
+
+      media.push(
+        await uploadMediaFile({
+          albumId,
+          fileName: file.name,
+          mimeType: file.type,
+          buffer: Buffer.from(await file.arrayBuffer()),
+        }),
+      );
+    }
+
+    return apiSuccess({ media }, { status: 201 });
+  } catch (error) {
+    return toServerError(error);
   }
-
-  if (file.size > maxUploadSize) {
-    return NextResponse.json({ error: "File is larger than 50MB" }, { status: 413 });
-  }
-
-  const buffer = Buffer.from(await file.arrayBuffer());
-  const result = await processAndStoreImage({
-    albumId,
-    fileId: randomUUID(),
-    fileName: file.name,
-    contentType: file.type,
-    buffer,
-  });
-
-  return NextResponse.json(result, { status: 201 });
 }

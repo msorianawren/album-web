@@ -1,18 +1,24 @@
 import { AlbumList } from "@/components/albums/AlbumList";
 import { AppHeader } from "@/components/AppHeader";
 import { HomeHero } from "@/components/HomeHero";
-import { UploadZone } from "@/components/upload/UploadZone";
 import { getAlbums } from "@/lib/albums";
 
-export default async function Home() {
-  const albums = await getAlbums();
+interface HomeProps {
+  searchParams: Promise<{
+    q?: string;
+    status?: "public" | "updating" | "private";
+  }>;
+}
+
+export default async function Home({ searchParams }: HomeProps) {
+  const filters = await searchParams;
+  const albums = await getAlbums(filters);
 
   return (
     <main className="min-h-screen bg-background">
       <AppHeader />
       <HomeHero />
       <AlbumList albums={albums} />
-      <UploadZone />
     </main>
   );
 }
