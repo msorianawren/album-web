@@ -1,0 +1,31 @@
+"use client";
+
+import { RotateCcw } from "lucide-react";
+import { AppHeader } from "@/components/AppHeader";
+import { Button } from "@/components/ui/Button";
+
+export default function Error({
+  reset,
+}: {
+  error: Error & { digest?: string };
+  reset: () => void;
+}) {
+  return (
+    <main className="min-h-screen bg-background">
+      <AppHeader />
+      <section className="mx-auto flex min-h-[60vh] w-full max-w-[1440px] flex-col items-center justify-center px-4 text-center sm:px-8 lg:px-12">
+        <h1 className="text-3xl font-semibold text-text-primary">
+          Album could not load
+        </h1>
+        <p className="mt-3 max-w-md text-text-secondary">
+          The gallery service is temporarily unavailable. Try refreshing the
+          view.
+        </p>
+        <Button className="mt-6" onClick={reset}>
+          <RotateCcw className="h-4 w-4" aria-hidden="true" />
+          Retry
+        </Button>
+      </section>
+    </main>
+  );
+}

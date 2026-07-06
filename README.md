@@ -1,36 +1,85 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Album Web
 
-## Getting Started
+A premium minimal photo gallery built with Next.js 16 App Router, Supabase
+Postgres/Auth, and Cloudflare R2.
 
-First, run the development server:
+## Stack
+
+- Next.js 16 App Router with Server Components by default
+- Tailwind CSS v4 design tokens in `src/app/globals.css`
+- Supabase for album/image metadata and RLS
+- Cloudflare R2 for original, thumbnail, and medium image variants
+- Sharp and BlurHash for upload processing
+
+## Environment
+
+Copy `.env.example` to `.env.local` and fill the values.
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+NEXT_PUBLIC_SUPABASE_URL=
+SUPABASE_SERVICE_ROLE_KEY=
+DEFAULT_OWNER_ID=
+
+R2_ACCOUNT_ID=
+R2_ACCESS_KEY_ID=
+R2_SECRET_ACCESS_KEY=
+R2_BUCKET_NAME=
+R2_PUBLIC_URL=
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+`SUPABASE_SERVICE_ROLE_KEY` and R2 secret keys must remain server-only. Do not
+expose them in client components.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Database
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Apply the migration in:
 
-## Learn More
+```text
+supabase/migrations/202607070001_create_album_schema.sql
+```
 
-To learn more about Next.js, take a look at the following resources:
+It creates:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- `albums`
+- `images`
+- indexes and counters
+- `updated_at` trigger
+- RLS policies for public albums and owner-only private data
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Local Development
 
-## Deploy on Vercel
+```bash
+npm install
+npm run dev
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Open `http://localhost:3000`.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+The UI falls back to sample albums when Supabase is not ready, so the gallery can
+still be reviewed before applying the database migration.
+
+## API
+
+- `GET /api/albums`
+- `POST /api/albums`
+- `GET /api/albums/[id]`
+- `PUT /api/albums/[id]`
+- `DELETE /api/albums/[id]`
+- `GET /api/albums/[id]/images`
+- `POST /api/albums/[id]/images`
+- `DELETE /api/albums/[id]/images/[imageId]`
+- `POST /api/upload/url`
+
+Uploads accept `jpg`, `jpeg`, `png`, `webp`, `heic`, and `avif` up to 50MB.
+The server creates original, thumb, and medium variants in R2.
+
+## Design Notes
+
+The UI follows a photo-first, premium minimal gallery direction:
+
+- minimal chrome
+- high whitespace
+- responsive masonry gallery
+- accessible focus states
+- keyboard lightbox controls
+- loading and error states per route
