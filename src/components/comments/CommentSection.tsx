@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, type FormEvent } from "react";
-import { Send } from "lucide-react";
+import { MessageCircle, Send } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
@@ -62,8 +62,20 @@ export function CommentSection({ albumId }: CommentSectionProps) {
 
   return (
     <section className="mx-auto w-full max-w-[960px] px-4 pb-20 sm:px-8">
-      <div className="rounded-[2rem] border border-border bg-surface p-5 sm:p-7">
-        <h2 className="text-2xl font-semibold text-text-primary">Comments</h2>
+      <div className="rounded-[2rem] border border-border bg-surface/80 p-5 shadow-xl shadow-text-primary/5 sm:p-7">
+        <div className="flex items-center gap-3">
+          <div className="flex h-11 w-11 items-center justify-center rounded-full bg-background">
+            <MessageCircle className="h-5 w-5 text-text-secondary" aria-hidden="true" />
+          </div>
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-text-secondary">
+              Guest book
+            </p>
+            <h2 className="text-2xl font-semibold text-text-primary">
+              Comments
+            </h2>
+          </div>
+        </div>
         <form className="mt-5 grid gap-3" onSubmit={submitComment}>
           <Input
             value={authorName}
@@ -90,14 +102,32 @@ export function CommentSection({ albumId }: CommentSectionProps) {
         </form>
 
         <div className="mt-8 grid gap-4">
+          {!comments.length ? (
+            <div className="rounded-2xl border border-dashed border-border bg-background/60 p-6 text-center text-sm text-text-secondary">
+              No notes yet. Be the first to leave a thoughtful comment.
+            </div>
+          ) : null}
           {comments.map((comment) => (
-            <article key={comment.id} className="rounded-2xl bg-background p-4">
-              <p className="font-medium text-text-primary">
-                {comment.author_name || "Anonymous"}
-              </p>
-              <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-text-secondary">
-                {comment.body}
-              </p>
+            <article
+              key={comment.id}
+              className="flex gap-4 rounded-2xl border border-border bg-background/70 p-4 animate-editorial-in"
+            >
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-surface-secondary text-sm font-semibold text-text-primary">
+                {(comment.author_name || "A").slice(0, 1).toUpperCase()}
+              </div>
+              <div>
+                <div className="flex flex-wrap items-baseline gap-2">
+                  <p className="font-medium text-text-primary">
+                    {comment.author_name || "Anonymous"}
+                  </p>
+                  <time className="text-xs text-text-secondary">
+                    {new Date(comment.created_at).toLocaleDateString()}
+                  </time>
+                </div>
+                <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-text-secondary">
+                  {comment.body}
+                </p>
+              </div>
             </article>
           ))}
         </div>

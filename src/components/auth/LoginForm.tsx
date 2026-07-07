@@ -1,12 +1,10 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import { useRouter } from "next/navigation";
+import { Chrome } from "lucide-react";
 import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
 
 export function LoginForm() {
-  const router = useRouter();
   const [message, setMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
@@ -15,33 +13,26 @@ export function LoginForm() {
     setIsLoading(true);
     setMessage("");
 
-    const formData = new FormData(event.currentTarget);
     const response = await fetch("/api/auth/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        email: formData.get("email"),
-        password: formData.get("password"),
-      }),
+      body: JSON.stringify({ next: new URLSearchParams(window.location.search).get("next") ?? "/" }),
     });
     const payload = await response.json();
 
-    if (payload.success) {
-      router.push("/studio");
-      router.refresh();
+    if (payload.success && payload.data.url) {
+      window.location.href = payload.data.url;
     } else {
       setMessage(payload.message ?? "Login failed.");
+      setIsLoading(false);
     }
-
-    setIsLoading(false);
   }
 
   return (
     <form className="grid gap-4" onSubmit={onSubmit}>
-      <Input name="email" type="email" placeholder="Email" required />
-      <Input name="password" type="password" placeholder="Password" required />
       <Button type="submit" disabled={isLoading}>
-        {isLoading ? "Signing in..." : "Sign in"}
+        <Chrome className="h-4 w-4" aria-hidden="true" />
+        {isLoading ? "Connecting Google..." : "Continue with Google"}
       </Button>
       {message ? (
         <p className="text-sm text-text-secondary" aria-live="polite">

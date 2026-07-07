@@ -15,11 +15,11 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         ref={ref}
         type={type}
         className={cn(
-          "inline-flex h-11 items-center justify-center gap-2 rounded-xl px-5 text-sm font-medium transition-all duration-150 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50",
+          "inline-flex h-11 items-center justify-center gap-2 rounded-full px-5 text-xs font-semibold uppercase tracking-[0.14em] transition-all duration-300 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50",
           variant === "primary" &&
-            "bg-accent text-accent-foreground hover:scale-[1.02]",
+            "bg-accent text-accent-foreground hover:-translate-y-0.5 hover:shadow-xl hover:shadow-text-primary/10",
           variant === "secondary" &&
-            "border border-border bg-surface text-text-primary hover:bg-surface-secondary",
+            "border border-border bg-surface/80 text-text-primary hover:-translate-y-0.5 hover:bg-surface",
           variant === "ghost" &&
             "text-text-primary hover:bg-surface-secondary",
           variant === "icon" &&

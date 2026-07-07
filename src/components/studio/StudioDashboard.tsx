@@ -1,8 +1,9 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useRef, useState, type ChangeEvent, type FormEvent } from "react";
-import { Eye, Trash2, Upload } from "lucide-react";
+import { Eye, ImagePlus, Save, Trash2, Upload, X } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
@@ -12,15 +13,24 @@ interface StudioDashboardProps {
   initialAlbums: Album[];
 }
 
+interface QueuedFile {
+  id: string;
+  file: File;
+  url: string;
+}
+
 export function StudioDashboard({ initialAlbums }: StudioDashboardProps) {
   const [albums, setAlbums] = useState(initialAlbums);
   const [selectedAlbumId, setSelectedAlbumId] = useState(initialAlbums[0]?.id ?? "");
   const [message, setMessage] = useState("");
+  const [selectedFiles, setSelectedFiles] = useState<QueuedFile[]>([]);
+  const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   async function createAlbum(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const formData = new FormData(event.currentTarget);
+    const form = event.currentTarget;
+    const formData = new FormData(form);
     const response = await fetch("/api/albums", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -37,7 +47,7 @@ export function StudioDashboard({ initialAlbums }: StudioDashboardProps) {
       setAlbums((current) => [payload.data.album, ...current]);
       setSelectedAlbumId(payload.data.album.id);
       setMessage("Album created.");
-      event.currentTarget.reset();
+      form.reset();
     } else {
       setMessage(payload.message ?? "Album create failed.");
     }
@@ -63,6 +73,33 @@ export function StudioDashboard({ initialAlbums }: StudioDashboardProps) {
     }
   }
 
+  async function updateAlbum(event: FormEvent<HTMLFormElement>, albumId: string) {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+    const response = await fetch(`/api/albums/${albumId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        title: formData.get("title"),
+        description: formData.get("description"),
+        status: formData.get("status"),
+        cover_url: formData.get("cover_url") || null,
+      }),
+    });
+    const payload = await response.json();
+
+    if (payload.success) {
+      setAlbums((current) =>
+        current.map((album) =>
+          album.id === albumId ? { ...album, ...payload.data.album } : album,
+        ),
+      );
+      setMessage("Album updated.");
+    } else {
+      setMessage(payload.message ?? "Album update failed.");
+    }
+  }
+
   async function deleteAlbum(albumId: string) {
     const response = await fetch(`/api/albums/${albumId}`, { method: "DELETE" });
     const payload = await response.json();
@@ -75,15 +112,36 @@ export function StudioDashboard({ initialAlbums }: StudioDashboardProps) {
     }
   }
 
-  async function uploadFiles(event: ChangeEvent<HTMLInputElement>) {
-    if (!event.target.files?.length || !selectedAlbumId) return;
+  function selectFiles(event: ChangeEvent<HTMLInputElement>) {
+    if (!event.target.files?.length) return;
+    setSelectedFiles((current) => [
+      ...current,
+      ...Array.from(event.target.files ?? []).map((file) => ({
+        id: `${file.name}-${file.lastModified}-${file.size}-${crypto.randomUUID()}`,
+        file,
+        url: URL.createObjectURL(file),
+      })),
+    ]);
+  }
+
+  function removeSelectedFile(index: number) {
+    setSelectedFiles((current) => {
+      const item = current[index];
+      if (item) URL.revokeObjectURL(item.url);
+      return current.filter((_, itemIndex) => itemIndex !== index);
+    });
+  }
+
+  async function uploadFiles() {
+    if (!selectedFiles.length || !selectedAlbumId) return;
     const formData = new FormData();
     formData.set("albumId", selectedAlbumId);
 
-    for (const file of Array.from(event.target.files)) {
-      formData.append("files", file);
+    for (const item of selectedFiles) {
+      formData.append("files", item.file);
     }
 
+    setUploading(true);
     setMessage("Uploading media...");
     const response = await fetch("/api/upload", {
       method: "POST",
@@ -97,7 +155,33 @@ export function StudioDashboard({ initialAlbums }: StudioDashboardProps) {
         : payload.message ?? "Upload failed.",
     );
 
+    if (payload.success) {
+      selectedFiles.forEach((item) => URL.revokeObjectURL(item.url));
+      setSelectedFiles([]);
+      setAlbums((current) =>
+        current.map((album) =>
+          album.id === selectedAlbumId
+            ? {
+                ...album,
+                media_count: album.media_count + payload.data.media.length,
+                photo_count:
+                  album.photo_count +
+                  payload.data.media.filter(
+                    (item: { media_type: string }) => item.media_type === "image",
+                  ).length,
+                video_count:
+                  album.video_count +
+                  payload.data.media.filter(
+                    (item: { media_type: string }) => item.media_type === "video",
+                  ).length,
+              }
+            : album,
+        ),
+      );
+    }
+
     if (fileInputRef.current) fileInputRef.current.value = "";
+    setUploading(false);
   }
 
   async function logout() {
@@ -107,7 +191,7 @@ export function StudioDashboard({ initialAlbums }: StudioDashboardProps) {
 
   return (
     <div className="mx-auto grid w-full max-w-[1440px] gap-8 px-4 py-10 sm:px-8 lg:grid-cols-[280px_1fr] lg:px-12">
-      <aside className="rounded-[2rem] border border-border bg-surface p-5">
+      <aside className="rounded-[2rem] border border-border bg-surface/80 p-5 shadow-xl shadow-text-primary/5">
         <p className="text-sm font-medium uppercase tracking-[0.2em] text-text-secondary">
           Studio
         </p>
@@ -117,6 +201,9 @@ export function StudioDashboard({ initialAlbums }: StudioDashboardProps) {
               {item}
             </a>
           ))}
+          <Link href="/studio/security" className="rounded-xl px-3 py-2 hover:bg-background">
+            Security
+          </Link>
         </nav>
         <Button variant="secondary" className="mt-6 w-full" onClick={logout}>
           Logout
@@ -124,12 +211,12 @@ export function StudioDashboard({ initialAlbums }: StudioDashboardProps) {
       </aside>
 
       <section className="grid gap-8">
-        <div id="dashboard" className="rounded-[2rem] border border-border bg-surface p-6">
+        <div id="dashboard" className="rounded-[2rem] border border-border bg-surface/80 p-6 shadow-xl shadow-text-primary/5">
           <h1 className="text-3xl font-semibold text-text-primary">
             Admin Studio
           </h1>
           <p className="mt-2 text-text-secondary">
-            Manage albums, statuses, uploads, and public visibility.
+            Manage editorial books, covers, statuses, uploads, and public visibility.
           </p>
           <p className="mt-4 text-sm text-text-secondary" aria-live="polite">
             {message}
@@ -138,7 +225,7 @@ export function StudioDashboard({ initialAlbums }: StudioDashboardProps) {
 
         <form
           id="albums"
-          className="grid gap-4 rounded-[2rem] border border-border bg-surface p-6"
+          className="grid gap-4 rounded-[2rem] border border-border bg-surface/80 p-6 shadow-xl shadow-text-primary/5"
           onSubmit={createAlbum}
         >
           <h2 className="text-2xl font-semibold text-text-primary">
@@ -146,6 +233,7 @@ export function StudioDashboard({ initialAlbums }: StudioDashboardProps) {
           </h2>
           <Input name="title" placeholder="Album title" required />
           <Input name="slug" placeholder="optional-custom-slug" />
+          <Input name="cover_url" placeholder="Cover image URL (optional)" />
           <Textarea name="description" placeholder="Album description" />
           <select
             name="status"
@@ -159,7 +247,7 @@ export function StudioDashboard({ initialAlbums }: StudioDashboardProps) {
           <Button type="submit">Create album</Button>
         </form>
 
-        <div id="uploads" className="rounded-[2rem] border border-border bg-surface p-6">
+        <div id="uploads" className="rounded-[2rem] border border-border bg-surface/80 p-6 shadow-xl shadow-text-primary/5">
           <h2 className="text-2xl font-semibold text-text-primary">
             Upload media
           </h2>
@@ -176,23 +264,73 @@ export function StudioDashboard({ initialAlbums }: StudioDashboardProps) {
               ))}
             </select>
             <Button onClick={() => fileInputRef.current?.click()}>
-              <Upload className="h-4 w-4" aria-hidden="true" />
+              <ImagePlus className="h-4 w-4" aria-hidden="true" />
               Select files
             </Button>
           </div>
+          {selectedFiles.length ? (
+            <div className="mt-5">
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <p className="text-sm text-text-secondary">
+                  {selectedFiles.length} selected file(s)
+                </p>
+                <Button onClick={uploadFiles} disabled={uploading}>
+                  <Upload className="h-4 w-4" aria-hidden="true" />
+                  {uploading ? "Uploading..." : "Upload selected"}
+                </Button>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                {selectedFiles.map((preview, index) => (
+                  <div
+                    key={preview.id}
+                    className="relative overflow-hidden rounded-2xl border border-border bg-background"
+                  >
+                    <div className="relative aspect-[4/5]">
+                      {preview.file.type.startsWith("image/") ? (
+                        <Image
+                          src={preview.url}
+                          alt={preview.file.name}
+                          fill
+                          className="object-cover"
+                          unoptimized
+                        />
+                      ) : (
+                        <video
+                          src={preview.url}
+                          className="h-full w-full object-cover"
+                          preload="metadata"
+                        />
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-lightbox text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      onClick={() => removeSelectedFile(index)}
+                      aria-label={`Remove ${preview.file.name}`}
+                    >
+                      <X className="h-4 w-4" aria-hidden="true" />
+                    </button>
+                    <p className="truncate px-3 py-2 text-xs text-text-secondary">
+                      {preview.file.name}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : null}
           <input
             ref={fileInputRef}
             type="file"
             accept="image/jpeg,image/png,image/webp,image/avif,video/mp4,video/webm,video/quicktime"
             multiple
             className="sr-only"
-            onChange={uploadFiles}
+            onChange={selectFiles}
           />
         </div>
 
         <div className="grid gap-4">
           {albums.map((album) => (
-            <article key={album.id} className="rounded-[2rem] border border-border bg-surface p-5">
+            <article key={album.id} className="rounded-[2rem] border border-border bg-surface/80 p-5 shadow-xl shadow-text-primary/5">
               <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                 <div>
                   <h3 className="text-xl font-semibold text-text-primary">
@@ -227,6 +365,37 @@ export function StudioDashboard({ initialAlbums }: StudioDashboardProps) {
                   </Button>
                 </div>
               </div>
+              <form
+                className="mt-5 grid gap-3 border-t border-border pt-5 md:grid-cols-2"
+                onSubmit={(event) => updateAlbum(event, album.id)}
+              >
+                <Input name="title" defaultValue={album.title} aria-label="Album title" />
+                <Input
+                  name="cover_url"
+                  defaultValue={album.cover_url ?? ""}
+                  aria-label="Album cover URL"
+                  placeholder="Cover URL"
+                />
+                <Textarea
+                  name="description"
+                  defaultValue={album.description ?? ""}
+                  aria-label="Album description"
+                  className="md:col-span-2"
+                />
+                <select
+                  name="status"
+                  defaultValue={album.status}
+                  className="h-12 rounded-2xl border border-border bg-surface/80 px-4 text-sm outline-none focus:ring-2 focus:ring-ring"
+                >
+                  <option value="public">Public</option>
+                  <option value="updating">Updating</option>
+                  <option value="private">Private</option>
+                </select>
+                <Button type="submit">
+                  <Save className="h-4 w-4" aria-hidden="true" />
+                  Save album
+                </Button>
+              </form>
             </article>
           ))}
         </div>

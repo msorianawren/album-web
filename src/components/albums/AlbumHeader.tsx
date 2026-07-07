@@ -1,6 +1,8 @@
-import { Download, Share2 } from "lucide-react";
+import Image from "next/image";
+import { Image as ImageIcon } from "lucide-react";
+import { DownloadButton } from "@/components/media/DownloadButton";
 import { AlbumStatusBadge } from "@/components/ui/Badge";
-import { Button } from "@/components/ui/Button";
+import { ShareButton } from "@/components/ui/ShareButton";
 import type { AlbumDetail } from "@/lib/types";
 import { formatMediaCount } from "@/lib/utils";
 
@@ -10,32 +12,42 @@ interface AlbumHeaderProps {
 
 export function AlbumHeader({ album }: AlbumHeaderProps) {
   return (
-    <section className="mx-auto flex w-full max-w-[1440px] flex-col gap-6 px-4 py-10 sm:px-8 lg:flex-row lg:items-end lg:justify-between lg:px-12">
-      <div>
+    <section className="mx-auto grid w-full max-w-[1440px] gap-8 px-4 py-10 sm:px-8 lg:grid-cols-[0.9fr_1.1fr] lg:items-end lg:px-12">
+      <div className="relative aspect-[4/5] overflow-hidden rounded-[2.4rem] border border-border bg-surface/70 shadow-2xl shadow-text-primary/10 lg:aspect-[5/4]">
+        {album.cover_url ? (
+          <Image
+            src={album.cover_url}
+            alt={`${album.title} cover`}
+            fill
+            sizes="(min-width: 1024px) 45vw, 100vw"
+            className="object-cover"
+            priority
+          />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center">
+            <ImageIcon className="h-10 w-10 text-text-secondary" aria-hidden="true" />
+          </div>
+        )}
+      </div>
+      <div className="pb-3 animate-editorial-in">
         <div className="flex flex-wrap items-center gap-3">
           <AlbumStatusBadge status={album.status} />
-          <p className="text-sm font-medium text-text-secondary">
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-text-secondary">
             {formatMediaCount(album.photo_count, album.video_count)}
           </p>
         </div>
-        <h1 className="mt-4 text-4xl font-semibold tracking-normal text-text-primary sm:text-5xl">
+        <h1 className="mt-5 text-5xl font-semibold leading-[0.98] tracking-[-0.03em] text-text-primary sm:text-7xl">
           {album.title}
         </h1>
-        <p className="mt-4 max-w-2xl text-base leading-7 text-text-secondary">
+        <p className="mt-5 max-w-2xl text-base leading-8 text-text-secondary">
           {album.description}
         </p>
-      </div>
-      <div className="flex flex-wrap gap-3">
-        <Button variant="secondary">
-          <Share2 className="h-4 w-4" aria-hidden="true" />
-          Share
-        </Button>
-        {album.download_allowed ? (
-          <Button>
-            <Download className="h-4 w-4" aria-hidden="true" />
-            Downloads enabled
-          </Button>
-        ) : null}
+        <div className="mt-8 flex flex-wrap gap-3">
+          <ShareButton title={album.title} />
+          {album.download_allowed ? (
+            <DownloadButton href={`/api/albums/${album.id}/download`} label="Download album" />
+          ) : null}
+        </div>
       </div>
     </section>
   );

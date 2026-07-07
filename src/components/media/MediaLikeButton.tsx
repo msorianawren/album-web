@@ -5,18 +5,19 @@ import { Heart } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { getOrCreateClientId } from "@/lib/client-id";
 
-interface LikeButtonProps {
-  albumId: string;
+interface MediaLikeButtonProps {
+  mediaId: string;
+  compact?: boolean;
 }
 
-export function LikeButton({ albumId }: LikeButtonProps) {
-  const [count, setCount] = useState<number | null>(null);
+export function MediaLikeButton({ mediaId, compact }: MediaLikeButtonProps) {
+  const [count, setCount] = useState(0);
   const [liked, setLiked] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     const clientId = getOrCreateClientId();
-    fetch(`/api/likes?albumId=${albumId}&clientId=${clientId}`)
+    fetch(`/api/likes?mediaId=${mediaId}&clientId=${clientId}`)
       .then((response) => response.json())
       .then((payload) => {
         if (payload.success) {
@@ -25,17 +26,16 @@ export function LikeButton({ albumId }: LikeButtonProps) {
         }
       })
       .catch(() => undefined);
-  }, [albumId]);
+  }, [mediaId]);
 
-  async function likeAlbum() {
+  async function toggleLike() {
     if (isLoading) return;
     setIsLoading(true);
     const clientId = getOrCreateClientId();
-
     const response = await fetch("/api/likes", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ albumId, clientId }),
+      body: JSON.stringify({ mediaId, clientId }),
     });
     const payload = await response.json();
     if (payload.success) {
@@ -46,13 +46,22 @@ export function LikeButton({ albumId }: LikeButtonProps) {
   }
 
   return (
-    <Button variant="secondary" onClick={likeAlbum} disabled={isLoading}>
+    <Button
+      variant={compact ? "icon" : "secondary"}
+      className={
+        compact
+          ? "h-9 w-9 border-lightbox-border bg-lightbox-control text-accent-foreground"
+          : undefined
+      }
+      onClick={toggleLike}
+      disabled={isLoading}
+      aria-label={liked ? "Unlike media" : "Like media"}
+    >
       <Heart
         className={liked ? "h-4 w-4 fill-current text-text-primary" : "h-4 w-4"}
         aria-hidden="true"
       />
-      {liked ? "Liked" : "Like"}
-      {count !== null ? <span>{count}</span> : null}
+      {!compact ? <span>{count}</span> : null}
     </Button>
   );
 }

@@ -5,6 +5,47 @@ import { apiError, apiSuccess, toServerError } from "@/lib/errors";
 import { supabase } from "@/lib/supabase";
 import { likeCreateSchema } from "@/lib/validators";
 
+function likeTargetQuery(albumId?: string | null, mediaId?: string | null) {
+  const query = supabase.from("likes").select("*");
+  return mediaId ? query.eq("media_id", mediaId) : query.eq("album_id", albumId);
+}
+
+async function getLikeCount(albumId?: string | null, mediaId?: string | null) {
+  const query = supabase.from("likes").select("id", { count: "exact", head: true });
+  const { count } = mediaId
+    ? await query.eq("media_id", mediaId)
+    : await query.eq("album_id", albumId);
+  return count ?? 0;
+}
+
+export async function GET(request: NextRequest) {
+  const session = await getPublicSession(request);
+  const albumId = request.nextUrl.searchParams.get("albumId");
+  const mediaId = request.nextUrl.searchParams.get("mediaId");
+  const clientId =
+    request.nextUrl.searchParams.get("clientId") ??
+    request.cookies.get("album_client_id")?.value ??
+    session.userId;
+
+  if (!albumId && !mediaId) {
+    return apiError("INVALID_INPUT", "albumId or mediaId is required.", 400);
+  }
+
+  const count = await getLikeCount(albumId, mediaId);
+  let liked = false;
+
+  if (clientId || session.userId) {
+    let query = likeTargetQuery(albumId, mediaId).limit(1);
+    query = session.userId
+      ? query.or(`user_id.eq.${session.userId},client_id.eq.${clientId ?? session.userId}`)
+      : query.eq("client_id", clientId);
+    const { data } = await query;
+    liked = Boolean(data?.length);
+  }
+
+  return apiSuccess({ count, liked });
+}
+
 export async function POST(request: NextRequest) {
   try {
     const session = await getPublicSession(request);
@@ -31,32 +72,32 @@ export async function POST(request: NextRequest) {
       session.userId ??
       "anonymous";
 
-    const { error } = await supabase.from("likes").upsert(
-      {
+    let existingQuery = likeTargetQuery(parsed.data.albumId, parsed.data.mediaId).limit(1);
+    existingQuery = session.userId
+      ? existingQuery.or(`user_id.eq.${session.userId},client_id.eq.${clientId}`)
+      : existingQuery.eq("client_id", clientId);
+    const { data: existing, error: existingError } = await existingQuery;
+
+    if (existingError) return apiError("SERVER_ERROR", existingError.message, 500);
+
+    let liked = true;
+
+    if (existing?.[0]) {
+      const { error } = await supabase.from("likes").delete().eq("id", existing[0].id);
+      if (error) return apiError("SERVER_ERROR", error.message, 500);
+      liked = false;
+    } else {
+      const { error } = await supabase.from("likes").insert({
         album_id: parsed.data.albumId,
         media_id: parsed.data.mediaId,
         client_id: clientId,
         user_id: session.userId,
-      },
-      {
-        onConflict: parsed.data.mediaId
-          ? "client_id,media_id"
-          : "client_id,album_id",
-        ignoreDuplicates: true,
-      },
-    );
+      });
+      if (error) return apiError("SERVER_ERROR", error.message, 500);
+    }
 
-    if (error) return apiError("SERVER_ERROR", error.message, 500);
-
-    const countQuery = supabase
-      .from("likes")
-      .select("id", { count: "exact", head: true });
-
-    const { count } = parsed.data.mediaId
-      ? await countQuery.eq("media_id", parsed.data.mediaId)
-      : await countQuery.eq("album_id", parsed.data.albumId);
-
-    return apiSuccess({ count: count ?? 0 });
+    const count = await getLikeCount(parsed.data.albumId, parsed.data.mediaId);
+    return apiSuccess({ count, liked });
   } catch (error) {
     return toServerError(error);
   }

@@ -1,10 +1,26 @@
 import { cookies, headers } from "next/headers";
 import type { NextRequest } from "next/server";
 import type { User } from "@supabase/supabase-js";
-import { createAnonSupabase } from "@/lib/supabase";
+import { createAnonSupabase, supabase } from "@/lib/supabase";
+import type { PublicSession, UserProfile } from "@/lib/types";
 
 function getAdminId() {
   return process.env.DEFAULT_OWNER_ID ?? "";
+}
+
+function getUserDisplayName(user: User) {
+  const name = user.user_metadata?.full_name ?? user.user_metadata?.name;
+  return typeof name === "string" && name.trim() ? name : null;
+}
+
+function getUserAvatarUrl(user: User) {
+  const avatar = user.user_metadata?.avatar_url ?? user.user_metadata?.picture;
+  return typeof avatar === "string" && avatar.trim() ? avatar : null;
+}
+
+function getUserProvider(user: User) {
+  const provider = user.app_metadata?.provider;
+  return typeof provider === "string" && provider.trim() ? provider : "google";
 }
 
 function extractTokenFromCookieValue(value: string) {
@@ -53,17 +69,63 @@ export async function getCurrentUser(request?: NextRequest): Promise<User | null
   }
 }
 
-export async function getPublicSession(request?: NextRequest) {
+export async function getUserProfile(userId: string): Promise<UserProfile | null> {
+  const { data, error } = await supabase
+    .from("user_profiles")
+    .select("*")
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (error || !data) return null;
+  return data as UserProfile;
+}
+
+export async function upsertUserProfile(user: User): Promise<UserProfile | null> {
+  const email = user.email?.toLowerCase();
+  if (!email) return null;
+
+  const { data, error } = await supabase
+    .from("user_profiles")
+    .upsert(
+      {
+        user_id: user.id,
+        email,
+        display_name: getUserDisplayName(user),
+        avatar_url: getUserAvatarUrl(user),
+        provider: getUserProvider(user),
+        last_seen_at: new Date().toISOString(),
+      },
+      { onConflict: "user_id" },
+    )
+    .select("*")
+    .single();
+
+  if (error || !data) return null;
+  return data as UserProfile;
+}
+
+export async function getPublicSession(request?: NextRequest): Promise<PublicSession> {
   const user = await getCurrentUser(request);
   const adminId = getAdminId();
+  const profile = user ? await upsertUserProfile(user) : null;
 
   return {
     userId: user?.id ?? null,
+    email: user?.email?.toLowerCase() ?? null,
+    displayName: user ? getUserDisplayName(user) : null,
+    avatarUrl: user ? getUserAvatarUrl(user) : null,
     isAdmin: Boolean(user?.id && adminId && user.id === adminId),
+    isBlocked: Boolean(profile?.is_blocked),
+    blockedReason: profile?.blocked_reason ?? null,
   };
 }
 
 export async function requireAdmin(request?: NextRequest) {
   const session = await getPublicSession(request);
-  return session.isAdmin ? session : null;
+  return session.isAdmin && !session.isBlocked ? session : null;
+}
+
+export async function requireUser(request?: NextRequest) {
+  const session = await getPublicSession(request);
+  return session.userId && !session.isBlocked ? session : null;
 }

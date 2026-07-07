@@ -66,11 +66,46 @@ export interface AlbumDetail extends Album {
   private_message?: string;
 }
 
+export interface UserProfile {
+  user_id: string;
+  email: string;
+  display_name: string | null;
+  avatar_url: string | null;
+  provider: string;
+  is_blocked: boolean;
+  blocked_reason: string | null;
+  blocked_at: string | null;
+  blocked_by: string | null;
+  last_seen_at: string;
+  created_at: string;
+  updated_at?: string;
+}
+
+export interface AuditLog {
+  id: string;
+  actor_user_id: string | null;
+  actor_email: string | null;
+  action: string;
+  target_type: string | null;
+  target_id: string | null;
+  path: string | null;
+  method: string | null;
+  ip_address: string | null;
+  user_agent: string | null;
+  metadata: Record<string, unknown>;
+  created_at: string;
+}
+
 export interface UploadResult {
   media: Media[];
 }
 
 export interface PublicSession {
   userId: string | null;
+  email: string | null;
+  displayName: string | null;
+  avatarUrl: string | null;
   isAdmin: boolean;
+  isBlocked: boolean;
+  blockedReason: string | null;
 }

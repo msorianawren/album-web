@@ -1,6 +1,7 @@
 import Image from "next/image";
-import { Download, Heart, MoreHorizontal, Play } from "lucide-react";
-import { Button } from "@/components/ui/Button";
+import { Play } from "lucide-react";
+import { DownloadButton } from "@/components/media/DownloadButton";
+import { MediaLikeButton } from "@/components/media/MediaLikeButton";
 import type { Media } from "@/lib/types";
 
 interface MediaCardProps {
@@ -60,27 +61,13 @@ export function MediaCard({
         )}
       </button>
 
-      <div className="absolute inset-0 flex items-end justify-end gap-2 bg-overlay p-3 opacity-0 transition duration-250 ease-out group-hover:opacity-100 group-focus-visible:opacity-100">
-        <Button
-          variant="icon"
-          className="h-9 w-9 border-lightbox-border bg-lightbox-control text-accent-foreground"
-        >
-          <Heart className="h-4 w-4" aria-hidden="true" />
-        </Button>
-        {downloadAllowed ? (
-          <Button
-            variant="icon"
-            className="h-9 w-9 border-lightbox-border bg-lightbox-control text-accent-foreground"
-          >
-            <Download className="h-4 w-4" aria-hidden="true" />
-          </Button>
-        ) : null}
-        <Button
-          variant="icon"
-          className="h-9 w-9 border-lightbox-border bg-lightbox-control text-accent-foreground"
-        >
-          <MoreHorizontal className="h-4 w-4" aria-hidden="true" />
-        </Button>
+      <div className="pointer-events-none absolute inset-0 flex items-end justify-end bg-overlay p-3 opacity-0 transition duration-250 ease-out group-hover:opacity-100 group-focus-within:opacity-100">
+        <div className="pointer-events-auto flex items-center gap-2">
+          <MediaLikeButton mediaId={media.id} compact />
+          {downloadAllowed ? (
+            <DownloadButton href={`/api/media/${media.id}/download`} compact />
+          ) : null}
+        </div>
       </div>
     </div>
   );

@@ -36,14 +36,13 @@ Server-only values must never be exposed in client components.
 
 ## Database
 
-Apply migrations in order:
+Run this single migration in Supabase SQL Editor:
 
 ```text
-supabase/migrations/202607070001_create_album_schema.sql
-supabase/migrations/202607070002_upgrade_to_media_platform.sql
+supabase/migrations/202607070000_init_album_platform.sql
 ```
 
-The second migration upgrades the app to:
+It creates the full app database:
 
 - `albums` with `public | updating | private` status
 - `media` for images and videos
@@ -52,8 +51,8 @@ The second migration upgrades the app to:
 - optional `album_share_links`
 - indexes, counters, RLS policies, and duplicate-like prevention
 
-If an older bigint/photo-only schema is present, the upgrade migration renames it
-to legacy tables before creating the UUID media schema.
+If an older bigint/photo-only schema is present, the migration renames it to
+legacy tables before creating the UUID media schema.
 
 ## Local Development
 

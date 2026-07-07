@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { AlbumHeader } from "@/components/albums/AlbumHeader";
+import { AlbumDownloadButton } from "@/components/albums/AlbumDownloadButton";
 import { LockedAlbumState } from "@/components/albums/LockedAlbumState";
 import { UpdatingNotice } from "@/components/albums/UpdatingNotice";
 import { AppHeader } from "@/components/AppHeader";
@@ -33,6 +34,10 @@ export default async function AlbumPage({ params }: AlbumPageProps) {
             <LikeButton albumId={album.id} />
           </section>
           <MediaGrid media={album.media} downloadAllowed={album.download_allowed} />
+          <AlbumDownloadButton
+            albumId={album.id}
+            disabled={!album.download_allowed || !album.media.some((item) => item.media_type === "image")}
+          />
           <CommentSection albumId={album.id} />
         </>
       )}

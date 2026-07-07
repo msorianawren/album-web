@@ -15,13 +15,11 @@ export function AlbumList({ albums }: AlbumListProps) {
           <Camera className="h-7 w-7 text-text-secondary" aria-hidden="true" />
         </div>
         <h2 className="text-2xl font-semibold text-text-primary">
-          No albums yet
+          No albums available
         </h2>
         <p className="mt-3 max-w-md text-text-secondary">
-          Create your first album and start organizing photos into clean,
-          shareable collections.
+          Public collections will appear here when the owner publishes them.
         </p>
-        <Button className="mt-6">Create album</Button>
       </section>
     );
   }
@@ -31,25 +29,28 @@ export function AlbumList({ albums }: AlbumListProps) {
       id="albums"
       className="mx-auto w-full max-w-[1440px] px-4 pb-20 sm:px-8 lg:px-12"
     >
-      <div className="mb-7 flex items-end justify-between gap-4">
+      <div className="mb-7 flex items-end justify-between gap-4 animate-editorial-in">
         <div>
-          <h2 className="text-2xl font-semibold text-text-primary">
-            Featured Albums
+          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-text-secondary">
+            Selected books
+          </p>
+          <h2 className="mt-2 text-3xl font-semibold tracking-[-0.02em] text-text-primary">
+            Featured Portfolio Albums
           </h2>
           <p className="mt-2 text-sm text-text-secondary">
-            Browse public, updating, and locked private collections.
+            Browse public editorials, updating shoots, and private client books.
           </p>
         </div>
       </div>
-      <form className="mb-8 grid gap-3 rounded-3xl border border-border bg-surface p-4 md:grid-cols-[1fr_180px_auto]">
+      <form className="mb-8 grid gap-3 rounded-[2rem] border border-border bg-surface/70 p-4 shadow-xl shadow-text-primary/5 backdrop-blur md:grid-cols-[1fr_180px_auto]">
         <input
           name="q"
-          placeholder="Search album title or description"
-          className="h-11 rounded-xl border border-border bg-background px-4 text-sm outline-none focus:ring-2 focus:ring-ring"
+          placeholder="Search editorial, studio, campaign..."
+          className="h-12 rounded-full border border-border bg-background/70 px-5 text-sm outline-none transition focus:ring-2 focus:ring-ring"
         />
         <select
           name="status"
-          className="h-11 rounded-xl border border-border bg-background px-4 text-sm outline-none focus:ring-2 focus:ring-ring"
+          className="h-12 rounded-full border border-border bg-background/70 px-5 text-sm outline-none transition focus:ring-2 focus:ring-ring"
           defaultValue=""
         >
           <option value="">All statuses</option>

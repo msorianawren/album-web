@@ -4,7 +4,6 @@ import { useCallback, useState } from "react";
 import { Camera } from "lucide-react";
 import { MediaCard } from "@/components/media/MediaCard";
 import { MediaViewer } from "@/components/media/MediaViewer";
-import { Button } from "@/components/ui/Button";
 import type { Media } from "@/lib/types";
 
 interface MediaGridProps {
@@ -30,7 +29,7 @@ export function MediaGrid({ media, downloadAllowed }: MediaGridProps) {
   if (!media.length) {
     return (
       <section className="mx-auto flex w-full max-w-[1440px] flex-col items-center px-4 py-20 text-center sm:px-8 lg:px-12">
-        <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-3xl bg-surface">
+        <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-surface/80">
           <Camera className="h-7 w-7 text-text-secondary" aria-hidden="true" />
         </div>
         <h2 className="text-2xl font-semibold text-text-primary">
@@ -39,7 +38,6 @@ export function MediaGrid({ media, downloadAllowed }: MediaGridProps) {
         <p className="mt-3 max-w-md text-text-secondary">
           Photos and videos will appear here once the owner uploads them.
         </p>
-        <Button className="mt-6">Check again later</Button>
       </section>
     );
   }

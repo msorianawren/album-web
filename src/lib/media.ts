@@ -164,5 +164,24 @@ export async function uploadMediaFile({
     .single();
 
   if (error) throw error;
+  if (mediaType === "image") {
+    const { data: album } = await supabase
+      .from("albums")
+      .select("cover_url")
+      .eq("id", albumId)
+      .single();
+
+    if (!album?.cover_url) {
+      await supabase
+        .from("albums")
+        .update({
+          cover_media_id: mediaId,
+          cover_url: data.thumbnail_url ?? data.url,
+        })
+        .eq("id", albumId);
+      await supabase.from("media").update({ is_cover: true }).eq("id", mediaId);
+    }
+  }
+
   return normalizeMedia(data);
 }
