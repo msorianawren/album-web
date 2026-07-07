@@ -1,14 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { upsertUserProfile } from "@/lib/auth";
+import { clearAuthFlowCookies, getAuthFlow } from "@/lib/auth-flow";
 import { createAnonSupabase } from "@/lib/supabase";
-
-function safeNext(value: string | null) {
-  return value?.startsWith("/") && !value.startsWith("//") ? value : "/";
-}
-
-function safeMode(value: string | null) {
-  return value === "signup" ? "signup" : "login";
-}
 
 function setSessionCookies(response: NextResponse, session: {
   access_token: string;
@@ -103,8 +96,7 @@ function implicitCallbackPage(next: string, mode: string) {
 
 export async function GET(request: NextRequest) {
   const code = request.nextUrl.searchParams.get("code");
-  const next = safeNext(request.nextUrl.searchParams.get("next"));
-  const mode = safeMode(request.nextUrl.searchParams.get("mode"));
+  const { next, mode } = getAuthFlow(request);
 
   if (!code) {
     return implicitCallbackPage(next, mode);
@@ -125,5 +117,6 @@ export async function GET(request: NextRequest) {
   const target = profile?.is_blocked ? "/boycott" : next;
   const response = NextResponse.redirect(new URL(target, request.url));
   setSessionCookies(response, data.session);
+  clearAuthFlowCookies(response);
   return response;
 }

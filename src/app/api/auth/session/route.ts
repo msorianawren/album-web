@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { upsertUserProfile } from "@/lib/auth";
+import { clearAuthFlowCookies } from "@/lib/auth-flow";
 import { apiError, apiSuccess, toServerError } from "@/lib/errors";
 import { createAnonSupabase, supabase } from "@/lib/supabase";
 
@@ -71,6 +72,7 @@ export async function POST(request: NextRequest) {
       path: "/",
       maxAge: 60 * 60 * 24 * 30,
     });
+    clearAuthFlowCookies(response);
 
     return response;
   } catch (error) {

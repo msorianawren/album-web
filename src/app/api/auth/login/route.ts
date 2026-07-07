@@ -1,14 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { apiError, apiSuccess, toServerError } from "@/lib/errors";
+import { safeAuthNext, setAuthFlowCookies } from "@/lib/auth-flow";
 import { createAnonSupabase } from "@/lib/supabase";
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json().catch(() => ({}));
-    const next = typeof body.next === "string" ? body.next : "/";
-    const safeNext = next.startsWith("/") && !next.startsWith("//") ? next : "/";
     const redirectTo = new URL("/auth/callback", request.nextUrl.origin);
-    redirectTo.searchParams.set("next", safeNext);
+    const next = safeAuthNext(body.next);
 
     const { data, error } = await createAnonSupabase().auth.signInWithOAuth({
       provider: "google",
@@ -25,7 +24,9 @@ export async function POST(request: NextRequest) {
       return apiError("SERVER_ERROR", error?.message ?? "Google login failed.", 500);
     }
 
-    return apiSuccess({ url: data.url });
+    const response = apiSuccess({ url: data.url });
+    setAuthFlowCookies(response, { next, mode: "login" });
+    return response;
   } catch (error) {
     return toServerError(error);
   }
