@@ -6,6 +6,10 @@ function safeNext(value: string | null) {
   return value?.startsWith("/") && !value.startsWith("//") ? value : "/";
 }
 
+function safeMode(value: string | null) {
+  return value === "signup" ? "signup" : "login";
+}
+
 export function OAuthHashHandler() {
   useEffect(() => {
     const hash = new URLSearchParams(window.location.hash.slice(1));
@@ -15,6 +19,7 @@ export function OAuthHashHandler() {
     if (!accessToken || !refreshToken) return;
 
     const next = safeNext(new URLSearchParams(window.location.search).get("next"));
+    const mode = safeMode(new URLSearchParams(window.location.search).get("mode"));
 
     window.history.replaceState(null, "", window.location.pathname + window.location.search);
 
@@ -26,6 +31,7 @@ export function OAuthHashHandler() {
         refresh_token: refreshToken,
         expires_in: hash.get("expires_in"),
         next,
+        mode,
       }),
     })
       .then((response) => response.json())

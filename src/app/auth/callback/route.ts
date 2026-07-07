@@ -6,6 +6,10 @@ function safeNext(value: string | null) {
   return value?.startsWith("/") && !value.startsWith("//") ? value : "/";
 }
 
+function safeMode(value: string | null) {
+  return value === "signup" ? "signup" : "login";
+}
+
 function setSessionCookies(response: NextResponse, session: {
   access_token: string;
   refresh_token: string;
@@ -27,7 +31,7 @@ function setSessionCookies(response: NextResponse, session: {
   });
 }
 
-function implicitCallbackPage(next: string) {
+function implicitCallbackPage(next: string, mode: string) {
   return new NextResponse(
     `<!doctype html>
 <html lang="en">
@@ -74,7 +78,8 @@ function implicitCallbackPage(next: string) {
             access_token: hash.get("access_token"),
             refresh_token: hash.get("refresh_token"),
             expires_in: hash.get("expires_in"),
-            next: ${JSON.stringify(next)}
+            next: ${JSON.stringify(next)},
+            mode: ${JSON.stringify(mode)}
           })
         });
         const payload = await response.json().catch(() => null);
@@ -99,9 +104,10 @@ function implicitCallbackPage(next: string) {
 export async function GET(request: NextRequest) {
   const code = request.nextUrl.searchParams.get("code");
   const next = safeNext(request.nextUrl.searchParams.get("next"));
+  const mode = safeMode(request.nextUrl.searchParams.get("mode"));
 
   if (!code) {
-    return implicitCallbackPage(next);
+    return implicitCallbackPage(next, mode);
   }
 
   const { data, error } = await createAnonSupabase().auth.exchangeCodeForSession(code);

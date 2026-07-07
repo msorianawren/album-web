@@ -44,6 +44,7 @@ function isPublicPath(pathname: string) {
     pathname === "/boycott" ||
     pathname.startsWith("/auth/callback") ||
     pathname.startsWith("/api/auth/login") ||
+    pathname.startsWith("/api/auth/register") ||
     pathname.startsWith("/api/auth/session")
   );
 }

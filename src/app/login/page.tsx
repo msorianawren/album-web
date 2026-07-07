@@ -14,8 +14,9 @@ export default function LoginPage() {
             Sign in with Google
           </h1>
           <p className="mt-3 text-sm leading-6 text-text-secondary">
-            Access to this portfolio is limited to verified Google accounts.
-            Admin tools are available only to the approved owner account.
+            Register or sign in with a verified Google account to view this
+            portfolio. Admin tools are available only to the approved owner
+            account.
           </p>
           <div className="mt-7">
             <LoginForm />
