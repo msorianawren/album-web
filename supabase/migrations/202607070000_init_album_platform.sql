@@ -179,6 +179,98 @@ create table if not exists public.landing_page_settings (
   constraint landing_page_settings_singleton check (id = 'home')
 );
 
+create table if not exists public.site_settings (
+  id text primary key default 'default',
+  site_name text not null default 'Oriana Wren',
+  site_description text not null default 'A private photo and video album platform.',
+  site_logo_url text,
+  contact_email text,
+  default_album_status text not null default 'private',
+  allow_public_comments boolean not null default true,
+  allow_public_likes boolean not null default true,
+  allow_public_downloads boolean not null default true,
+  require_comment_name boolean not null default false,
+  maintenance_mode boolean not null default false,
+  maintenance_message text,
+  default_theme text not null default 'dark',
+  homepage_layout text not null default 'featured',
+  album_card_density text not null default 'comfortable',
+  show_counts_on_cards boolean not null default true,
+  show_updated_date boolean not null default true,
+  show_status_badges boolean not null default true,
+  default_sort_order text not null default 'newest',
+  albums_per_page integer not null default 24,
+  media_per_page integer not null default 60,
+  enable_video_uploads boolean not null default true,
+  enable_image_uploads boolean not null default true,
+  max_image_size_mb integer not null default 30,
+  max_video_size_mb integer not null default 500,
+  auto_set_first_image_as_cover boolean not null default true,
+  show_video_posters boolean not null default true,
+  use_thumbnails_in_grid boolean not null default true,
+  max_comment_length integer not null default 1000,
+  enable_likes boolean not null default true,
+  seo_title text,
+  seo_description text,
+  og_image_url text,
+  twitter_card text not null default 'summary_large_image',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  constraint site_settings_singleton check (id = 'default'),
+  constraint site_settings_default_album_status_check check (default_album_status in ('public', 'updating', 'private')),
+  constraint site_settings_default_theme_check check (default_theme in ('dark', 'light', 'system')),
+  constraint site_settings_homepage_layout_check check (homepage_layout in ('featured', 'grid', 'minimal')),
+  constraint site_settings_album_card_density_check check (album_card_density in ('comfortable', 'compact')),
+  constraint site_settings_default_sort_order_check check (default_sort_order in ('newest', 'oldest', 'title')),
+  constraint site_settings_twitter_card_check check (twitter_card in ('summary', 'summary_large_image')),
+  constraint site_settings_albums_per_page_check check (albums_per_page between 6 and 100),
+  constraint site_settings_media_per_page_check check (media_per_page between 12 and 200),
+  constraint site_settings_max_image_size_check check (max_image_size_mb between 1 and 100),
+  constraint site_settings_max_video_size_check check (max_video_size_mb between 10 and 2000),
+  constraint site_settings_max_comment_length_check check (max_comment_length between 100 and 2000)
+);
+
+alter table public.site_settings
+  add column if not exists site_name text not null default 'Oriana Wren',
+  add column if not exists site_description text not null default 'A private photo and video album platform.',
+  add column if not exists site_logo_url text,
+  add column if not exists contact_email text,
+  add column if not exists default_album_status text not null default 'private',
+  add column if not exists allow_public_comments boolean not null default true,
+  add column if not exists allow_public_likes boolean not null default true,
+  add column if not exists allow_public_downloads boolean not null default true,
+  add column if not exists require_comment_name boolean not null default false,
+  add column if not exists maintenance_mode boolean not null default false,
+  add column if not exists maintenance_message text,
+  add column if not exists default_theme text not null default 'dark',
+  add column if not exists homepage_layout text not null default 'featured',
+  add column if not exists album_card_density text not null default 'comfortable',
+  add column if not exists show_counts_on_cards boolean not null default true,
+  add column if not exists show_updated_date boolean not null default true,
+  add column if not exists show_status_badges boolean not null default true,
+  add column if not exists default_sort_order text not null default 'newest',
+  add column if not exists albums_per_page integer not null default 24,
+  add column if not exists media_per_page integer not null default 60,
+  add column if not exists enable_video_uploads boolean not null default true,
+  add column if not exists enable_image_uploads boolean not null default true,
+  add column if not exists max_image_size_mb integer not null default 30,
+  add column if not exists max_video_size_mb integer not null default 500,
+  add column if not exists auto_set_first_image_as_cover boolean not null default true,
+  add column if not exists show_video_posters boolean not null default true,
+  add column if not exists use_thumbnails_in_grid boolean not null default true,
+  add column if not exists max_comment_length integer not null default 1000,
+  add column if not exists enable_likes boolean not null default true,
+  add column if not exists seo_title text,
+  add column if not exists seo_description text,
+  add column if not exists og_image_url text,
+  add column if not exists twitter_card text not null default 'summary_large_image',
+  add column if not exists created_at timestamptz not null default now(),
+  add column if not exists updated_at timestamptz not null default now();
+
+insert into public.site_settings (id)
+values ('default')
+on conflict (id) do nothing;
+
 create index if not exists albums_slug_idx on public.albums(slug);
 create index if not exists albums_status_idx on public.albums(status);
 create index if not exists albums_owner_id_idx on public.albums(owner_id);
@@ -236,6 +328,11 @@ for each row execute function public.set_updated_at();
 drop trigger if exists landing_page_settings_set_updated_at on public.landing_page_settings;
 create trigger landing_page_settings_set_updated_at
 before update on public.landing_page_settings
+for each row execute function public.set_updated_at();
+
+drop trigger if exists site_settings_set_updated_at on public.site_settings;
+create trigger site_settings_set_updated_at
+before update on public.site_settings
 for each row execute function public.set_updated_at();
 
 create or replace function public.refresh_album_media_counts()
@@ -360,6 +457,7 @@ alter table public.album_share_links enable row level security;
 alter table public.user_profiles enable row level security;
 alter table public.audit_logs enable row level security;
 alter table public.landing_page_settings enable row level security;
+alter table public.site_settings enable row level security;
 
 drop policy if exists "Public read card-safe albums" on public.albums;
 create policy "Public read card-safe albums"
@@ -524,6 +622,13 @@ create policy "Public read landing page"
 drop policy if exists "No direct client landing writes" on public.landing_page_settings;
 create policy "No direct client landing writes"
   on public.landing_page_settings for all
+  to authenticated
+  using (false)
+  with check (false);
+
+drop policy if exists "No direct client settings access" on public.site_settings;
+create policy "No direct client settings access"
+  on public.site_settings for all
   to authenticated
   using (false)
   with check (false);

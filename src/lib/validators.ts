@@ -27,6 +27,7 @@ export const albumUpdateSchema = albumCreateSchema
 
 export const mediaUpdateSchema = z
   .object({
+    album_id: z.string().uuid().optional(),
     title: z.string().trim().max(160).optional().nullable(),
     description: z.string().trim().max(1000).optional().nullable(),
     sort_order: z.number().int().min(0).optional(),

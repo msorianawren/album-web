@@ -136,3 +136,59 @@ export interface LandingPageContent {
   stat_three_value: string;
   updated_at?: string;
 }
+
+export interface SiteSettings {
+  id: string;
+  site_name: string;
+  site_description: string;
+  site_logo_url: string | null;
+  contact_email: string | null;
+  default_album_status: AlbumStatus;
+  allow_public_comments: boolean;
+  allow_public_likes: boolean;
+  allow_public_downloads: boolean;
+  require_comment_name: boolean;
+  maintenance_mode: boolean;
+  maintenance_message: string | null;
+  default_theme: "dark" | "light" | "system";
+  homepage_layout: "featured" | "grid" | "minimal";
+  album_card_density: "comfortable" | "compact";
+  show_counts_on_cards: boolean;
+  show_updated_date: boolean;
+  show_status_badges: boolean;
+  default_sort_order: "newest" | "oldest" | "title";
+  albums_per_page: number;
+  media_per_page: number;
+  enable_video_uploads: boolean;
+  enable_image_uploads: boolean;
+  max_image_size_mb: number;
+  max_video_size_mb: number;
+  auto_set_first_image_as_cover: boolean;
+  show_video_posters: boolean;
+  use_thumbnails_in_grid: boolean;
+  max_comment_length: number;
+  enable_likes: boolean;
+  seo_title: string | null;
+  seo_description: string | null;
+  og_image_url: string | null;
+  twitter_card: "summary" | "summary_large_image";
+  updated_at?: string;
+}
+
+export interface StudioMediaItem extends Media {
+  album_title: string | null;
+  album_slug: string | null;
+  album_status: string | null;
+}
+
+export interface StudioCommentItem {
+  id: string;
+  album_id: string;
+  media_id: string | null;
+  author_name: string | null;
+  body: string;
+  is_hidden: boolean;
+  created_at: string;
+  album_title: string | null;
+  album_slug: string | null;
+}

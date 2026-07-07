@@ -54,8 +54,8 @@ export function SecurityConsole({
   }
 
   return (
-    <div className="mx-auto grid w-full max-w-[1440px] gap-8 px-4 py-10 sm:px-8 lg:px-12">
-      <section className="rounded-[2rem] border border-border bg-surface/80 p-6 shadow-xl shadow-text-primary/5">
+    <div className="grid gap-5">
+      <section className="rounded-[1.4rem] border border-border bg-surface/82 p-5 shadow-xl shadow-text-primary/5">
         <p className="text-sm font-medium uppercase tracking-[0.2em] text-text-secondary">
           Security
         </p>
@@ -71,7 +71,7 @@ export function SecurityConsole({
         </p>
       </section>
 
-      <section className="rounded-[2rem] border border-border bg-surface/80 p-6 shadow-xl shadow-text-primary/5">
+      <section className="rounded-[1.4rem] border border-border bg-surface/82 p-5 shadow-xl shadow-text-primary/5">
         <div className="flex items-center gap-3">
           <ShieldAlert className="h-5 w-5 text-text-secondary" aria-hidden="true" />
           <h2 className="text-2xl font-semibold text-text-primary">
@@ -90,7 +90,7 @@ export function SecurityConsole({
                 </p>
                 <p className="mt-1 text-sm text-text-secondary">{user.email}</p>
                 <p className="mt-2 text-xs uppercase tracking-[0.16em] text-text-secondary">
-                  {user.is_blocked ? "Blocked" : "Allowed"} · Last seen{" "}
+                  {user.is_blocked ? "Blocked" : "Allowed"} - Last seen{" "}
                   {formatDate(user.last_seen_at)}
                 </p>
                 {user.blocked_reason ? (
@@ -133,7 +133,7 @@ export function SecurityConsole({
         </div>
       </section>
 
-      <section className="rounded-[2rem] border border-border bg-surface/80 p-6 shadow-xl shadow-text-primary/5">
+      <section className="rounded-[1.4rem] border border-border bg-surface/82 p-5 shadow-xl shadow-text-primary/5">
         <h2 className="text-2xl font-semibold text-text-primary">
           Recent activity
         </h2>

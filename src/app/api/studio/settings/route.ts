@@ -1,0 +1,29 @@
+import { NextRequest } from "next/server";
+import { ZodError } from "zod";
+import { requireAdmin } from "@/lib/auth";
+import { apiError, apiSuccess, toServerError } from "@/lib/errors";
+import { getSiteSettings, saveSiteSettings } from "@/lib/site-settings";
+
+export async function GET(request: NextRequest) {
+  const session = await requireAdmin(request);
+  if (!session) return apiError("FORBIDDEN", "Only the admin can read Studio settings.", 403);
+
+  const settings = await getSiteSettings();
+  return apiSuccess({ settings });
+}
+
+export async function PATCH(request: NextRequest) {
+  const session = await requireAdmin(request);
+  if (!session) return apiError("FORBIDDEN", "Only the admin can update Studio settings.", 403);
+
+  try {
+    const body = await request.json().catch(() => ({}));
+    const settings = await saveSiteSettings(body);
+    return apiSuccess({ settings });
+  } catch (error) {
+    if (error instanceof ZodError) {
+      return apiError("INVALID_INPUT", "Invalid settings payload.", 400, error.flatten());
+    }
+    return toServerError(error);
+  }
+}

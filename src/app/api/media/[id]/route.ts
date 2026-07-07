@@ -37,11 +37,13 @@ export async function PATCH(request: NextRequest, { params }: MediaRouteProps) {
     return apiError("NOT_FOUND", "Media not found.", 404);
   }
 
+  const targetAlbumId = parsed.data.album_id ?? current.album_id;
+
   if (parsed.data.is_cover) {
     await supabase
       .from("media")
       .update({ is_cover: false })
-      .eq("album_id", current.album_id);
+      .eq("album_id", targetAlbumId);
   }
 
   const { data, error } = await supabase
@@ -60,7 +62,7 @@ export async function PATCH(request: NextRequest, { params }: MediaRouteProps) {
         cover_media_id: id,
         cover_url: data.thumbnail_url ?? data.poster_url ?? data.url,
       })
-      .eq("id", data.album_id);
+      .eq("id", targetAlbumId);
   }
 
   return apiSuccess({ media: data });
