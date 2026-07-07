@@ -1,13 +1,12 @@
-export async function GET(){
+import { NextRequest } from "next/server";
+import { requireAdmin } from "@/lib/auth";
+import { apiError, apiSuccess } from "@/lib/errors";
 
-return Response.json({
+export async function GET(request: NextRequest) {
+  const session = await requireAdmin(request);
+  if (!session) {
+    return apiError("FORBIDDEN", "Only the admin can inspect health checks.", 403);
+  }
 
-supabase:
-!!process.env.NEXT_PUBLIC_SUPABASE_URL,
-
-r2:
-!!process.env.R2_ACCOUNT_ID
-
-})
-
+  return apiSuccess({ ok: true });
 }

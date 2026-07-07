@@ -38,6 +38,25 @@ function rateLimit(request: NextRequest) {
   return bucket.count > limit;
 }
 
+function isUnsafeMethod(method: string) {
+  return !["GET", "HEAD", "OPTIONS"].includes(method.toUpperCase());
+}
+
+function hasCrossOriginMutation(request: NextRequest) {
+  if (!request.nextUrl.pathname.startsWith("/api") || !isUnsafeMethod(request.method)) {
+    return false;
+  }
+
+  const origin = request.headers.get("origin");
+  if (!origin) return false;
+
+  try {
+    return new URL(origin).host !== request.nextUrl.host;
+  } catch {
+    return true;
+  }
+}
+
 function isPublicPath(pathname: string) {
   return (
     pathname === "/login" ||
@@ -59,8 +78,8 @@ function redirectToBoycott(request: NextRequest) {
   return NextResponse.redirect(new URL("/boycott", request.url));
 }
 
-function apiError(message: string, status: number) {
-  return NextResponse.json({ success: false, message }, { status });
+function apiError(code: string, message: string, status: number) {
+  return NextResponse.json({ success: false, code, message }, { status });
 }
 
 function getUserMetadata(user: User) {
@@ -124,8 +143,12 @@ export async function proxy(request: NextRequest, event: NextFetchEvent) {
 
   if (rateLimit(request)) {
     return pathname.startsWith("/api")
-      ? apiError("Too many requests.", 429)
+      ? apiError("RATE_LIMITED", "Too many requests.", 429)
       : new NextResponse("Too many requests.", { status: 429 });
+  }
+
+  if (hasCrossOriginMutation(request)) {
+    return apiError("FORBIDDEN", "Cross-origin mutation requests are not allowed.", 403);
   }
 
   if (isPublicPath(pathname)) return NextResponse.next();
@@ -133,7 +156,7 @@ export async function proxy(request: NextRequest, event: NextFetchEvent) {
   const token = getAccessToken(request);
   if (!token) {
     return pathname.startsWith("/api")
-      ? apiError("Login with Google is required.", 401)
+      ? apiError("UNAUTHENTICATED", "Login with Google is required.", 401)
       : redirectToLogin(request);
   }
 
@@ -147,7 +170,7 @@ export async function proxy(request: NextRequest, event: NextFetchEvent) {
 
   if (error || !data.user) {
     return pathname.startsWith("/api")
-      ? apiError("Login with Google is required.", 401)
+      ? apiError("UNAUTHENTICATED", "Login with Google is required.", 401)
       : redirectToLogin(request);
   }
 
@@ -170,7 +193,7 @@ export async function proxy(request: NextRequest, event: NextFetchEvent) {
 
   if (profile?.is_blocked && pathname !== "/boycott") {
     return pathname.startsWith("/api")
-      ? apiError("This account has been blocked by the admin.", 403)
+      ? apiError("FORBIDDEN", "This account has been blocked by the admin.", 403)
       : redirectToBoycott(request);
   }
 

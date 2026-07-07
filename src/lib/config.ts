@@ -23,7 +23,12 @@ export const uploadLimits = {
 
 export const commentLimits = {
   authorName: 80,
-  body: 1200,
+  body: 1000,
+};
+
+export const albumLimits = {
+  title: 120,
+  description: 500,
 };
 
 export const privateAlbumMessage =

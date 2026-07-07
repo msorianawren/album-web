@@ -61,7 +61,7 @@ export async function DELETE(request: NextRequest, { params }: AlbumRouteProps) 
   const { id } = await params;
   const { data: mediaRows, error: mediaError } = await supabase
     .from("media")
-    .select("r2_key,thumbnail_r2_key,poster_r2_key")
+    .select("r2_key,thumbnail_r2_key,medium_r2_key,poster_r2_key")
     .eq("album_id", id);
 
   if (mediaError) return apiError("SERVER_ERROR", mediaError.message, 500);
@@ -74,6 +74,7 @@ export async function DELETE(request: NextRequest, { params }: AlbumRouteProps) 
       (mediaRows ?? []).flatMap((item) => [
         item.r2_key,
         item.thumbnail_r2_key,
+        item.medium_r2_key,
         item.poster_r2_key,
       ]),
     );

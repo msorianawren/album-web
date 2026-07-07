@@ -13,6 +13,8 @@ export interface Album {
   photo_count: number;
   video_count: number;
   media_count: number;
+  like_count: number;
+  comment_count: number;
   created_at: string;
   updated_at?: string;
 }
@@ -27,6 +29,7 @@ export interface Media {
   r2_key: string;
   url: string;
   thumbnail_url: string | null;
+  medium_url: string | null;
   poster_url: string | null;
   width: number | null;
   height: number | null;

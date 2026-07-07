@@ -6,6 +6,9 @@ export type ApiErrorCode =
   | "FORBIDDEN"
   | "NOT_FOUND"
   | "CONFLICT"
+  | "PAYLOAD_TOO_LARGE"
+  | "UNSUPPORTED_MEDIA_TYPE"
+  | "RATE_LIMITED"
   | "UPLOAD_FAILED"
   | "SERVER_ERROR";
 

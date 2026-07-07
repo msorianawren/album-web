@@ -75,7 +75,7 @@ export async function DELETE(request: NextRequest, { params }: MediaRouteProps) 
   const { id } = await params;
   const { data: media, error: selectError } = await supabase
     .from("media")
-    .select("r2_key,thumbnail_r2_key,poster_r2_key")
+    .select("r2_key,thumbnail_r2_key,medium_r2_key,poster_r2_key")
     .eq("id", id)
     .single();
 
@@ -87,6 +87,7 @@ export async function DELETE(request: NextRequest, { params }: MediaRouteProps) 
     await deleteR2Objects([
       media.r2_key,
       media.thumbnail_r2_key,
+      media.medium_r2_key,
       media.poster_r2_key,
     ]);
   } catch {

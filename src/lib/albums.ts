@@ -51,6 +51,8 @@ export function normalizeAlbum(row: UnknownRow): Album {
     photo_count: Number(row.photo_count ?? 0),
     video_count: Number(row.video_count ?? 0),
     media_count: Number(row.media_count ?? row.photo_count ?? 0),
+    like_count: Number(row.like_count ?? 0),
+    comment_count: Number(row.comment_count ?? 0),
     created_at: String(row.created_at ?? new Date().toISOString()),
     updated_at:
       typeof row.updated_at === "string" ? row.updated_at : undefined,
@@ -70,6 +72,7 @@ export function normalizeMedia(row: UnknownRow): Media {
     r2_key: String(row.r2_key ?? row.original_key ?? ""),
     url,
     thumbnail_url: resolveAssetUrl(row.thumbnail_url ?? row.thumb_key),
+    medium_url: resolveAssetUrl(row.medium_url),
     poster_url: resolveAssetUrl(row.poster_url),
     width: toNullableNumber(row.width),
     height: toNullableNumber(row.height),
@@ -118,9 +121,7 @@ export async function getAlbums(query: AlbumQuery = {}): Promise<Album[]> {
   try {
     let builder = supabase
       .from("albums")
-      .select(
-        "id,owner_id,title,slug,description,status,cover_url,cover_media_id,photo_count,video_count,media_count,created_at,updated_at",
-      )
+      .select("*")
       .order("created_at", { ascending: false });
 
     if (query.status) builder = builder.eq("status", query.status);

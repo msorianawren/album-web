@@ -1,8 +1,8 @@
 import { NextRequest } from "next/server";
-import { getMediaTypeFromMime, getUploadLimit } from "@/lib/config";
 import { requireAdmin } from "@/lib/auth";
 import { apiError, apiSuccess, toServerError } from "@/lib/errors";
 import { uploadMediaFile } from "@/lib/media";
+import { validateUploadFile } from "@/lib/upload-validation";
 
 export const runtime = "nodejs";
 
@@ -24,34 +24,55 @@ export async function POST(request: NextRequest) {
     }
 
     const uploaded = [];
+    const failed = [];
 
     for (const file of files) {
-      const mediaType = getMediaTypeFromMime(file.type);
-
-      if (!mediaType) {
-        return apiError("INVALID_INPUT", `Unsupported file type: ${file.type}`, 400);
-      }
-
-      if (file.size > getUploadLimit(mediaType)) {
-        return apiError(
-          "INVALID_INPUT",
-          `${file.name} exceeds the ${mediaType} upload limit.`,
-          400,
-        );
-      }
-
       const buffer = Buffer.from(await file.arrayBuffer());
-      uploaded.push(
-        await uploadMediaFile({
-          albumId,
+      const validation = validateUploadFile({
+        fileName: file.name,
+        mimeType: file.type,
+        size: file.size,
+        buffer,
+      });
+
+      if (!validation.ok) {
+        failed.push({
           fileName: file.name,
-          mimeType: file.type,
-          buffer,
-        }),
+          code: validation.code,
+          message: validation.message,
+        });
+        continue;
+      }
+
+      try {
+        uploaded.push(
+          await uploadMediaFile({
+            albumId,
+            fileName: validation.value.safeName,
+            mimeType: file.type,
+            buffer,
+          }),
+        );
+      } catch (error) {
+        failed.push({
+          fileName: file.name,
+          code: "UPLOAD_FAILED",
+          message: error instanceof Error ? error.message : "Upload failed.",
+        });
+      }
+    }
+
+    if (!uploaded.length && failed.length) {
+      const first = failed[0];
+      return apiError(
+        first.code === "PAYLOAD_TOO_LARGE" ? "PAYLOAD_TOO_LARGE" : first.code === "UNSUPPORTED_MEDIA_TYPE" ? "UNSUPPORTED_MEDIA_TYPE" : "UPLOAD_FAILED",
+        first.message,
+        first.code === "PAYLOAD_TOO_LARGE" ? 413 : first.code === "UNSUPPORTED_MEDIA_TYPE" ? 415 : 500,
+        { failed },
       );
     }
 
-    return apiSuccess({ media: uploaded }, { status: 201 });
+    return apiSuccess({ media: uploaded, failed }, { status: failed.length ? 207 : 201 });
   } catch (error) {
     return toServerError(error);
   }

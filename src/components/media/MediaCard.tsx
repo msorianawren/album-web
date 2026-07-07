@@ -19,7 +19,7 @@ export function MediaCard({
 }: MediaCardProps) {
   const aspectRatio =
     media.width && media.height ? `${media.width} / ${media.height}` : "4 / 3";
-  const previewUrl = media.thumbnail_url ?? media.poster_url ?? media.url;
+  const previewUrl = media.thumbnail_url ?? media.poster_url ?? media.medium_url ?? media.url;
 
   return (
     <div

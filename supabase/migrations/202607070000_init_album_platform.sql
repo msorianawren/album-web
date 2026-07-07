@@ -44,6 +44,8 @@ create table if not exists public.albums (
   photo_count integer not null default 0,
   video_count integer not null default 0,
   media_count integer not null default 0,
+  like_count integer not null default 0,
+  comment_count integer not null default 0,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   constraint albums_status_check check (status in ('public', 'updating', 'private')),
@@ -59,9 +61,11 @@ create table if not exists public.media (
   description text,
   r2_key text not null,
   thumbnail_r2_key text,
+  medium_r2_key text,
   poster_r2_key text,
   url text not null,
   thumbnail_url text,
+  medium_url text,
   poster_url text,
   width integer,
   height integer,
@@ -75,6 +79,14 @@ create table if not exists public.media (
   updated_at timestamptz not null default now(),
   constraint media_type_check check (media_type in ('image', 'video'))
 );
+
+alter table public.albums
+  add column if not exists like_count integer not null default 0,
+  add column if not exists comment_count integer not null default 0;
+
+alter table public.media
+  add column if not exists medium_r2_key text,
+  add column if not exists medium_url text;
 
 alter table public.albums
   drop constraint if exists albums_cover_media_fk;
@@ -179,6 +191,8 @@ create index if not exists media_created_at_idx on public.media(created_at desc)
 
 create index if not exists comments_album_created_idx
   on public.comments(album_id, created_at desc);
+create index if not exists comments_media_created_idx
+  on public.comments(media_id, created_at desc);
 
 create index if not exists likes_album_id_idx on public.likes(album_id);
 create index if not exists likes_media_id_idx on public.likes(media_id);
@@ -195,6 +209,14 @@ create unique index if not exists likes_client_album_unique
 create unique index if not exists likes_client_media_unique
   on public.likes(client_id, media_id)
   where client_id is not null and media_id is not null;
+
+create unique index if not exists likes_user_album_unique
+  on public.likes(user_id, album_id)
+  where user_id is not null and album_id is not null;
+
+create unique index if not exists likes_user_media_unique
+  on public.likes(user_id, media_id)
+  where user_id is not null and media_id is not null;
 
 drop trigger if exists albums_set_updated_at on public.albums;
 create trigger albums_set_updated_at
@@ -254,6 +276,81 @@ drop trigger if exists media_refresh_album_counts on public.media;
 create trigger media_refresh_album_counts
 after insert or update or delete on public.media
 for each row execute function public.refresh_album_media_counts();
+
+create or replace function public.refresh_album_comment_counts()
+returns trigger
+language plpgsql
+as $$
+declare
+  target_album_id uuid;
+begin
+  target_album_id = coalesce(new.album_id, old.album_id);
+
+  update public.albums
+  set comment_count = (
+    select count(*)::integer
+    from public.comments
+    where album_id = target_album_id
+      and is_hidden = false
+  )
+  where id = target_album_id;
+
+  return coalesce(new, old);
+end;
+$$;
+
+drop trigger if exists comments_refresh_album_counts on public.comments;
+create trigger comments_refresh_album_counts
+after insert or update or delete on public.comments
+for each row execute function public.refresh_album_comment_counts();
+
+create or replace function public.refresh_album_like_counts()
+returns trigger
+language plpgsql
+as $$
+declare
+  target_album_id uuid;
+begin
+  if tg_op = 'DELETE' then
+    target_album_id = coalesce(
+      old.album_id,
+      (select album_id from public.media where id = old.media_id)
+    );
+  elsif tg_op = 'UPDATE' then
+    target_album_id = coalesce(
+      new.album_id,
+      (select album_id from public.media where id = new.media_id),
+      old.album_id,
+      (select album_id from public.media where id = old.media_id)
+    );
+  else
+    target_album_id = coalesce(
+      new.album_id,
+      (select album_id from public.media where id = new.media_id)
+    );
+  end if;
+
+  if target_album_id is null then
+    return coalesce(new, old);
+  end if;
+
+  update public.albums
+  set like_count = (
+    select count(*)::integer
+    from public.likes
+    where album_id = target_album_id
+       or media_id in (select id from public.media where album_id = target_album_id)
+  )
+  where id = target_album_id;
+
+  return coalesce(new, old);
+end;
+$$;
+
+drop trigger if exists likes_refresh_album_counts on public.likes;
+create trigger likes_refresh_album_counts
+after insert or update or delete on public.likes
+for each row execute function public.refresh_album_like_counts();
 
 alter table public.albums enable row level security;
 alter table public.media enable row level security;

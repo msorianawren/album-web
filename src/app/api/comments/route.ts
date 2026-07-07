@@ -7,6 +7,7 @@ import { commentCreateSchema } from "@/lib/validators";
 
 export async function GET(request: NextRequest) {
   const albumId = request.nextUrl.searchParams.get("albumId");
+  const mediaId = request.nextUrl.searchParams.get("mediaId");
   if (!albumId) return apiError("INVALID_INPUT", "albumId is required.", 400);
 
   const session = await requireAdmin(request);
@@ -15,13 +16,17 @@ export async function GET(request: NextRequest) {
   if (!album) return apiError("NOT_FOUND", "Album not found.", 404);
   if (album.locked) return apiSuccess({ comments: [] });
 
-  const { data, error } = await supabase
+  let query = supabase
     .from("comments")
     .select("*")
     .eq("album_id", album.id)
-    .eq("is_hidden", false)
     .order("created_at", { ascending: false })
     .limit(100);
+
+  if (mediaId) query = query.eq("media_id", mediaId);
+  if (!session?.isAdmin) query = query.eq("is_hidden", false);
+
+  const { data, error } = await query;
 
   if (error) return apiError("SERVER_ERROR", error.message, 500);
   return apiSuccess({ comments: data ?? [] });

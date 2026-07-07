@@ -1,10 +1,15 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useCallback, useState } from "react";
 import { Camera } from "lucide-react";
 import { MediaCard } from "@/components/media/MediaCard";
-import { MediaViewer } from "@/components/media/MediaViewer";
 import type { Media } from "@/lib/types";
+
+const MediaViewer = dynamic(
+  () => import("@/components/media/MediaViewer").then((mod) => mod.MediaViewer),
+  { ssr: false },
+);
 
 interface MediaGridProps {
   media: Media[];

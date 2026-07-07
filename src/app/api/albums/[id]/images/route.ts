@@ -2,9 +2,8 @@ import { NextRequest } from "next/server";
 import { requireAdmin } from "@/lib/auth";
 import { apiError, apiSuccess, toServerError } from "@/lib/errors";
 import { uploadMediaFile } from "@/lib/media";
-import { supabase } from "@/lib/supabase";
-import { getMediaTypeFromMime, getUploadLimit } from "@/lib/config";
-import { normalizeMedia } from "@/lib/albums";
+import { getAlbum } from "@/lib/albums";
+import { validateUploadFile } from "@/lib/upload-validation";
 
 export const runtime = "nodejs";
 
@@ -12,16 +11,14 @@ interface ImagesRouteProps {
   params: Promise<{ id: string }>;
 }
 
-export async function GET(_request: NextRequest, { params }: ImagesRouteProps) {
+export async function GET(request: NextRequest, { params }: ImagesRouteProps) {
   const { id } = await params;
-  const { data, error } = await supabase
-    .from("media")
-    .select("*")
-    .eq("album_id", id)
-    .order("sort_order", { ascending: true });
+  const session = await requireAdmin(request);
+  const album = await getAlbum(id, { isAdmin: Boolean(session?.isAdmin) });
 
-  if (error) return apiError("SERVER_ERROR", error.message, 500);
-  return apiSuccess({ media: (data ?? []).map((row) => normalizeMedia(row)) });
+  if (!album) return apiError("NOT_FOUND", "Album not found.", 404);
+  if (album.locked) return apiSuccess({ media: [] });
+  return apiSuccess({ media: album.media, download_allowed: album.download_allowed });
 }
 
 export async function POST(request: NextRequest, { params }: ImagesRouteProps) {
@@ -41,24 +38,54 @@ export async function POST(request: NextRequest, { params }: ImagesRouteProps) {
     if (!files.length) return apiError("INVALID_INPUT", "file is required.", 400);
 
     const media = [];
+    const failed = [];
     for (const file of files) {
-      const mediaType = getMediaTypeFromMime(file.type);
-      if (!mediaType) return apiError("INVALID_INPUT", "Unsupported media type.", 400);
-      if (file.size > getUploadLimit(mediaType)) {
-        return apiError("INVALID_INPUT", "File exceeds upload limit.", 400);
+      const buffer = Buffer.from(await file.arrayBuffer());
+      const validation = validateUploadFile({
+        fileName: file.name,
+        mimeType: file.type,
+        size: file.size,
+        buffer,
+      });
+
+      if (!validation.ok) {
+        failed.push({
+          fileName: file.name,
+          code: validation.code,
+          message: validation.message,
+        });
+        continue;
       }
 
-      media.push(
-        await uploadMediaFile({
-          albumId,
+      try {
+        media.push(
+          await uploadMediaFile({
+            albumId,
+            fileName: validation.value.safeName,
+            mimeType: file.type,
+            buffer,
+          }),
+        );
+      } catch (error) {
+        failed.push({
           fileName: file.name,
-          mimeType: file.type,
-          buffer: Buffer.from(await file.arrayBuffer()),
-        }),
+          code: "UPLOAD_FAILED",
+          message: error instanceof Error ? error.message : "Upload failed.",
+        });
+      }
+    }
+
+    if (!media.length && failed.length) {
+      const first = failed[0];
+      return apiError(
+        first.code === "PAYLOAD_TOO_LARGE" ? "PAYLOAD_TOO_LARGE" : first.code === "UNSUPPORTED_MEDIA_TYPE" ? "UNSUPPORTED_MEDIA_TYPE" : "UPLOAD_FAILED",
+        first.message,
+        first.code === "PAYLOAD_TOO_LARGE" ? 413 : first.code === "UNSUPPORTED_MEDIA_TYPE" ? 415 : 500,
+        { failed },
       );
     }
 
-    return apiSuccess({ media }, { status: 201 });
+    return apiSuccess({ media, failed }, { status: failed.length ? 207 : 201 });
   } catch (error) {
     return toServerError(error);
   }

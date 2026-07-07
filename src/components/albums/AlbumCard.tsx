@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { Lock, RefreshCw } from "lucide-react";
+import { Heart, Lock, MessageCircle, RefreshCw } from "lucide-react";
 import { AlbumStatusBadge } from "@/components/ui/Badge";
 import type { Album } from "@/lib/types";
 import { formatMediaCount } from "@/lib/utils";
@@ -60,9 +60,17 @@ export function AlbumCard({ album }: AlbumCardProps) {
         <p className="mt-2 line-clamp-2 text-sm leading-6 text-text-secondary">
           {album.description}
         </p>
-        <div className="mt-4 flex flex-wrap gap-2 text-[0.72rem] uppercase tracking-[0.18em] text-text-secondary">
+        <div className="mt-4 flex flex-wrap items-center gap-2 text-[0.72rem] uppercase tracking-[0.18em] text-text-secondary">
           <span>{album.media_count} works</span>
           <span>{formatMediaCount(album.photo_count, album.video_count)}</span>
+          <span className="inline-flex items-center gap-1">
+            <Heart className="h-3 w-3" aria-hidden="true" />
+            {album.like_count}
+          </span>
+          <span className="inline-flex items-center gap-1">
+            <MessageCircle className="h-3 w-3" aria-hidden="true" />
+            {album.comment_count}
+          </span>
         </div>
       </div>
     </Link>

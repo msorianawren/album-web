@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { albumStatuses, commentLimits } from "@/lib/config";
+import { albumLimits, albumStatuses, commentLimits } from "@/lib/config";
 
 export const slugSchema = z
   .string()
@@ -9,9 +9,9 @@ export const slugSchema = z
   .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/);
 
 export const albumCreateSchema = z.object({
-  title: z.string().trim().min(1).max(120),
+  title: z.string().trim().min(1).max(albumLimits.title),
   slug: slugSchema.optional(),
-  description: z.string().trim().max(1000).optional().nullable(),
+  description: z.string().trim().max(albumLimits.description).optional().nullable(),
   status: z.enum(albumStatuses).default("public"),
   cover_url: z.string().url().optional().nullable(),
 });

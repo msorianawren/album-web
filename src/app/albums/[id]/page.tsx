@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { AlbumHeader } from "@/components/albums/AlbumHeader";
 import { AlbumDownloadButton } from "@/components/albums/AlbumDownloadButton";
@@ -13,6 +14,54 @@ interface AlbumPageProps {
   params: Promise<{
     id: string;
   }>;
+}
+
+export async function generateMetadata({ params }: AlbumPageProps): Promise<Metadata> {
+  const { id } = await params;
+  const album = await getAlbum(id);
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ?? "";
+
+  if (!album) {
+    return {
+      title: "Album not found",
+    };
+  }
+
+  if (album.locked) {
+    return {
+      title: "Private album",
+      description: "This album is private. Please contact the owner for access.",
+      robots: {
+        index: false,
+        follow: false,
+      },
+    };
+  }
+
+  const title = `${album.title} | Oriana Wren`;
+  const description =
+    album.description ?? `${album.photo_count} photos and ${album.video_count} videos.`;
+  const url = siteUrl ? `${siteUrl}/albums/${album.slug}` : undefined;
+  const images = album.cover_url ? [{ url: album.cover_url, alt: album.title }] : undefined;
+
+  return {
+    title,
+    description,
+    alternates: url ? { canonical: url } : undefined,
+    openGraph: {
+      title,
+      description,
+      url,
+      type: "article",
+      images,
+    },
+    twitter: {
+      card: album.cover_url ? "summary_large_image" : "summary",
+      title,
+      description,
+      images: album.cover_url ? [album.cover_url] : undefined,
+    },
+  };
 }
 
 export default async function AlbumPage({ params }: AlbumPageProps) {

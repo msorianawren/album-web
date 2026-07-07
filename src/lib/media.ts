@@ -42,14 +42,22 @@ async function uploadImageMedia({
   const extension = extensionFromMime(mimeType);
   const originalKey = `albums/${albumId}/images/${mediaId}/original.${extension}`;
   const thumbKey = `albums/${albumId}/images/${mediaId}/thumb.webp`;
+  const mediumKey = `albums/${albumId}/images/${mediaId}/medium.webp`;
 
-  const thumbBuffer = await image
-    .clone()
-    .resize({ width: 640, withoutEnlargement: true })
-    .webp({ quality: 82 })
-    .toBuffer();
+  const [thumbBuffer, mediumBuffer] = await Promise.all([
+    image
+      .clone()
+      .resize({ width: 640, withoutEnlargement: true })
+      .webp({ quality: 82 })
+      .toBuffer(),
+    image
+      .clone()
+      .resize({ width: 1800, withoutEnlargement: true })
+      .webp({ quality: 88 })
+      .toBuffer(),
+  ]);
 
-  const [originalUrl, thumbnailUrl] = await Promise.all([
+  const [originalUrl, thumbnailUrl, mediumUrl] = await Promise.all([
     putR2Object({
       key: originalKey,
       body: buffer,
@@ -62,6 +70,12 @@ async function uploadImageMedia({
       contentType: "image/webp",
       cacheControl: "public, max-age=31536000, immutable",
     }),
+    putR2Object({
+      key: mediumKey,
+      body: mediumBuffer,
+      contentType: "image/webp",
+      cacheControl: "public, max-age=31536000, immutable",
+    }),
   ]);
 
   return {
@@ -71,8 +85,10 @@ async function uploadImageMedia({
     title: fileName.replace(/\.[^.]+$/, ""),
     r2_key: originalKey,
     thumbnail_r2_key: thumbKey,
+    medium_r2_key: mediumKey,
     url: originalUrl,
     thumbnail_url: thumbnailUrl,
+    medium_url: mediumUrl,
     width: metadata.width ?? null,
     height: metadata.height ?? null,
     file_size: buffer.byteLength,
@@ -162,6 +178,41 @@ export async function uploadMediaFile({
     .insert({ id: mediaId, ...insertPayload })
     .select("*")
     .single();
+
+  if (error && "medium_url" in insertPayload) {
+    const fallbackPayload = Object.fromEntries(
+      Object.entries(insertPayload).filter(
+        ([key]) => key !== "medium_url" && key !== "medium_r2_key",
+      ),
+    );
+    const { data: fallbackData, error: fallbackError } = await supabase
+      .from("media")
+      .insert({ id: mediaId, ...fallbackPayload })
+      .select("*")
+      .single();
+
+    if (fallbackError) throw fallbackError;
+    if (mediaType === "image") {
+      const { data: album } = await supabase
+        .from("albums")
+        .select("cover_url")
+        .eq("id", albumId)
+        .single();
+
+      if (!album?.cover_url) {
+        await supabase
+          .from("albums")
+          .update({
+            cover_media_id: mediaId,
+            cover_url: fallbackData.thumbnail_url ?? fallbackData.url,
+          })
+          .eq("id", albumId);
+        await supabase.from("media").update({ is_cover: true }).eq("id", mediaId);
+      }
+    }
+
+    return normalizeMedia(fallbackData);
+  }
 
   if (error) throw error;
   if (mediaType === "image") {

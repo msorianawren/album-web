@@ -31,6 +31,7 @@ export function MediaViewer({
   const isImageLoading = item?.media_type === "image" && !loadedImages[item.id];
   const imageWidth = item?.width ?? 1600;
   const imageHeight = item?.height ?? 1200;
+  const imageSource = item?.medium_url ?? item?.url ?? "";
 
   useEffect(() => {
     if (!item) return;
@@ -106,7 +107,7 @@ export function MediaViewer({
             ) : null}
             {item.media_type === "image" ? (
               <Image
-                src={item.url}
+                src={imageSource}
                 alt={item.title ?? item.original_filename ?? "Album image"}
                 width={imageWidth}
                 height={imageHeight}
