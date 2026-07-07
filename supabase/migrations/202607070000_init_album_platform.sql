@@ -141,6 +141,32 @@ create table if not exists public.audit_logs (
   created_at timestamptz not null default now()
 );
 
+create table if not exists public.landing_page_settings (
+  id text primary key default 'home',
+  eyebrow text not null default 'Oriana Wren',
+  headline text not null default 'Editorial presence, shaped in light.',
+  subheadline text not null default 'Professional model for cinematic campaigns, intimate portraits, and quiet luxury stories.',
+  body text not null default 'A curated portfolio space for selected albums, moving images, and private client collections.',
+  primary_cta_label text not null default 'View portfolio',
+  primary_cta_href text not null default '#albums',
+  secondary_cta_label text not null default 'About Oriana',
+  secondary_cta_href text not null default '/about',
+  hero_image_url text not null default 'https://images.unsplash.com/photo-1512316609839-ce289d3eba0a?auto=format&fit=crop&w=1400&q=88',
+  portrait_image_url text not null default 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=900&q=88',
+  gallery_image_url text not null default 'https://images.unsplash.com/photo-1509631179647-0177331693ae?auto=format&fit=crop&w=900&q=88',
+  feature_title text not null default 'A private archive with a public face.',
+  feature_body text not null default 'Albums can be public, updating, or privately held while the landing page stays polished for visitors.',
+  stat_one_label text not null default 'Selected',
+  stat_one_value text not null default 'Editorials',
+  stat_two_label text not null default 'Private',
+  stat_two_value text not null default 'Client books',
+  stat_three_label text not null default 'Fast',
+  stat_three_value text not null default 'R2 delivery',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  constraint landing_page_settings_singleton check (id = 'home')
+);
+
 create index if not exists albums_slug_idx on public.albums(slug);
 create index if not exists albums_status_idx on public.albums(status);
 create index if not exists albums_owner_id_idx on public.albums(owner_id);
@@ -183,6 +209,11 @@ for each row execute function public.set_updated_at();
 drop trigger if exists user_profiles_set_updated_at on public.user_profiles;
 create trigger user_profiles_set_updated_at
 before update on public.user_profiles
+for each row execute function public.set_updated_at();
+
+drop trigger if exists landing_page_settings_set_updated_at on public.landing_page_settings;
+create trigger landing_page_settings_set_updated_at
+before update on public.landing_page_settings
 for each row execute function public.set_updated_at();
 
 create or replace function public.refresh_album_media_counts()
@@ -231,6 +262,7 @@ alter table public.likes enable row level security;
 alter table public.album_share_links enable row level security;
 alter table public.user_profiles enable row level security;
 alter table public.audit_logs enable row level security;
+alter table public.landing_page_settings enable row level security;
 
 drop policy if exists "Public read card-safe albums" on public.albums;
 create policy "Public read card-safe albums"
@@ -382,6 +414,19 @@ create policy "No direct client profile writes"
 drop policy if exists "No direct client audit access" on public.audit_logs;
 create policy "No direct client audit access"
   on public.audit_logs for all
+  to authenticated
+  using (false)
+  with check (false);
+
+drop policy if exists "Public read landing page" on public.landing_page_settings;
+create policy "Public read landing page"
+  on public.landing_page_settings for select
+  to anon, authenticated
+  using (true);
+
+drop policy if exists "No direct client landing writes" on public.landing_page_settings;
+create policy "No direct client landing writes"
+  on public.landing_page_settings for all
   to authenticated
   using (false)
   with check (false);

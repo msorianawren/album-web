@@ -34,7 +34,7 @@ export function AlbumList({ albums }: AlbumListProps) {
           <p className="text-xs font-semibold uppercase tracking-[0.24em] text-text-secondary">
             Selected books
           </p>
-          <h2 className="mt-2 text-3xl font-semibold tracking-[-0.02em] text-text-primary">
+          <h2 className="mt-2 text-3xl font-semibold text-text-primary">
             Featured Portfolio Albums
           </h2>
           <p className="mt-2 text-sm text-text-secondary">
@@ -42,7 +42,7 @@ export function AlbumList({ albums }: AlbumListProps) {
           </p>
         </div>
       </div>
-      <form className="mb-8 grid gap-3 rounded-[2rem] border border-border bg-surface/70 p-4 shadow-xl shadow-text-primary/5 backdrop-blur md:grid-cols-[1fr_180px_auto]">
+      <form className="mb-8 grid gap-3 rounded-[1.6rem] border border-border bg-surface/75 p-4 shadow-xl shadow-text-primary/5 backdrop-blur md:grid-cols-[1fr_180px_auto]">
         <input
           name="q"
           placeholder="Search editorial, studio, campaign..."

@@ -15,7 +15,7 @@ export function AlbumCard({ album }: AlbumCardProps) {
       href={`/albums/${album.slug}`}
       className="group block rounded-[1.8rem] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
     >
-      <div className="overflow-hidden rounded-[1.8rem] border border-border bg-surface/70 p-2 transition duration-500 ease-out group-hover:-translate-y-1 group-hover:bg-surface group-hover:shadow-2xl group-hover:shadow-text-primary/10">
+      <div className="overflow-hidden rounded-[1.8rem] border border-border bg-surface/75 p-2 shadow-lg shadow-text-primary/5 transition duration-500 ease-out group-hover:-translate-y-1 group-hover:bg-surface group-hover:shadow-2xl group-hover:shadow-text-primary/10">
         <div className="relative aspect-[3/4] overflow-hidden rounded-[1.45rem]">
           {album.cover_url ? (
             <Image
@@ -43,10 +43,18 @@ export function AlbumCard({ album }: AlbumCardProps) {
               <RefreshCw className="h-4 w-4" aria-hidden="true" />
             </div>
           ) : null}
+          <div className="absolute inset-x-0 bottom-0 translate-y-3 bg-gradient-to-t from-black/70 to-transparent p-5 pt-16 opacity-0 transition duration-500 group-hover:translate-y-0 group-hover:opacity-100">
+            <p className="text-xs font-semibold uppercase text-white/75">
+              Open collection
+            </p>
+            <p className="mt-1 text-sm leading-6 text-white">
+              {album.media_count} curated work{album.media_count === 1 ? "" : "s"}
+            </p>
+          </div>
         </div>
       </div>
       <div className="mt-5 px-1">
-        <h3 className="text-xl font-semibold tracking-[-0.01em] text-text-primary">
+        <h3 className="text-xl font-semibold text-text-primary">
           {album.title}
         </h3>
         <p className="mt-2 line-clamp-2 text-sm leading-6 text-text-secondary">

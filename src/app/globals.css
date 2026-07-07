@@ -1,9 +1,9 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f7f1e8;
-  --surface: #fffaf2;
-  --surface-secondary: #eadfce;
+  --background: #f6efe3;
+  --surface: #fffaf3;
+  --surface-secondary: #e8ddcb;
   --text-primary: #241a14;
   --text-secondary: #74665a;
   --accent: #3f332b;
@@ -15,6 +15,23 @@
   --lightbox-border: rgba(255, 250, 242, 0.2);
   --ring: rgba(111, 93, 76, 0.34);
   --muted-accent: #75806f;
+}
+
+.theme-night {
+  --background: #111314;
+  --surface: #1b1e1f;
+  --surface-secondary: #252a2b;
+  --text-primary: #f4eee4;
+  --text-secondary: #b5aba0;
+  --accent: #f4eee4;
+  --accent-foreground: #141616;
+  --border: rgba(244, 238, 228, 0.14);
+  --overlay: rgba(8, 10, 11, 0.52);
+  --lightbox: rgba(4, 5, 6, 0.96);
+  --lightbox-control: rgba(244, 238, 228, 0.14);
+  --lightbox-border: rgba(244, 238, 228, 0.22);
+  --ring: rgba(216, 201, 184, 0.36);
+  --muted-accent: #a3b8a1;
 }
 
 @theme inline {
@@ -46,11 +63,55 @@ html {
 
 body {
   background:
-    radial-gradient(circle at top left, rgba(255, 250, 242, 0.96), transparent 34rem),
-    linear-gradient(135deg, #f7f1e8 0%, #efe1cf 46%, #d8c6ae 100%);
+    linear-gradient(115deg, color-mix(in srgb, var(--surface) 88%, transparent), transparent 38rem),
+    linear-gradient(135deg, var(--background) 0%, color-mix(in srgb, var(--surface-secondary) 58%, var(--background)) 100%);
   color: var(--text-primary);
   font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   min-height: 100%;
+}
+
+body::before {
+  pointer-events: none;
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  opacity: 0.36;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.12) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.1) 1px, transparent 1px);
+  background-size: 72px 72px;
+  mask-image: linear-gradient(to bottom, black, transparent 72%);
+}
+
+.theme-night body::before {
+  opacity: 0.16;
+}
+
+.theme-moon-icon {
+  opacity: 0;
+  transform: scale(0.7) rotate(-30deg);
+  transition: opacity 180ms ease, transform 180ms ease;
+}
+
+.theme-sun-icon {
+  opacity: 1;
+  transform: scale(1) rotate(0deg);
+  transition: opacity 180ms ease, transform 180ms ease;
+}
+
+.theme-night .theme-moon-icon {
+  opacity: 1;
+  transform: scale(1) rotate(0deg);
+}
+
+.theme-night .theme-sun-icon {
+  opacity: 0;
+  transform: scale(0.7) rotate(30deg);
+}
+
+.theme-night .theme-toggle-knob {
+  transform: translateX(1.25rem);
 }
 
 button,
@@ -76,8 +137,38 @@ select {
   }
 }
 
+@keyframes hero-image-pan {
+  0% {
+    transform: scale(1.04) translate3d(0, 0, 0);
+  }
+  50% {
+    transform: scale(1.08) translate3d(-1.5%, -1%, 0);
+  }
+  100% {
+    transform: scale(1.04) translate3d(0, 0, 0);
+  }
+}
+
+@keyframes soft-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
 .animate-editorial-in {
   animation: editorial-fade-up 640ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.hero-image-pan {
+  animation: hero-image-pan 18s ease-in-out infinite;
+}
+
+.soft-float {
+  animation: soft-float 5.5s ease-in-out infinite;
 }
 
 .luxury-rule {

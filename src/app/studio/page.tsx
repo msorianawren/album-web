@@ -3,6 +3,7 @@ import { AppHeader } from "@/components/AppHeader";
 import { StudioDashboard } from "@/components/studio/StudioDashboard";
 import { getAlbums } from "@/lib/albums";
 import { getPublicSession } from "@/lib/auth";
+import { getLandingPage } from "@/lib/landing";
 
 export default async function StudioPage() {
   const session = await getPublicSession();
@@ -25,12 +26,12 @@ export default async function StudioPage() {
     );
   }
 
-  const albums = await getAlbums();
+  const [albums, landing] = await Promise.all([getAlbums(), getLandingPage()]);
 
   return (
     <main className="min-h-screen bg-background">
       <AppHeader />
-      <StudioDashboard initialAlbums={albums} />
+      <StudioDashboard initialAlbums={albums} initialLanding={landing} />
     </main>
   );
 }

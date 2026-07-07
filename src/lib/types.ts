@@ -109,3 +109,27 @@ export interface PublicSession {
   isBlocked: boolean;
   blockedReason: string | null;
 }
+
+export interface LandingPageContent {
+  id: string;
+  eyebrow: string;
+  headline: string;
+  subheadline: string;
+  body: string;
+  primary_cta_label: string;
+  primary_cta_href: string;
+  secondary_cta_label: string;
+  secondary_cta_href: string;
+  hero_image_url: string;
+  portrait_image_url: string;
+  gallery_image_url: string;
+  feature_title: string;
+  feature_body: string;
+  stat_one_label: string;
+  stat_one_value: string;
+  stat_two_label: string;
+  stat_two_value: string;
+  stat_three_label: string;
+  stat_three_value: string;
+  updated_at?: string;
+}
