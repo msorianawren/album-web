@@ -16,7 +16,7 @@ export function StudioMobileNav({ open, onClose }: StudioMobileNavProps) {
         onClick={onClose}
       />
       <div
-        className={`absolute bottom-0 left-0 top-0 w-[min(22rem,calc(100vw-2rem))] p-3 transition-transform duration-300 ${
+        className={`absolute bottom-0 left-0 top-0 w-[min(22rem,100vw)] p-2 transition-transform duration-300 sm:w-[min(22rem,calc(100vw-2rem))] sm:p-3 ${
           open ? "translate-x-0" : "-translate-x-full"
         }`}
       >

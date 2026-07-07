@@ -12,8 +12,8 @@ interface AlbumHeaderProps {
 
 export function AlbumHeader({ album }: AlbumHeaderProps) {
   return (
-    <section className="mx-auto grid w-full max-w-[1440px] gap-8 px-4 py-10 sm:px-8 lg:grid-cols-[0.9fr_1.1fr] lg:items-end lg:px-12">
-      <div className="relative aspect-[4/5] overflow-hidden rounded-[2.4rem] border border-border bg-surface/70 shadow-2xl shadow-text-primary/10 lg:aspect-[5/4]">
+    <section className="page-shell-1440 grid gap-8 py-10 lg:grid-cols-[0.9fr_1.1fr] lg:items-end">
+      <div className="relative aspect-[4/5] overflow-hidden rounded-[1.6rem] border border-border bg-surface/70 shadow-2xl shadow-text-primary/10 sm:rounded-[2.4rem] lg:aspect-[5/4]">
         {album.cover_url ? (
           <Image
             src={album.cover_url}
@@ -29,14 +29,14 @@ export function AlbumHeader({ album }: AlbumHeaderProps) {
           </div>
         )}
       </div>
-      <div className="pb-3 animate-editorial-in">
+      <div className="min-w-0 pb-3 animate-editorial-in">
         <div className="flex flex-wrap items-center gap-3">
           <AlbumStatusBadge status={album.status} />
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-text-secondary">
             {formatMediaCount(album.photo_count, album.video_count)}
           </p>
         </div>
-        <h1 className="mt-5 text-5xl font-semibold leading-[0.98] tracking-[-0.03em] text-text-primary sm:text-7xl">
+        <h1 className="mt-5 break-words text-[2.7rem] font-semibold leading-[1] text-text-primary sm:text-7xl">
           {album.title}
         </h1>
         <p className="mt-5 max-w-2xl text-base leading-8 text-text-secondary">

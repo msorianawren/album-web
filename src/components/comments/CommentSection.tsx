@@ -90,11 +90,11 @@ export function CommentSection({ albumId }: CommentSectionProps) {
             aria-label="Comment body"
             required
           />
-          <div className="flex items-center justify-between gap-3">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-sm text-text-secondary" aria-live="polite">
               {message}
             </p>
-            <Button type="submit" disabled={isSubmitting}>
+            <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto">
               <Send className="h-4 w-4" aria-hidden="true" />
               {isSubmitting ? "Posting..." : "Post"}
             </Button>
@@ -115,7 +115,7 @@ export function CommentSection({ albumId }: CommentSectionProps) {
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-surface-secondary text-sm font-semibold text-text-primary">
                 {(comment.author_name || "A").slice(0, 1).toUpperCase()}
               </div>
-              <div>
+              <div className="min-w-0">
                 <div className="flex flex-wrap items-baseline gap-2">
                   <p className="font-medium text-text-primary">
                     {comment.author_name || "Anonymous"}

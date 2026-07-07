@@ -49,7 +49,7 @@ export function MediaGrid({ media, downloadAllowed }: MediaGridProps) {
 
   return (
     <section className="mx-auto w-full max-w-[1440px] px-4 pb-20 sm:px-8 lg:px-12">
-      <div className="columns-2 gap-4 md:columns-3 lg:columns-4">
+      <div className="columns-1 gap-4 sm:columns-2 md:columns-3 lg:columns-4">
         {media.map((item, index) => (
           <MediaCard
             key={item.id}

@@ -59,7 +59,7 @@ export function MediaViewer({
     <AnimatePresence>
       {item ? (
         <motion.div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(0,0,0,0.78)] p-4 text-accent-foreground backdrop-blur-xl"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(0,0,0,0.78)] px-3 py-16 text-accent-foreground backdrop-blur-xl sm:p-4"
           onClick={onClose}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -71,7 +71,7 @@ export function MediaViewer({
         >
           <Button
             variant="icon"
-            className="absolute right-4 top-4 z-20 border-lightbox-border bg-lightbox-control text-accent-foreground shadow-xl shadow-black/20 backdrop-blur-md"
+            className="absolute right-3 top-3 z-20 border-lightbox-border bg-lightbox-control text-accent-foreground shadow-xl shadow-black/20 backdrop-blur-md sm:right-4 sm:top-4"
             onClick={(event) => {
               event.stopPropagation();
               onClose();
@@ -83,7 +83,7 @@ export function MediaViewer({
 
           <Button
             variant="icon"
-            className="absolute left-3 top-1/2 z-20 h-12 w-12 -translate-y-1/2 border-lightbox-border bg-lightbox-control text-accent-foreground shadow-xl shadow-black/20 backdrop-blur-md md:left-6"
+            className="absolute bottom-4 left-4 top-auto z-20 h-11 w-11 border-lightbox-border bg-lightbox-control text-accent-foreground shadow-xl shadow-black/20 backdrop-blur-md sm:top-1/2 sm:h-12 sm:w-12 sm:-translate-y-1/2 md:left-6"
             onClick={(event) => {
               event.stopPropagation();
               onPrevious();
@@ -94,7 +94,7 @@ export function MediaViewer({
           </Button>
 
           <motion.div
-            className="relative flex max-h-[calc(100vh-7rem)] max-w-[calc(100vw-1.5rem)] items-center justify-center md:max-w-[calc(100vw-9rem)]"
+            className="relative flex max-h-[calc(100vh-9rem)] max-w-[calc(100vw-1.5rem)] items-center justify-center md:max-w-[calc(100vw-9rem)]"
             key={item.id}
             onClick={(event) => event.stopPropagation()}
             initial={{ opacity: 0, scale: 0.96 }}
@@ -112,7 +112,7 @@ export function MediaViewer({
                 width={imageWidth}
                 height={imageHeight}
                 sizes="100vw"
-                className="max-h-[calc(100vh-7rem)] max-w-[calc(100vw-1.5rem)] rounded-[18px] object-contain shadow-2xl shadow-black/40 md:max-w-[calc(100vw-9rem)]"
+                className="max-h-[calc(100vh-9rem)] max-w-[calc(100vw-1.5rem)] rounded-[14px] object-contain shadow-2xl shadow-black/40 sm:rounded-[18px] md:max-w-[calc(100vw-9rem)]"
                 style={{ width: "auto", height: "auto" }}
                 unoptimized
                 priority
@@ -126,14 +126,14 @@ export function MediaViewer({
                 poster={item.poster_url ?? item.thumbnail_url ?? undefined}
                 controls
                 preload="metadata"
-                className="max-h-[calc(100vh-7rem)] max-w-[calc(100vw-1.5rem)] rounded-[18px] object-contain shadow-2xl shadow-black/40 md:max-w-[calc(100vw-9rem)]"
+                className="max-h-[calc(100vh-9rem)] max-w-[calc(100vw-1.5rem)] rounded-[14px] object-contain shadow-2xl shadow-black/40 sm:rounded-[18px] md:max-w-[calc(100vw-9rem)]"
               />
             )}
           </motion.div>
 
           <Button
             variant="icon"
-            className="absolute right-3 top-1/2 z-20 h-12 w-12 -translate-y-1/2 border-lightbox-border bg-lightbox-control text-accent-foreground shadow-xl shadow-black/20 backdrop-blur-md md:right-6"
+            className="absolute bottom-4 right-4 top-auto z-20 h-11 w-11 border-lightbox-border bg-lightbox-control text-accent-foreground shadow-xl shadow-black/20 backdrop-blur-md sm:top-1/2 sm:h-12 sm:w-12 sm:-translate-y-1/2 md:right-6"
             onClick={(event) => {
               event.stopPropagation();
               onNext();
@@ -144,7 +144,7 @@ export function MediaViewer({
           </Button>
 
           <div
-            className="absolute bottom-5 left-1/2 z-20 flex -translate-x-1/2 items-center gap-3 rounded-full border border-lightbox-border bg-lightbox-control px-4 py-2 text-sm text-accent-foreground shadow-xl shadow-black/20 backdrop-blur-md"
+            className="absolute bottom-4 left-1/2 z-20 flex max-w-[calc(100vw-7rem)] -translate-x-1/2 items-center gap-2 overflow-x-auto rounded-full border border-lightbox-border bg-lightbox-control px-3 py-2 text-xs text-accent-foreground shadow-xl shadow-black/20 backdrop-blur-md sm:bottom-5 sm:gap-3 sm:px-4 sm:text-sm"
             onClick={(event) => event.stopPropagation()}
           >
             <span>

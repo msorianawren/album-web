@@ -25,7 +25,7 @@ export function StudioSidebar({ onNavigate }: StudioSidebarProps) {
   }
 
   return (
-    <aside className="flex h-full flex-col rounded-[1.6rem] border border-border bg-surface/88 p-4 shadow-xl shadow-text-primary/5 backdrop-blur">
+    <aside className="flex h-full flex-col overflow-y-auto rounded-[1.4rem] border border-border bg-surface/88 p-3 shadow-xl shadow-text-primary/5 backdrop-blur sm:rounded-[1.6rem] sm:p-4">
       <Link href="/studio" className="rounded-[1rem] p-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" onClick={onNavigate}>
         <span className="block text-sm font-semibold uppercase tracking-[0.24em] text-text-primary">
           Studio
@@ -82,7 +82,7 @@ export function StudioSidebar({ onNavigate }: StudioSidebarProps) {
         <Link
           href="/"
           onClick={onNavigate}
-          className="flex min-h-11 items-center justify-center gap-2 rounded-full border border-border bg-background px-4 text-xs font-semibold uppercase tracking-[0.14em] text-text-primary transition hover:bg-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="flex min-h-11 items-center justify-center gap-2 rounded-full border border-border bg-background px-3 text-center text-xs font-semibold uppercase tracking-[0.1em] text-text-primary transition hover:bg-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:px-4 sm:tracking-[0.14em]"
         >
           <ExternalLink className="h-4 w-4" aria-hidden="true" />
           View public site

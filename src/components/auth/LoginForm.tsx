@@ -38,8 +38,8 @@ export function LoginForm() {
   }
 
   return (
-    <form className="grid gap-4" onSubmit={onSubmit}>
-      <Button type="submit" disabled={Boolean(loadingMode)}>
+    <form className="grid min-w-0 gap-3 sm:gap-4" onSubmit={onSubmit}>
+      <Button type="submit" disabled={Boolean(loadingMode)} className="w-full px-3 text-center">
         <Chrome className="h-4 w-4" aria-hidden="true" />
         {loadingMode === "login" ? "Connecting Google..." : "Sign in with Google"}
       </Button>
@@ -48,6 +48,7 @@ export function LoginForm() {
         variant="secondary"
         disabled={Boolean(loadingMode)}
         onClick={() => startGoogleAuth("register")}
+        className="w-full px-3 text-center"
       >
         <Chrome className="h-4 w-4" aria-hidden="true" />
         {loadingMode === "register" ? "Creating account..." : "Register with Google"}

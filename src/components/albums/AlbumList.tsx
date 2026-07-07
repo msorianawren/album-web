@@ -30,11 +30,11 @@ export function AlbumList({ albums }: AlbumListProps) {
       className="mx-auto w-full max-w-[1440px] px-4 pb-20 sm:px-8 lg:px-12"
     >
       <div className="mb-7 flex items-end justify-between gap-4 animate-editorial-in">
-        <div>
+        <div className="min-w-0">
           <p className="text-xs font-semibold uppercase tracking-[0.24em] text-text-secondary">
             Selected books
           </p>
-          <h2 className="mt-2 text-3xl font-semibold text-text-primary">
+          <h2 className="mt-2 text-2xl font-semibold text-text-primary sm:text-3xl">
             Featured Portfolio Albums
           </h2>
           <p className="mt-2 text-sm text-text-secondary">
@@ -42,7 +42,7 @@ export function AlbumList({ albums }: AlbumListProps) {
           </p>
         </div>
       </div>
-      <form className="mb-8 grid gap-3 rounded-[1.6rem] border border-border bg-surface/75 p-4 shadow-xl shadow-text-primary/5 backdrop-blur md:grid-cols-[1fr_180px_auto]">
+      <form className="mb-8 grid gap-3 rounded-[1.3rem] border border-border bg-surface/75 p-3 shadow-xl shadow-text-primary/5 backdrop-blur sm:rounded-[1.6rem] sm:p-4 md:grid-cols-[1fr_180px_auto]">
         <input
           name="q"
           placeholder="Search editorial, studio, campaign..."
@@ -58,7 +58,7 @@ export function AlbumList({ albums }: AlbumListProps) {
           <option value="updating">Updating</option>
           <option value="private">Private</option>
         </select>
-        <Button type="submit">Search</Button>
+        <Button type="submit" className="w-full md:w-auto">Search</Button>
       </form>
       <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {albums.map((album) => (

@@ -170,15 +170,15 @@ export function AlbumEditor({ album }: { album: AlbumDetail }) {
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-text-secondary">Upload</p>
             <h2 className="mt-2 text-2xl font-semibold text-text-primary">Add media to this album</h2>
           </div>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex w-full flex-wrap gap-2 md:w-auto">
             <Input
               type="file"
               multiple
               accept="image/jpeg,image/png,image/webp,image/avif,video/mp4,video/webm,video/quicktime"
               onChange={(event) => setFiles(event.target.files)}
-              className="max-w-sm"
+              className="max-w-full md:max-w-sm"
             />
-            <Button onClick={uploadMore}>
+            <Button onClick={uploadMore} className="w-full sm:w-auto">
               <UploadCloud className="h-4 w-4" />
               Upload
             </Button>
@@ -192,7 +192,7 @@ export function AlbumEditor({ album }: { album: AlbumDetail }) {
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-text-secondary">Media</p>
             <h2 className="mt-2 text-2xl font-semibold text-text-primary">{media.length} item{media.length === 1 ? "" : "s"}</h2>
           </div>
-          <Button variant="secondary" onClick={deleteAlbum}>
+          <Button variant="secondary" onClick={deleteAlbum} className="w-full sm:w-auto">
             <Trash2 className="h-4 w-4" />
             Delete album
           </Button>

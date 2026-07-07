@@ -59,6 +59,7 @@
 html {
   min-height: 100%;
   background: var(--background);
+  overflow-x: hidden;
 }
 
 body {
@@ -68,6 +69,7 @@ body {
   color: var(--text-primary);
   font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   min-height: 100%;
+  overflow-x: hidden;
 }
 
 body::before {
@@ -115,10 +117,37 @@ body::before {
 }
 
 button,
+a,
 input,
 textarea,
 select {
   font: inherit;
+  min-width: 0;
+}
+
+img,
+video,
+canvas {
+  max-width: 100%;
+}
+
+.page-shell-1440 {
+  width: min(calc(100vw - 2rem), 90rem);
+  margin-inline: auto;
+}
+
+@media (min-width: 640px) {
+  .page-shell-1440 {
+    width: 100%;
+    max-width: 90rem;
+    padding-inline: 2rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .page-shell-1440 {
+    padding-inline: 3rem;
+  }
 }
 
 ::selection {

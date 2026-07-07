@@ -13,7 +13,7 @@ export function AlbumCard({ album }: AlbumCardProps) {
   return (
     <Link
       href={`/albums/${album.slug}`}
-      className="group block rounded-[1.8rem] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      className="group block min-w-0 rounded-[1.8rem] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
     >
       <div className="overflow-hidden rounded-[1.8rem] border border-border bg-surface/75 p-2 shadow-lg shadow-text-primary/5 transition duration-500 ease-out group-hover:-translate-y-1 group-hover:bg-surface group-hover:shadow-2xl group-hover:shadow-text-primary/10">
         <div className="relative aspect-[3/4] overflow-hidden rounded-[1.45rem]">
@@ -54,7 +54,7 @@ export function AlbumCard({ album }: AlbumCardProps) {
         </div>
       </div>
       <div className="mt-5 px-1">
-        <h3 className="text-xl font-semibold text-text-primary">
+        <h3 className="break-words text-xl font-semibold text-text-primary">
           {album.title}
         </h3>
         <p className="mt-2 line-clamp-2 text-sm leading-6 text-text-secondary">

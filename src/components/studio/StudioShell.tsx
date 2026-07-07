@@ -23,7 +23,7 @@ export function StudioShell({ session, children }: StudioShellProps) {
         </div>
         <div className="min-w-0">
           <StudioTopbar session={session} onOpenMobileNav={() => setMobileNavOpen(true)} />
-          <main className="px-4 py-6 sm:px-6 lg:px-8">{children}</main>
+          <main className="min-w-0 px-3 py-4 sm:px-6 sm:py-6 lg:px-8">{children}</main>
         </div>
       </div>
     </div>
