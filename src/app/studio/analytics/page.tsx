@@ -23,6 +23,7 @@ export default async function StudioAnalyticsPage() {
         <StudioStatCard label="Media" value={metrics.totalMedia} hint={`${metrics.totalImages} images, ${metrics.totalVideos} videos`} />
         <StudioStatCard label="Comments today" value={data.commentsToday} hint={`${data.commentsThisWeek} this week`} />
         <StudioStatCard label="Likes today" value={data.likesToday} hint={`${data.likesThisWeek} this week`} />
+        <StudioStatCard label="Audit events today" value={data.auditToday} hint={`${data.auditThisWeek} this week`} />
       </section>
 
       <section className="grid gap-5 xl:grid-cols-2">
@@ -56,6 +57,50 @@ export default async function StudioAnalyticsPage() {
         </Panel>
       </section>
 
+      <section className="grid gap-5 xl:grid-cols-2">
+        <Panel title="Audit actions">
+          <RankedBars items={data.auditActionCounts} empty="No audit events recorded yet." />
+        </Panel>
+        <Panel title="Audit actors">
+          <RankedBars items={data.auditActorCounts} empty="No actor data recorded yet." />
+        </Panel>
+      </section>
+
+      <Panel title="Recent audit log">
+        {data.auditLogs.length ? (
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[920px] text-left text-sm">
+              <thead className="text-xs uppercase tracking-[0.16em] text-text-secondary">
+                <tr>
+                  <th className="px-3 py-2">Time</th>
+                  <th className="px-3 py-2">Actor</th>
+                  <th className="px-3 py-2">Action</th>
+                  <th className="px-3 py-2">Target</th>
+                  <th className="px-3 py-2">Path</th>
+                  <th className="px-3 py-2">Method</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.auditLogs.slice(0, 50).map((log) => (
+                  <tr key={log.id} className="border-t border-border/70">
+                    <td className="px-3 py-3 text-text-secondary">{formatDateTime(log.created_at)}</td>
+                    <td className="max-w-[220px] truncate px-3 py-3 text-text-primary">{log.actor_email ?? "anonymous/system"}</td>
+                    <td className="px-3 py-3">
+                      <span className="rounded-full bg-background px-2.5 py-1 text-xs font-semibold text-text-primary">{log.action}</span>
+                    </td>
+                    <td className="max-w-[180px] truncate px-3 py-3 text-text-secondary">{[log.target_type, log.target_id].filter(Boolean).join(": ") || "-"}</td>
+                    <td className="max-w-[220px] truncate px-3 py-3 text-text-secondary">{log.path ?? "-"}</td>
+                    <td className="px-3 py-3 text-text-secondary">{log.method ?? "-"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <p className="text-sm text-text-secondary">No audit logs yet.</p>
+        )}
+      </Panel>
+
       <Panel title="Core Web Vitals">
         <p className="text-sm leading-6 text-text-secondary">
           If Vercel Speed Insights is enabled for this project, review real visitor Core Web Vitals in the Vercel dashboard. This page keeps charts local to avoid adding bundle weight.
@@ -86,6 +131,25 @@ function Bar({ label, value, max }: { label: string; value: number; max: number 
       </div>
     </div>
   );
+}
+
+function RankedBars({ items, empty }: { items: Array<{ label: string; value: number }>; empty: string }) {
+  if (!items.length) return <p className="text-sm text-text-secondary">{empty}</p>;
+  const max = Math.max(...items.map((item) => item.value), 1);
+  return (
+    <div className="grid gap-3">
+      {items.map((item) => (
+        <Bar key={item.label} label={item.label} value={item.value} max={max} />
+      ))}
+    </div>
+  );
+}
+
+function formatDateTime(value: string) {
+  return new Intl.DateTimeFormat("en", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(new Date(value));
 }
 
 function RankedAlbums({

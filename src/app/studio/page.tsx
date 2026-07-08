@@ -22,6 +22,7 @@ export default async function StudioDashboardPage() {
     ["Videos", metrics.totalVideos, "Moving image assets"],
     ["Comments", metrics.totalComments, `${metrics.hiddenComments} hidden`],
     ["Likes", metrics.totalLikes, "Album and media likes"],
+    ["Audit today", metrics.auditEventsToday, "Recorded user actions"],
     ["Storage estimate", formatBytes(metrics.storageBytes), "Based on indexed media"],
     ["Recent uploads", metrics.recentUploads, "Latest media loaded"],
     ["Latest update", metrics.latestAlbumUpdate ? new Intl.DateTimeFormat("en", { dateStyle: "medium" }).format(new Date(metrics.latestAlbumUpdate)) : "None", "Album updated date"],
@@ -104,6 +105,24 @@ export default async function StudioDashboardPage() {
         </Panel>
       </section>
 
+      <Panel title="Recent audit activity">
+        {data.recentAuditLogs.length ? (
+          <div className="grid gap-3">
+            {data.recentAuditLogs.map((log) => (
+              <div key={log.id} className="grid gap-2 rounded-[1rem] border border-border bg-background/60 p-4 sm:grid-cols-[1fr_auto] sm:items-center">
+                <div className="min-w-0">
+                  <p className="truncate font-semibold text-text-primary">{log.action}</p>
+                  <p className="mt-1 truncate text-xs text-text-secondary">{log.actor_email ?? "anonymous/system"} - {log.path ?? log.target_type ?? "activity"}</p>
+                </div>
+                <p className="text-xs text-text-secondary">{formatDateTime(log.created_at)}</p>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <EmptyText>No audit activity yet.</EmptyText>
+        )}
+      </Panel>
+
       <Panel title="System warnings">
         {data.warnings.length ? (
           <div className="grid gap-2">
@@ -142,4 +161,11 @@ function Panel({ title, children }: { title: string; children: ReactNode }) {
 
 function EmptyText({ children }: { children: ReactNode }) {
   return <p className="rounded-[1rem] border border-dashed border-border p-6 text-sm text-text-secondary">{children}</p>;
+}
+
+function formatDateTime(value: string) {
+  return new Intl.DateTimeFormat("en", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(new Date(value));
 }

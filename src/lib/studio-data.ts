@@ -114,6 +114,7 @@ export async function getStudioDashboardData(session: PublicSession) {
     albums,
     recentMedia,
     recentComments,
+    recentAuditLogsResult,
     totalAlbums,
     publicAlbums,
     updatingAlbums,
@@ -124,10 +125,16 @@ export async function getStudioDashboardData(session: PublicSession) {
     totalComments,
     hiddenComments,
     totalLikes,
+    auditEventsToday,
   ] = await Promise.all([
     getStudioAlbums(6),
     getStudioMedia(8),
     getStudioComments(8),
+    supabase
+      .from("audit_logs")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(8),
     countRows("albums"),
     countRows("albums", "status", "public"),
     countRows("albums", "status", "updating"),
@@ -138,6 +145,7 @@ export async function getStudioDashboardData(session: PublicSession) {
     countRows("comments"),
     countRows("comments", "is_hidden", true),
     countRows("likes"),
+    countRowsSince("audit_logs", "created_at", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()),
   ]);
 
   const storageBytes = recentMedia.reduce((sum, item) => sum + (item.file_size ?? 0), 0);
@@ -165,18 +173,32 @@ export async function getStudioDashboardData(session: PublicSession) {
       totalLikes,
       storageBytes,
       recentUploads: recentMedia.length,
+      auditEventsToday,
       latestAlbumUpdate,
     },
     recentAlbums: albums,
     recentMedia,
     recentComments,
+    recentAuditLogs: (recentAuditLogsResult.data ?? []) as AuditLog[],
     warnings,
   };
 }
 
 export async function getStudioAnalyticsData() {
   noStore();
-  const [dashboard, albums, media, comments, commentsToday, commentsThisWeek, likesToday, likesThisWeek] = await Promise.all([
+  const [
+    dashboard,
+    albums,
+    media,
+    comments,
+    auditLogsResult,
+    commentsToday,
+    commentsThisWeek,
+    likesToday,
+    likesThisWeek,
+    auditToday,
+    auditThisWeek,
+  ] = await Promise.all([
     getStudioDashboardData({
       userId: null,
       email: null,
@@ -189,10 +211,17 @@ export async function getStudioAnalyticsData() {
     getStudioAlbums(20),
     getStudioMedia(20),
     getStudioComments(40),
+    supabase
+      .from("audit_logs")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(160),
     countRowsSince("comments", "created_at", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()),
     countRowsSince("comments", "created_at", new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()),
     countRowsSince("likes", "created_at", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()),
     countRowsSince("likes", "created_at", new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()),
+    countRowsSince("audit_logs", "created_at", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()),
+    countRowsSince("audit_logs", "created_at", new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()),
   ]);
 
   const largestMedia = [...media]
@@ -204,6 +233,26 @@ export async function getStudioAnalyticsData() {
   const mostCommentedAlbums = [...albums]
     .sort((left, right) => right.comment_count - left.comment_count)
     .slice(0, 8);
+  const auditLogs = (auditLogsResult.data ?? []) as AuditLog[];
+  const auditActionCounts = Object.entries(
+    auditLogs.reduce<Record<string, number>>((acc, item) => {
+      acc[item.action] = (acc[item.action] ?? 0) + 1;
+      return acc;
+    }, {}),
+  )
+    .sort((left, right) => right[1] - left[1])
+    .slice(0, 10)
+    .map(([label, value]) => ({ label, value }));
+  const auditActorCounts = Object.entries(
+    auditLogs.reduce<Record<string, number>>((acc, item) => {
+      const actor = item.actor_email ?? "anonymous/system";
+      acc[actor] = (acc[actor] ?? 0) + 1;
+      return acc;
+    }, {}),
+  )
+    .sort((left, right) => right[1] - left[1])
+    .slice(0, 10)
+    .map(([label, value]) => ({ label, value }));
 
   return {
     dashboard,
@@ -213,6 +262,11 @@ export async function getStudioAnalyticsData() {
     largestMedia,
     mostLikedAlbums,
     mostCommentedAlbums,
+    auditLogs,
+    auditActionCounts,
+    auditActorCounts,
+    auditToday,
+    auditThisWeek,
     commentsToday,
     commentsThisWeek,
     likesToday,

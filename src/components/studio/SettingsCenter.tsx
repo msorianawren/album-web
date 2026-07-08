@@ -1,14 +1,15 @@
 "use client";
 
 import { useMemo, useState, type ReactNode } from "react";
-import { CheckCircle2, Database, HardDrive, RotateCcw, Save, ShieldCheck } from "lucide-react";
+import { CheckCircle2, Database, HardDrive, ImageUp, RotateCcw, Save, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
-import type { AlbumStatus, SiteSettings } from "@/lib/types";
+import type { AlbumStatus, LandingPageContent, SiteSettings } from "@/lib/types";
 
 type TabKey =
   | "general"
+  | "landing"
   | "appearance"
   | "albums"
   | "media"
@@ -37,6 +38,7 @@ interface SystemHealthSummary {
 
 const tabs: Array<{ key: TabKey; label: string }> = [
   { key: "general", label: "General" },
+  { key: "landing", label: "Landing" },
   { key: "appearance", label: "Appearance" },
   { key: "albums", label: "Albums" },
   { key: "media", label: "Media" },
@@ -53,14 +55,19 @@ const videoTypes = ["video/mp4", "video/webm", "video/quicktime"];
 
 export function SettingsCenter({
   initialSettings,
+  initialLanding,
   systemHealth,
 }: {
   initialSettings: SiteSettings;
+  initialLanding: LandingPageContent;
   systemHealth: SystemHealthSummary;
 }) {
   const [settings, setSettings] = useState(initialSettings);
+  const [landing, setLanding] = useState(initialLanding);
   const [activeTab, setActiveTab] = useState<TabKey>("general");
   const [saving, setSaving] = useState(false);
+  const [savingLanding, setSavingLanding] = useState(false);
+  const [landingMessage, setLandingMessage] = useState("");
   const [message, setMessage] = useState("");
   const [r2Result, setR2Result] = useState("");
   const [dangerResult, setDangerResult] = useState("");
@@ -69,6 +76,10 @@ export function SettingsCenter({
 
   function update<K extends keyof SiteSettings>(key: K, value: SiteSettings[K]) {
     setSettings((current) => ({ ...current, [key]: value }));
+  }
+
+  function updateLanding<K extends keyof LandingPageContent>(key: K, value: LandingPageContent[K]) {
+    setLanding((current) => ({ ...current, [key]: value }));
   }
 
   async function save() {
@@ -87,6 +98,40 @@ export function SettingsCenter({
     }
     setSettings(payload.data.settings);
     setMessage("Settings saved.");
+  }
+
+  async function saveLanding() {
+    setSavingLanding(true);
+    setLandingMessage("Saving landing page...");
+    const response = await fetch("/api/landing", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(landing),
+    });
+    const payload = await response.json();
+    setSavingLanding(false);
+    if (!payload.success) {
+      setLandingMessage(payload.message ?? "Landing save failed.");
+      return;
+    }
+    setLanding(payload.data.landing);
+    setLandingMessage("Landing page saved.");
+  }
+
+  async function uploadLandingAsset(field: "hero_image_url" | "portrait_image_url" | "gallery_image_url", file: File | null) {
+    if (!file) return;
+    setLandingMessage("Uploading image...");
+    const formData = new FormData();
+    formData.set("slot", field.replace("_image_url", ""));
+    formData.set("file", file);
+    const response = await fetch("/api/landing/upload", { method: "POST", body: formData });
+    const payload = await response.json();
+    if (!payload.success) {
+      setLandingMessage(payload.message ?? "Image upload failed.");
+      return;
+    }
+    updateLanding(field, payload.data.asset.previewUrl);
+    setLandingMessage("Image uploaded. Save landing to publish it.");
   }
 
   async function checkR2() {
@@ -161,6 +206,69 @@ export function SettingsCenter({
           <Field label="Maintenance message">
             <Textarea value={settings.maintenance_message ?? ""} onChange={(event) => update("maintenance_message", event.target.value)} maxLength={500} />
           </Field>
+        </Panel>
+      ) : null}
+
+      {activeTab === "landing" ? (
+        <Panel title="Landing Page" description="Edit the public first impression: copy, calls to action, stats, and homepage imagery.">
+          <div className="grid gap-5 xl:grid-cols-[1.05fr_0.95fr]">
+            <div className="grid gap-4">
+              <div className="grid gap-4 md:grid-cols-2">
+                <Field label="Eyebrow">
+                  <Input value={landing.eyebrow} onChange={(event) => updateLanding("eyebrow", event.target.value)} maxLength={80} />
+                </Field>
+                <Field label="Headline">
+                  <Input value={landing.headline} onChange={(event) => updateLanding("headline", event.target.value)} maxLength={140} />
+                </Field>
+              </div>
+              <Field label="Subheadline">
+                <Input value={landing.subheadline} onChange={(event) => updateLanding("subheadline", event.target.value)} maxLength={220} />
+              </Field>
+              <Field label="Body">
+                <Textarea value={landing.body} onChange={(event) => updateLanding("body", event.target.value)} maxLength={500} />
+              </Field>
+              <div className="grid gap-4 md:grid-cols-2">
+                <Field label="Primary CTA label">
+                  <Input value={landing.primary_cta_label} onChange={(event) => updateLanding("primary_cta_label", event.target.value)} maxLength={40} />
+                </Field>
+                <Field label="Primary CTA link">
+                  <Input value={landing.primary_cta_href} onChange={(event) => updateLanding("primary_cta_href", event.target.value)} placeholder="#albums" />
+                </Field>
+                <Field label="Secondary CTA label">
+                  <Input value={landing.secondary_cta_label} onChange={(event) => updateLanding("secondary_cta_label", event.target.value)} maxLength={40} />
+                </Field>
+                <Field label="Secondary CTA link">
+                  <Input value={landing.secondary_cta_href} onChange={(event) => updateLanding("secondary_cta_href", event.target.value)} placeholder="/about" />
+                </Field>
+              </div>
+              <div className="grid gap-4 md:grid-cols-3">
+                <ImageField label="Hero image" value={landing.hero_image_url} onValue={(value) => updateLanding("hero_image_url", value)} onUpload={(file) => uploadLandingAsset("hero_image_url", file)} />
+                <ImageField label="Portrait image" value={landing.portrait_image_url} onValue={(value) => updateLanding("portrait_image_url", value)} onUpload={(file) => uploadLandingAsset("portrait_image_url", file)} />
+                <ImageField label="Gallery image" value={landing.gallery_image_url} onValue={(value) => updateLanding("gallery_image_url", value)} onUpload={(file) => uploadLandingAsset("gallery_image_url", file)} />
+              </div>
+              <div className="grid gap-4 md:grid-cols-2">
+                <Field label="Feature title">
+                  <Input value={landing.feature_title} onChange={(event) => updateLanding("feature_title", event.target.value)} maxLength={140} />
+                </Field>
+                <Field label="Feature body">
+                  <Textarea value={landing.feature_body} onChange={(event) => updateLanding("feature_body", event.target.value)} maxLength={420} />
+                </Field>
+              </div>
+              <div className="grid gap-4 md:grid-cols-3">
+                <StatFields label="Stat 1" value={landing.stat_one_value} caption={landing.stat_one_label} onValue={(value) => updateLanding("stat_one_value", value)} onCaption={(value) => updateLanding("stat_one_label", value)} />
+                <StatFields label="Stat 2" value={landing.stat_two_value} caption={landing.stat_two_label} onValue={(value) => updateLanding("stat_two_value", value)} onCaption={(value) => updateLanding("stat_two_label", value)} />
+                <StatFields label="Stat 3" value={landing.stat_three_value} caption={landing.stat_three_label} onValue={(value) => updateLanding("stat_three_value", value)} onCaption={(value) => updateLanding("stat_three_label", value)} />
+              </div>
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-sm text-text-secondary" aria-live="polite">{landingMessage}</p>
+                <Button onClick={saveLanding} disabled={savingLanding}>
+                  <Save className="h-4 w-4" />
+                  {savingLanding ? "Saving" : "Save landing"}
+                </Button>
+              </div>
+            </div>
+            <LandingPreview landing={landing} />
+          </div>
         </Panel>
       ) : null}
 
@@ -313,6 +421,98 @@ function Panel({ title, description, children }: { title: string; description: s
       </div>
       {children}
     </section>
+  );
+}
+
+function ImageField({
+  label,
+  value,
+  onValue,
+  onUpload,
+}: {
+  label: string;
+  value: string;
+  onValue: (value: string) => void;
+  onUpload: (file: File | null) => void;
+}) {
+  return (
+    <div className="grid min-w-0 gap-2 rounded-[1.1rem] border border-border bg-background/55 p-3">
+      <span className="text-sm font-medium text-text-primary">{label}</span>
+      <div className="aspect-[4/3] overflow-hidden rounded-[0.9rem] bg-surface-secondary">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={value} alt="" className="h-full w-full object-cover" loading="lazy" />
+      </div>
+      <Input value={value} onChange={(event) => onValue(event.target.value)} placeholder="https://..." />
+      <label className="inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-full border border-border bg-surface px-4 text-[0.68rem] font-semibold uppercase tracking-[0.1em] text-text-primary transition hover:bg-background">
+        <ImageUp className="h-4 w-4" />
+        Upload
+        <input
+          type="file"
+          accept="image/jpeg,image/png,image/webp,image/avif"
+          className="sr-only"
+          onChange={(event) => onUpload(event.target.files?.[0] ?? null)}
+        />
+      </label>
+    </div>
+  );
+}
+
+function StatFields({
+  label,
+  value,
+  caption,
+  onValue,
+  onCaption,
+}: {
+  label: string;
+  value: string;
+  caption: string;
+  onValue: (value: string) => void;
+  onCaption: (value: string) => void;
+}) {
+  return (
+    <div className="grid gap-3 rounded-[1.1rem] border border-border bg-background/55 p-4">
+      <p className="text-xs font-semibold uppercase tracking-[0.14em] text-text-secondary">{label}</p>
+      <Input value={value} onChange={(event) => onValue(event.target.value)} placeholder="Value" maxLength={40} />
+      <Input value={caption} onChange={(event) => onCaption(event.target.value)} placeholder="Label" maxLength={40} />
+    </div>
+  );
+}
+
+function LandingPreview({ landing }: { landing: LandingPageContent }) {
+  return (
+    <aside className="sticky top-24 min-w-0 self-start overflow-hidden rounded-[1.4rem] border border-border bg-background shadow-2xl shadow-text-primary/10">
+      <div className="relative min-h-[34rem] overflow-hidden">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={landing.hero_image_url} alt="" className="absolute inset-0 h-full w-full object-cover" />
+        <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(0,0,0,0.70),rgba(0,0,0,0.22)_62%,rgba(0,0,0,0.08))]" />
+        <div className="relative z-10 flex min-h-[34rem] flex-col justify-end p-5 text-white sm:p-8">
+          <p className="break-words text-xs font-semibold uppercase tracking-[0.16em] text-white/78">{landing.eyebrow}</p>
+          <h3 className="mt-3 break-words text-4xl font-semibold leading-none sm:text-5xl">{landing.headline}</h3>
+          <p className="mt-4 break-words text-sm leading-6 text-white/82">{landing.subheadline}</p>
+          <div className="mt-5 grid overflow-hidden rounded-[1.1rem] border border-white/18 bg-white/12 backdrop-blur">
+            {[
+              [landing.stat_one_value, landing.stat_one_label],
+              [landing.stat_two_value, landing.stat_two_label],
+              [landing.stat_three_value, landing.stat_three_label],
+            ].map(([value, caption]) => (
+              <div key={`${value}-${caption}`} className="border-b border-white/14 p-4 last:border-b-0">
+                <p className="break-words font-semibold">{value}</p>
+                <p className="mt-1 break-words text-[0.65rem] uppercase tracking-[0.1em] text-white/68">{caption}</p>
+              </div>
+            ))}
+          </div>
+          <div className="mt-5 grid gap-2 sm:grid-cols-2">
+            <span className="rounded-full bg-white px-4 py-3 text-center text-xs font-semibold uppercase tracking-[0.14em] text-text-primary">
+              {landing.primary_cta_label}
+            </span>
+            <span className="rounded-full border border-white/24 bg-white/10 px-4 py-3 text-center text-xs font-semibold uppercase tracking-[0.14em] text-white">
+              {landing.secondary_cta_label}
+            </span>
+          </div>
+        </div>
+      </div>
+    </aside>
   );
 }
 

@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { AnimatePresence, motion } from "framer-motion";
-import { ChevronLeft, ChevronRight, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Pause, Play, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { DownloadButton } from "@/components/media/DownloadButton";
 import { MediaLikeButton } from "@/components/media/MediaLikeButton";
@@ -16,6 +16,7 @@ interface MediaViewerProps {
   onClose: () => void;
   onNext: () => void;
   onPrevious: () => void;
+  onSelect: (index: number) => void;
 }
 
 export function MediaViewer({
@@ -25,9 +26,11 @@ export function MediaViewer({
   onClose,
   onNext,
   onPrevious,
+  onSelect,
 }: MediaViewerProps) {
   const item = currentIndex === null ? null : media[currentIndex];
   const [loadedImages, setLoadedImages] = useState<Record<string, boolean>>({});
+  const [autoPlay, setAutoPlay] = useState(false);
   const isImageLoading = item?.media_type === "image" && !loadedImages[item.id];
   const imageWidth = item?.width ?? 1600;
   const imageHeight = item?.height ?? 1200;
@@ -55,6 +58,13 @@ export function MediaViewer({
     };
   }, [item]);
 
+  useEffect(() => {
+    if (!item) return;
+    if (!autoPlay) return;
+    const timer = window.setInterval(onNext, item.media_type === "video" ? 9000 : 4200);
+    return () => window.clearInterval(timer);
+  }, [autoPlay, item, onNext]);
+
   return (
     <AnimatePresence>
       {item ? (
@@ -79,6 +89,18 @@ export function MediaViewer({
             aria-label="Close media viewer"
           >
             <X className="h-5 w-5" aria-hidden="true" />
+          </Button>
+
+          <Button
+            variant="icon"
+            className="absolute left-3 top-3 z-20 border-lightbox-border bg-lightbox-control text-accent-foreground shadow-xl shadow-black/20 backdrop-blur-md sm:left-4 sm:top-4"
+            onClick={(event) => {
+              event.stopPropagation();
+              setAutoPlay((current) => !current);
+            }}
+            aria-label={autoPlay ? "Pause slideshow" : "Start slideshow"}
+          >
+            {autoPlay ? <Pause className="h-5 w-5" aria-hidden="true" /> : <Play className="h-5 w-5" aria-hidden="true" />}
           </Button>
 
           <Button
@@ -144,15 +166,44 @@ export function MediaViewer({
           </Button>
 
           <div
-            className="absolute bottom-4 left-1/2 z-20 flex max-w-[calc(100vw-7rem)] -translate-x-1/2 items-center gap-2 overflow-x-auto rounded-full border border-lightbox-border bg-lightbox-control px-3 py-2 text-xs text-accent-foreground shadow-xl shadow-black/20 backdrop-blur-md sm:bottom-5 sm:gap-3 sm:px-4 sm:text-sm"
+            className="absolute bottom-4 left-1/2 z-20 grid max-w-[calc(100vw-7rem)] -translate-x-1/2 gap-2 rounded-[1.2rem] border border-lightbox-border bg-lightbox-control px-3 py-2 text-xs text-accent-foreground shadow-xl shadow-black/20 backdrop-blur-md sm:bottom-5 sm:max-w-[min(50rem,calc(100vw-9rem))] sm:px-4 sm:text-sm"
             onClick={(event) => event.stopPropagation()}
           >
-            <span>
-              {currentIndex! + 1} / {media.length}
-            </span>
-            <MediaLikeButton mediaId={item.id} compact />
-            {downloadAllowed ? (
-              <DownloadButton href={`/api/media/${item.id}/download`} compact />
+            <div className="flex items-center justify-center gap-2">
+              <span>
+                {currentIndex! + 1} / {media.length}
+              </span>
+              <span className="hidden max-w-[18rem] truncate text-accent-foreground/78 sm:inline">
+                {item.title ?? item.original_filename ?? (item.media_type === "image" ? "Image" : "Video")}
+              </span>
+              <MediaLikeButton mediaId={item.id} compact />
+              {downloadAllowed ? (
+                <DownloadButton href={`/api/media/${item.id}/download`} compact />
+              ) : null}
+            </div>
+            {media.length > 1 ? (
+              <div className="hidden max-w-full gap-2 overflow-x-auto pb-1 sm:flex">
+                {media.map((thumb, index) => (
+                  <button
+                    key={thumb.id}
+                    type="button"
+                    onClick={() => onSelect(index)}
+                    className={`relative h-12 w-16 shrink-0 overflow-hidden rounded-lg border transition ${
+                      index === currentIndex ? "border-accent-foreground" : "border-lightbox-border opacity-70 hover:opacity-100"
+                    }`}
+                    aria-label={`Open media ${index + 1}`}
+                  >
+                    {thumb.media_type === "image" ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={thumb.thumbnail_url ?? thumb.medium_url ?? thumb.url} alt="" className="h-full w-full object-cover" loading="lazy" />
+                    ) : (
+                      <span className="flex h-full w-full items-center justify-center bg-black/35">
+                        <Play className="h-4 w-4" aria-hidden="true" />
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </div>
             ) : null}
           </div>
         </motion.div>

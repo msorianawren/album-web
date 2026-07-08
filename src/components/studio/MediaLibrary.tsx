@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Copy, Grid2X2, List, Play, Search, Star, Trash2 } from "lucide-react";
+import { Copy, Eye, Grid2X2, List, Play, Search, Star, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import type { Album, MediaType, StudioMediaItem } from "@/lib/types";
@@ -28,6 +28,7 @@ export function MediaLibrary({
   const [sort, setSort] = useState("newest");
   const [view, setView] = useState<ViewMode>("grid");
   const [selected, setSelected] = useState<string[]>([]);
+  const [previewItem, setPreviewItem] = useState<StudioMediaItem | null>(null);
   const [moveAlbumId, setMoveAlbumId] = useState("");
   const [message, setMessage] = useState("");
 
@@ -53,6 +54,16 @@ export function MediaLibrary({
   function toggleSelected(id: string) {
     setSelected((current) =>
       current.includes(id) ? current.filter((item) => item !== id) : [...current, id],
+    );
+  }
+
+  function toggleSelectVisible() {
+    const visibleIds = filtered.map((item) => item.id);
+    const allVisibleSelected = visibleIds.every((id) => selected.includes(id));
+    setSelected((current) =>
+      allVisibleSelected
+        ? current.filter((id) => !visibleIds.includes(id))
+        : Array.from(new Set([...current, ...visibleIds])),
     );
   }
 
@@ -90,20 +101,28 @@ export function MediaLibrary({
     setMessage("Album cover updated.");
   }
 
-  async function editTitle(item: StudioMediaItem) {
+  async function editMetadata(item: StudioMediaItem) {
     const nextTitle = window.prompt("New media title", item.title ?? item.original_filename ?? "");
     if (nextTitle === null) return;
+    const nextDescription = window.prompt("New media description", item.description ?? "");
+    if (nextDescription === null) return;
     const response = await fetch(`/api/media/${item.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title: nextTitle || null }),
+      body: JSON.stringify({ title: nextTitle || null, description: nextDescription || null }),
     });
     const payload = await response.json();
     if (!payload.success) {
       setMessage(payload.message ?? "Update failed.");
       return;
     }
-    setMedia((current) => current.map((mediaItem) => (mediaItem.id === item.id ? { ...mediaItem, title: nextTitle || null } : mediaItem)));
+    setMedia((current) =>
+      current.map((mediaItem) =>
+        mediaItem.id === item.id
+          ? { ...mediaItem, title: nextTitle || null, description: nextDescription || null }
+          : mediaItem,
+      ),
+    );
     setMessage("Metadata saved.");
   }
 
@@ -165,6 +184,16 @@ export function MediaLibrary({
         </div>
         <div className="mt-3 flex flex-wrap items-center justify-between gap-3 text-sm text-text-secondary">
           <p aria-live="polite">{message || `${filtered.length} media item${filtered.length === 1 ? "" : "s"} visible.`}</p>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button variant="secondary" onClick={toggleSelectVisible}>
+              {filtered.length && filtered.every((item) => selected.includes(item.id)) ? "Clear visible" : "Select visible"}
+            </Button>
+            {selected.length ? (
+              <span className="rounded-full border border-border bg-background px-3 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-text-secondary">
+                {selected.length} selected
+              </span>
+            ) : null}
+          </div>
           {selected.length ? (
             <div className="flex flex-wrap items-center gap-2">
               <select value={moveAlbumId} onChange={(event) => setMoveAlbumId(event.target.value)} className="h-10 rounded-full border border-border bg-background px-3 text-xs text-text-primary">
@@ -205,9 +234,10 @@ export function MediaLibrary({
                 <p className="mt-1 truncate text-xs text-text-secondary">{item.album_title ?? "No album"} - {item.mime_type ?? item.media_type}</p>
                 <p className="mt-1 truncate text-xs text-text-secondary">{formatBytes(item.file_size)} - {item.r2_key}</p>
                 <div className="mt-3 flex flex-wrap gap-2">
+                  <Button variant="secondary" onClick={() => setPreviewItem(item)}><Eye className="h-4 w-4" />Preview</Button>
                   <Button variant="secondary" onClick={() => navigator.clipboard.writeText(item.url)}><Copy className="h-4 w-4" />URL</Button>
                   <Button variant="secondary" onClick={() => setCover(item)}><Star className="h-4 w-4" />Cover</Button>
-                  <Button variant="secondary" onClick={() => editTitle(item)}>Edit</Button>
+                  <Button variant="secondary" onClick={() => editMetadata(item)}>Edit</Button>
                   <Button variant="icon" onClick={() => deleteMedia(item.id)} aria-label="Delete media"><Trash2 className="h-4 w-4" /></Button>
                 </div>
               </div>
@@ -241,7 +271,8 @@ export function MediaLibrary({
                     <td className="px-4 py-3">
                       <div className="flex justify-end gap-2">
                         <Button variant="secondary" onClick={() => setCover(item)}>Cover</Button>
-                        <Button variant="secondary" onClick={() => editTitle(item)}>Edit</Button>
+                        <Button variant="secondary" onClick={() => setPreviewItem(item)}>Preview</Button>
+                        <Button variant="secondary" onClick={() => editMetadata(item)}>Edit</Button>
                         <Button variant="icon" onClick={() => deleteMedia(item.id)}><Trash2 className="h-4 w-4" /></Button>
                       </div>
                     </td>
@@ -257,6 +288,47 @@ export function MediaLibrary({
           <p className="mt-2 text-sm text-text-secondary">Upload media or clear the filters.</p>
         </div>
       )}
+      {previewItem ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/72 p-4 backdrop-blur-xl" onClick={() => setPreviewItem(null)}>
+          <div className="relative grid max-h-[calc(100vh-2rem)] w-full max-w-5xl overflow-hidden rounded-[1.4rem] border border-lightbox-border bg-surface shadow-2xl shadow-black/35 md:grid-cols-[1fr_20rem]" onClick={(event) => event.stopPropagation()}>
+            <Button variant="icon" className="absolute right-3 top-3 z-10 bg-lightbox-control text-accent-foreground" onClick={() => setPreviewItem(null)} aria-label="Close preview">
+              <X className="h-4 w-4" />
+            </Button>
+            <div className="flex min-h-[22rem] items-center justify-center bg-black">
+              {previewItem.media_type === "image" ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={previewItem.medium_url ?? previewItem.url} alt={previewItem.title ?? previewItem.original_filename ?? "Media preview"} className="max-h-[calc(100vh-4rem)] w-full object-contain" />
+              ) : (
+                <video src={previewItem.url} poster={previewItem.poster_url ?? undefined} controls className="max-h-[calc(100vh-4rem)] w-full object-contain" />
+              )}
+            </div>
+            <aside className="min-w-0 overflow-y-auto p-5">
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-text-secondary">Media preview</p>
+              <h3 className="mt-2 break-words text-xl font-semibold text-text-primary">{previewItem.title ?? previewItem.original_filename ?? "Untitled media"}</h3>
+              <p className="mt-3 text-sm leading-6 text-text-secondary">{previewItem.description ?? "No description."}</p>
+              <div className="mt-5 grid gap-2 text-sm">
+                <Meta label="Album" value={previewItem.album_title ?? "No album"} />
+                <Meta label="Type" value={previewItem.mime_type ?? previewItem.media_type} />
+                <Meta label="Size" value={formatBytes(previewItem.file_size)} />
+                <Meta label="R2 key" value={previewItem.r2_key} />
+              </div>
+              <div className="mt-5 flex flex-wrap gap-2">
+                <Button variant="secondary" onClick={() => editMetadata(previewItem)}>Edit metadata</Button>
+                <Button variant="secondary" onClick={() => setCover(previewItem)}>Set cover</Button>
+              </div>
+            </aside>
+          </div>
+        </div>
+      ) : null}
     </section>
+  );
+}
+
+function Meta({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-[0.9rem] border border-border bg-background/55 p-3">
+      <p className="text-[0.65rem] font-semibold uppercase tracking-[0.14em] text-text-secondary">{label}</p>
+      <p className="mt-1 break-words text-text-primary">{value}</p>
+    </div>
   );
 }

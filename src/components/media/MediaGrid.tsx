@@ -67,6 +67,7 @@ export function MediaGrid({ media, downloadAllowed }: MediaGridProps) {
         onClose={() => setCurrentIndex(null)}
         onNext={handleNext}
         onPrevious={handlePrevious}
+        onSelect={setCurrentIndex}
       />
     </section>
   );
