@@ -162,6 +162,99 @@ canvas {
   }
 }
 
+.living-preview-frame {
+  transform: translateZ(0);
+}
+
+.living-preview-image {
+  opacity: 0;
+  transform: scale(1.04) translate3d(0, 0, 0);
+  animation: living-preview-fade 12.8s ease-in-out infinite;
+  will-change: opacity, transform;
+}
+
+.living-preview-frame .living-preview-image:only-child {
+  opacity: 1;
+  animation: living-preview-single 14s ease-in-out infinite;
+}
+
+.living-preview-light {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.34;
+  mix-blend-mode: screen;
+  background:
+    radial-gradient(circle at 22% 20%, rgba(255, 250, 242, 0.38), transparent 24%),
+    linear-gradient(110deg, transparent 0%, transparent 38%, rgba(255, 255, 255, 0.22) 48%, transparent 58%, transparent 100%);
+  transform: translateX(-18%);
+  animation: living-preview-light 9s ease-in-out infinite;
+}
+
+.living-preview-placeholder {
+  background:
+    radial-gradient(circle at 26% 16%, color-mix(in srgb, var(--surface) 92%, white), transparent 24%),
+    linear-gradient(135deg, var(--surface), var(--surface-secondary));
+  animation: living-preview-single 14s ease-in-out infinite;
+}
+
+@keyframes living-preview-fade {
+  0%,
+  18% {
+    opacity: 1;
+    transform: scale(1.045) translate3d(0, 0, 0);
+  }
+  25%,
+  92% {
+    opacity: 0;
+    transform: scale(1.095) translate3d(-1.5%, -1%, 0);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1.045) translate3d(0, 0, 0);
+  }
+}
+
+@keyframes living-preview-single {
+  0%,
+  100% {
+    transform: scale(1.035) translate3d(0, 0, 0);
+  }
+  50% {
+    transform: scale(1.085) translate3d(-1%, -1%, 0);
+  }
+}
+
+@keyframes living-preview-light {
+  0%,
+  100% {
+    transform: translateX(-22%);
+    opacity: 0.2;
+  }
+  50% {
+    transform: translateX(16%);
+    opacity: 0.42;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .living-preview-image,
+  .living-preview-frame .living-preview-image:only-child,
+  .living-preview-light,
+  .living-preview-placeholder {
+    animation: none;
+  }
+
+  .living-preview-image:first-child {
+    opacity: 1;
+    transform: none;
+  }
+
+  .living-preview-light {
+    opacity: 0.16;
+  }
+}
+
 ::selection {
   background: var(--accent);
   color: var(--accent-foreground);

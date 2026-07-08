@@ -4,7 +4,7 @@ import { getPublicSession } from "@/lib/auth";
 import { getPublicUrl } from "@/lib/r2";
 import { sampleAlbums } from "@/lib/sample-data";
 import { supabase } from "@/lib/supabase";
-import type { Album, AlbumDetail, AlbumStatus, Media } from "@/lib/types";
+import type { Album, AlbumDetail, AlbumPreviewItem, AlbumStatus, Media } from "@/lib/types";
 
 type UnknownRow = Record<string, unknown>;
 
@@ -56,6 +56,19 @@ export function normalizeAlbum(row: UnknownRow): Album {
     created_at: String(row.created_at ?? new Date().toISOString()),
     updated_at:
       typeof row.updated_at === "string" ? row.updated_at : undefined,
+    preview_items: [],
+  };
+}
+
+function previewItemFromMedia(row: UnknownRow): AlbumPreviewItem {
+  return {
+    id: String(row.id),
+    media_type: row.media_type === "video" ? "video" : "image",
+    title: typeof row.title === "string" ? row.title : null,
+    url: resolveAssetUrl(row.url) ?? "",
+    thumbnail_url: resolveAssetUrl(row.thumbnail_url),
+    medium_url: resolveAssetUrl(row.medium_url),
+    poster_url: resolveAssetUrl(row.poster_url),
   };
 }
 
@@ -112,7 +125,46 @@ function filterSampleAlbums({ q, status }: AlbumQuery) {
       ? `${album.title} ${album.description ?? ""}`.toLowerCase().includes(search)
       : true;
     return matchesStatus && matchesSearch;
-  });
+  }).map((album) => ({
+    ...album,
+    preview_items: album.media.slice(0, 4).map((item) => ({
+      id: item.id,
+      media_type: item.media_type,
+      title: item.title,
+      url: item.url,
+      thumbnail_url: item.thumbnail_url,
+      medium_url: item.medium_url,
+      poster_url: item.poster_url,
+    })),
+  }));
+}
+
+async function attachAlbumPreviews(albums: Album[]) {
+  const albumIds = albums.map((album) => album.id);
+  if (!albumIds.length) return albums;
+
+  const { data, error } = await supabase
+    .from("media")
+    .select("id,album_id,media_type,title,url,thumbnail_url,medium_url,poster_url,sort_order,created_at")
+    .in("album_id", albumIds)
+    .order("sort_order", { ascending: true })
+    .order("created_at", { ascending: true });
+
+  if (error || !data) return albums;
+
+  const previewMap = new Map<string, AlbumPreviewItem[]>();
+  for (const row of data as UnknownRow[]) {
+    const albumId = String(row.album_id);
+    const current = previewMap.get(albumId) ?? [];
+    if (current.length >= 4) continue;
+    current.push(previewItemFromMedia(row));
+    previewMap.set(albumId, current);
+  }
+
+  return albums.map((album) => ({
+    ...album,
+    preview_items: previewMap.get(album.id) ?? [],
+  }));
 }
 
 export async function getAlbums(query: AlbumQuery = {}): Promise<Album[]> {
@@ -134,7 +186,7 @@ export async function getAlbums(query: AlbumQuery = {}): Promise<Album[]> {
     if (error) throw error;
     if (!data?.length) return filterSampleAlbums(query);
 
-    return data.map((row) => normalizeAlbum(row));
+    return attachAlbumPreviews(data.map((row) => normalizeAlbum(row)));
   } catch {
     return filterSampleAlbums(query);
   }
@@ -196,6 +248,15 @@ export async function getAlbum(
     return {
       ...album,
       media,
+      preview_items: media.slice(0, 4).map((item) => ({
+        id: item.id,
+        media_type: item.media_type,
+        title: item.title,
+        url: item.url,
+        thumbnail_url: item.thumbnail_url,
+        medium_url: item.medium_url,
+        poster_url: item.poster_url,
+      })),
       media_count: media.length || album.media_count,
       photo_count: media.filter((item) => item.media_type === "image").length || album.photo_count,
       video_count: media.filter((item) => item.media_type === "video").length || album.video_count,

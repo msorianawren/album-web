@@ -19,7 +19,7 @@ export function formatMediaCount(photoCount: number, videoCount: number) {
     videoCount === 1 ? "video" : "videos"
   }`;
 
-  return `${photos} · ${videos}`;
+  return `${photos} - ${videos}`;
 }
 
 export function slugify(value: string) {

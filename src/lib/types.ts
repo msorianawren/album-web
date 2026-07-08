@@ -1,6 +1,16 @@
 export type AlbumStatus = "public" | "updating" | "private";
 export type MediaType = "image" | "video";
 
+export interface AlbumPreviewItem {
+  id: string;
+  media_type: MediaType;
+  url: string;
+  thumbnail_url: string | null;
+  medium_url: string | null;
+  poster_url: string | null;
+  title: string | null;
+}
+
 export interface Album {
   id: string;
   owner_id?: string;
@@ -17,6 +27,7 @@ export interface Album {
   comment_count: number;
   created_at: string;
   updated_at?: string;
+  preview_items?: AlbumPreviewItem[];
 }
 
 export interface Media {

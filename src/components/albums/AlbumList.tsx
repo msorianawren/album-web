@@ -42,7 +42,7 @@ export function AlbumList({ albums }: AlbumListProps) {
           </p>
         </div>
       </div>
-      <form className="mb-8 grid gap-3 rounded-[1.3rem] border border-border bg-surface/75 p-3 shadow-xl shadow-text-primary/5 backdrop-blur sm:rounded-[1.6rem] sm:p-4 md:grid-cols-[1fr_180px_auto]">
+      <form action="/albums" className="mb-8 grid gap-3 rounded-[1.3rem] border border-border bg-surface/75 p-3 shadow-xl shadow-text-primary/5 backdrop-blur sm:rounded-[1.6rem] sm:p-4 md:grid-cols-[1fr_180px_auto]">
         <input
           name="q"
           placeholder="Search editorial, studio, campaign..."

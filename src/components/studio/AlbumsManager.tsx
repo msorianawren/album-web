@@ -178,7 +178,7 @@ export function AlbumsManager({
                       </div>
                     </td>
                     <td className="px-4 py-4 text-text-secondary">
-                      {album.media_count} total · {album.photo_count} photos · {album.video_count} videos
+                      {album.media_count} total - {album.photo_count} photos - {album.video_count} videos
                     </td>
                     <td className="px-4 py-4 text-text-secondary">{album.comment_count}</td>
                     <td className="px-4 py-4 text-text-secondary">{album.like_count}</td>

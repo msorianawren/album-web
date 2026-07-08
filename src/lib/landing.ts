@@ -11,7 +11,7 @@ export const defaultLandingPage: LandingPageContent = {
   body:
     "A curated portfolio space for selected albums, moving images, and private client collections.",
   primary_cta_label: "View portfolio",
-  primary_cta_href: "#albums",
+  primary_cta_href: "/albums",
   secondary_cta_label: "About Oriana",
   secondary_cta_href: "/about",
   hero_image_url:

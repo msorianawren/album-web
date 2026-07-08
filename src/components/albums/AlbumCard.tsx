@@ -10,29 +10,52 @@ interface AlbumCardProps {
 }
 
 export function AlbumCard({ album }: AlbumCardProps) {
+  const previewItems = album.preview_items ?? [];
+  const previewImages = [
+    ...previewItems
+      .filter((item) => item.media_type === "image")
+      .map((item) => item.thumbnail_url ?? item.medium_url ?? item.url)
+      .filter(Boolean),
+    album.cover_url,
+  ].filter((value, index, values): value is string => Boolean(value) && values.indexOf(value) === index).slice(0, 4);
+  const videoPreview = previewItems.find((item) => item.media_type === "video");
+
   return (
     <Link
       href={`/albums/${album.slug}`}
       className="group block min-w-0 rounded-[1.8rem] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
     >
       <div className="overflow-hidden rounded-[1.8rem] border border-border bg-surface/75 p-2 shadow-lg shadow-text-primary/5 transition duration-500 ease-out group-hover:-translate-y-1 group-hover:bg-surface group-hover:shadow-2xl group-hover:shadow-text-primary/10">
-        <div className="relative aspect-[3/4] overflow-hidden rounded-[1.45rem]">
-          {album.cover_url ? (
-            <Image
-              src={album.cover_url}
-              alt={`${album.title} album cover`}
-              fill
-              sizes="(min-width: 1280px) 25vw, (min-width: 768px) 50vw, 100vw"
-              className="object-cover transition duration-700 ease-out group-hover:scale-[1.06]"
-            />
+        <div className="living-preview-frame relative aspect-[3/4] overflow-hidden rounded-[1.45rem] bg-surface-secondary">
+          {previewImages.length ? (
+            previewImages.map((src, index) => (
+              <Image
+                key={`${src}-${index}`}
+                src={src}
+                alt={index === 0 ? `${album.title} animated album preview` : ""}
+                fill
+                sizes="(min-width: 1280px) 25vw, (min-width: 768px) 50vw, 100vw"
+                className="living-preview-image object-cover"
+                style={{
+                  animationDelay: `${index * 3.2}s`,
+                  opacity: index === 0 ? 1 : undefined,
+                }}
+              />
+            ))
           ) : (
-            <div className="flex h-full w-full items-center justify-center bg-surface">
+            <div className="living-preview-placeholder flex h-full w-full items-center justify-center bg-surface">
               <Lock className="h-8 w-8 text-text-secondary" aria-hidden="true" />
             </div>
           )}
+          <div className="living-preview-light" aria-hidden="true" />
           <div className="absolute left-4 top-4">
             <AlbumStatusBadge status={album.status} />
           </div>
+          {videoPreview ? (
+            <div className="absolute bottom-4 left-4 rounded-full border border-lightbox-border bg-lightbox-control px-3 py-1.5 text-[0.65rem] font-semibold uppercase tracking-[0.14em] text-accent-foreground backdrop-blur">
+              Motion
+            </div>
+          ) : null}
           {album.status === "private" ? (
             <div className="absolute right-4 top-4 rounded-full border border-lightbox-border bg-lightbox-control p-2 text-accent-foreground backdrop-blur">
               <Lock className="h-4 w-4" aria-hidden="true" />

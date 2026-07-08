@@ -6,8 +6,8 @@ import { UserMenu } from "@/components/UserMenu";
 
 const navItems = [
   { href: "/", label: "Home" },
-  { href: "/#albums", label: "Albums" },
-  { href: "/#explore", label: "Explore" },
+  { href: "/albums", label: "Albums" },
+  { href: "/albums", label: "Explore" },
   { href: "/about", label: "About" },
   { href: "/contact", label: "Contact Us" },
 ];
