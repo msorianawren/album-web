@@ -55,6 +55,11 @@ export function CommentSection({ albumId }: CommentSectionProps) {
       setMessage("Comment posted.");
     } else {
       setMessage(payload.message ?? "Comment failed.");
+      if (payload.code === "COMMENT_BLOCKED") {
+        window.setTimeout(() => {
+          window.location.href = "/boycott";
+        }, 900);
+      }
     }
 
     setIsSubmitting(false);

@@ -9,6 +9,7 @@ export type ApiErrorCode =
   | "PAYLOAD_TOO_LARGE"
   | "UNSUPPORTED_MEDIA_TYPE"
   | "RATE_LIMITED"
+  | "COMMENT_BLOCKED"
   | "UPLOAD_FAILED"
   | "SERVER_ERROR";
 

@@ -28,6 +28,11 @@ export function SecurityConsole({
   const [users, setUsers] = useState(initialUsers);
   const [message, setMessage] = useState("");
   const [reasons, setReasons] = useState<Record<string, string>>({});
+  const blockedUsers = users.filter((user) => user.is_blocked);
+  const orderedUsers = [...users].sort((left, right) => {
+    if (left.is_blocked !== right.is_blocked) return left.is_blocked ? -1 : 1;
+    return new Date(right.last_seen_at).getTime() - new Date(left.last_seen_at).getTime();
+  });
 
   async function updateUser(userId: string, isBlocked: boolean) {
     setMessage("Updating user...");
@@ -73,13 +78,57 @@ export function SecurityConsole({
 
       <section className="rounded-[1.4rem] border border-border bg-surface/82 p-5 shadow-xl shadow-text-primary/5">
         <div className="flex items-center gap-3">
+          <Ban className="h-5 w-5 text-text-secondary" aria-hidden="true" />
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-text-secondary">
+              Blocked accounts
+            </p>
+            <h2 className="text-2xl font-semibold text-text-primary">
+              {blockedUsers.length} account{blockedUsers.length === 1 ? "" : "s"} blocked
+            </h2>
+          </div>
+        </div>
+        {blockedUsers.length ? (
+          <div className="mt-5 grid gap-4 lg:grid-cols-2">
+            {blockedUsers.map((user) => (
+              <article key={user.user_id} className="rounded-2xl border border-border bg-background/70 p-4">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="min-w-0">
+                    <p className="truncate font-semibold text-text-primary">
+                      {user.display_name ?? user.email}
+                    </p>
+                    <p className="mt-1 truncate text-sm text-text-secondary">{user.email}</p>
+                    <p className="mt-2 text-xs uppercase tracking-[0.16em] text-text-secondary">
+                      Blocked {formatDate(user.blocked_at)}
+                    </p>
+                  </div>
+                  <Button variant="secondary" onClick={() => updateUser(user.user_id, false)}>
+                    <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
+                    Unblock
+                  </Button>
+                </div>
+                <p className="mt-3 rounded-xl border border-border bg-surface/70 p-3 text-sm leading-6 text-text-secondary">
+                  {user.blocked_reason ?? "No reason recorded."}
+                </p>
+              </article>
+            ))}
+          </div>
+        ) : (
+          <p className="mt-5 rounded-2xl border border-dashed border-border bg-background/60 p-6 text-sm text-text-secondary">
+            No blocked accounts right now.
+          </p>
+        )}
+      </section>
+
+      <section className="rounded-[1.4rem] border border-border bg-surface/82 p-5 shadow-xl shadow-text-primary/5">
+        <div className="flex items-center gap-3">
           <ShieldAlert className="h-5 w-5 text-text-secondary" aria-hidden="true" />
           <h2 className="text-2xl font-semibold text-text-primary">
             Google users
           </h2>
         </div>
         <div className="mt-6 grid gap-4">
-          {users.map((user) => (
+          {orderedUsers.map((user) => (
             <article
               key={user.user_id}
               className="grid gap-4 rounded-2xl border border-border bg-background/70 p-4 lg:grid-cols-[1fr_320px_auto]"

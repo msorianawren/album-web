@@ -1,6 +1,8 @@
 import { NextRequest } from "next/server";
-import { requireAdmin } from "@/lib/auth";
+import { requireAdmin, requireUser } from "@/lib/auth";
 import { getAlbum } from "@/lib/albums";
+import { logAuditEvent } from "@/lib/audit";
+import { commentBlockReason, findBlockedCommentKeywords } from "@/lib/comment-filter";
 import { apiError, apiSuccess, toServerError } from "@/lib/errors";
 import { supabase } from "@/lib/supabase";
 import { commentCreateSchema } from "@/lib/validators";
@@ -34,6 +36,11 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const session = await requireUser(request);
+    if (!session) {
+      return apiError("UNAUTHENTICATED", "Login with Google is required to comment.", 401);
+    }
+
     const parsed = commentCreateSchema.safeParse(await request.json());
     if (!parsed.success) {
       return apiError(
@@ -48,6 +55,43 @@ export async function POST(request: NextRequest) {
     if (!album) return apiError("NOT_FOUND", "Album not found.", 404);
     if (album.locked) {
       return apiError("FORBIDDEN", "Private albums do not accept public comments.", 403);
+    }
+
+    const scanText = `${parsed.data.author_name ?? ""}\n${parsed.data.body}`;
+    const matchedKeywords = findBlockedCommentKeywords(scanText);
+    if (matchedKeywords.length) {
+      const reason = commentBlockReason(matchedKeywords);
+
+      await supabase
+        .from("user_profiles")
+        .update({
+          is_blocked: true,
+          blocked_reason: reason,
+          blocked_at: new Date().toISOString(),
+          blocked_by: null,
+        })
+        .eq("user_id", session.userId);
+
+      await logAuditEvent({
+        request,
+        session,
+        action: "auto_block_comment_keyword",
+        targetType: "user",
+        targetId: session.userId ?? undefined,
+        metadata: {
+          albumId: parsed.data.albumId,
+          mediaId: parsed.data.mediaId ?? null,
+          matchedKeywords,
+          deletedComment: true,
+          commentPreview: parsed.data.body.slice(0, 240),
+        },
+      });
+
+      return apiError(
+        "COMMENT_BLOCKED",
+        "This account has been blocked because the comment contained prohibited words. The comment was deleted.",
+        403,
+      );
     }
 
     const { data, error } = await supabase
