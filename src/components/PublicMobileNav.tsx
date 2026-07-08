@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { LogIn, Menu, Search, Shield, X } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { useI18n } from "@/lib/i18n-client";
 import type { PublicSession } from "@/lib/types";
 
 interface PublicMobileNavProps {
@@ -13,6 +14,7 @@ interface PublicMobileNavProps {
 
 export function PublicMobileNav({ session, navItems }: PublicMobileNavProps) {
   const [open, setOpen] = useState(false);
+  const { t } = useI18n();
 
   function close() {
     setOpen(false);
@@ -24,12 +26,12 @@ export function PublicMobileNav({ session, navItems }: PublicMobileNavProps) {
         type="button"
         className="flex h-11 shrink-0 items-center justify-center gap-2 rounded-full border border-border bg-surface/80 px-3 text-text-primary shadow-lg shadow-text-primary/5 transition hover:bg-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring lg:hidden"
         onClick={() => setOpen(true)}
-        aria-label="Open navigation menu"
+        aria-label={t("nav.openMenu")}
         aria-expanded={open}
       >
         <Menu className="h-5 w-5" aria-hidden="true" />
         <span className="hidden text-xs font-semibold uppercase tracking-[0.12em] sm:inline">
-          Menu
+          {t("nav.menu")}
         </span>
       </button>
 
@@ -49,14 +51,14 @@ export function PublicMobileNav({ session, navItems }: PublicMobileNavProps) {
                 Oriana Wren
               </p>
               <p className="mt-1 truncate text-xs uppercase tracking-[0.24em] text-text-secondary">
-                Navigation
+                {t("nav.navigation")}
               </p>
             </div>
             <button
               type="button"
               className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-border bg-background text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               onClick={close}
-              aria-label="Close navigation menu"
+              aria-label={t("nav.closeMenu")}
             >
               <X className="h-4 w-4" aria-hidden="true" />
             </button>
@@ -66,12 +68,12 @@ export function PublicMobileNav({ session, navItems }: PublicMobileNavProps) {
             <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-text-secondary" aria-hidden="true" />
             <input
               name="q"
-              placeholder="Search albums"
+              placeholder={t("nav.searchAlbums")}
               className="h-12 w-full rounded-full border border-border bg-background/75 pl-11 pr-4 text-sm text-text-primary outline-none transition placeholder:text-text-secondary focus:ring-2 focus:ring-ring"
             />
           </form>
 
-          <nav className="mt-5 grid gap-1" aria-label="Mobile primary navigation">
+          <nav className="mt-5 grid gap-1" aria-label={t("nav.mobilePrimary")}>
             {navItems.map((item) => (
               <Link
                 key={`${item.href}-${item.label}`}
@@ -89,18 +91,18 @@ export function PublicMobileNav({ session, navItems }: PublicMobileNavProps) {
               <Link href="/studio" onClick={close}>
                 <Button className="w-full">
                   <Shield className="h-4 w-4" aria-hidden="true" />
-                  Studio
+                  {t("nav.studio")}
                 </Button>
               </Link>
             ) : session.userId ? (
               <div className="rounded-[1rem] border border-border bg-background/70 px-4 py-3 text-sm text-text-secondary">
-                Signed in as <span className="font-semibold text-text-primary">{session.email}</span>
+                {t("nav.signedIn")} <span className="font-semibold text-text-primary">{session.email}</span>
               </div>
             ) : (
               <Link href="/login" onClick={close}>
                 <Button variant="secondary" className="w-full">
                   <LogIn className="h-4 w-4" aria-hidden="true" />
-                  Login
+                  {t("nav.login")}
                 </Button>
               </Link>
             )}

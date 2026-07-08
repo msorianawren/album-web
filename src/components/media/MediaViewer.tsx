@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import { DownloadButton } from "@/components/media/DownloadButton";
 import { MediaLikeButton } from "@/components/media/MediaLikeButton";
 import { Button } from "@/components/ui/Button";
+import { useI18n } from "@/lib/i18n-client";
 import type { Media } from "@/lib/types";
 
 interface MediaViewerProps {
@@ -30,6 +31,7 @@ export function MediaViewer({
   onPrevious,
   onSelect,
 }: MediaViewerProps) {
+  const { t } = useI18n();
   const item = currentIndex === null ? null : media[currentIndex];
   const [loadedImages, setLoadedImages] = useState<Record<string, boolean>>({});
   const [autoPlay, setAutoPlay] = useState(false);
@@ -79,17 +81,17 @@ export function MediaViewer({
           transition={{ duration: 0.18, ease: "easeOut" }}
           role="dialog"
           aria-modal="true"
-          aria-label="Media viewer"
+          aria-label={t("media.viewer")}
         >
           <div className="flex items-center justify-between gap-3" onClick={(event) => event.stopPropagation()}>
             <Button
               variant="secondary"
               className="h-11 rounded-full border-lightbox-border bg-white/15 px-3 text-white shadow-xl shadow-black/20 backdrop-blur-md hover:bg-white hover:text-black sm:px-4"
               onClick={() => setAutoPlay((current) => !current)}
-              aria-label={autoPlay ? "Pause slideshow" : "Start slideshow"}
+              aria-label={autoPlay ? t("media.pauseSlideshow") : t("media.startSlideshow")}
             >
               {autoPlay ? <Pause className="h-5 w-5" aria-hidden="true" /> : <Play className="h-5 w-5" aria-hidden="true" />}
-              <span className="hidden sm:inline">{autoPlay ? "Pause" : "Slideshow"}</span>
+              <span className="hidden sm:inline">{autoPlay ? t("media.pause") : t("media.slideshow")}</span>
             </Button>
             <div className="min-w-0 text-center text-xs text-accent-foreground/76 sm:text-sm">
               <span className="font-semibold text-accent-foreground">
@@ -97,17 +99,17 @@ export function MediaViewer({
               </span>
               <span className="mx-2 text-accent-foreground/36">|</span>
               <span className="inline-block max-w-[46vw] truncate align-bottom">
-                {item.title ?? item.original_filename ?? (item.media_type === "image" ? "Image" : "Video")}
+                {item.title ?? item.original_filename ?? (item.media_type === "image" ? t("media.image") : t("media.video"))}
               </span>
             </div>
             <Button
               variant="secondary"
               className="h-11 rounded-full border-lightbox-border bg-white/15 px-3 text-white shadow-xl shadow-black/20 backdrop-blur-md hover:bg-white hover:text-black sm:px-4"
               onClick={onClose}
-              aria-label="Close media viewer"
+              aria-label={t("media.closeViewer")}
             >
               <X className="h-5 w-5" aria-hidden="true" />
-              <span className="hidden sm:inline">Close</span>
+              <span className="hidden sm:inline">{t("media.close")}</span>
             </Button>
           </div>
 
@@ -118,10 +120,10 @@ export function MediaViewer({
               event.stopPropagation();
               onPrevious();
             }}
-            aria-label="Previous media"
+            aria-label={t("media.previousMedia")}
           >
-            <ChevronLeft className="h-6 w-6" aria-hidden="true" />
-            <span className="hidden lg:inline">Previous</span>
+            <ChevronLeft className="h-6 w-6 rtl-flip" aria-hidden="true" />
+            <span className="hidden lg:inline">{t("media.previous")}</span>
           </Button>
 
           <div className="flex min-h-0 items-center justify-center overflow-hidden px-12 sm:px-16 md:px-28">
@@ -141,7 +143,7 @@ export function MediaViewer({
               {item.media_type === "image" ? (
                 <Image
                   src={imageSource}
-                  alt={item.title ?? item.original_filename ?? "Album image"}
+                  alt={item.title ?? item.original_filename ?? t("media.image")}
                   width={imageWidth}
                   height={imageHeight}
                   sizes="100vw"
@@ -173,10 +175,10 @@ export function MediaViewer({
               event.stopPropagation();
               onNext();
             }}
-            aria-label="Next media"
+            aria-label={t("media.nextMedia")}
           >
-            <span className="hidden lg:inline">Next</span>
-            <ChevronRight className="h-6 w-6" aria-hidden="true" />
+            <span className="hidden lg:inline">{t("media.next")}</span>
+            <ChevronRight className="h-6 w-6 rtl-flip" aria-hidden="true" />
           </Button>
 
           <div
@@ -199,7 +201,7 @@ export function MediaViewer({
                     className={`relative h-12 w-16 shrink-0 overflow-hidden rounded-lg border transition ${
                       index === currentIndex ? "border-accent-foreground" : "border-lightbox-border opacity-70 hover:opacity-100"
                     }`}
-                    aria-label={`Open media ${index + 1}`}
+                    aria-label={t("media.openNumber", { number: index + 1 })}
                   >
                     {thumb.media_type === "image" ? (
                       // eslint-disable-next-line @next/next/no-img-element

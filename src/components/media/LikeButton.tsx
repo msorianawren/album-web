@@ -4,12 +4,14 @@ import { useEffect, useState } from "react";
 import { Heart } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { getOrCreateClientId } from "@/lib/client-id";
+import { useI18n } from "@/lib/i18n-client";
 
 interface LikeButtonProps {
   albumId: string;
 }
 
 export function LikeButton({ albumId }: LikeButtonProps) {
+  const { t } = useI18n();
   const [count, setCount] = useState<number | null>(null);
   const [liked, setLiked] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -51,7 +53,7 @@ export function LikeButton({ albumId }: LikeButtonProps) {
         className={liked ? "h-4 w-4 fill-current text-text-primary" : "h-4 w-4"}
         aria-hidden="true"
       />
-      {liked ? "Liked" : "Like"}
+      {liked ? t("media.liked") : t("media.like")}
       {count !== null ? <span>{count}</span> : null}
     </Button>
   );

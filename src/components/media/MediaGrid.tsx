@@ -6,12 +6,12 @@ import { Camera, RotateCcw, SlidersHorizontal } from "lucide-react";
 import { MediaCard } from "@/components/media/MediaCard";
 import { Button } from "@/components/ui/Button";
 import {
-  mediaSortLabels,
   mediaSortModes,
   parseMediaSortMode,
   sortMedia,
   type MediaSortMode,
 } from "@/lib/media-sort";
+import { useI18n } from "@/lib/i18n-client";
 import type { Media } from "@/lib/types";
 
 const MediaViewer = dynamic(
@@ -34,6 +34,7 @@ export function MediaGrid({
   protectAssets = false,
   defaultSortMode = "smart",
 }: MediaGridProps) {
+  const { t } = useI18n();
   const storageKey = `album:${albumId}:sort`;
   const defaultMode = parseMediaSortMode(defaultSortMode, "smart");
   const [currentIndex, setCurrentIndex] = useState<number | null>(null);
@@ -97,10 +98,10 @@ export function MediaGrid({
           <Camera className="h-7 w-7 text-text-secondary" aria-hidden="true" />
         </div>
         <h2 className="text-2xl font-semibold text-text-primary">
-          No media yet
+          {t("album.noMediaTitle")}
         </h2>
         <p className="mt-3 max-w-md text-text-secondary">
-          Photos and videos will appear here once the owner uploads them.
+          {t("album.noMediaBody")}
         </p>
       </section>
     );
@@ -115,9 +116,9 @@ export function MediaGrid({
               <SlidersHorizontal className="h-4 w-4" aria-hidden="true" />
             </span>
             <div className="min-w-0">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-text-secondary">Sort by</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-text-secondary">{t("sort.label")}</p>
               <p className="truncate text-sm font-semibold text-text-primary" aria-live="polite">
-                {mediaSortLabels[sortMode]}{isPending ? "..." : ""}
+                {t(`sort.${sortMode}`)}{isPending ? "..." : ""}
               </p>
             </div>
           </div>
@@ -135,17 +136,17 @@ export function MediaGrid({
                 }`}
                 aria-pressed={sortMode === mode}
               >
-                {mediaSortLabels[mode]}
+                {t(`sort.${mode}`)}
               </button>
             ))}
             <Button variant="secondary" className="h-10 px-4" onClick={resetSortMode}>
               <RotateCcw className="h-4 w-4" />
-              Reset
+              {t("sort.reset")}
             </Button>
           </div>
 
           <div className="grid gap-2 lg:hidden">
-            <label className="sr-only" htmlFor={`album-sort-${albumId}`}>Sort album media</label>
+            <label className="sr-only" htmlFor={`album-sort-${albumId}`}>{t("sort.label")}</label>
             <select
               id={`album-sort-${albumId}`}
               value={sortMode}
@@ -154,13 +155,13 @@ export function MediaGrid({
             >
               {mediaSortModes.map((mode) => (
                 <option key={mode} value={mode}>
-                  {mediaSortLabels[mode]}
+                  {t(`sort.${mode}`)}
                 </option>
               ))}
             </select>
             <Button variant="secondary" className="w-full" onClick={resetSortMode}>
               <RotateCcw className="h-4 w-4" />
-              Reset to default
+              {t("sort.resetDefault")}
             </Button>
           </div>
         </div>

@@ -1,7 +1,10 @@
+"use client";
+
 import Image from "next/image";
 import { Play } from "lucide-react";
 import { DownloadButton } from "@/components/media/DownloadButton";
 import { MediaLikeButton } from "@/components/media/MediaLikeButton";
+import { useI18n } from "@/lib/i18n-client";
 import type { Media } from "@/lib/types";
 
 interface MediaCardProps {
@@ -19,6 +22,7 @@ export function MediaCard({
   protectAssets = false,
   onOpen,
 }: MediaCardProps) {
+  const { t } = useI18n();
   const aspectRatio =
     media.width && media.height ? `${media.width} / ${media.height}` : "4 / 3";
   const previewUrl = media.thumbnail_url ?? media.poster_url ?? media.medium_url ?? media.url;
@@ -32,12 +36,12 @@ export function MediaCard({
       <button
         className="absolute inset-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         onClick={() => onOpen(index)}
-        aria-label={`Open ${media.title ?? media.original_filename ?? "media"}`}
+        aria-label={`${t("media.open")} ${media.title ?? media.original_filename ?? ""}`.trim()}
       >
         {media.media_type === "image" ? (
           <Image
             src={previewUrl}
-            alt={media.title ?? media.original_filename ?? "Album image"}
+            alt={media.title ?? media.original_filename ?? t("media.image")}
             fill
             sizes="(min-width: 1280px) 25vw, (min-width: 768px) 33vw, 50vw"
             className="object-cover transition duration-300 ease-out group-hover:scale-[1.05]"
@@ -48,7 +52,7 @@ export function MediaCard({
             {previewUrl ? (
               <Image
                 src={previewUrl}
-                alt={media.title ?? "Video poster"}
+                alt={media.title ?? t("media.video")}
                 fill
                 sizes="(min-width: 1280px) 25vw, (min-width: 768px) 33vw, 50vw"
                 className="object-cover transition duration-300 ease-out group-hover:scale-[1.05]"

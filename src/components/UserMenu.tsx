@@ -2,8 +2,9 @@
 
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
-import { LogIn, LogOut, Moon, Sun, UserRound } from "lucide-react";
+import { Globe2, LogIn, LogOut, Moon, Sun, UserRound } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";
+import { localeMeta, supportedLocales, useI18n, type Locale } from "@/lib/i18n-client";
 import type { PublicSession } from "@/lib/types";
 
 type ThemeMode = "day" | "night";
@@ -34,19 +35,20 @@ function syncThemeClass(mode: ThemeMode) {
 
 export function UserMenu({ session }: UserMenuProps) {
   const [open, setOpen] = useState(false);
+  const { locale, setLocale, t } = useI18n();
   const theme = useSyncExternalStore(subscribeTheme, getStoredTheme, () => "day" as ThemeMode);
   const menuRef = useRef<HTMLDivElement>(null);
 
-  const name = session.displayName ?? session.email ?? "Guest";
+  const name = session.displayName ?? session.email ?? t("user.guest");
   const roleLabel = session.isFounder
-    ? "Founder account"
+    ? t("user.founder")
     : session.isAdmin
-      ? "Admin account"
+      ? t("user.admin")
       : session.userId
-        ? "Member account"
-        : "Guest";
+        ? t("user.member")
+        : t("user.guestRole");
 
-  const initialsName = useMemo(() => name || "Guest", [name]);
+  const initialsName = useMemo(() => name || t("user.guest"), [name, t]);
 
   useEffect(() => {
     syncThemeClass(theme);
@@ -81,6 +83,11 @@ export function UserMenu({ session }: UserMenuProps) {
     window.dispatchEvent(new Event(themeEvent));
   }
 
+  function changeLocale(nextLocale: Locale) {
+    setLocale(nextLocale);
+    window.setTimeout(() => window.location.reload(), 80);
+  }
+
   return (
     <div ref={menuRef} className="relative ml-auto md:ml-0">
       <button
@@ -88,11 +95,11 @@ export function UserMenu({ session }: UserMenuProps) {
         className="group flex items-center gap-2 rounded-full border border-border bg-surface/80 p-1 pr-2 shadow-lg shadow-text-primary/5 backdrop-blur transition-all duration-300 hover:-translate-y-0.5 hover:bg-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         onClick={() => setOpen((current) => !current)}
         aria-expanded={open}
-        aria-label="Open user menu"
+        aria-label={t("user.openMenu")}
       >
         <Avatar name={initialsName} imageUrl={session.avatarUrl ?? undefined} />
         <span className="hidden max-w-[120px] truncate text-xs font-semibold text-text-primary md:block">
-          {session.userId ? name : "Guest"}
+          {session.userId ? name : t("user.guest")}
         </span>
       </button>
 
@@ -124,12 +131,36 @@ export function UserMenu({ session }: UserMenuProps) {
               <Sun className="absolute inset-0 h-4 w-4 theme-sun-icon" />
               <Moon className="absolute inset-0 h-4 w-4 theme-moon-icon" />
             </span>
-            Theme mode
+            {t("user.theme")}
           </span>
           <span className="relative h-6 w-11 rounded-full border border-border bg-background">
             <span className="theme-toggle-knob absolute left-1 top-1 h-4 w-4 rounded-full bg-accent transition" />
           </span>
         </button>
+
+        <label className="mt-1 grid gap-2 rounded-[1rem] px-3 py-3 text-sm font-medium text-text-primary transition hover:bg-background focus-within:ring-2 focus-within:ring-ring">
+          <span className="inline-flex items-center justify-between gap-3">
+            <span className="inline-flex items-center gap-3">
+              <Globe2 className="h-4 w-4 text-muted-accent" aria-hidden="true" />
+              {t("user.language")}
+            </span>
+            <span className="max-w-[9rem] truncate text-xs font-semibold text-text-secondary">
+              {localeMeta[locale].nativeName}
+            </span>
+          </span>
+          <select
+            value={locale}
+            onChange={(event) => changeLocale(event.target.value as Locale)}
+            aria-label={t("user.chooseLanguage")}
+            className="h-11 w-full rounded-full border border-border bg-background/80 px-4 text-sm text-text-primary outline-none"
+          >
+            {supportedLocales.map((item) => (
+              <option key={item} value={item}>
+                {localeMeta[item].nativeName}
+              </option>
+            ))}
+          </select>
+        </label>
 
         {session.userId ? (
           <button
@@ -138,7 +169,7 @@ export function UserMenu({ session }: UserMenuProps) {
             onClick={logout}
           >
             <LogOut className="h-4 w-4 text-muted-accent" aria-hidden="true" />
-            Logout
+            {t("user.logout")}
           </button>
         ) : (
           <Link
@@ -146,13 +177,13 @@ export function UserMenu({ session }: UserMenuProps) {
             className="mt-1 flex w-full items-center gap-3 rounded-[1rem] px-3 py-3 text-sm font-medium text-text-primary transition hover:bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             <LogIn className="h-4 w-4 text-muted-accent" aria-hidden="true" />
-            Login with Google
+            {t("user.loginGoogle")}
           </Link>
         )}
 
         <div className="mt-2 flex items-center gap-2 rounded-[1rem] border border-border px-3 py-2 text-xs text-text-secondary">
           <UserRound className="h-3.5 w-3.5" aria-hidden="true" />
-          Google accounts only
+          {t("user.googleOnly")}
         </div>
       </div>
     </div>

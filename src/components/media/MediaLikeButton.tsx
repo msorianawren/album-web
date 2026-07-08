@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Heart } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { getOrCreateClientId } from "@/lib/client-id";
+import { useI18n } from "@/lib/i18n-client";
 
 interface MediaLikeButtonProps {
   mediaId: string;
@@ -11,6 +12,7 @@ interface MediaLikeButtonProps {
 }
 
 export function MediaLikeButton({ mediaId, compact }: MediaLikeButtonProps) {
+  const { t } = useI18n();
   const [count, setCount] = useState(0);
   const [liked, setLiked] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -55,13 +57,13 @@ export function MediaLikeButton({ mediaId, compact }: MediaLikeButtonProps) {
       }
       onClick={toggleLike}
       disabled={isLoading}
-      aria-label={liked ? "Unlike media" : "Like media"}
+      aria-label={liked ? t("media.unlike") : t("media.likeMedia")}
     >
       <Heart
         className={liked ? "h-4 w-4 fill-current" : "h-4 w-4"}
         aria-hidden="true"
       />
-      {!compact ? <span>{count > 0 ? `Like ${count}` : "Like"}</span> : null}
+      {!compact ? <span>{count > 0 ? `${t("media.like")} ${count}` : t("media.like")}</span> : null}
     </Button>
   );
 }

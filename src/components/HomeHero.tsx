@@ -1,11 +1,15 @@
 import { ArrowRight, Camera, Play, Sparkles } from "lucide-react";
+import { getDictionary, getRequestLocale, translate } from "@/lib/i18n";
 import type { LandingPageContent } from "@/lib/types";
 
 interface HomeHeroProps {
   landing: LandingPageContent;
 }
 
-export function HomeHero({ landing }: HomeHeroProps) {
+export async function HomeHero({ landing }: HomeHeroProps) {
+  const locale = await getRequestLocale();
+  const dictionary = getDictionary(locale);
+  const t = (key: string) => translate(dictionary, key);
   const primaryHref = landing.primary_cta_href === "#albums" ? "/albums" : landing.primary_cta_href;
   const secondaryHref = landing.secondary_cta_href === "#albums" ? "/albums" : landing.secondary_cta_href;
   const stats = [
@@ -20,16 +24,16 @@ export function HomeHero({ landing }: HomeHeroProps) {
         <div className="relative z-10 flex min-w-0 flex-col justify-center animate-editorial-in">
           <p className="mb-5 inline-flex w-fit max-w-full items-center gap-2 rounded-full border border-border bg-surface/70 px-4 py-2 text-[0.68rem] font-semibold uppercase text-text-secondary shadow-sm backdrop-blur sm:text-xs">
             <Sparkles className="h-3.5 w-3.5 text-muted-accent" aria-hidden="true" />
-            <span className="truncate">Premium model portfolio</span>
+            <span className="truncate">{t("home.premiumPortfolio")}</span>
           </p>
           <h1 className="max-w-3xl break-words text-[3.2rem] font-semibold leading-[0.92] text-text-primary sm:text-7xl lg:text-8xl">
             Oriana Wren
           </h1>
           <p className="mt-4 text-sm font-semibold uppercase tracking-[0.28em] text-text-secondary">
-            Professional Model
+            {t("brand.role")}
           </p>
           <p className="mt-6 max-w-2xl break-words text-xl leading-8 text-text-primary/86 sm:text-3xl sm:leading-10">
-            Creating timeless visual stories through light, form & emotion.
+            {t("brand.slogan")}
           </p>
           <p className="mt-5 max-w-2xl break-words text-base leading-8 text-text-secondary">
             {landing.body}
@@ -74,7 +78,7 @@ export function HomeHero({ landing }: HomeHeroProps) {
             <div className="absolute inset-0 bg-[linear-gradient(180deg,transparent_42%,rgba(0,0,0,0.42))]" />
             <div className="absolute bottom-4 left-4 right-4 flex items-end justify-between gap-3 text-white sm:bottom-5 sm:left-5 sm:right-5 sm:items-center">
               <div className="min-w-0">
-                <p className="text-xs font-semibold uppercase opacity-80">Featured story</p>
+                <p className="text-xs font-semibold uppercase opacity-80">{t("home.featuredStory")}</p>
                 <p className="mt-1 line-clamp-2 text-base font-semibold sm:text-lg">{landing.feature_title}</p>
               </div>
               <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/25 bg-white/15 backdrop-blur sm:h-12 sm:w-12">
@@ -104,7 +108,7 @@ export function HomeHero({ landing }: HomeHeroProps) {
               </div>
               <div className="flex min-w-0 flex-col justify-between p-2">
                 <p className="text-xs font-semibold uppercase text-text-secondary">
-                  Studio note
+                  {t("home.studioNote")}
                 </p>
                 <p className="mt-2 text-sm leading-6 text-text-primary">
                   {landing.feature_body}

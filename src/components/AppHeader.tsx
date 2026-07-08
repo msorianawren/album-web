@@ -4,18 +4,20 @@ import { getPublicSession } from "@/lib/auth";
 import { Input } from "@/components/ui/Input";
 import { PublicMobileNav } from "@/components/PublicMobileNav";
 import { UserMenu } from "@/components/UserMenu";
-
-const navItems = [
-  { href: "/", label: "Home" },
-  { href: "/albums", label: "Albums" },
-  { href: "/albums", label: "Explore" },
-  { href: "/about", label: "About" },
-  { href: "/contact", label: "Contact Us" },
-];
+import { getDictionary, getRequestLocale, translate } from "@/lib/i18n";
 
 export async function AppHeader() {
-  const session = await getPublicSession();
-  const mobileItems = navItems.filter((item) => item.label !== "Explore");
+  const [session, locale] = await Promise.all([getPublicSession(), getRequestLocale()]);
+  const dictionary = getDictionary(locale);
+  const t = (key: string) => translate(dictionary, key);
+  const navItems = [
+    { href: "/", label: t("nav.home") },
+    { href: "/albums", label: t("nav.albums") },
+    { href: "/albums", label: t("nav.explore") },
+    { href: "/about", label: t("nav.about") },
+    { href: "/contact", label: t("nav.contact") },
+  ];
+  const mobileItems = navItems.filter((_, index) => index !== 2);
 
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-background/80 backdrop-blur-xl">
@@ -28,11 +30,11 @@ export async function AppHeader() {
             Oriana Wren
           </span>
           <span className="truncate text-[0.56rem] uppercase tracking-[0.22em] text-text-secondary sm:text-[0.64rem] sm:tracking-[0.3em]">
-            Professional Model
+            {t("brand.role")}
           </span>
         </Link>
 
-        <nav className="ml-4 hidden items-center gap-1 lg:flex" aria-label="Primary">
+        <nav className="ml-4 hidden items-center gap-1 lg:flex" aria-label={t("nav.primary")}>
           {navItems.map((item) => (
             <Link
               key={`${item.href}-${item.label}`}
@@ -51,8 +53,8 @@ export async function AppHeader() {
           />
           <Input
             name="q"
-            aria-label="Search albums"
-            placeholder="Search portfolio"
+            aria-label={t("nav.searchAlbums")}
+            placeholder={t("nav.searchPortfolio")}
             className="pl-11"
           />
         </form>
@@ -63,18 +65,18 @@ export async function AppHeader() {
             className="hidden h-11 items-center justify-center gap-2 rounded-full bg-accent px-5 text-xs font-semibold uppercase tracking-[0.16em] text-accent-foreground transition-all hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.98] sm:inline-flex"
           >
             <Shield className="h-4 w-4" aria-hidden="true" />
-            Studio
+            {t("nav.studio")}
           </Link>
         ) : session.userId ? (
           <span className="hidden h-11 items-center justify-center rounded-full border border-border bg-surface/70 px-5 text-xs font-semibold uppercase tracking-[0.16em] text-text-primary sm:inline-flex">
-            Signed in
+            {t("nav.signedIn")}
           </span>
         ) : (
           <Link
             href="/login"
             className="hidden h-11 items-center justify-center rounded-full border border-border bg-surface/70 px-5 text-xs font-semibold uppercase tracking-[0.16em] text-text-primary transition hover:bg-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:inline-flex"
           >
-            Login
+            {t("nav.login")}
           </Link>
         )}
         <PublicMobileNav session={session} navItems={navItems} />
@@ -82,7 +84,7 @@ export async function AppHeader() {
       </div>
       <nav
         className="mx-auto flex w-full max-w-[1440px] gap-2 overflow-x-auto border-t border-border/70 px-3 py-2 sm:px-8 lg:hidden"
-        aria-label="Mobile quick navigation"
+        aria-label={t("nav.mobilePrimary")}
       >
         {mobileItems.map((item) => (
           <Link
@@ -98,14 +100,14 @@ export async function AppHeader() {
             href="/studio"
             className="flex h-10 shrink-0 items-center justify-center rounded-full bg-accent px-4 text-xs font-semibold uppercase tracking-[0.12em] text-accent-foreground shadow-sm shadow-text-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
-            Studio
+            {t("nav.studio")}
           </Link>
         ) : !session.userId ? (
           <Link
             href="/login"
             className="flex h-10 shrink-0 items-center justify-center rounded-full border border-border bg-surface/82 px-4 text-xs font-semibold uppercase tracking-[0.12em] text-text-primary shadow-sm shadow-text-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
-            Login
+            {t("nav.login")}
           </Link>
         ) : null}
       </nav>

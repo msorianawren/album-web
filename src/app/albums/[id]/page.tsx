@@ -9,6 +9,7 @@ import { CommentSection } from "@/components/comments/CommentSection";
 import { LikeButton } from "@/components/media/LikeButton";
 import { MediaGrid } from "@/components/media/MediaGrid";
 import { getAlbum } from "@/lib/albums";
+import { getDictionary, getRequestLocale, translate } from "@/lib/i18n";
 import { getSiteSettings } from "@/lib/site-settings";
 
 interface AlbumPageProps {
@@ -19,19 +20,20 @@ interface AlbumPageProps {
 
 export async function generateMetadata({ params }: AlbumPageProps): Promise<Metadata> {
   const { id } = await params;
-  const album = await getAlbum(id);
+  const [album, locale] = await Promise.all([getAlbum(id), getRequestLocale()]);
+  const t = (key: string) => translate(getDictionary(locale), key);
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ?? "";
 
   if (!album) {
     return {
-      title: "Album not found",
+      title: t("errors.albumNotFound"),
     };
   }
 
   if (album.locked) {
     return {
-      title: "Private album",
-      description: "This album is private. Please contact the owner for access.",
+      title: t("album.privateTitle"),
+      description: t("album.privateDescription"),
       robots: {
         index: false,
         follow: false,

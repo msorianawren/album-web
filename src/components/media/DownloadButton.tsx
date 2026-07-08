@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Download } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { useI18n } from "@/lib/i18n-client";
 
 interface DownloadButtonProps {
   href: string;
@@ -18,12 +19,14 @@ function filenameFromDisposition(disposition: string | null) {
 
 export function DownloadButton({
   href,
-  label = "Download",
+  label,
   compact,
   disabled,
 }: DownloadButtonProps) {
+  const { t } = useI18n();
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState("");
+  const buttonLabel = label ?? t("media.download");
 
   async function download() {
     if (disabled || isLoading) return;
@@ -42,9 +45,9 @@ export function DownloadButton({
       anchor.click();
       anchor.remove();
       URL.revokeObjectURL(url);
-      setMessage("Ready");
+      setMessage(t("media.ready"));
     } catch {
-      setMessage("Failed");
+      setMessage(t("media.failed"));
     } finally {
       setIsLoading(false);
     }
@@ -61,10 +64,10 @@ export function DownloadButton({
         }
         onClick={download}
         disabled={disabled || isLoading}
-        aria-label={label}
+        aria-label={buttonLabel}
       >
         <Download className="h-4 w-4" aria-hidden="true" />
-        {!compact ? <span>{isLoading ? "Preparing..." : label}</span> : null}
+        {!compact ? <span>{isLoading ? t("media.preparing") : buttonLabel}</span> : null}
       </Button>
       {!compact && message ? (
         <span className="text-xs text-text-secondary" aria-live="polite">

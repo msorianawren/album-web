@@ -1,8 +1,12 @@
 import Image from "next/image";
 import { Lock } from "lucide-react";
+import { getDictionary, getRequestLocale, translate } from "@/lib/i18n";
 import type { AlbumDetail } from "@/lib/types";
 
-export function LockedAlbumState({ album }: { album: AlbumDetail }) {
+export async function LockedAlbumState({ album }: { album: AlbumDetail }) {
+  const locale = await getRequestLocale();
+  const t = (key: string) => translate(getDictionary(locale), key);
+
   return (
     <section className="mx-auto grid w-full max-w-[1440px] gap-8 px-4 pb-20 pt-6 sm:px-8 lg:grid-cols-[0.9fr_1.1fr] lg:px-12">
       <div className="relative aspect-[4/3] overflow-hidden rounded-[2rem] bg-surface">
@@ -25,11 +29,11 @@ export function LockedAlbumState({ album }: { album: AlbumDetail }) {
           <Lock className="h-6 w-6 text-text-secondary" aria-hidden="true" />
         </div>
         <h2 className="text-3xl font-semibold text-text-primary">
-          Private album
+          {t("album.privateTitle")}
         </h2>
         <p className="mt-4 max-w-xl text-base leading-7 text-text-secondary">
           {album.private_message ??
-            "This album is private. Please contact the owner for access."}
+            t("album.privateDescription")}
         </p>
       </div>
     </section>

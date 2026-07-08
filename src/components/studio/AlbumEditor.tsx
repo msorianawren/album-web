@@ -19,7 +19,8 @@ import {
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
-import { mediaSortLabels, mediaSortModes, parseMediaSortMode } from "@/lib/media-sort";
+import { useI18n } from "@/lib/i18n-client";
+import { mediaSortModes, parseMediaSortMode } from "@/lib/media-sort";
 import type { AlbumDetail, AlbumStatus, Media } from "@/lib/types";
 import { formatBytes, slugify } from "@/lib/utils";
 
@@ -38,6 +39,7 @@ function queuedId(file: File) {
 }
 
 export function AlbumEditor({ album }: { album: AlbumDetail }) {
+  const { t } = useI18n();
   const [title, setTitle] = useState(album.title);
   const [slug, setSlug] = useState(album.slug);
   const [description, setDescription] = useState(album.description ?? "");
@@ -268,26 +270,26 @@ export function AlbumEditor({ album }: { album: AlbumDetail }) {
       <section className="grid gap-5 rounded-[1.4rem] border border-border bg-surface/82 p-5 shadow-xl shadow-text-primary/5 xl:grid-cols-[1.05fr_0.95fr]">
         <div className="grid gap-4">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-text-secondary">Album information</p>
-            <h2 className="mt-2 text-2xl font-semibold text-text-primary">Identity, visibility, and metadata</h2>
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-text-secondary">{t("studio.albumInfo")}</p>
+            <h2 className="mt-2 text-2xl font-semibold text-text-primary">{t("studio.identity")}</h2>
           </div>
           <div className="grid gap-4 lg:grid-cols-2">
             <label className="grid gap-2">
-              <span className="text-sm font-medium text-text-primary">Title</span>
+              <span className="text-sm font-medium text-text-primary">{t("studio.title")}</span>
               <Input value={title} onChange={(event) => setTitle(event.target.value)} maxLength={120} />
             </label>
             <label className="grid gap-2">
-              <span className="text-sm font-medium text-text-primary">Slug</span>
+              <span className="text-sm font-medium text-text-primary">{t("studio.slug")}</span>
               <Input value={slug} onChange={(event) => setSlug(slugify(event.target.value))} maxLength={120} />
             </label>
           </div>
           <label className="grid gap-2">
-            <span className="text-sm font-medium text-text-primary">Description / mood text</span>
+            <span className="text-sm font-medium text-text-primary">{t("studio.description")}</span>
             <Textarea value={description} onChange={(event) => setDescription(event.target.value)} maxLength={500} />
           </label>
           <div className="grid gap-4 lg:grid-cols-2">
             <label className="grid gap-2">
-              <span className="text-sm font-medium text-text-primary">Visibility</span>
+              <span className="text-sm font-medium text-text-primary">{t("studio.visibility")}</span>
               <select
                 value={status}
                 onChange={(event) => setStatus(event.target.value as AlbumStatus)}
@@ -299,11 +301,11 @@ export function AlbumEditor({ album }: { album: AlbumDetail }) {
               </select>
             </label>
             <label className="grid gap-2">
-              <span className="text-sm font-medium text-text-primary">Animated preview fallback URL</span>
+              <span className="text-sm font-medium text-text-primary">{t("studio.previewFallback")}</span>
               <Input value={coverUrl} onChange={(event) => setCoverUrl(event.target.value)} placeholder="Fallback image URL" />
             </label>
             <label className="grid gap-2 lg:col-span-2">
-              <span className="text-sm font-medium text-text-primary">Default gallery sort</span>
+              <span className="text-sm font-medium text-text-primary">{t("studio.defaultSort")}</span>
               <select
                 value={defaultMediaSort}
                 onChange={(event) => setDefaultMediaSort(parseMediaSortMode(event.target.value))}
@@ -311,36 +313,36 @@ export function AlbumEditor({ album }: { album: AlbumDetail }) {
               >
                 {mediaSortModes.map((mode) => (
                   <option key={mode} value={mode}>
-                    {mediaSortLabels[mode]}
+                    {t(`sort.${mode}`)}
                   </option>
                 ))}
               </select>
               <span className="text-xs leading-5 text-text-secondary">
-                Visitors can still choose their own temporary sort. This only sets the album default.
+                {t("studio.defaultSortHelp")}
               </span>
             </label>
           </div>
           <div className="flex flex-wrap gap-2">
             <Button variant="secondary" onClick={() => navigator.clipboard.writeText(publicUrl)}>
               <Copy className="h-4 w-4" />
-              Copy URL
+              {t("studio.copyUrl")}
             </Button>
             <Link
               href={`/albums/${slug}`}
               className="inline-flex h-11 items-center justify-center gap-2 rounded-full border border-border bg-surface/80 px-5 text-xs font-semibold uppercase tracking-[0.14em] text-text-primary"
             >
               <ExternalLink className="h-4 w-4" />
-              View
+              {t("studio.view")}
             </Link>
             <Link
               href="/studio/albums"
               className="inline-flex h-11 items-center justify-center rounded-full border border-border bg-surface/80 px-5 text-xs font-semibold uppercase tracking-[0.14em] text-text-primary"
             >
-              Back
+              {t("studio.back")}
             </Link>
             <Button onClick={saveAlbum} disabled={saving}>
               <Save className="h-4 w-4" />
-              {saving ? "Saving" : "Save album"}
+              {saving ? "Saving" : t("studio.saveAlbum")}
             </Button>
           </div>
           <div className="text-sm text-text-secondary" aria-live="polite">
@@ -350,7 +352,7 @@ export function AlbumEditor({ album }: { album: AlbumDetail }) {
         </div>
 
         <aside className="min-w-0">
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-text-secondary">Animated preview</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-text-secondary">{t("studio.animatedPreview")}</p>
           <div className="living-preview-frame relative mt-3 aspect-[4/5] overflow-hidden rounded-[1.4rem] border border-border bg-surface-secondary shadow-2xl shadow-text-primary/10">
             {animatedPreviewImages.length ? (
               animatedPreviewImages.map((src, index) => (
@@ -383,7 +385,7 @@ export function AlbumEditor({ album }: { album: AlbumDetail }) {
       <section className="rounded-[1.4rem] border border-border bg-surface/82 p-5 shadow-xl shadow-text-primary/5">
         <div className="grid gap-5 lg:grid-cols-[320px_1fr]">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-text-secondary">Upload queue</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-text-secondary">{t("studio.uploadQueue")}</p>
             <h2 className="mt-2 text-2xl font-semibold text-text-primary">Add multiple images or videos</h2>
             <p className="mt-2 text-sm leading-6 text-text-secondary">
               Preview files before uploading, remove mistakes, then publish them into this album.
@@ -457,12 +459,12 @@ export function AlbumEditor({ album }: { album: AlbumDetail }) {
       <section className="rounded-[1.4rem] border border-border bg-surface/82 p-5 shadow-xl shadow-text-primary/5">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-text-secondary">Image management</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-text-secondary">{t("studio.imageManagement")}</p>
             <h2 className="mt-2 text-2xl font-semibold text-text-primary">{media.length} item{media.length === 1 ? "" : "s"}</h2>
           </div>
           <Button variant="secondary" onClick={deleteAlbum} className="w-full sm:w-auto">
             <Trash2 className="h-4 w-4" />
-            Delete album
+            {t("studio.deleteAlbum")}
           </Button>
         </div>
         {media.length ? (
@@ -506,11 +508,11 @@ export function AlbumEditor({ album }: { album: AlbumDetail }) {
                     </Button>
                     <Button variant="secondary" onClick={() => toggleFeatured(item)}>
                       <Sparkles className="h-4 w-4" />
-                      {item.featured_rank ? "Featured" : "Feature"}
+                      {item.featured_rank ? t("studio.featured") : t("studio.feature")}
                     </Button>
                     <Button variant="secondary" onClick={() => editMedia(item)}>
                       <Edit3 className="h-4 w-4" />
-                      Edit
+                      {t("studio.edit")}
                     </Button>
                     <Button variant="icon" onClick={() => moveMedia(index, -1)} disabled={index === 0} aria-label="Move media up">
                       <ArrowUp className="h-4 w-4" />
