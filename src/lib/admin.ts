@@ -1,5 +1,5 @@
 import type { NextRequest } from "next/server";
-import { requireAdmin } from "@/lib/auth";
+import { requireAdmin, requireFounder } from "@/lib/auth";
 import type { PublicSession } from "@/lib/types";
 
 export function isAdminUser(user: { id?: string | null } | null | undefined) {
@@ -11,6 +11,14 @@ export async function requireAdminUser(request?: NextRequest): Promise<PublicSes
   const session = await requireAdmin(request);
   if (!session) {
     throw new Error("Admin access required.");
+  }
+  return session;
+}
+
+export async function requireFounderUser(request?: NextRequest): Promise<PublicSession> {
+  const session = await requireFounder(request);
+  if (!session) {
+    throw new Error("Founder access required.");
   }
   return session;
 }

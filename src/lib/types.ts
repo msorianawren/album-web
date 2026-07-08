@@ -1,5 +1,6 @@
 export type AlbumStatus = "public" | "updating" | "private";
 export type MediaType = "image" | "video";
+export type UserRole = "founder" | "admin" | "user" | "guest";
 
 export interface AlbumPreviewItem {
   id: string;
@@ -105,6 +106,13 @@ export interface UserProfile {
   display_name: string | null;
   avatar_url: string | null;
   provider: string;
+  role?: UserRole;
+  promoted_by?: string | null;
+  promoted_at?: string | null;
+  revoked_by?: string | null;
+  revoked_at?: string | null;
+  last_role_changed_at?: string | null;
+  role_change_reason?: string | null;
   is_blocked: boolean;
   blocked_reason: string | null;
   blocked_at: string | null;
@@ -138,7 +146,9 @@ export interface PublicSession {
   email: string | null;
   displayName: string | null;
   avatarUrl: string | null;
+  role: UserRole;
   isAdmin: boolean;
+  isFounder: boolean;
   isBlocked: boolean;
   blockedReason: string | null;
 }

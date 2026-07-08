@@ -2,10 +2,20 @@ import { cookies, headers } from "next/headers";
 import type { NextRequest } from "next/server";
 import type { User } from "@supabase/supabase-js";
 import { createAnonSupabase, supabase } from "@/lib/supabase";
-import type { PublicSession, UserProfile } from "@/lib/types";
+import type { PublicSession, UserProfile, UserRole } from "@/lib/types";
 
 function getAdminId() {
   return process.env.DEFAULT_OWNER_ID ?? "";
+}
+
+function normalizeRole(value: unknown): UserRole {
+  return value === "founder" || value === "admin" || value === "user" ? value : "user";
+}
+
+function getEffectiveRole(userId: string | null | undefined, profile: UserProfile | null): UserRole {
+  const adminId = getAdminId();
+  if (userId && adminId && userId === adminId) return "founder";
+  return normalizeRole(profile?.role);
 }
 
 function getUserDisplayName(user: User) {
@@ -106,15 +116,17 @@ export async function upsertUserProfile(user: User): Promise<UserProfile | null>
 
 export async function getPublicSession(request?: NextRequest): Promise<PublicSession> {
   const user = await getCurrentUser(request);
-  const adminId = getAdminId();
   const profile = user ? await upsertUserProfile(user) : null;
+  const role = user ? getEffectiveRole(user.id, profile) : "guest";
 
   return {
     userId: user?.id ?? null,
     email: user?.email?.toLowerCase() ?? null,
     displayName: user ? getUserDisplayName(user) : null,
     avatarUrl: user ? getUserAvatarUrl(user) : null,
-    isAdmin: Boolean(user?.id && adminId && user.id === adminId),
+    role,
+    isAdmin: role === "founder" || role === "admin",
+    isFounder: role === "founder",
     isBlocked: Boolean(profile?.is_blocked),
     blockedReason: profile?.blocked_reason ?? null,
   };
@@ -123,6 +135,11 @@ export async function getPublicSession(request?: NextRequest): Promise<PublicSes
 export async function requireAdmin(request?: NextRequest) {
   const session = await getPublicSession(request);
   return session.isAdmin && !session.isBlocked ? session : null;
+}
+
+export async function requireFounder(request?: NextRequest) {
+  const session = await getPublicSession(request);
+  return session.isFounder && !session.isBlocked ? session : null;
 }
 
 export async function requireUser(request?: NextRequest) {

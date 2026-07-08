@@ -1,6 +1,7 @@
 import "server-only";
 import { unstable_noStore as noStore } from "next/cache";
 import { defaultSiteSettings, getSiteSettings } from "@/lib/site-settings";
+import { getRoleAuditLogs, listAdminUsers } from "@/lib/role-management";
 import { supabase } from "@/lib/supabase";
 import type {
   Album,
@@ -8,7 +9,6 @@ import type {
   PublicSession,
   StudioCommentItem,
   StudioMediaItem,
-  UserProfile,
 } from "@/lib/types";
 import { normalizeAlbum, normalizeMedia } from "@/lib/albums";
 
@@ -92,22 +92,20 @@ export async function getStudioComments(limit = 200): Promise<StudioCommentItem[
 
 export async function getStudioUsersAndLogs() {
   noStore();
-  const [{ data: users }, { data: logs }] = await Promise.all([
-    supabase
-      .from("user_profiles")
-      .select("*")
-      .order("last_seen_at", { ascending: false })
-      .limit(200),
+  const [users, { data: logs }, roleLogs] = await Promise.all([
+    listAdminUsers(),
     supabase
       .from("audit_logs")
       .select("*")
       .order("created_at", { ascending: false })
       .limit(200),
+    getRoleAuditLogs(80),
   ]);
 
   return {
-    users: (users ?? []) as UserProfile[],
+    users,
     logs: (logs ?? []) as AuditLog[],
+    roleLogs,
   };
 }
 
@@ -155,7 +153,7 @@ export async function getStudioDashboardData(session: PublicSession) {
   const latestAlbumUpdate = albums[0]?.updated_at ?? albums[0]?.created_at ?? null;
   const warnings = [
     !process.env.DEFAULT_OWNER_ID ? "DEFAULT_OWNER_ID is missing." : null,
-    !session.isAdmin ? "Current user is not the configured owner." : null,
+    !session.isAdmin ? "Current user is not an admin." : null,
     !process.env.R2_PUBLIC_URL ? "R2_PUBLIC_URL is not configured." : null,
     !process.env.SUPABASE_SERVICE_ROLE_KEY ? "SUPABASE_SERVICE_ROLE_KEY is missing." : null,
     !totalAlbums ? "No albums have been created yet." : null,
@@ -207,7 +205,9 @@ export async function getStudioAnalyticsData() {
       email: null,
       displayName: null,
       avatarUrl: null,
+      role: "founder",
       isAdmin: true,
+      isFounder: true,
       isBlocked: false,
       blockedReason: null,
     }),

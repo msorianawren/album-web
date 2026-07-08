@@ -38,7 +38,13 @@ export function UserMenu({ session }: UserMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null);
 
   const name = session.displayName ?? session.email ?? "Guest";
-  const roleLabel = session.isAdmin ? "Admin account" : session.userId ? "Member account" : "Guest";
+  const roleLabel = session.isFounder
+    ? "Founder account"
+    : session.isAdmin
+      ? "Admin account"
+      : session.userId
+        ? "Member account"
+        : "Guest";
 
   const initialsName = useMemo(() => name || "Guest", [name]);
 

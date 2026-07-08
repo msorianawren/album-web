@@ -6,13 +6,15 @@ import { getStudioUsersAndLogs, getSystemHealth } from "@/lib/studio-data";
 
 export default async function StudioSecurityPage() {
   const session = await getPublicSession();
-  const [{ users, logs }, health] = await Promise.all([
+  const [{ users, logs, roleLogs }, health] = await Promise.all([
     getStudioUsersAndLogs(),
     getSystemHealth(session),
   ]);
 
   const checks = [
     ["Current user is admin", Boolean(session.isAdmin)],
+    ["Current user role loaded", Boolean(session.role)],
+    ["Founder protection active", Boolean(session.isFounder || health.env.DEFAULT_OWNER_ID)],
     ["DEFAULT_OWNER_ID configured", health.env.DEFAULT_OWNER_ID],
     ["Service role key server-only", health.env.SUPABASE_SERVICE_ROLE_KEY],
     ["R2 secrets server-only", health.env.R2_SECRET_ACCESS_KEY && health.env.R2_ACCESS_KEY_ID],
@@ -59,7 +61,12 @@ export default async function StudioSecurityPage() {
         </div>
       </section>
 
-      <SecurityConsole initialUsers={users} initialLogs={logs} adminUserId={session.userId ?? ""} />
+      <SecurityConsole
+        initialUsers={users}
+        initialLogs={logs}
+        initialRoleLogs={roleLogs}
+        session={session}
+      />
     </div>
   );
 }

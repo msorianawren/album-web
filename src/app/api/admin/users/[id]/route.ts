@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { requireAdmin } from "@/lib/auth";
 import { logAuditEvent } from "@/lib/audit";
 import { apiError, apiSuccess, toServerError } from "@/lib/errors";
+import { getAdminProfile } from "@/lib/role-management";
 import { supabase } from "@/lib/supabase";
 
 interface AdminUserRouteProps {
@@ -25,6 +26,23 @@ export async function PATCH(request: NextRequest, { params }: AdminUserRouteProp
 
     if (session.userId === id && isBlocked) {
       return apiError("INVALID_INPUT", "The admin account cannot block itself.", 400);
+    }
+
+    const targetProfile = await getAdminProfile(id);
+    if (targetProfile?.role === "founder" && session.userId !== id) {
+      await logAuditEvent({
+        request,
+        session,
+        action: "founder_protection_triggered",
+        targetType: "user",
+        targetId: id,
+        metadata: {
+          attempted_action: isBlocked ? "block_founder" : "unblock_founder",
+          result: "failed",
+          failure_reason: "Founder account cannot be restricted by another admin.",
+        },
+      });
+      return apiError("FORBIDDEN", "Founder account cannot be restricted by another admin.", 403);
     }
 
     const { data, error } = await supabase
