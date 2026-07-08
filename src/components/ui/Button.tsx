@@ -23,7 +23,8 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
           variant === "ghost" &&
             "text-text-primary hover:bg-surface-secondary",
           variant === "icon" &&
-            "h-10 w-10 rounded-full border border-border bg-background p-0 text-text-primary hover:bg-surface",
+            "h-10 w-10 shrink-0 rounded-full border border-border bg-accent p-0 text-accent-foreground shadow-sm shadow-text-primary/10 hover:-translate-y-0.5 hover:bg-text-primary hover:text-background",
+          "[&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg]:stroke-current",
           className,
         )}
         {...props}

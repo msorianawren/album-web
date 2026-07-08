@@ -58,10 +58,10 @@ export function MediaLikeButton({ mediaId, compact }: MediaLikeButtonProps) {
       aria-label={liked ? "Unlike media" : "Like media"}
     >
       <Heart
-        className={liked ? "h-4 w-4 fill-current text-text-primary" : "h-4 w-4"}
+        className={liked ? "h-4 w-4 fill-current" : "h-4 w-4"}
         aria-hidden="true"
       />
-      {!compact ? <span>{count}</span> : null}
+      {!compact ? <span>{count > 0 ? `Like ${count}` : "Like"}</span> : null}
     </Button>
   );
 }
