@@ -22,12 +22,15 @@ export function PublicMobileNav({ session, navItems }: PublicMobileNavProps) {
     <>
       <button
         type="button"
-        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-border bg-surface/80 text-text-primary shadow-lg shadow-text-primary/5 transition hover:bg-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring lg:hidden"
+        className="flex h-11 shrink-0 items-center justify-center gap-2 rounded-full border border-border bg-surface/80 px-3 text-text-primary shadow-lg shadow-text-primary/5 transition hover:bg-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring lg:hidden"
         onClick={() => setOpen(true)}
         aria-label="Open navigation menu"
         aria-expanded={open}
       >
         <Menu className="h-5 w-5" aria-hidden="true" />
+        <span className="hidden text-xs font-semibold uppercase tracking-[0.12em] sm:inline">
+          Menu
+        </span>
       </button>
 
       <div className={`fixed inset-0 z-50 lg:hidden ${open ? "" : "pointer-events-none"}`}>

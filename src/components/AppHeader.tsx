@@ -15,6 +15,7 @@ const navItems = [
 
 export async function AppHeader() {
   const session = await getPublicSession();
+  const mobileItems = navItems.filter((item) => item.label !== "Explore");
 
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-background/80 backdrop-blur-xl">
@@ -79,6 +80,35 @@ export async function AppHeader() {
         <PublicMobileNav session={session} navItems={navItems} />
         <UserMenu session={session} />
       </div>
+      <nav
+        className="mx-auto flex w-full max-w-[1440px] gap-2 overflow-x-auto border-t border-border/70 px-3 py-2 sm:px-8 lg:hidden"
+        aria-label="Mobile quick navigation"
+      >
+        {mobileItems.map((item) => (
+          <Link
+            key={`mobile-${item.href}-${item.label}`}
+            href={item.href}
+            className="flex h-10 shrink-0 items-center justify-center rounded-full border border-border bg-surface/82 px-4 text-xs font-semibold uppercase tracking-[0.12em] text-text-primary shadow-sm shadow-text-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            {item.label}
+          </Link>
+        ))}
+        {session.isAdmin ? (
+          <Link
+            href="/studio"
+            className="flex h-10 shrink-0 items-center justify-center rounded-full bg-accent px-4 text-xs font-semibold uppercase tracking-[0.12em] text-accent-foreground shadow-sm shadow-text-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            Studio
+          </Link>
+        ) : !session.userId ? (
+          <Link
+            href="/login"
+            className="flex h-10 shrink-0 items-center justify-center rounded-full border border-border bg-surface/82 px-4 text-xs font-semibold uppercase tracking-[0.12em] text-text-primary shadow-sm shadow-text-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            Login
+          </Link>
+        ) : null}
+      </nav>
     </header>
   );
 }
