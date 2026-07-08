@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { upsertUserProfile } from "@/lib/auth";
 import { clearAuthFlowCookies } from "@/lib/auth-flow";
 import { apiError, apiSuccess, toServerError } from "@/lib/errors";
+import { setSessionCookies } from "@/lib/session-cookies";
 import { createAnonSupabase, supabase } from "@/lib/supabase";
 
 function safeNext(value: unknown) {
@@ -58,19 +59,10 @@ export async function POST(request: NextRequest) {
     const next = profile?.is_blocked ? "/boycott" : safeNext(body.next);
     const response = apiSuccess({ next, isNewUser });
 
-    response.cookies.set("sb-access-token", accessToken, {
-      httpOnly: true,
-      sameSite: "lax",
-      secure: process.env.NODE_ENV === "production",
-      path: "/",
-      maxAge: Number.isFinite(expiresIn) ? expiresIn : 3600,
-    });
-    response.cookies.set("sb-refresh-token", refreshToken, {
-      httpOnly: true,
-      sameSite: "lax",
-      secure: process.env.NODE_ENV === "production",
-      path: "/",
-      maxAge: 60 * 60 * 24 * 30,
+    setSessionCookies(response, {
+      access_token: accessToken,
+      refresh_token: refreshToken,
+      expires_in: expiresIn,
     });
     clearAuthFlowCookies(response);
 

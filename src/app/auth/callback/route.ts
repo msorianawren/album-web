@@ -2,27 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { upsertUserProfile } from "@/lib/auth";
 import { clearAuthFlowCookies, getAuthFlow } from "@/lib/auth-flow";
 import { createAnonSupabase } from "@/lib/supabase";
-
-function setSessionCookies(response: NextResponse, session: {
-  access_token: string;
-  refresh_token: string;
-  expires_in: number;
-}) {
-  response.cookies.set("sb-access-token", session.access_token, {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-    path: "/",
-    maxAge: session.expires_in,
-  });
-  response.cookies.set("sb-refresh-token", session.refresh_token, {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-    path: "/",
-    maxAge: 60 * 60 * 24 * 30,
-  });
-}
+import { setSessionCookies } from "@/lib/session-cookies";
 
 function implicitCallbackPage(next: string, mode: string) {
   return new NextResponse(

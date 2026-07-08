@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { apiError, apiSuccess, toServerError } from "@/lib/errors";
 import { safeAuthNext, setAuthFlowCookies } from "@/lib/auth-flow";
+import { clearSessionCookies, sessionCookieNames } from "@/lib/session-cookies";
 import { createAnonSupabase } from "@/lib/supabase";
 
 export async function POST(request: NextRequest) {
@@ -15,7 +16,7 @@ export async function POST(request: NextRequest) {
         redirectTo: redirectTo.toString(),
         queryParams: {
           access_type: "offline",
-          prompt: "consent",
+          include_granted_scopes: "true",
         },
       },
     });
@@ -32,21 +33,27 @@ export async function POST(request: NextRequest) {
   }
 }
 
-export async function DELETE() {
+async function revokeBrowserSession(refreshToken: string) {
+  const client = createAnonSupabase();
+  const { data } = await client.auth.refreshSession({ refresh_token: refreshToken });
+
+  if (data.session) {
+    await client.auth.setSession({
+      access_token: data.session.access_token,
+      refresh_token: data.session.refresh_token,
+    });
+    await client.auth.signOut();
+  }
+}
+
+export async function DELETE(request: NextRequest) {
   const response = NextResponse.json({ success: true, data: { loggedOut: true } });
-  response.cookies.set("sb-access-token", "", {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-    path: "/",
-    maxAge: 0,
-  });
-  response.cookies.set("sb-refresh-token", "", {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-    path: "/",
-    maxAge: 0,
-  });
+  const refreshToken = request.cookies.get(sessionCookieNames.refresh)?.value;
+
+  if (refreshToken) {
+    await revokeBrowserSession(refreshToken).catch(() => null);
+  }
+
+  clearSessionCookies(response);
   return response;
 }

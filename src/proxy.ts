@@ -1,5 +1,13 @@
 import { NextRequest, NextResponse, type NextFetchEvent } from "next/server";
 import { createClient, type User } from "@supabase/supabase-js";
+import {
+  clearSessionCookies,
+  clearSessionRequestCookies,
+  sessionCookieNames,
+  setSessionCookies,
+  syncSessionRequestCookies,
+  type SessionCookiePayload,
+} from "@/lib/session-cookies";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
 const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "";
@@ -9,7 +17,11 @@ const adminId = process.env.DEFAULT_OWNER_ID ?? "";
 const rateBuckets = new Map<string, { count: number; resetAt: number }>();
 
 function getAccessToken(request: NextRequest) {
-  return request.cookies.get("sb-access-token")?.value ?? null;
+  return request.cookies.get(sessionCookieNames.access)?.value ?? null;
+}
+
+function getRefreshToken(request: NextRequest) {
+  return request.cookies.get(sessionCookieNames.refresh)?.value ?? null;
 }
 
 function getClientIp(request: NextRequest) {
@@ -59,7 +71,6 @@ function hasCrossOriginMutation(request: NextRequest) {
 
 function isPublicPath(pathname: string) {
   return (
-    pathname === "/login" ||
     pathname === "/boycott" ||
     pathname.startsWith("/auth/callback") ||
     pathname.startsWith("/api/auth/login") ||
@@ -76,6 +87,10 @@ function redirectToLogin(request: NextRequest) {
 
 function redirectToBoycott(request: NextRequest) {
   return NextResponse.redirect(new URL("/boycott", request.url));
+}
+
+function safeNextPath(value: string | null) {
+  return value?.startsWith("/") && !value.startsWith("//") ? value : "/";
 }
 
 function apiError(code: string, message: string, status: number) {
@@ -138,6 +153,97 @@ async function logRequest(request: NextRequest, user: User) {
   });
 }
 
+type AuthResolution =
+  | {
+      user: User;
+      refreshedSession?: SessionCookiePayload;
+    }
+  | {
+      shouldClearCookies: true;
+    }
+  | null;
+
+function createAuthClient() {
+  return createClient(supabaseUrl, anonKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+}
+
+function createAdminClient() {
+  return createClient(supabaseUrl, serviceRoleKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+}
+
+async function resolveAuthenticatedUser(request: NextRequest): Promise<AuthResolution> {
+  if (!supabaseUrl || !anonKey) return null;
+
+  const auth = createAuthClient();
+  const token = getAccessToken(request);
+
+  if (token) {
+    const { data, error } = await auth.auth.getUser(token);
+    if (!error && data.user) return { user: data.user };
+  }
+
+  const refreshToken = getRefreshToken(request);
+  if (!refreshToken) {
+    return token ? { shouldClearCookies: true } : null;
+  }
+
+  const { data, error } = await auth.auth.refreshSession({
+    refresh_token: refreshToken,
+  });
+
+  if (error || !data.session || !data.user) {
+    return { shouldClearCookies: true };
+  }
+
+  return {
+    user: data.user,
+    refreshedSession: data.session,
+  };
+}
+
+function responseNext(request: NextRequest, refreshedSession?: SessionCookiePayload) {
+  if (refreshedSession) {
+    syncSessionRequestCookies(request, refreshedSession);
+  }
+
+  const response = NextResponse.next(
+    refreshedSession ? { request: { headers: request.headers } } : undefined,
+  );
+
+  if (refreshedSession) {
+    setSessionCookies(response, refreshedSession);
+  }
+
+  return response;
+}
+
+function responseRedirect(
+  request: NextRequest,
+  target: string,
+  refreshedSession?: SessionCookiePayload,
+) {
+  const response = NextResponse.redirect(new URL(target, request.url));
+  if (refreshedSession) setSessionCookies(response, refreshedSession);
+  return response;
+}
+
+function responseUnauthenticated(request: NextRequest, clearCookies: boolean) {
+  const response = request.nextUrl.pathname.startsWith("/api")
+    ? apiError("UNAUTHENTICATED", "Login with Google is required.", 401)
+    : redirectToLogin(request);
+
+  if (clearCookies) {
+    clearSessionRequestCookies(request);
+    clearSessionCookies(response);
+  }
+
+  return response;
+}
+
 export async function proxy(request: NextRequest, event: NextFetchEvent) {
   const pathname = request.nextUrl.pathname;
 
@@ -153,33 +259,30 @@ export async function proxy(request: NextRequest, event: NextFetchEvent) {
 
   if (isPublicPath(pathname)) return NextResponse.next();
 
-  const token = getAccessToken(request);
-  if (!token) {
-    return pathname.startsWith("/api")
-      ? apiError("UNAUTHENTICATED", "Login with Google is required.", 401)
-      : redirectToLogin(request);
+  const authResolution = await resolveAuthenticatedUser(request);
+
+  if (!authResolution) {
+    return pathname === "/login" ? NextResponse.next() : responseUnauthenticated(request, false);
   }
 
-  const auth = createClient(supabaseUrl, anonKey, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
-  const admin = createClient(supabaseUrl, serviceRoleKey, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
-  const { data, error } = await auth.auth.getUser(token);
+  if ("shouldClearCookies" in authResolution) {
+    if (pathname === "/login") {
+      const response = NextResponse.next();
+      clearSessionRequestCookies(request);
+      clearSessionCookies(response);
+      return response;
+    }
 
-  if (error || !data.user) {
-    return pathname.startsWith("/api")
-      ? apiError("UNAUTHENTICATED", "Login with Google is required.", 401)
-      : redirectToLogin(request);
+    return responseUnauthenticated(request, true);
   }
 
-  const metadata = getUserMetadata(data.user);
+  const admin = createAdminClient();
+  const metadata = getUserMetadata(authResolution.user);
   const { data: profile } = await admin
     .from("user_profiles")
     .upsert(
       {
-        user_id: data.user.id,
+        user_id: authResolution.user.id,
         email: metadata.email,
         display_name: metadata.displayName,
         avatar_url: metadata.avatarUrl,
@@ -191,14 +294,28 @@ export async function proxy(request: NextRequest, event: NextFetchEvent) {
     .select("is_blocked")
     .single();
 
-  if (profile?.is_blocked && pathname !== "/boycott") {
-    return pathname.startsWith("/api")
-      ? apiError("FORBIDDEN", "This account has been blocked by the admin.", 403)
-      : redirectToBoycott(request);
+  if (pathname === "/login") {
+    return profile?.is_blocked
+      ? responseRedirect(request, "/boycott", authResolution.refreshedSession)
+      : responseRedirect(
+          request,
+          safeNextPath(request.nextUrl.searchParams.get("next")),
+          authResolution.refreshedSession,
+        );
   }
 
-  event.waitUntil(logRequest(request, data.user));
-  return NextResponse.next();
+  if (profile?.is_blocked && pathname !== "/boycott") {
+    const response = pathname.startsWith("/api")
+      ? apiError("FORBIDDEN", "This account has been blocked by the admin.", 403)
+      : redirectToBoycott(request);
+    if (authResolution.refreshedSession) {
+      setSessionCookies(response, authResolution.refreshedSession);
+    }
+    return response;
+  }
+
+  event.waitUntil(logRequest(request, authResolution.user));
+  return responseNext(request, authResolution.refreshedSession);
 }
 
 export const config = {
