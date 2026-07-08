@@ -11,6 +11,54 @@ function extensionFromMime(mimeType: string) {
   return fallback.replace("jpeg", "jpg").replace("quicktime", "mov");
 }
 
+function fileExtension(fileName: string, mimeType: string) {
+  const fromName = fileName.split(".").pop()?.toLowerCase();
+  if (fromName && fromName !== fileName.toLowerCase()) return fromName.replace(/[^a-z0-9]/g, "");
+  return extensionFromMime(mimeType);
+}
+
+function safeDisplayName(fileName: string) {
+  return fileName.replace(/\.[^.]+$/, "").trim().slice(0, 160) || "Untitled media";
+}
+
+function orientationFromDimensions(width?: number | null, height?: number | null) {
+  if (!width || !height) return "unknown";
+  if (width === height) return "square";
+  return height > width ? "portrait" : "landscape";
+}
+
+function dateToIso(value: unknown) {
+  if (!value) return null;
+  const date = value instanceof Date ? value : new Date(String(value));
+  const time = date.getTime();
+  return Number.isFinite(time) ? date.toISOString() : null;
+}
+
+async function readSafeImageMetadata(buffer: Buffer) {
+  try {
+    const exifr = await import("exifr");
+    const parsed = await exifr.parse(buffer, {
+      pick: ["DateTimeOriginal", "CreateDate", "ModifyDate"],
+      translateKeys: true,
+      translateValues: true,
+      reviveValues: true,
+      sanitize: true,
+    });
+    return {
+      takenAt:
+        dateToIso(parsed?.DateTimeOriginal) ??
+        dateToIso(parsed?.CreateDate) ??
+        dateToIso(parsed?.ModifyDate),
+      metadataStatus: parsed ? "extracted" : "fallback",
+    };
+  } catch {
+    return {
+      takenAt: null,
+      metadataStatus: "failed",
+    };
+  }
+}
+
 async function getAlbumOwnerId(albumId: string) {
   const { data, error } = await supabase
     .from("albums")
@@ -59,7 +107,10 @@ async function uploadImageMedia({
   settings: SiteSettings;
 }) {
   const image = sharp(buffer, { failOn: "error" }).rotate();
-  const metadata = await image.metadata();
+  const [metadata, safeMetadata] = await Promise.all([
+    image.metadata(),
+    readSafeImageMetadata(buffer),
+  ]);
   const pixelCount = (metadata.width ?? 0) * (metadata.height ?? 0);
   if (pixelCount > settings.max_image_pixels) {
     throw new Error("Image dimensions exceed the configured safety limit.");
@@ -143,11 +194,15 @@ async function uploadImageMedia({
 
   const [publicUrl, thumbnailUrl, mediumUrl] = await Promise.all(uploadJobs);
 
+  const width = metadata.width ?? null;
+  const height = metadata.height ?? null;
+  const takenAt = safeMetadata.takenAt;
+
   return {
     album_id: albumId,
     owner_id: ownerId,
     media_type: "image",
-    title: fileName.replace(/\.[^.]+$/, ""),
+    title: safeDisplayName(fileName),
     r2_key: publicKey,
     public_r2_key: publicKey,
     original_private_r2_key: privateOriginalKey,
@@ -156,11 +211,24 @@ async function uploadImageMedia({
     url: publicUrl,
     thumbnail_url: thumbnailUrl,
     medium_url: mediumUrl,
-    width: metadata.width ?? null,
-    height: metadata.height ?? null,
+    width,
+    height,
     file_size: publicBuffer.byteLength,
     mime_type: "image/webp",
     original_filename: fileName,
+    safe_display_name: safeDisplayName(fileName),
+    uploaded_at: new Date().toISOString(),
+    taken_at: takenAt,
+    sort_date: takenAt ?? new Date().toISOString(),
+    aspect_ratio: width && height ? Number((width / height).toFixed(6)) : null,
+    orientation: orientationFromDimensions(width, height),
+    file_extension: fileExtension(fileName, mimeType),
+    original_file_size: buffer.byteLength,
+    original_mime_type: mimeType,
+    featured_rank: 0,
+    view_count: 0,
+    metadata_status: takenAt ? safeMetadata.metadataStatus : "fallback",
+    processing_status: "processed",
     security_status: "processed",
     security_notes: "Image was decoded, orientation-normalized, resized when needed, re-encoded as WebP, and metadata-stripped before publishing.",
     download_allowed: true,
@@ -191,6 +259,7 @@ async function uploadVideoMedia({
   }
 
   const extension = extensionFromMime(mimeType);
+  const uploadedAt = new Date().toISOString();
   const originalKey = `albums/${albumId}/videos/${mediaId}/original.${extension}`;
   const url = await putR2Object({
     key: originalKey,
@@ -203,7 +272,7 @@ async function uploadVideoMedia({
     album_id: albumId,
     owner_id: ownerId,
     media_type: "video",
-    title: fileName.replace(/\.[^.]+$/, ""),
+    title: safeDisplayName(fileName),
     r2_key: originalKey,
     poster_r2_key: null,
     url,
@@ -212,6 +281,19 @@ async function uploadVideoMedia({
     file_size: buffer.byteLength,
     mime_type: mimeType,
     original_filename: fileName,
+    safe_display_name: safeDisplayName(fileName),
+    uploaded_at: uploadedAt,
+    taken_at: null,
+    sort_date: uploadedAt,
+    aspect_ratio: null,
+    orientation: "unknown",
+    file_extension: fileExtension(fileName, mimeType),
+    original_file_size: buffer.byteLength,
+    original_mime_type: mimeType,
+    featured_rank: 0,
+    view_count: 0,
+    metadata_status: "unavailable",
+    processing_status: "pending",
     security_status: "needs_review",
     security_notes: "Video passed MIME, extension, and file signature checks. Container metadata stripping/transcoding requires a media worker.",
     download_allowed: true,
@@ -278,6 +360,19 @@ export async function uploadMediaFile({
             "download_allowed",
             "original_download_allowed",
             "metadata_stripped",
+            "safe_display_name",
+            "uploaded_at",
+            "taken_at",
+            "sort_date",
+            "aspect_ratio",
+            "orientation",
+            "file_extension",
+            "original_file_size",
+            "original_mime_type",
+            "featured_rank",
+            "view_count",
+            "metadata_status",
+            "processing_status",
           ].includes(key),
       ),
     );

@@ -5,6 +5,7 @@ import { getPublicUrl } from "@/lib/r2";
 import { sampleAlbums } from "@/lib/sample-data";
 import { supabase } from "@/lib/supabase";
 import type { Album, AlbumDetail, AlbumPreviewItem, AlbumStatus, Media } from "@/lib/types";
+import { parseMediaSortMode, sortMedia, type MediaSortMode } from "@/lib/media-sort";
 
 type UnknownRow = Record<string, unknown>;
 
@@ -16,6 +17,11 @@ interface AlbumQuery {
 function toNullableNumber(value: unknown) {
   const number = Number(value);
   return Number.isFinite(number) ? number : null;
+}
+
+function toNullableInteger(value: unknown) {
+  const number = Number(value);
+  return Number.isInteger(number) ? number : 0;
 }
 
 function resolveAssetUrl(value: unknown) {
@@ -53,6 +59,8 @@ export function normalizeAlbum(row: UnknownRow): Album {
     media_count: Number(row.media_count ?? row.photo_count ?? 0),
     like_count: Number(row.like_count ?? 0),
     comment_count: Number(row.comment_count ?? 0),
+    default_media_sort:
+      typeof row.default_media_sort === "string" ? row.default_media_sort : null,
     created_at: String(row.created_at ?? new Date().toISOString()),
     updated_at:
       typeof row.updated_at === "string" ? row.updated_at : undefined,
@@ -103,6 +111,36 @@ export function normalizeMedia(row: UnknownRow): Media {
         : typeof row.file_name === "string"
           ? row.file_name
           : null,
+    safe_display_name:
+      typeof row.safe_display_name === "string" ? row.safe_display_name : null,
+    uploaded_at: typeof row.uploaded_at === "string" ? row.uploaded_at : null,
+    taken_at: typeof row.taken_at === "string" ? row.taken_at : null,
+    sort_date: typeof row.sort_date === "string" ? row.sort_date : null,
+    aspect_ratio: toNullableNumber(row.aspect_ratio),
+    orientation:
+      row.orientation === "portrait" ||
+      row.orientation === "landscape" ||
+      row.orientation === "square" ||
+      row.orientation === "unknown"
+        ? row.orientation
+        : null,
+    file_extension: typeof row.file_extension === "string" ? row.file_extension : null,
+    original_file_size: toNullableNumber(row.original_file_size),
+    original_mime_type: typeof row.original_mime_type === "string" ? row.original_mime_type : null,
+    featured_rank: toNullableInteger(row.featured_rank),
+    view_count: toNullableInteger(row.view_count),
+    like_count: toNullableInteger(row.like_count),
+    comment_count: toNullableInteger(row.comment_count),
+    metadata_status:
+      row.metadata_status === "extracted" ||
+      row.metadata_status === "unavailable" ||
+      row.metadata_status === "failed"
+        ? row.metadata_status
+        : "fallback",
+    processing_status:
+      row.processing_status === "failed" || row.processing_status === "pending"
+        ? row.processing_status
+        : "processed",
     public_r2_key: typeof row.public_r2_key === "string" ? row.public_r2_key : null,
     original_private_r2_key:
       typeof row.original_private_r2_key === "string" ? row.original_private_r2_key : null,
@@ -210,7 +248,7 @@ export async function getAlbums(query: AlbumQuery = {}): Promise<Album[]> {
 
 export async function getAlbum(
   slugOrId: string,
-  options: { isAdmin?: boolean } = {},
+  options: { isAdmin?: boolean; sort?: MediaSortMode | string | null } = {},
 ): Promise<AlbumDetail | null> {
   noStore();
 
@@ -262,12 +300,14 @@ export async function getAlbum(
 
     if (mediaError) throw mediaError;
 
-    const media = (mediaRows ?? []).map((row) => normalizeMedia(row));
+    const media = await attachMediaEngagementCounts((mediaRows ?? []).map((row) => normalizeMedia(row)));
+    const sortMode = parseMediaSortMode(options.sort, parseMediaSortMode(album.default_media_sort, "smart"));
+    const sortedMedia = sortMedia(media, sortMode, `${album.id}:${sortMode}`);
 
     return {
       ...album,
-      media,
-      preview_items: media.slice(0, 4).map((item) => ({
+      media: sortedMedia,
+      preview_items: sortedMedia.slice(0, 4).map((item) => ({
         id: item.id,
         media_type: item.media_type,
         title: item.title,
@@ -276,9 +316,9 @@ export async function getAlbum(
         medium_url: item.medium_url,
         poster_url: item.poster_url,
       })),
-      media_count: media.length || album.media_count,
-      photo_count: media.filter((item) => item.media_type === "image").length || album.photo_count,
-      video_count: media.filter((item) => item.media_type === "video").length || album.video_count,
+      media_count: sortedMedia.length || album.media_count,
+      photo_count: sortedMedia.filter((item) => item.media_type === "image").length || album.photo_count,
+      video_count: sortedMedia.filter((item) => item.media_type === "video").length || album.video_count,
       download_allowed: album.status === "public" || isAdmin,
       locked: false,
     };
@@ -294,4 +334,35 @@ export async function getAlbum(
 
     return sample;
   }
+}
+
+async function attachMediaEngagementCounts(media: Media[]) {
+  const ids = media.map((item) => item.id);
+  if (!ids.length) return media;
+
+  const [likesResult, commentsResult] = await Promise.all([
+    supabase.from("likes").select("media_id").in("media_id", ids),
+    supabase
+      .from("comments")
+      .select("media_id")
+      .in("media_id", ids)
+      .eq("is_hidden", false)
+      .is("deleted_at", null),
+  ]);
+
+  const likeCounts = new Map<string, number>();
+  for (const row of likesResult.data ?? []) {
+    if (row.media_id) likeCounts.set(row.media_id, (likeCounts.get(row.media_id) ?? 0) + 1);
+  }
+
+  const commentCounts = new Map<string, number>();
+  for (const row of commentsResult.data ?? []) {
+    if (row.media_id) commentCounts.set(row.media_id, (commentCounts.get(row.media_id) ?? 0) + 1);
+  }
+
+  return media.map((item) => ({
+    ...item,
+    like_count: likeCounts.get(item.id) ?? item.like_count ?? 0,
+    comment_count: commentCounts.get(item.id) ?? item.comment_count ?? 0,
+  }));
 }

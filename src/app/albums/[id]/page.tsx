@@ -84,9 +84,11 @@ export default async function AlbumPage({ params }: AlbumPageProps) {
             <LikeButton albumId={album.id} />
           </section>
           <MediaGrid
+            albumId={album.id}
             media={album.media}
             downloadAllowed={album.download_allowed}
             protectAssets={settings.disable_public_right_click}
+            defaultSortMode={album.default_media_sort}
           />
           <AlbumDownloadButton
             albumId={album.id}

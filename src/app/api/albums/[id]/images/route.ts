@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { requireAdmin } from "@/lib/auth";
+import { getPublicSession, requireAdmin } from "@/lib/auth";
 import { logAuditEvent } from "@/lib/audit";
 import { apiError, apiSuccess, toServerError } from "@/lib/errors";
 import { uploadMediaFile } from "@/lib/media";
@@ -8,6 +8,7 @@ import { enforceRateLimit } from "@/lib/security-rate-limit";
 import { getSiteSettings } from "@/lib/site-settings";
 import { supabase } from "@/lib/supabase";
 import { validateUploadFile } from "@/lib/upload-validation";
+import { mediaSortModes, parseMediaSortMode } from "@/lib/media-sort";
 
 export const runtime = "nodejs";
 
@@ -17,12 +18,21 @@ interface ImagesRouteProps {
 
 export async function GET(request: NextRequest, { params }: ImagesRouteProps) {
   const { id } = await params;
-  const session = await requireAdmin(request);
-  const album = await getAlbum(id, { isAdmin: Boolean(session?.isAdmin) });
+  const session = await getPublicSession(request);
+  const rawSort = request.nextUrl.searchParams.get("sort");
+  if (rawSort && !mediaSortModes.some((mode) => mode === rawSort)) {
+    return apiError("INVALID_INPUT", "Unsupported sort mode.", 400);
+  }
+  const sort = parseMediaSortMode(rawSort, "smart");
+  const album = await getAlbum(id, { isAdmin: Boolean(session?.isAdmin), sort });
 
   if (!album) return apiError("NOT_FOUND", "Album not found.", 404);
   if (album.locked) return apiSuccess({ media: [] });
-  return apiSuccess({ media: album.media, download_allowed: album.download_allowed });
+  return apiSuccess({
+    media: album.media,
+    sort,
+    download_allowed: album.download_allowed,
+  });
 }
 
 export async function POST(request: NextRequest, { params }: ImagesRouteProps) {

@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { albumLimits, albumStatuses, commentLimits } from "@/lib/config";
+import { mediaSortModes } from "@/lib/media-sort";
 
 export const slugSchema = z
   .string()
@@ -20,6 +21,7 @@ export const albumUpdateSchema = albumCreateSchema
   .partial()
   .extend({
     cover_media_id: z.string().uuid().optional().nullable(),
+    default_media_sort: z.enum(mediaSortModes).optional().nullable(),
   })
   .refine((value) => Object.keys(value).length > 0, {
     message: "At least one field is required.",
@@ -31,6 +33,7 @@ export const mediaUpdateSchema = z
     title: z.string().trim().max(160).optional().nullable(),
     description: z.string().trim().max(1000).optional().nullable(),
     sort_order: z.number().int().min(0).optional(),
+    featured_rank: z.number().int().min(0).max(100000).optional(),
     is_cover: z.boolean().optional(),
     download_allowed: z.boolean().optional(),
     original_download_allowed: z.boolean().optional(),

@@ -10,6 +10,7 @@ import {
   ExternalLink,
   ImageUp,
   Save,
+  Sparkles,
   Star,
   Trash2,
   UploadCloud,
@@ -18,6 +19,7 @@ import {
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
+import { mediaSortLabels, mediaSortModes, parseMediaSortMode } from "@/lib/media-sort";
 import type { AlbumDetail, AlbumStatus, Media } from "@/lib/types";
 import { formatBytes, slugify } from "@/lib/utils";
 
@@ -41,6 +43,7 @@ export function AlbumEditor({ album }: { album: AlbumDetail }) {
   const [description, setDescription] = useState(album.description ?? "");
   const [status, setStatus] = useState<AlbumStatus>(album.status);
   const [coverUrl, setCoverUrl] = useState(album.cover_url ?? "");
+  const [defaultMediaSort, setDefaultMediaSort] = useState(parseMediaSortMode(album.default_media_sort, "smart"));
   const [media, setMedia] = useState(album.media);
   const [queuedFiles, setQueuedFiles] = useState<QueuedFile[]>([]);
   const [dragOver, setDragOver] = useState(false);
@@ -109,6 +112,7 @@ export function AlbumEditor({ album }: { album: AlbumDetail }) {
         description: description || null,
         status,
         cover_url: coverUrl || null,
+        default_media_sort: defaultMediaSort,
       }),
     });
     const payload = await response.json();
@@ -159,6 +163,26 @@ export function AlbumEditor({ album }: { album: AlbumDetail }) {
       ),
     );
     setMessage("Media metadata saved.");
+  }
+
+  async function toggleFeatured(item: Media) {
+    const nextRank = item.featured_rank ? 0 : Math.max(Date.now() - 1_700_000_000_000, 1);
+    const response = await fetch(`/api/media/${item.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ featured_rank: nextRank }),
+    });
+    const payload = await response.json();
+    if (!payload.success) {
+      setMessage(payload.message ?? "Featured update failed.");
+      return;
+    }
+    setMedia((current) =>
+      current.map((mediaItem) =>
+        mediaItem.id === item.id ? { ...mediaItem, featured_rank: nextRank } : mediaItem,
+      ),
+    );
+    setMessage(nextRank ? "Media marked as featured." : "Media removed from featured order.");
   }
 
   async function deleteMedia(item: Media) {
@@ -277,6 +301,23 @@ export function AlbumEditor({ album }: { album: AlbumDetail }) {
             <label className="grid gap-2">
               <span className="text-sm font-medium text-text-primary">Animated preview fallback URL</span>
               <Input value={coverUrl} onChange={(event) => setCoverUrl(event.target.value)} placeholder="Fallback image URL" />
+            </label>
+            <label className="grid gap-2 lg:col-span-2">
+              <span className="text-sm font-medium text-text-primary">Default gallery sort</span>
+              <select
+                value={defaultMediaSort}
+                onChange={(event) => setDefaultMediaSort(parseMediaSortMode(event.target.value))}
+                className="h-12 rounded-2xl border border-border bg-surface/80 px-4 text-sm text-text-primary outline-none focus:ring-2 focus:ring-ring"
+              >
+                {mediaSortModes.map((mode) => (
+                  <option key={mode} value={mode}>
+                    {mediaSortLabels[mode]}
+                  </option>
+                ))}
+              </select>
+              <span className="text-xs leading-5 text-text-secondary">
+                Visitors can still choose their own temporary sort. This only sets the album default.
+              </span>
             </label>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -440,10 +481,32 @@ export function AlbumEditor({ album }: { album: AlbumDetail }) {
                   <p className="truncate font-semibold text-text-primary">{item.title ?? item.original_filename ?? "Untitled media"}</p>
                   <p className="mt-1 text-xs text-text-secondary">{item.media_type} - {formatBytes(item.file_size)}</p>
                   <p className="mt-2 line-clamp-2 text-sm text-text-secondary">{item.description ?? "No caption or alt text yet."}</p>
+                  <dl className="mt-3 grid grid-cols-2 gap-2 rounded-2xl border border-border bg-surface/70 p-3 text-xs text-text-secondary">
+                    <div>
+                      <dt className="font-semibold text-text-primary">Taken</dt>
+                      <dd>{item.taken_at ? new Date(item.taken_at).toLocaleDateString() : "Upload date"}</dd>
+                    </div>
+                    <div>
+                      <dt className="font-semibold text-text-primary">Shape</dt>
+                      <dd>{item.orientation ?? "unknown"}{item.aspect_ratio ? ` ${item.aspect_ratio.toFixed(2)}` : ""}</dd>
+                    </div>
+                    <div>
+                      <dt className="font-semibold text-text-primary">Engagement</dt>
+                      <dd>{item.like_count ?? 0} likes / {item.comment_count ?? 0} comments</dd>
+                    </div>
+                    <div>
+                      <dt className="font-semibold text-text-primary">Metadata</dt>
+                      <dd>{item.metadata_status ?? "fallback"}</dd>
+                    </div>
+                  </dl>
                   <div className="mt-3 flex flex-wrap gap-2">
                     <Button variant="secondary" onClick={() => setCover(item)}>
                       <Star className="h-4 w-4" />
                       {item.is_cover ? "Preview fallback" : "Set preview"}
+                    </Button>
+                    <Button variant="secondary" onClick={() => toggleFeatured(item)}>
+                      <Sparkles className="h-4 w-4" />
+                      {item.featured_rank ? "Featured" : "Feature"}
                     </Button>
                     <Button variant="secondary" onClick={() => editMedia(item)}>
                       <Edit3 className="h-4 w-4" />
