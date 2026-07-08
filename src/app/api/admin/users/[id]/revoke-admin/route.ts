@@ -8,6 +8,16 @@ interface AdminRevokeRouteProps {
   params: Promise<{ id: string }>;
 }
 
+function isUuid(value: string) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+}
+
+function roleErrorResponse(result: { code: string; message: string }) {
+  if (result.code === "NOT_FOUND") return apiError("NOT_FOUND", result.message, 404);
+  if (result.code === "FORBIDDEN") return apiError("FORBIDDEN", result.message, 403);
+  return apiError("SERVER_ERROR", result.message, 500);
+}
+
 export async function POST(request: NextRequest, { params }: AdminRevokeRouteProps) {
   const session = await getPublicSession(request);
   const { id } = await params;
@@ -20,6 +30,10 @@ export async function POST(request: NextRequest, { params }: AdminRevokeRoutePro
       reason: "Only the Founder can revoke admin rights.",
     });
     return apiError("FORBIDDEN", "Only the Founder can revoke admin rights.", 403);
+  }
+
+  if (!isUuid(id)) {
+    return apiError("INVALID_INPUT", "Invalid user ID.", 400);
   }
 
   const rateLimit = await enforceRateLimit({
@@ -42,7 +56,7 @@ export async function POST(request: NextRequest, { params }: AdminRevokeRoutePro
     const result = await revokeAdminRole({ request, session, targetId: id, reason });
 
     if (!result.ok) {
-      return apiError(result.code === "NOT_FOUND" ? "NOT_FOUND" : result.code === "FORBIDDEN" ? "FORBIDDEN" : "SERVER_ERROR", result.message, result.code === "NOT_FOUND" ? 404 : result.code === "FORBIDDEN" ? 403 : 500);
+      return roleErrorResponse(result);
     }
 
     return apiSuccess({ user: result.user });

@@ -4,9 +4,22 @@ import { ShieldAlert } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { StudioShell } from "@/components/studio/StudioShell";
 import { getPublicSession } from "@/lib/auth";
+import type { Metadata } from "next";
 import type { ReactNode } from "react";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = {
+  robots: {
+    index: false,
+    follow: false,
+    googleBot: {
+      index: false,
+      follow: false,
+      noarchive: true,
+    },
+  },
+};
 
 export default async function StudioLayout({ children }: { children: ReactNode }) {
   const session = await getPublicSession();
@@ -28,7 +41,7 @@ export default async function StudioLayout({ children }: { children: ReactNode }
             Studio access denied
           </h1>
           <p className="mt-3 text-sm leading-6 text-text-secondary">
-            Tài khoản Google này có thể xem website, nhưng không có quyền quản trị Studio.
+            This Google account can view the website, but it does not have Studio management access.
           </p>
           <div className="mt-6 flex justify-center gap-3">
             <Link href="/">

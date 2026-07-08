@@ -10,10 +10,10 @@ export default function StudioError({ reset }: { error: Error; reset: () => void
         Studio error
       </p>
       <h1 className="mt-2 text-2xl font-semibold text-text-primary">
-        Trang quản trị vừa gặp lỗi khi tải dữ liệu.
+        Studio could not load this workspace view.
       </h1>
       <p className="mt-3 max-w-2xl text-sm leading-6 text-text-secondary">
-        Mình đã giữ lỗi trong phạm vi Studio để phần còn lại của website không bị ảnh hưởng.
+        The error was contained inside Studio so the public website remains available.
       </p>
       <Button className="mt-5" onClick={reset}>
         <RotateCcw className="h-4 w-4" aria-hidden="true" />

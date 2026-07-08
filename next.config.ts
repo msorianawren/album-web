@@ -3,6 +3,7 @@ import type { NextConfig } from "next";
 const r2PublicHostname = process.env.R2_PUBLIC_URL
   ? new URL(process.env.R2_PUBLIC_URL).hostname
   : "pub-6723a3eac8f14389ad2429799e3b98a5.r2.dev";
+const r2PublicOrigin = `https://${r2PublicHostname}`;
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
@@ -27,9 +28,9 @@ const nextConfig: NextConfig = {
       "form-action 'self'",
       "script-src 'self' 'unsafe-inline' https://accounts.google.com",
       "style-src 'self' 'unsafe-inline'",
-      "img-src 'self' data: blob: https://images.unsplash.com https://*.googleusercontent.com https://*.r2.dev https://pub-6723a3eac8f14389ad2429799e3b98a5.r2.dev",
-      "media-src 'self' blob: https://*.r2.dev https://pub-6723a3eac8f14389ad2429799e3b98a5.r2.dev",
-      "connect-src 'self' https://*.supabase.co https://*.r2.dev",
+      `img-src 'self' data: blob: https://images.unsplash.com https://*.googleusercontent.com https://*.r2.dev ${r2PublicOrigin}`,
+      `media-src 'self' blob: https://*.r2.dev ${r2PublicOrigin}`,
+      `connect-src 'self' https://*.supabase.co https://*.r2.dev ${r2PublicOrigin}`,
       "font-src 'self' data:",
       "upgrade-insecure-requests",
     ].join("; ");
@@ -61,6 +62,36 @@ const nextConfig: NextConfig = {
           {
             key: "Strict-Transport-Security",
             value: "max-age=63072000; includeSubDomains; preload",
+          },
+          {
+            key: "Cross-Origin-Opener-Policy",
+            value: "same-origin",
+          },
+          {
+            key: "X-DNS-Prefetch-Control",
+            value: "on",
+          },
+          {
+            key: "X-Permitted-Cross-Domain-Policies",
+            value: "none",
+          },
+        ],
+      },
+      {
+        source: "/studio/:path*",
+        headers: [
+          {
+            key: "X-Robots-Tag",
+            value: "noindex, nofollow, noarchive",
+          },
+        ],
+      },
+      {
+        source: "/api/:path*",
+        headers: [
+          {
+            key: "X-Robots-Tag",
+            value: "noindex, nofollow, noarchive",
           },
         ],
       },

@@ -1,17 +1,12 @@
 import { randomUUID } from "node:crypto";
 import sharp from "sharp";
 import { NextRequest } from "next/server";
-import { imageMimeTypes } from "@/lib/config";
 import { requireAdmin } from "@/lib/auth";
 import { apiError, apiSuccess, toServerError } from "@/lib/errors";
 import { putR2Object } from "@/lib/r2";
+import { validateUploadFile } from "@/lib/upload-validation";
 
 export const runtime = "nodejs";
-
-function extensionFromMime(mimeType: string) {
-  const fallback = mimeType.split("/").at(1) ?? "jpg";
-  return fallback.replace("jpeg", "jpg");
-}
 
 export async function POST(request: NextRequest) {
   const session = await requireAdmin(request);
@@ -28,49 +23,51 @@ export async function POST(request: NextRequest) {
       return apiError("INVALID_INPUT", "file is required.", 400);
     }
 
-    if (!imageMimeTypes.includes(file.type as (typeof imageMimeTypes)[number])) {
-      return apiError("INVALID_INPUT", "Only JPEG, PNG, WebP, and AVIF images are supported.", 400);
-    }
-
-    if (file.size > 30 * 1024 * 1024) {
-      return apiError("INVALID_INPUT", "Landing images must be 30 MB or smaller.", 400);
-    }
-
     const source = Buffer.from(await file.arrayBuffer());
+    const validation = validateUploadFile({
+      fileName: file.name,
+      mimeType: file.type,
+      size: file.size,
+      buffer: source,
+      options: {
+        enableVideoUploads: false,
+        maxImageSizeBytes: 30 * 1024 * 1024,
+      },
+    });
+
+    if (!validation.ok || validation.value.mediaType !== "image") {
+      return apiError(
+        validation.ok ? "UNSUPPORTED_MEDIA_TYPE" : validation.code,
+        validation.ok ? "Only image uploads are supported for landing assets." : validation.message,
+        validation.ok ? 415 : validation.status,
+      );
+    }
+
     const image = sharp(source, { failOn: "none" }).rotate();
     const metadata = await image.metadata();
-    const extension = extensionFromMime(file.type);
-    const originalKey = `landing/${slot}/${randomUUID()}/original.${extension}`;
-    const previewKey = `landing/${slot}/${randomUUID()}/preview.webp`;
+    const assetKey = `landing/${slot}/${randomUUID()}/asset.webp`;
 
-    const preview = await image
+    const asset = await image
       .clone()
       .resize({ width: 1800, withoutEnlargement: true })
-      .webp({ quality: 86 })
+      .webp({ quality: 88 })
       .toBuffer();
 
-    const [url, previewUrl] = await Promise.all([
-      putR2Object({
-        key: originalKey,
-        body: source,
-        contentType: file.type,
-        cacheControl: "public, max-age=86400",
-      }),
-      putR2Object({
-        key: previewKey,
-        body: preview,
-        contentType: "image/webp",
-        cacheControl: "public, max-age=31536000, immutable",
-      }),
-    ]);
+    const url = await putR2Object({
+      key: assetKey,
+      body: asset,
+      contentType: "image/webp",
+      cacheControl: "public, max-age=31536000, immutable",
+    });
 
     return apiSuccess(
       {
         asset: {
           url,
-          previewUrl,
+          previewUrl: url,
           width: metadata.width ?? null,
           height: metadata.height ?? null,
+          metadataStripped: true,
         },
       },
       { status: 201 },

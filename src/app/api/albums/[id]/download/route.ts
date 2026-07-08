@@ -9,6 +9,8 @@ import { enforceRateLimit } from "@/lib/security-rate-limit";
 import { getSiteSettings } from "@/lib/site-settings";
 
 export const runtime = "nodejs";
+const maxZipImages = 150;
+const maxZipSourceBytes = 500 * 1024 * 1024;
 
 interface AlbumDownloadProps {
   params: Promise<{ id: string }>;
@@ -50,6 +52,23 @@ export async function GET(request: NextRequest, { params }: AlbumDownloadProps) 
       return apiError("INVALID_INPUT", "This album has no images to download.", 400);
     }
 
+    if (images.length > maxZipImages) {
+      return apiError(
+        "PAYLOAD_TOO_LARGE",
+        `Album ZIP is limited to ${maxZipImages} images at a time. Download individual images or split the album.`,
+        413,
+      );
+    }
+
+    const estimatedBytes = images.reduce((sum, image) => sum + (image.file_size ?? 0), 0);
+    if (estimatedBytes > maxZipSourceBytes) {
+      return apiError(
+        "PAYLOAD_TOO_LARGE",
+        "This album is too large to package safely in one ZIP download.",
+        413,
+      );
+    }
+
     const zip = new JSZip();
     let added = 0;
 
@@ -60,7 +79,10 @@ export async function GET(request: NextRequest, { params }: AlbumDownloadProps) 
           : image.medium_url ?? image.thumbnail_url ?? image.url;
       const response = await fetch(sourceUrl);
       if (!response.ok) continue;
+      const length = Number(response.headers.get("content-length") ?? 0);
+      if (length && length > maxZipSourceBytes) continue;
       const data = await response.arrayBuffer();
+      if (data.byteLength > maxZipSourceBytes) continue;
       const extension = extensionFromUrlOrMime(sourceUrl, "image/webp");
       const filename = `${String(index + 1).padStart(2, "0")}-${safeFilename(
         image.title ?? image.original_filename ?? image.id,
