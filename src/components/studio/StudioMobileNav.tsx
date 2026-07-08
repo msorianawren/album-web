@@ -2,6 +2,7 @@
 
 import { X } from "lucide-react";
 import { StudioSidebar } from "@/components/studio/StudioSidebar";
+import { useI18n } from "@/lib/i18n-client";
 
 interface StudioMobileNavProps {
   open: boolean;
@@ -9,6 +10,8 @@ interface StudioMobileNavProps {
 }
 
 export function StudioMobileNav({ open, onClose }: StudioMobileNavProps) {
+  const { t } = useI18n();
+
   return (
     <div className={`fixed inset-0 z-50 lg:hidden ${open ? "" : "pointer-events-none"}`}>
       <div
@@ -24,7 +27,7 @@ export function StudioMobileNav({ open, onClose }: StudioMobileNavProps) {
           type="button"
           className="absolute right-5 top-5 z-10 flex h-9 w-9 items-center justify-center rounded-full border border-border bg-background text-text-primary"
           onClick={onClose}
-          aria-label="Close Studio menu"
+          aria-label={t("studioNav.closeMenu")}
         >
           <X className="h-4 w-4" aria-hidden="true" />
         </button>

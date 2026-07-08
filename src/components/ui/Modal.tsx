@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { X } from "lucide-react";
 import type { ReactNode } from "react";
 import { Button } from "@/components/ui/Button";
+import { useI18n } from "@/lib/i18n-client";
 import { cn } from "@/lib/utils";
 
 interface ModalProps {
@@ -15,6 +16,8 @@ interface ModalProps {
 }
 
 export function Modal({ open, title, children, className, onClose }: ModalProps) {
+  const { t } = useI18n();
+
   return (
     <AnimatePresence>
       {open ? (
@@ -46,7 +49,7 @@ export function Modal({ open, title, children, className, onClose }: ModalProps)
                 variant="icon"
                 className="h-9 w-9"
                 onClick={onClose}
-                aria-label="Close modal"
+                aria-label={t("common.closeModal")}
               >
                 <X className="h-4 w-4" aria-hidden="true" />
               </Button>

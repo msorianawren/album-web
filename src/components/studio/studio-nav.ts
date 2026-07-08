@@ -13,19 +13,19 @@ import {
 } from "lucide-react";
 
 export const studioNavItems = [
-  { href: "/studio", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/studio/albums", label: "Albums", icon: BookImage },
-  { href: "/studio/media", label: "Media Library", icon: Images },
-  { href: "/studio/uploads", label: "Uploads", icon: UploadCloud },
-  { href: "/studio/comments", label: "Comments", icon: MessageSquareText },
-  { href: "/studio/analytics", label: "Analytics", icon: BarChart3 },
-  { href: "/studio/settings", label: "Settings", icon: Settings },
-  { href: "/studio/security", label: "Security", icon: ShieldCheck },
-  { href: "/studio/system", label: "System Health", icon: Activity },
+  { href: "/studio", labelKey: "studioNav.dashboard", icon: LayoutDashboard },
+  { href: "/studio/albums", labelKey: "studioNav.albums", icon: BookImage },
+  { href: "/studio/media", labelKey: "studioNav.media", icon: Images },
+  { href: "/studio/uploads", labelKey: "studioNav.uploads", icon: UploadCloud },
+  { href: "/studio/comments", labelKey: "studioNav.comments", icon: MessageSquareText },
+  { href: "/studio/analytics", labelKey: "studioNav.analytics", icon: BarChart3 },
+  { href: "/studio/settings", labelKey: "studioNav.settings", icon: Settings },
+  { href: "/studio/security", labelKey: "studioNav.security", icon: ShieldCheck },
+  { href: "/studio/system", labelKey: "studioNav.system", icon: Activity },
 ] as const;
 
 export const studioQuickActions = [
-  { href: "/studio/albums/new", label: "Create album", icon: FolderPlus },
-  { href: "/studio/uploads", label: "Upload media", icon: UploadCloud },
-  { href: "/studio/comments", label: "Moderate comments", icon: HeartHandshake },
+  { href: "/studio/albums/new", labelKey: "studioNav.createAlbum", icon: FolderPlus },
+  { href: "/studio/uploads", labelKey: "studioNav.uploadMedia", icon: UploadCloud },
+  { href: "/studio/comments", labelKey: "studioNav.moderateComments", icon: HeartHandshake },
 ] as const;

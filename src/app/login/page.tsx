@@ -1,9 +1,11 @@
 import { AppHeader } from "@/components/AppHeader";
 import { LoginForm } from "@/components/auth/LoginForm";
+import { getDictionary, getRequestLocale, translate } from "@/lib/i18n";
 import { getLandingPage } from "@/lib/landing";
 
 export default async function LoginPage() {
-  const landing = await getLandingPage();
+  const [landing, locale] = await Promise.all([getLandingPage(), getRequestLocale()]);
+  const t = (key: string) => translate(getDictionary(locale), key);
 
   return (
     <main className="min-h-screen bg-background">
@@ -45,14 +47,13 @@ export default async function LoginPage() {
         <div className="flex min-w-0 flex-col justify-center animate-editorial-in [animation-delay:120ms]">
           <div className="min-w-0 rounded-[1.5rem] border border-border bg-surface/90 p-5 shadow-2xl shadow-text-primary/10 backdrop-blur sm:rounded-[2rem] sm:p-8">
             <p className="break-words text-xs font-medium uppercase tracking-[0.18em] text-text-secondary sm:text-sm sm:tracking-[0.2em]">
-              Member access
+              {t("login.memberAccess")}
             </p>
             <h2 className="mt-3 break-words text-2xl font-semibold text-text-primary sm:text-3xl">
-              Sign in with Google
+              {t("login.signInGoogle")}
             </h2>
             <p className="mt-3 break-words text-sm leading-6 text-text-secondary">
-              Register or sign in with a verified Google account to view albums.
-              Admin tools remain available only to the approved owner account.
+              {t("login.body")}
             </p>
             <div className="mt-7">
               <LoginForm />
@@ -61,7 +62,7 @@ export default async function LoginPage() {
 
           <div className="mt-5 min-w-0 rounded-[1.25rem] border border-border bg-surface/70 p-5 shadow-xl shadow-text-primary/5 sm:rounded-[1.5rem]">
             <p className="break-words text-xs font-semibold uppercase tracking-[0.18em] text-text-secondary">
-              Studio note
+              {t("home.studioNote")}
             </p>
             <p className="mt-2 break-words text-sm leading-6 text-text-primary">
               {landing.feature_body}

@@ -3,10 +3,12 @@
 import { useState, type FormEvent } from "react";
 import { Chrome } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { useI18n } from "@/lib/i18n-client";
 
 type AuthMode = "login" | "register";
 
 export function LoginForm() {
+  const { t } = useI18n();
   const [message, setMessage] = useState("");
   const [loadingMode, setLoadingMode] = useState<AuthMode | null>(null);
 
@@ -27,7 +29,7 @@ export function LoginForm() {
     if (payload.success && payload.data.url) {
       window.location.href = payload.data.url;
     } else {
-      setMessage(payload.message ?? "Google authentication failed.");
+      setMessage(payload.message ?? t("login.failed"));
       setLoadingMode(null);
     }
   }
@@ -41,7 +43,7 @@ export function LoginForm() {
     <form className="grid min-w-0 gap-3 sm:gap-4" onSubmit={onSubmit}>
       <Button type="submit" disabled={Boolean(loadingMode)} className="w-full px-3 text-center">
         <Chrome className="h-4 w-4" aria-hidden="true" />
-        {loadingMode === "login" ? "Connecting Google..." : "Sign in with Google"}
+        {loadingMode === "login" ? t("login.connecting") : t("login.signInGoogle")}
       </Button>
       <Button
         type="button"
@@ -51,7 +53,7 @@ export function LoginForm() {
         className="w-full px-3 text-center"
       >
         <Chrome className="h-4 w-4" aria-hidden="true" />
-        {loadingMode === "register" ? "Creating account..." : "Register with Google"}
+        {loadingMode === "register" ? t("login.creating") : t("login.registerGoogle")}
       </Button>
       {message ? (
         <p className="text-sm text-text-secondary" aria-live="polite">

@@ -5,6 +5,7 @@ import { MessageCircle, Send } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
+import { useI18n } from "@/lib/i18n-client";
 import type { Comment } from "@/lib/types";
 
 interface CommentSectionProps {
@@ -12,6 +13,7 @@ interface CommentSectionProps {
 }
 
 export function CommentSection({ albumId }: CommentSectionProps) {
+  const { locale, t } = useI18n();
   const [comments, setComments] = useState<Comment[]>([]);
   const [authorName, setAuthorName] = useState("");
   const [body, setBody] = useState("");
@@ -24,13 +26,13 @@ export function CommentSection({ albumId }: CommentSectionProps) {
       .then((payload) => {
         if (payload.success) setComments(payload.data.comments);
       })
-      .catch(() => setMessage("Comments could not be loaded."));
-  }, [albumId]);
+      .catch(() => setMessage(t("comments.loadFailed")));
+  }, [albumId, t]);
 
   async function submitComment(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!body.trim()) {
-      setMessage("Comment cannot be empty.");
+      setMessage(t("comments.emptyError"));
       return;
     }
 
@@ -54,9 +56,9 @@ export function CommentSection({ albumId }: CommentSectionProps) {
       }
       setBody("");
       setAuthorName("");
-      setMessage(payload.data.message ?? "Comment posted.");
+      setMessage(payload.data.message ?? t("comments.posted"));
     } else {
-      setMessage(payload.message ?? "Comment failed.");
+      setMessage(payload.message ?? t("comments.failed"));
       if (payload.code === "COMMENT_BLOCKED") {
         window.setTimeout(() => {
           window.location.href = "/boycott";
@@ -76,10 +78,10 @@ export function CommentSection({ albumId }: CommentSectionProps) {
           </div>
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.22em] text-text-secondary">
-              Guest book
+              {t("comments.guestBook")}
             </p>
             <h2 className="text-2xl font-semibold text-text-primary">
-              Comments
+              {t("comments.title")}
             </h2>
           </div>
         </div>
@@ -87,14 +89,14 @@ export function CommentSection({ albumId }: CommentSectionProps) {
           <Input
             value={authorName}
             onChange={(event) => setAuthorName(event.target.value)}
-            placeholder="Your name (optional)"
-            aria-label="Your name"
+            placeholder={t("comments.namePlaceholder")}
+            aria-label={t("comments.nameLabel")}
           />
           <Textarea
             value={body}
             onChange={(event) => setBody(event.target.value)}
-            placeholder="Leave a thoughtful comment"
-            aria-label="Comment body"
+            placeholder={t("comments.bodyPlaceholder")}
+            aria-label={t("comments.bodyLabel")}
             required
           />
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -103,7 +105,7 @@ export function CommentSection({ albumId }: CommentSectionProps) {
             </p>
             <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto">
               <Send className="h-4 w-4" aria-hidden="true" />
-              {isSubmitting ? "Posting..." : "Post"}
+              {isSubmitting ? t("comments.posting") : t("comments.post")}
             </Button>
           </div>
         </form>
@@ -111,7 +113,7 @@ export function CommentSection({ albumId }: CommentSectionProps) {
         <div className="mt-8 grid gap-4">
           {!comments.length ? (
             <div className="rounded-2xl border border-dashed border-border bg-background/60 p-6 text-center text-sm text-text-secondary">
-              No notes yet. Be the first to leave a thoughtful comment.
+              {t("comments.empty")}
             </div>
           ) : null}
           {comments.map((comment) => (
@@ -125,10 +127,10 @@ export function CommentSection({ albumId }: CommentSectionProps) {
               <div className="min-w-0">
                 <div className="flex flex-wrap items-baseline gap-2">
                   <p className="font-medium text-text-primary">
-                    {comment.author_name || "Anonymous"}
+                    {comment.author_name || t("comments.anonymous")}
                   </p>
                   <time className="text-xs text-text-secondary">
-                    {new Date(comment.created_at).toLocaleDateString()}
+                    {new Date(comment.created_at).toLocaleDateString(locale)}
                   </time>
                 </div>
                 <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-text-secondary">

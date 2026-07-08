@@ -139,5 +139,89 @@
   "errors": {
     "albumNotFound": "Album not found",
     "unsupportedSort": "Unsupported sort mode."
+  },
+  "albums": {
+    "archive": "Album archive",
+    "headline": "Editorial books, private collections, and moving image stories.",
+    "body": "This is the dedicated album space for browsing visual collections, opening galleries, liking work, commenting, and downloading approved images.",
+    "emptyTitle": "No albums available",
+    "emptyBody": "Public collections will appear here when the owner publishes them.",
+    "selected": "Selected books",
+    "featured": "Featured Portfolio Albums",
+    "subtitle": "Browse public editorials, updating shoots, and private client books.",
+    "searchPlaceholder": "Search editorial, studio, campaign...",
+    "allStatuses": "All statuses",
+    "public": "Public",
+    "updating": "Updating",
+    "private": "Private",
+    "search": "Search"
+  },
+  "comments": {
+    "loadFailed": "Comments could not be loaded.",
+    "emptyError": "Comment cannot be empty.",
+    "posted": "Comment posted.",
+    "failed": "Comment failed.",
+    "guestBook": "Guest book",
+    "title": "Comments",
+    "namePlaceholder": "Your name (optional)",
+    "nameLabel": "Your name",
+    "bodyPlaceholder": "Leave a thoughtful comment",
+    "bodyLabel": "Comment body",
+    "posting": "Posting...",
+    "post": "Post",
+    "empty": "No notes yet. Be the first to leave a thoughtful comment.",
+    "anonymous": "Anonymous"
+  },
+  "login": {
+    "failed": "Google authentication failed.",
+    "connecting": "Connecting Google...",
+    "signInGoogle": "Sign in with Google",
+    "creating": "Creating account...",
+    "registerGoogle": "Register with Google",
+    "memberAccess": "Member access",
+    "body": "Register or sign in with a verified Google account to view albums. Admin tools remain available only to the approved owner account."
+  },
+  "contact": {
+    "eyebrow": "Contact Us",
+    "title": "Questions about an album?",
+    "body": "Send a message to the owner for private access, collaboration, or download permissions.",
+    "name": "Name",
+    "email": "Email",
+    "message": "Message",
+    "send": "Send message"
+  },
+  "boycott": {
+    "defaultReason": "Your behavior on this website has not been in good faith, so the admin has blocked this Google account.",
+    "notice": "Notice from the administrator",
+    "title": "A letter regarding your access",
+    "greeting": "Dear visitor,",
+    "body": "Your behavior on this website has not shown good faith. For the safety of the collection, the community, and the owner's work, the administrator has blocked this Google account from further access.",
+    "appeal": "If this was a mistake, please contact the administrator through a trusted channel and explain the situation clearly.",
+    "signoff": "Respectfully,",
+    "admin": "The administration"
+  },
+  "common": {
+    "closeModal": "Close modal"
+  },
+  "studioNav": {
+    "studio": "Studio",
+    "workspace": "Admin workspace",
+    "navigation": "Studio navigation",
+    "dashboard": "Dashboard",
+    "albums": "Albums",
+    "media": "Media Library",
+    "uploads": "Uploads",
+    "comments": "Comments",
+    "analytics": "Analytics",
+    "settings": "Settings",
+    "security": "Security",
+    "system": "System Health",
+    "createAlbum": "Create album",
+    "uploadMedia": "Upload media",
+    "moderateComments": "Moderate comments",
+    "quickActions": "Quick actions",
+    "viewPublic": "View public site",
+    "openMenu": "Open Studio menu",
+    "closeMenu": "Close Studio menu"
   }
 }
