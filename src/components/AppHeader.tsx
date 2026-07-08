@@ -33,7 +33,7 @@ export async function AppHeader() {
         <nav className="ml-4 hidden items-center gap-1 lg:flex" aria-label="Primary">
           {navItems.map((item) => (
             <Link
-              key={item.href}
+              key={`${item.href}-${item.label}`}
               href={item.href}
               className="rounded-full px-3 py-2 text-sm font-medium text-text-secondary transition hover:bg-surface/70 hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
