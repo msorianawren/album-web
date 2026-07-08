@@ -76,7 +76,7 @@ export function UserMenu({ session }: UserMenuProps) {
   }
 
   return (
-    <div ref={menuRef} className="relative">
+    <div ref={menuRef} className="relative ml-auto md:ml-0">
       <button
         type="button"
         className="group flex items-center gap-2 rounded-full border border-border bg-surface/80 p-1 pr-2 shadow-lg shadow-text-primary/5 backdrop-blur transition-all duration-300 hover:-translate-y-0.5 hover:bg-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
@@ -91,7 +91,7 @@ export function UserMenu({ session }: UserMenuProps) {
       </button>
 
       <div
-        className={`absolute right-0 top-14 z-50 w-[min(20rem,calc(100vw-2rem))] origin-top-right rounded-[1.4rem] border border-border bg-surface/95 p-3 shadow-2xl shadow-text-primary/20 backdrop-blur-xl transition duration-200 ${
+        className={`fixed left-4 right-4 top-[5.25rem] z-50 max-h-[calc(100vh-6.5rem)] origin-top rounded-[1.4rem] border border-border bg-surface/95 p-3 shadow-2xl shadow-text-primary/20 backdrop-blur-xl transition duration-200 overflow-y-auto sm:absolute sm:left-auto sm:right-0 sm:top-14 sm:w-[min(20rem,calc(100vw-2rem))] sm:max-h-[calc(100vh-5rem)] sm:origin-top-right ${
           open
             ? "translate-y-0 scale-100 opacity-100"
             : "pointer-events-none -translate-y-2 scale-[0.98] opacity-0"

@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { OAuthHashHandler } from "@/components/auth/OAuthHashHandler";
 import "./globals.css";
 
@@ -8,6 +8,12 @@ export const metadata: Metadata = {
     template: "%s | Album Web",
   },
   description: "A premium minimal photo gallery for private and public albums.",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({
