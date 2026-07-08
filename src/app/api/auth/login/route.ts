@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getPublicSession } from "@/lib/auth";
+import { logAuditEvent } from "@/lib/audit";
 import { apiError, apiSuccess, toServerError } from "@/lib/errors";
 import { safeAuthNext, setAuthFlowCookies } from "@/lib/auth-flow";
 import { clearSessionCookies, sessionCookieNames } from "@/lib/session-cookies";
@@ -48,7 +50,18 @@ async function revokeBrowserSession(refreshToken: string) {
 
 export async function DELETE(request: NextRequest) {
   const response = NextResponse.json({ success: true, data: { loggedOut: true } });
+  const session = await getPublicSession(request);
   const refreshToken = request.cookies.get(sessionCookieNames.refresh)?.value;
+
+  if (session.userId) {
+    await logAuditEvent({
+      request,
+      session,
+      action: "user_signed_out",
+      targetType: "user",
+      targetId: session.userId,
+    });
+  }
 
   if (refreshToken) {
     await revokeBrowserSession(refreshToken).catch(() => null);

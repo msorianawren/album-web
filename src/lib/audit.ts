@@ -1,15 +1,7 @@
 import type { NextRequest } from "next/server";
+import { getRequestIp } from "@/lib/request-info";
 import { supabase } from "@/lib/supabase";
 import type { PublicSession } from "@/lib/types";
-
-function getClientIp(request?: NextRequest) {
-  if (!request) return null;
-  return (
-    request.headers.get("cf-connecting-ip") ??
-    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
-    request.headers.get("x-real-ip")
-  );
-}
 
 export async function logAuditEvent({
   request,
@@ -34,7 +26,7 @@ export async function logAuditEvent({
     target_id: targetId,
     path: request?.nextUrl.pathname,
     method: request?.method,
-    ip_address: getClientIp(request),
+    ip_address: request ? getRequestIp(request) : null,
     user_agent: request?.headers.get("user-agent"),
     metadata,
   });

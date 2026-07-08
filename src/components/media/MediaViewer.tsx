@@ -13,6 +13,7 @@ interface MediaViewerProps {
   media: Media[];
   currentIndex: number | null;
   downloadAllowed: boolean;
+  protectAssets?: boolean;
   onClose: () => void;
   onNext: () => void;
   onPrevious: () => void;
@@ -23,6 +24,7 @@ export function MediaViewer({
   media,
   currentIndex,
   downloadAllowed,
+  protectAssets = false,
   onClose,
   onNext,
   onPrevious,
@@ -119,6 +121,7 @@ export function MediaViewer({
             className="relative flex max-h-[calc(100vh-9rem)] max-w-[calc(100vw-1.5rem)] items-center justify-center md:max-w-[calc(100vw-9rem)]"
             key={item.id}
             onClick={(event) => event.stopPropagation()}
+            onContextMenu={protectAssets ? (event) => event.preventDefault() : undefined}
             initial={{ opacity: 0, scale: 0.96 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.96 }}
@@ -138,6 +141,7 @@ export function MediaViewer({
                 style={{ width: "auto", height: "auto" }}
                 unoptimized
                 priority
+                draggable={!protectAssets}
                 onLoad={() =>
                   setLoadedImages((current) => ({ ...current, [item.id]: true }))
                 }
@@ -148,6 +152,7 @@ export function MediaViewer({
                 poster={item.poster_url ?? item.thumbnail_url ?? undefined}
                 controls
                 preload="metadata"
+                controlsList={protectAssets ? "nodownload" : undefined}
                 className="max-h-[calc(100vh-9rem)] max-w-[calc(100vw-1.5rem)] rounded-[14px] object-contain shadow-2xl shadow-black/40 sm:rounded-[18px] md:max-w-[calc(100vw-9rem)]"
               />
             )}

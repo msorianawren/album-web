@@ -13,6 +13,16 @@ export type ApiErrorCode =
   | "UPLOAD_FAILED"
   | "SERVER_ERROR";
 
+const publicErrorMessages: Partial<Record<ApiErrorCode, string>> = {
+  SERVER_ERROR: "The server could not complete this request.",
+  UPLOAD_FAILED: "The upload or storage operation could not be completed.",
+};
+
+function publicMessage(code: ApiErrorCode, message: string) {
+  if (process.env.NODE_ENV !== "production") return message;
+  return publicErrorMessages[code] ?? message;
+}
+
 export function apiSuccess<T>(data: T, init?: ResponseInit) {
   return NextResponse.json({ success: true, data }, init);
 }
@@ -27,7 +37,7 @@ export function apiError(
     {
       success: false,
       code,
-      message,
+      message: publicMessage(code, message),
       ...(details ? { details } : {}),
     },
     { status },

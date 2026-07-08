@@ -8,6 +8,7 @@ interface MediaCardProps {
   media: Media;
   index: number;
   downloadAllowed: boolean;
+  protectAssets?: boolean;
   onOpen: (index: number) => void;
 }
 
@@ -15,6 +16,7 @@ export function MediaCard({
   media,
   index,
   downloadAllowed,
+  protectAssets = false,
   onOpen,
 }: MediaCardProps) {
   const aspectRatio =
@@ -25,6 +27,7 @@ export function MediaCard({
     <div
       className="group relative mb-4 block w-full break-inside-avoid overflow-hidden rounded-3xl bg-surface-secondary text-left"
       style={{ aspectRatio }}
+      onContextMenu={protectAssets ? (event) => event.preventDefault() : undefined}
     >
       <button
         className="absolute inset-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
@@ -38,6 +41,7 @@ export function MediaCard({
             fill
             sizes="(min-width: 1280px) 25vw, (min-width: 768px) 33vw, 50vw"
             className="object-cover transition duration-300 ease-out group-hover:scale-[1.05]"
+            draggable={!protectAssets}
           />
         ) : (
           <>
@@ -48,6 +52,7 @@ export function MediaCard({
                 fill
                 sizes="(min-width: 1280px) 25vw, (min-width: 768px) 33vw, 50vw"
                 className="object-cover transition duration-300 ease-out group-hover:scale-[1.05]"
+                draggable={!protectAssets}
               />
             ) : (
               <div className="h-full w-full bg-surface" />

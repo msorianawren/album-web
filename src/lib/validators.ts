@@ -32,6 +32,10 @@ export const mediaUpdateSchema = z
     description: z.string().trim().max(1000).optional().nullable(),
     sort_order: z.number().int().min(0).optional(),
     is_cover: z.boolean().optional(),
+    download_allowed: z.boolean().optional(),
+    original_download_allowed: z.boolean().optional(),
+    security_status: z.enum(["processed", "needs_review", "rejected"]).optional(),
+    security_notes: z.string().trim().max(1000).optional().nullable(),
   })
   .refine((value) => Object.keys(value).length > 0, {
     message: "At least one field is required.",

@@ -60,6 +60,7 @@ export async function getStudioAlbums(limit = 200): Promise<Album[]> {
   const { data } = await supabase
     .from("albums")
     .select("*")
+    .is("deleted_at", null)
     .order("updated_at", { ascending: false })
     .limit(limit);
   return (data ?? []).map((row) => normalizeAlbum(row));
@@ -72,6 +73,7 @@ export async function getStudioMedia(limit = 240): Promise<StudioMediaItem[]> {
     .select(
       "id,album_id,owner_id,media_type,title,description,r2_key,url,thumbnail_url,medium_url,poster_url,width,height,duration_seconds,file_size,mime_type,original_filename,sort_order,is_cover,created_at,updated_at,albums(title, slug, status)",
     )
+    .is("deleted_at", null)
     .order("created_at", { ascending: false })
     .limit(limit);
   return (data ?? []).map((row) => mediaWithAlbum(row));
@@ -82,6 +84,7 @@ export async function getStudioComments(limit = 200): Promise<StudioCommentItem[
   const { data } = await supabase
     .from("comments")
     .select("*, albums(title, slug)")
+    .is("deleted_at", null)
     .order("created_at", { ascending: false })
     .limit(limit);
   return (data ?? []).map((row) => commentWithAlbum(row));
@@ -302,6 +305,7 @@ export async function getSystemHealth(session?: PublicSession) {
     "likes",
     "user_profiles",
     "audit_logs",
+    "security_rate_limits",
     "landing_page_settings",
     "site_settings",
   ];

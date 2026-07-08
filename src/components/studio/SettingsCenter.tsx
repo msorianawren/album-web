@@ -304,14 +304,24 @@ export function SettingsCenter({
             <NumberField label="Max image size MB" value={settings.max_image_size_mb} min={1} max={100} onChange={(value) => update("max_image_size_mb", value)} />
             <NumberField label="Max video size MB" value={settings.max_video_size_mb} min={10} max={2000} onChange={(value) => update("max_video_size_mb", value)} />
             <NumberField label="Media per page" value={settings.media_per_page} min={12} max={200} onChange={(value) => update("media_per_page", value)} />
+            <NumberField label="Max files per upload" value={settings.max_upload_files_per_batch} min={1} max={100} onChange={(value) => update("max_upload_files_per_batch", value)} />
+            <NumberField label="Max album storage MB" value={settings.max_album_storage_mb} min={100} max={100000} onChange={(value) => update("max_album_storage_mb", value)} />
+            <NumberField label="Max image pixels" value={settings.max_image_pixels} min={1000000} max={100000000} onChange={(value) => update("max_image_pixels", value)} />
           </div>
           <Toggle label="Enable image uploads" checked={settings.enable_image_uploads} onChange={(value) => update("enable_image_uploads", value)} />
           <Toggle label="Enable video uploads" checked={settings.enable_video_uploads} onChange={(value) => update("enable_video_uploads", value)} />
+          <Toggle label="Strip image metadata before publishing" checked={settings.strip_image_metadata} onChange={(value) => update("strip_image_metadata", value)} />
+          <Toggle label="Store private raw originals when possible" checked={settings.store_private_originals} onChange={(value) => update("store_private_originals", value)} />
           <Toggle label="Auto-set first uploaded image as cover" checked={settings.auto_set_first_image_as_cover} onChange={(value) => update("auto_set_first_image_as_cover", value)} />
           <Toggle label="Show video posters" checked={settings.show_video_posters} onChange={(value) => update("show_video_posters", value)} />
           <Toggle label="Use thumbnails in grid" checked={settings.use_thumbnails_in_grid} onChange={(value) => update("use_thumbnails_in_grid", value)} />
+          <Toggle label="Enable watermark on public image variants" checked={settings.enable_media_watermark} onChange={(value) => update("enable_media_watermark", value)} />
+          <Field label="Watermark text">
+            <Input value={settings.watermark_text ?? ""} onChange={(event) => update("watermark_text", event.target.value)} maxLength={80} />
+          </Field>
           <ReadOnly label="Allowed image types" value={imageTypes.join(", ")} />
           <ReadOnly label="Allowed video types" value={videoTypes.join(", ")} />
+          <ReadOnly label="Video processing policy" value="Videos are signature-validated and marked for review; full metadata stripping requires a media worker." />
         </Panel>
       ) : null}
 
@@ -320,8 +330,18 @@ export function SettingsCenter({
           <Toggle label="Enable public comments" checked={settings.allow_public_comments} onChange={(value) => update("allow_public_comments", value)} />
           <Toggle label="Require comment name" checked={settings.require_comment_name} onChange={(value) => update("require_comment_name", value)} />
           <NumberField label="Max comment length" value={settings.max_comment_length} min={100} max={2000} onChange={(value) => update("max_comment_length", value)} />
+          <div className="grid gap-4 md:grid-cols-2">
+            <NumberField label="Comments per window" value={settings.comment_rate_limit_count} min={1} max={200} onChange={(value) => update("comment_rate_limit_count", value)} />
+            <NumberField label="Comment window seconds" value={settings.comment_rate_limit_window_seconds} min={10} max={86400} onChange={(value) => update("comment_rate_limit_window_seconds", value)} />
+          </div>
+          <Toggle label="Block duplicate recent comments" checked={settings.block_duplicate_comments} onChange={(value) => update("block_duplicate_comments", value)} />
+          <Toggle label="Moderate comments containing links" checked={settings.block_comment_links} onChange={(value) => update("block_comment_links", value)} />
+          <Toggle label="Send suspicious comments to review" checked={settings.moderate_suspicious_comments} onChange={(value) => update("moderate_suspicious_comments", value)} />
           <Toggle label="Enable likes" checked={settings.enable_likes} onChange={(value) => update("enable_likes", value)} />
-          <ReadOnly label="Spam throttle status" value="Handled by app middleware and Cloudflare rules." />
+          <div className="grid gap-4 md:grid-cols-2">
+            <NumberField label="Likes per window" value={settings.like_rate_limit_count} min={1} max={1000} onChange={(value) => update("like_rate_limit_count", value)} />
+            <NumberField label="Like window seconds" value={settings.like_rate_limit_window_seconds} min={10} max={86400} onChange={(value) => update("like_rate_limit_window_seconds", value)} />
+          </div>
         </Panel>
       ) : null}
 
@@ -351,6 +371,12 @@ export function SettingsCenter({
             <Status label="Private album leak protection" ok />
             <Status label=".env.local ignored by Git" ok />
           </div>
+          <div className="grid gap-4 md:grid-cols-2">
+            <NumberField label="Admin mutations per window" value={settings.admin_mutation_rate_limit_count} min={1} max={2000} onChange={(value) => update("admin_mutation_rate_limit_count", value)} />
+            <NumberField label="Admin mutation window seconds" value={settings.admin_mutation_rate_limit_window_seconds} min={10} max={86400} onChange={(value) => update("admin_mutation_rate_limit_window_seconds", value)} />
+            <NumberField label="Uploads per window" value={settings.upload_rate_limit_count} min={1} max={500} onChange={(value) => update("upload_rate_limit_count", value)} />
+            <NumberField label="Upload window seconds" value={settings.upload_rate_limit_window_seconds} min={10} max={86400} onChange={(value) => update("upload_rate_limit_window_seconds", value)} />
+          </div>
           <ReadOnly label="Current admin ID" value={systemHealth.currentAdmin?.userId.value ?? "Not available"} />
           <ReadOnly label="Current admin email" value={systemHealth.currentAdmin?.email ?? "Not available"} />
         </Panel>
@@ -370,6 +396,12 @@ export function SettingsCenter({
             <p className="mt-3 text-sm text-text-secondary" aria-live="polite">{r2Result}</p>
           </div>
           <ReadOnly label="Estimated storage item count" value={`${systemHealth.counts.media ?? 0} media row(s)`} />
+          <Toggle label="Allow original/source downloads" checked={settings.allow_original_downloads} onChange={(value) => update("allow_original_downloads", value)} />
+          <Toggle label="Disable public right click affordance" checked={settings.disable_public_right_click} onChange={(value) => update("disable_public_right_click", value)} />
+          <div className="grid gap-4 md:grid-cols-2">
+            <NumberField label="Downloads per window" value={settings.download_rate_limit_count} min={1} max={2000} onChange={(value) => update("download_rate_limit_count", value)} />
+            <NumberField label="Download window seconds" value={settings.download_rate_limit_window_seconds} min={10} max={86400} onChange={(value) => update("download_rate_limit_window_seconds", value)} />
+          </div>
         </Panel>
       ) : null}
 
@@ -390,6 +422,8 @@ export function SettingsCenter({
             <ActionCard icon={<RotateCcw className="h-4 w-4" />} title="Recalculate album counts" body="Refresh media, comment, and like counters from database rows." actionLabel="Recalculate" onAction={recalculateCounts} />
             <ActionCard icon={<Database className="h-4 w-4" />} title="Clear cached UI state" body="Clears this browser's local display preferences only." actionLabel="Clear local state" onAction={clearUiState} />
           </div>
+          <Toggle label="Use soft delete / trash instead of immediate purge" checked={settings.enable_soft_delete} onChange={(value) => update("enable_soft_delete", value)} />
+          <NumberField label="Trash retention days" value={settings.soft_delete_retention_days} min={1} max={365} onChange={(value) => update("soft_delete_retention_days", value)} />
           <p className="text-sm text-text-secondary" aria-live="polite">{dangerResult}</p>
         </Panel>
       ) : null}

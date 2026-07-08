@@ -2,6 +2,8 @@ import { NextRequest } from "next/server";
 import { getAlbum } from "@/lib/albums";
 import { getPublicSession } from "@/lib/auth";
 import { apiError, apiSuccess, toServerError } from "@/lib/errors";
+import { enforceRateLimit } from "@/lib/security-rate-limit";
+import { getSiteSettings } from "@/lib/site-settings";
 import { supabase } from "@/lib/supabase";
 import { likeCreateSchema } from "@/lib/validators";
 
@@ -49,6 +51,25 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const session = await getPublicSession(request);
+    const settings = await getSiteSettings();
+    if (!settings.enable_likes || !settings.allow_public_likes) {
+      return apiError("FORBIDDEN", "Likes are currently disabled.", 403);
+    }
+
+    const rate = await enforceRateLimit({
+      request,
+      session,
+      policy: {
+        action: "toggle_like",
+        limit: settings.like_rate_limit_count,
+        windowSeconds: settings.like_rate_limit_window_seconds,
+      },
+    });
+
+    if (!rate.allowed) {
+      return apiError("RATE_LIMITED", "Too many like actions. Please wait before trying again.", 429);
+    }
+
     const parsed = likeCreateSchema.safeParse(await request.json());
 
     if (!parsed.success) {

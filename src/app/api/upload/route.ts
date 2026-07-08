@@ -1,7 +1,11 @@
 import { NextRequest } from "next/server";
 import { requireAdmin } from "@/lib/auth";
+import { logAuditEvent } from "@/lib/audit";
 import { apiError, apiSuccess, toServerError } from "@/lib/errors";
 import { uploadMediaFile } from "@/lib/media";
+import { enforceRateLimit } from "@/lib/security-rate-limit";
+import { getSiteSettings } from "@/lib/site-settings";
+import { supabase } from "@/lib/supabase";
 import { validateUploadFile } from "@/lib/upload-validation";
 
 export const runtime = "nodejs";
@@ -14,6 +18,21 @@ export async function POST(request: NextRequest) {
 
   try {
     const formData = await request.formData();
+    const settings = await getSiteSettings();
+    const rate = await enforceRateLimit({
+      request,
+      session,
+      policy: {
+        action: "upload_media",
+        limit: settings.upload_rate_limit_count,
+        windowSeconds: settings.upload_rate_limit_window_seconds,
+      },
+    });
+
+    if (!rate.allowed) {
+      return apiError("RATE_LIMITED", "Too many upload requests. Please wait before trying again.", 429);
+    }
+
     const albumId = String(formData.get("albumId") ?? "");
     const files = formData
       .getAll("files")
@@ -21,6 +40,27 @@ export async function POST(request: NextRequest) {
 
     if (!albumId || !files.length) {
       return apiError("INVALID_INPUT", "albumId and files[] are required.", 400);
+    }
+
+    if (files.length > settings.max_upload_files_per_batch) {
+      return apiError(
+        "INVALID_INPUT",
+        `Upload up to ${settings.max_upload_files_per_batch} files at a time.`,
+        400,
+      );
+    }
+
+    const { data: existingMedia } = await supabase
+      .from("media")
+      .select("file_size")
+      .eq("album_id", albumId);
+    const currentAlbumBytes = (existingMedia ?? []).reduce(
+      (sum, item) => sum + Number(item.file_size ?? 0),
+      0,
+    );
+    const incomingBytes = files.reduce((sum, file) => sum + file.size, 0);
+    if (currentAlbumBytes + incomingBytes > settings.max_album_storage_mb * 1024 * 1024) {
+      return apiError("PAYLOAD_TOO_LARGE", "This upload would exceed the album storage limit.", 413);
     }
 
     const uploaded = [];
@@ -33,6 +73,12 @@ export async function POST(request: NextRequest) {
         mimeType: file.type,
         size: file.size,
         buffer,
+        options: {
+          enableImageUploads: settings.enable_image_uploads,
+          enableVideoUploads: settings.enable_video_uploads,
+          maxImageSizeBytes: settings.max_image_size_mb * 1024 * 1024,
+          maxVideoSizeBytes: settings.max_video_size_mb * 1024 * 1024,
+        },
       });
 
       if (!validation.ok) {
@@ -51,6 +97,7 @@ export async function POST(request: NextRequest) {
             fileName: validation.value.safeName,
             mimeType: file.type,
             buffer,
+            settings,
           }),
         );
       } catch (error) {
@@ -64,6 +111,20 @@ export async function POST(request: NextRequest) {
 
     if (!uploaded.length && failed.length) {
       const first = failed[0];
+      await logAuditEvent({
+        request,
+        session,
+        action: "admin_upload_media_failed",
+        targetType: "album",
+        targetId: albumId,
+        metadata: {
+          failed: failed.length,
+          failedFiles: failed.map((item) => ({
+            fileName: item.fileName,
+            code: item.code,
+          })),
+        },
+      });
       return apiError(
         first.code === "PAYLOAD_TOO_LARGE" ? "PAYLOAD_TOO_LARGE" : first.code === "UNSUPPORTED_MEDIA_TYPE" ? "UNSUPPORTED_MEDIA_TYPE" : "UPLOAD_FAILED",
         first.message,
@@ -71,6 +132,22 @@ export async function POST(request: NextRequest) {
         { failed },
       );
     }
+
+    await logAuditEvent({
+      request,
+      session,
+      action: "admin_upload_media",
+      targetType: "album",
+      targetId: albumId,
+      metadata: {
+        uploaded: uploaded.length,
+        failed: failed.length,
+        failedFiles: failed.map((item) => ({
+          fileName: item.fileName,
+          code: item.code,
+        })),
+      },
+    });
 
     return apiSuccess({ media: uploaded, failed }, { status: failed.length ? 207 : 201 });
   } catch (error) {

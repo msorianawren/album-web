@@ -9,6 +9,7 @@ import { CommentSection } from "@/components/comments/CommentSection";
 import { LikeButton } from "@/components/media/LikeButton";
 import { MediaGrid } from "@/components/media/MediaGrid";
 import { getAlbum } from "@/lib/albums";
+import { getSiteSettings } from "@/lib/site-settings";
 
 interface AlbumPageProps {
   params: Promise<{
@@ -66,7 +67,7 @@ export async function generateMetadata({ params }: AlbumPageProps): Promise<Meta
 
 export default async function AlbumPage({ params }: AlbumPageProps) {
   const { id } = await params;
-  const album = await getAlbum(id);
+  const [album, settings] = await Promise.all([getAlbum(id), getSiteSettings()]);
 
   if (!album) notFound();
 
@@ -82,10 +83,18 @@ export default async function AlbumPage({ params }: AlbumPageProps) {
           <section className="mx-auto flex w-full max-w-[1440px] justify-end px-4 pb-6 sm:px-8 lg:px-12">
             <LikeButton albumId={album.id} />
           </section>
-          <MediaGrid media={album.media} downloadAllowed={album.download_allowed} />
+          <MediaGrid
+            media={album.media}
+            downloadAllowed={album.download_allowed}
+            protectAssets={settings.disable_public_right_click}
+          />
           <AlbumDownloadButton
             albumId={album.id}
-            disabled={!album.download_allowed || !album.media.some((item) => item.media_type === "image")}
+            disabled={
+              !settings.allow_public_downloads ||
+              !album.download_allowed ||
+              !album.media.some((item) => item.media_type === "image" && item.download_allowed !== false)
+            }
           />
           <CommentSection albumId={album.id} />
         </>

@@ -2,8 +2,15 @@ import { NextRequest } from "next/server";
 import { requireAdmin, requireUser } from "@/lib/auth";
 import { getAlbum } from "@/lib/albums";
 import { logAuditEvent } from "@/lib/audit";
+import {
+  getCommentIpHash,
+  hasDuplicateRecentComment,
+  inspectCommentContent,
+} from "@/lib/comment-security";
 import { commentBlockReason, findBlockedCommentKeywords } from "@/lib/comment-filter";
 import { apiError, apiSuccess, toServerError } from "@/lib/errors";
+import { enforceRateLimit } from "@/lib/security-rate-limit";
+import { getSiteSettings } from "@/lib/site-settings";
 import { supabase } from "@/lib/supabase";
 import { commentCreateSchema } from "@/lib/validators";
 
@@ -57,6 +64,33 @@ export async function POST(request: NextRequest) {
       return apiError("FORBIDDEN", "Private albums do not accept public comments.", 403);
     }
 
+    const settings = await getSiteSettings();
+    if (!settings.allow_public_comments) {
+      return apiError("FORBIDDEN", "Comments are currently disabled.", 403);
+    }
+
+    if (settings.require_comment_name && !parsed.data.author_name?.trim()) {
+      return apiError("INVALID_INPUT", "Please enter a name before commenting.", 400);
+    }
+
+    if (parsed.data.body.length > settings.max_comment_length) {
+      return apiError("INVALID_INPUT", "Comment is longer than the configured limit.", 400);
+    }
+
+    const rate = await enforceRateLimit({
+      request,
+      session,
+      policy: {
+        action: "create_comment",
+        limit: settings.comment_rate_limit_count,
+        windowSeconds: settings.comment_rate_limit_window_seconds,
+      },
+    });
+
+    if (!rate.allowed) {
+      return apiError("RATE_LIMITED", "Too many comments. Please wait before commenting again.", 429);
+    }
+
     const scanText = `${parsed.data.author_name ?? ""}\n${parsed.data.body}`;
     const matchedKeywords = findBlockedCommentKeywords(scanText);
     if (matchedKeywords.length) {
@@ -94,19 +128,106 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { data, error } = await supabase
+    const ipHash = getCommentIpHash(request);
+    if (
+      settings.block_duplicate_comments &&
+      (await hasDuplicateRecentComment({
+        session,
+        ipHash,
+        body: parsed.data.body,
+      }))
+    ) {
+      await logAuditEvent({
+        request,
+        session,
+        action: "comment_duplicate_blocked",
+        targetType: "album",
+        targetId: parsed.data.albumId,
+        metadata: {
+          mediaId: parsed.data.mediaId ?? null,
+          commentPreview: parsed.data.body.slice(0, 160),
+        },
+      });
+      return apiError("INVALID_INPUT", "This comment was already posted recently.", 400);
+    }
+
+    const moderation = inspectCommentContent(parsed.data.body, settings);
+    if (moderation.status === "rejected") {
+      await logAuditEvent({
+        request,
+        session,
+        action: "comment_rejected",
+        targetType: "album",
+        targetId: parsed.data.albumId,
+        metadata: {
+          reason: moderation.reason,
+          mediaId: parsed.data.mediaId ?? null,
+          commentPreview: parsed.data.body.slice(0, 160),
+        },
+      });
+      return apiError("INVALID_INPUT", moderation.reason ?? "Comment rejected.", 400);
+    }
+
+    const insertPayload = {
+      album_id: parsed.data.albumId,
+      media_id: parsed.data.mediaId,
+      author_name: parsed.data.author_name,
+      author_user_id: session.userId,
+      author_email: session.email,
+      ip_hash: ipHash,
+      body: parsed.data.body,
+      is_hidden: moderation.status === "pending",
+      moderation_status: moderation.status,
+      moderation_reason: moderation.reason,
+    };
+
+    let { data, error } = await supabase
       .from("comments")
-      .insert({
+      .insert(insertPayload)
+      .select("*")
+      .single();
+
+    if (error) {
+      const legacyPayload = {
         album_id: parsed.data.albumId,
         media_id: parsed.data.mediaId,
         author_name: parsed.data.author_name,
         body: parsed.data.body,
-      })
-      .select("*")
-      .single();
+        is_hidden: moderation.status === "pending",
+      };
+      const legacy = await supabase
+        .from("comments")
+        .insert(legacyPayload)
+        .select("*")
+        .single();
+      data = legacy.data;
+      error = legacy.error;
+    }
 
     if (error) return apiError("SERVER_ERROR", error.message, 500);
-    return apiSuccess({ comment: data }, { status: 201 });
+    if (moderation.status === "pending") {
+      await logAuditEvent({
+        request,
+        session,
+        action: "comment_pending_review",
+        targetType: "comment",
+        targetId: data.id,
+        metadata: {
+          albumId: parsed.data.albumId,
+          reason: moderation.reason,
+        },
+      });
+      return apiSuccess(
+        {
+          comment: null,
+          moderationStatus: "pending",
+          message: "Comment is waiting for admin review.",
+        },
+        { status: 202 },
+      );
+    }
+
+    return apiSuccess({ comment: data, moderationStatus: "visible" }, { status: 201 });
   } catch (error) {
     return toServerError(error);
   }

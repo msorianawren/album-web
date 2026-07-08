@@ -14,9 +14,10 @@ const MediaViewer = dynamic(
 interface MediaGridProps {
   media: Media[];
   downloadAllowed: boolean;
+  protectAssets?: boolean;
 }
 
-export function MediaGrid({ media, downloadAllowed }: MediaGridProps) {
+export function MediaGrid({ media, downloadAllowed, protectAssets = false }: MediaGridProps) {
   const [currentIndex, setCurrentIndex] = useState<number | null>(null);
 
   const handleNext = useCallback(() => {
@@ -56,6 +57,7 @@ export function MediaGrid({ media, downloadAllowed }: MediaGridProps) {
             media={item}
             index={index}
             downloadAllowed={downloadAllowed}
+            protectAssets={protectAssets}
             onOpen={setCurrentIndex}
           />
         ))}
@@ -64,6 +66,7 @@ export function MediaGrid({ media, downloadAllowed }: MediaGridProps) {
         media={media}
         currentIndex={currentIndex}
         downloadAllowed={downloadAllowed}
+        protectAssets={protectAssets}
         onClose={() => setCurrentIndex(null)}
         onNext={handleNext}
         onPrevious={handlePrevious}

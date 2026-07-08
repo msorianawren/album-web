@@ -153,6 +153,25 @@ async function logRequest(request: NextRequest, user: User) {
   });
 }
 
+async function logProxyBlock(request: NextRequest, action: string) {
+  if (!serviceRoleKey || !supabaseUrl) return;
+
+  const admin = createAdminClient();
+  await admin.from("audit_logs").insert({
+    actor_user_id: null,
+    actor_email: null,
+    action,
+    target_type: request.nextUrl.pathname.startsWith("/api") ? "api" : "page",
+    path: request.nextUrl.pathname,
+    method: request.method,
+    ip_address: getClientIp(request),
+    user_agent: request.headers.get("user-agent"),
+    metadata: {
+      search: request.nextUrl.search,
+    },
+  });
+}
+
 type AuthResolution =
   | {
       user: User;
@@ -248,12 +267,14 @@ export async function proxy(request: NextRequest, event: NextFetchEvent) {
   const pathname = request.nextUrl.pathname;
 
   if (rateLimit(request)) {
+    event.waitUntil(logProxyBlock(request, "proxy_rate_limit_blocked"));
     return pathname.startsWith("/api")
       ? apiError("RATE_LIMITED", "Too many requests.", 429)
       : new NextResponse("Too many requests.", { status: 429 });
   }
 
   if (hasCrossOriginMutation(request)) {
+    event.waitUntil(logProxyBlock(request, "csrf_origin_blocked"));
     return apiError("FORBIDDEN", "Cross-origin mutation requests are not allowed.", 403);
   }
 

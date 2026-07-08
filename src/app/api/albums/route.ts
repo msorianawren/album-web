@@ -1,7 +1,10 @@
 import { NextRequest } from "next/server";
 import { requireAdmin } from "@/lib/auth";
+import { logAuditEvent } from "@/lib/audit";
 import { apiError, apiSuccess, toServerError } from "@/lib/errors";
 import { getAlbums } from "@/lib/albums";
+import { enforceRateLimit } from "@/lib/security-rate-limit";
+import { getSiteSettings } from "@/lib/site-settings";
 import { supabase } from "@/lib/supabase";
 import { slugify } from "@/lib/utils";
 import { albumCreateSchema, searchParamsSchema } from "@/lib/validators";
@@ -26,6 +29,21 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    const settings = await getSiteSettings();
+    const rate = await enforceRateLimit({
+      request,
+      session,
+      policy: {
+        action: "admin_create_album",
+        limit: settings.admin_mutation_rate_limit_count,
+        windowSeconds: settings.admin_mutation_rate_limit_window_seconds,
+      },
+    });
+
+    if (!rate.allowed) {
+      return apiError("RATE_LIMITED", "Too many admin changes. Please wait before trying again.", 429);
+    }
+
     const body = await request.json();
     const parsed = albumCreateSchema.safeParse(body);
 
@@ -39,6 +57,8 @@ export async function POST(request: NextRequest) {
     }
 
     const slug = parsed.data.slug ?? slugify(parsed.data.title);
+    const status =
+      typeof body.status === "string" ? parsed.data.status : settings.default_album_status;
     const { data, error } = await supabase
       .from("albums")
       .insert({
@@ -46,7 +66,7 @@ export async function POST(request: NextRequest) {
         title: parsed.data.title,
         slug,
         description: parsed.data.description,
-        status: parsed.data.status,
+        status,
         cover_url: parsed.data.cover_url,
       })
       .select("*")
@@ -60,6 +80,18 @@ export async function POST(request: NextRequest) {
         status,
       );
     }
+
+    await logAuditEvent({
+      request,
+      session,
+      action: "admin_create_album",
+      targetType: "album",
+      targetId: data.id,
+      metadata: {
+        title: data.title,
+        status: data.status,
+      },
+    });
 
     return apiSuccess({ album: data }, { status: 201 });
   } catch (error) {

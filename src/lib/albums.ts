@@ -103,6 +103,20 @@ export function normalizeMedia(row: UnknownRow): Media {
         : typeof row.file_name === "string"
           ? row.file_name
           : null,
+    public_r2_key: typeof row.public_r2_key === "string" ? row.public_r2_key : null,
+    original_private_r2_key:
+      typeof row.original_private_r2_key === "string" ? row.original_private_r2_key : null,
+    security_status:
+      row.security_status === "needs_review" || row.security_status === "rejected"
+        ? row.security_status
+        : "processed",
+    security_notes: typeof row.security_notes === "string" ? row.security_notes : null,
+    download_allowed: row.download_allowed !== false,
+    original_download_allowed: Boolean(row.original_download_allowed),
+    metadata_stripped: Boolean(row.metadata_stripped),
+    deleted_at: typeof row.deleted_at === "string" ? row.deleted_at : null,
+    deleted_by: typeof row.deleted_by === "string" ? row.deleted_by : null,
+    delete_reason: typeof row.delete_reason === "string" ? row.delete_reason : null,
     sort_order: Number(row.sort_order ?? 0),
     is_cover: Boolean(row.is_cover),
     created_at: String(row.created_at ?? new Date().toISOString()),
@@ -147,6 +161,7 @@ async function attachAlbumPreviews(albums: Album[]) {
     .from("media")
     .select("id,album_id,media_type,title,url,thumbnail_url,medium_url,poster_url,sort_order,created_at")
     .in("album_id", albumIds)
+    .is("deleted_at", null)
     .order("sort_order", { ascending: true })
     .order("created_at", { ascending: true });
 
@@ -174,6 +189,7 @@ export async function getAlbums(query: AlbumQuery = {}): Promise<Album[]> {
     let builder = supabase
       .from("albums")
       .select("*")
+      .is("deleted_at", null)
       .order("created_at", { ascending: false });
 
     if (query.status) builder = builder.eq("status", query.status);
@@ -206,6 +222,7 @@ export async function getAlbum(
       .from("albums")
       .select("*")
       .eq("slug", slugOrId)
+      .is("deleted_at", null)
       .maybeSingle();
 
     if (isUuid(slugOrId)) {
@@ -213,6 +230,7 @@ export async function getAlbum(
         .from("albums")
         .select("*")
         .or(`slug.eq.${slugOrId},id.eq.${slugOrId}`)
+        .is("deleted_at", null)
         .maybeSingle();
     }
 
@@ -237,6 +255,7 @@ export async function getAlbum(
       .from("media")
       .select("*")
       .eq("album_id", album.id)
+      .is("deleted_at", null)
       .order("sort_order", { ascending: true })
       .order("created_at", { ascending: true })
       .limit(250);

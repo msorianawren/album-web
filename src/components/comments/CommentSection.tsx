@@ -49,10 +49,12 @@ export function CommentSection({ albumId }: CommentSectionProps) {
     const payload = await response.json();
 
     if (payload.success) {
-      setComments((current) => [payload.data.comment, ...current]);
+      if (payload.data.comment) {
+        setComments((current) => [payload.data.comment, ...current]);
+      }
       setBody("");
       setAuthorName("");
-      setMessage("Comment posted.");
+      setMessage(payload.data.message ?? "Comment posted.");
     } else {
       setMessage(payload.message ?? "Comment failed.");
       if (payload.code === "COMMENT_BLOCKED") {

@@ -64,16 +64,25 @@ export interface ValidatedUpload {
   safeName: string;
 }
 
+export interface UploadValidationOptions {
+  enableImageUploads?: boolean;
+  enableVideoUploads?: boolean;
+  maxImageSizeBytes?: number;
+  maxVideoSizeBytes?: number;
+}
+
 export function validateUploadFile({
   fileName,
   mimeType,
   size,
   buffer,
+  options = {},
 }: {
   fileName: string;
   mimeType: string;
   size: number;
   buffer: Buffer;
+  options?: UploadValidationOptions;
 }): { ok: true; value: ValidatedUpload } | { ok: false; code: "PAYLOAD_TOO_LARGE" | "UNSUPPORTED_MEDIA_TYPE" | "INVALID_INPUT"; message: string; status: number } {
   const mediaType = getMediaTypeFromMime(mimeType);
   const supportedMime = [...imageMimeTypes, ...videoMimeTypes].includes(
@@ -89,7 +98,30 @@ export function validateUploadFile({
     };
   }
 
-  if (size > getUploadLimit(mediaType)) {
+  if (mediaType === "image" && options.enableImageUploads === false) {
+    return {
+      ok: false,
+      code: "UNSUPPORTED_MEDIA_TYPE",
+      message: "Image uploads are disabled in Studio settings.",
+      status: 415,
+    };
+  }
+
+  if (mediaType === "video" && options.enableVideoUploads === false) {
+    return {
+      ok: false,
+      code: "UNSUPPORTED_MEDIA_TYPE",
+      message: "Video uploads are disabled in Studio settings.",
+      status: 415,
+    };
+  }
+
+  const dynamicLimit =
+    mediaType === "image"
+      ? options.maxImageSizeBytes ?? getUploadLimit(mediaType)
+      : options.maxVideoSizeBytes ?? getUploadLimit(mediaType);
+
+  if (size > dynamicLimit) {
     return {
       ok: false,
       code: "PAYLOAD_TOO_LARGE",

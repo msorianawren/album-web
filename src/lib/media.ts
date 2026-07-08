@@ -3,7 +3,7 @@ import sharp from "sharp";
 import { getMediaTypeFromMime } from "@/lib/config";
 import { putR2Object } from "@/lib/r2";
 import { supabase } from "@/lib/supabase";
-import type { Media } from "@/lib/types";
+import type { Media, SiteSettings } from "@/lib/types";
 import { normalizeMedia } from "@/lib/albums";
 
 function extensionFromMime(mimeType: string) {
@@ -22,6 +22,25 @@ async function getAlbumOwnerId(albumId: string) {
   return String(data.owner_id);
 }
 
+async function setFirstImageAsCoverIfNeeded(albumId: string, mediaId: string, coverUrl?: string | null) {
+  const { data: album } = await supabase
+    .from("albums")
+    .select("cover_url")
+    .eq("id", albumId)
+    .single();
+
+  if (album?.cover_url) return;
+
+  await supabase
+    .from("albums")
+    .update({
+      cover_media_id: mediaId,
+      cover_url: coverUrl,
+    })
+    .eq("id", albumId);
+  await supabase.from("media").update({ is_cover: true }).eq("id", mediaId);
+}
+
 async function uploadImageMedia({
   albumId,
   mediaId,
@@ -29,6 +48,7 @@ async function uploadImageMedia({
   fileName,
   mimeType,
   buffer,
+  settings,
 }: {
   albumId: string;
   mediaId: string;
@@ -36,15 +56,47 @@ async function uploadImageMedia({
   fileName: string;
   mimeType: string;
   buffer: Buffer;
+  settings: SiteSettings;
 }) {
-  const image = sharp(buffer, { failOn: "none" }).rotate();
+  const image = sharp(buffer, { failOn: "error" }).rotate();
   const metadata = await image.metadata();
-  const extension = extensionFromMime(mimeType);
-  const originalKey = `albums/${albumId}/images/${mediaId}/original.${extension}`;
+  const pixelCount = (metadata.width ?? 0) * (metadata.height ?? 0);
+  if (pixelCount > settings.max_image_pixels) {
+    throw new Error("Image dimensions exceed the configured safety limit.");
+  }
+
+  const publicKey = `albums/${albumId}/images/${mediaId}/public.webp`;
   const thumbKey = `albums/${albumId}/images/${mediaId}/thumb.webp`;
   const mediumKey = `albums/${albumId}/images/${mediaId}/medium.webp`;
+  const privateOriginalKey = settings.store_private_originals
+    ? `private/albums/${albumId}/images/${mediaId}/original.${extensionFromMime(mimeType)}`
+    : null;
 
-  const [thumbBuffer, mediumBuffer] = await Promise.all([
+  const baseImage = image.clone().resize({
+    width: 3200,
+    height: 3200,
+    fit: "inside",
+    withoutEnlargement: true,
+  });
+
+  const watermark = settings.enable_media_watermark && settings.watermark_text
+    ? Buffer.from(
+        `<svg width="1200" height="260" viewBox="0 0 1200 260" xmlns="http://www.w3.org/2000/svg">
+          <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle"
+            font-family="Arial, sans-serif" font-size="86" font-weight="700"
+            fill="rgba(255,255,255,0.42)" stroke="rgba(0,0,0,0.20)" stroke-width="2">
+            ${settings.watermark_text.replace(/[<>&"']/g, "")}
+          </text>
+        </svg>`,
+      )
+    : null;
+
+  const publicPipeline = watermark
+    ? baseImage.clone().composite([{ input: watermark, gravity: "southeast" }])
+    : baseImage.clone();
+
+  const [publicBuffer, thumbBuffer, mediumBuffer] = await Promise.all([
+    publicPipeline.webp({ quality: 92 }).toBuffer(),
     image
       .clone()
       .resize({ width: 640, withoutEnlargement: true })
@@ -57,12 +109,12 @@ async function uploadImageMedia({
       .toBuffer(),
   ]);
 
-  const [originalUrl, thumbnailUrl, mediumUrl] = await Promise.all([
+  const uploadJobs = [
     putR2Object({
-      key: originalKey,
-      body: buffer,
-      contentType: mimeType,
-      cacheControl: "public, max-age=86400",
+      key: publicKey,
+      body: publicBuffer,
+      contentType: "image/webp",
+      cacheControl: "public, max-age=31536000, immutable",
     }),
     putR2Object({
       key: thumbKey,
@@ -76,24 +128,44 @@ async function uploadImageMedia({
       contentType: "image/webp",
       cacheControl: "public, max-age=31536000, immutable",
     }),
-  ]);
+  ];
+
+  if (privateOriginalKey) {
+    uploadJobs.push(
+      putR2Object({
+        key: privateOriginalKey,
+        body: buffer,
+        contentType: mimeType,
+        cacheControl: "private, no-store",
+      }),
+    );
+  }
+
+  const [publicUrl, thumbnailUrl, mediumUrl] = await Promise.all(uploadJobs);
 
   return {
     album_id: albumId,
     owner_id: ownerId,
     media_type: "image",
     title: fileName.replace(/\.[^.]+$/, ""),
-    r2_key: originalKey,
+    r2_key: publicKey,
+    public_r2_key: publicKey,
+    original_private_r2_key: privateOriginalKey,
     thumbnail_r2_key: thumbKey,
     medium_r2_key: mediumKey,
-    url: originalUrl,
+    url: publicUrl,
     thumbnail_url: thumbnailUrl,
     medium_url: mediumUrl,
     width: metadata.width ?? null,
     height: metadata.height ?? null,
-    file_size: buffer.byteLength,
-    mime_type: mimeType,
+    file_size: publicBuffer.byteLength,
+    mime_type: "image/webp",
     original_filename: fileName,
+    security_status: "processed",
+    security_notes: "Image was decoded, orientation-normalized, resized when needed, re-encoded as WebP, and metadata-stripped before publishing.",
+    download_allowed: true,
+    original_download_allowed: false,
+    metadata_stripped: true,
   };
 }
 
@@ -104,6 +176,7 @@ async function uploadVideoMedia({
   fileName,
   mimeType,
   buffer,
+  settings,
 }: {
   albumId: string;
   mediaId: string;
@@ -111,7 +184,12 @@ async function uploadVideoMedia({
   fileName: string;
   mimeType: string;
   buffer: Buffer;
+  settings: SiteSettings;
 }) {
+  if (!settings.enable_video_uploads) {
+    throw new Error("Video uploads are disabled in Studio settings.");
+  }
+
   const extension = extensionFromMime(mimeType);
   const originalKey = `albums/${albumId}/videos/${mediaId}/original.${extension}`;
   const url = await putR2Object({
@@ -134,6 +212,11 @@ async function uploadVideoMedia({
     file_size: buffer.byteLength,
     mime_type: mimeType,
     original_filename: fileName,
+    security_status: "needs_review",
+    security_notes: "Video passed MIME, extension, and file signature checks. Container metadata stripping/transcoding requires a media worker.",
+    download_allowed: true,
+    original_download_allowed: false,
+    metadata_stripped: false,
     // TODO: generate poster.webp and duration with ffmpeg or a media worker.
   };
 }
@@ -143,11 +226,13 @@ export async function uploadMediaFile({
   fileName,
   mimeType,
   buffer,
+  settings,
 }: {
   albumId: string;
   fileName: string;
   mimeType: string;
   buffer: Buffer;
+  settings: SiteSettings;
 }): Promise<Media> {
   const mediaType = getMediaTypeFromMime(mimeType);
   if (!mediaType) throw new Error("Unsupported media type.");
@@ -163,6 +248,7 @@ export async function uploadMediaFile({
           fileName,
           mimeType,
           buffer,
+          settings,
         })
       : await uploadVideoMedia({
           albumId,
@@ -171,6 +257,7 @@ export async function uploadMediaFile({
           fileName,
           mimeType,
           buffer,
+          settings,
         });
 
   const { data, error } = await supabase
@@ -178,6 +265,39 @@ export async function uploadMediaFile({
     .insert({ id: mediaId, ...insertPayload })
     .select("*")
     .single();
+
+  if (error) {
+    const legacyPayload = Object.fromEntries(
+      Object.entries(insertPayload).filter(
+        ([key]) =>
+          ![
+            "public_r2_key",
+            "original_private_r2_key",
+            "security_status",
+            "security_notes",
+            "download_allowed",
+            "original_download_allowed",
+            "metadata_stripped",
+          ].includes(key),
+      ),
+    );
+    const { data: legacyData, error: legacyError } = await supabase
+      .from("media")
+      .insert({ id: mediaId, ...legacyPayload })
+      .select("*")
+      .single();
+
+    if (!legacyError && legacyData) {
+      if (mediaType === "image") {
+        await setFirstImageAsCoverIfNeeded(
+          albumId,
+          mediaId,
+          legacyData.thumbnail_url ?? legacyData.url,
+        );
+      }
+      return normalizeMedia(legacyData);
+    }
+  }
 
   if (error && "medium_url" in insertPayload) {
     const fallbackPayload = Object.fromEntries(
@@ -193,22 +313,11 @@ export async function uploadMediaFile({
 
     if (fallbackError) throw fallbackError;
     if (mediaType === "image") {
-      const { data: album } = await supabase
-        .from("albums")
-        .select("cover_url")
-        .eq("id", albumId)
-        .single();
-
-      if (!album?.cover_url) {
-        await supabase
-          .from("albums")
-          .update({
-            cover_media_id: mediaId,
-            cover_url: fallbackData.thumbnail_url ?? fallbackData.url,
-          })
-          .eq("id", albumId);
-        await supabase.from("media").update({ is_cover: true }).eq("id", mediaId);
-      }
+      await setFirstImageAsCoverIfNeeded(
+        albumId,
+        mediaId,
+        fallbackData.thumbnail_url ?? fallbackData.url,
+      );
     }
 
     return normalizeMedia(fallbackData);
@@ -216,22 +325,7 @@ export async function uploadMediaFile({
 
   if (error) throw error;
   if (mediaType === "image") {
-    const { data: album } = await supabase
-      .from("albums")
-      .select("cover_url")
-      .eq("id", albumId)
-      .single();
-
-    if (!album?.cover_url) {
-      await supabase
-        .from("albums")
-        .update({
-          cover_media_id: mediaId,
-          cover_url: data.thumbnail_url ?? data.url,
-        })
-        .eq("id", albumId);
-      await supabase.from("media").update({ is_cover: true }).eq("id", mediaId);
-    }
+    await setFirstImageAsCoverIfNeeded(albumId, mediaId, data.thumbnail_url ?? data.url);
   }
 
   return normalizeMedia(data);

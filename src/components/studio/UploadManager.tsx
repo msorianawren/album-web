@@ -59,7 +59,8 @@ export function UploadManager({
   }
 
   function addFiles(files: FileList | File[]) {
-    const next = Array.from(files).map((file) => {
+    const incoming = Array.from(files).slice(0, settings.max_upload_files_per_batch);
+    const next = incoming.map((file) => {
       const error = validateFile(file);
       return {
         id: queueId(file),
@@ -70,7 +71,9 @@ export function UploadManager({
       } satisfies QueueItem;
     });
     setQueue((current) => [...next, ...current]);
-    setMessage(`${next.length} file${next.length === 1 ? "" : "s"} added.`);
+    setMessage(
+      `${next.length} file${next.length === 1 ? "" : "s"} added. Files are validated, metadata-stripped where supported, and optimized on the server.`,
+    );
   }
 
   function updateItem(id: string, patch: Partial<QueueItem>) {
@@ -82,18 +85,18 @@ export function UploadManager({
       updateItem(item.id, { status: "failed", message: "Choose a target album first.", progress: 100 });
       return;
     }
-    updateItem(item.id, { status: "uploading", message: "Uploading to R2...", progress: 35 });
+    updateItem(item.id, { status: "uploading", message: "Validating and stripping metadata...", progress: 25 });
     const formData = new FormData();
     formData.set("albumId", albumId);
     formData.append("files", item.file);
     const response = await fetch("/api/upload", { method: "POST", body: formData });
-    updateItem(item.id, { progress: 80, message: "Saving metadata..." });
+    updateItem(item.id, { progress: 80, message: "Optimizing, uploading, and saving clean metadata..." });
     const payload = await response.json();
     if (!payload.success) {
       updateItem(item.id, { status: "failed", progress: 100, message: payload.message ?? "Upload failed." });
       return;
     }
-    updateItem(item.id, { status: "done", progress: 100, message: "Uploaded." });
+    updateItem(item.id, { status: "done", progress: 100, message: "Processed and uploaded." });
     const uploaded = (payload.data.media ?? []) as StudioMediaItem[];
     setRecent((current) => [
       ...uploaded.map((media) => ({
@@ -161,6 +164,7 @@ export function UploadManager({
             <p className="mt-3 font-semibold text-text-primary">Drop images or videos here</p>
             <p className="mt-1 text-sm text-text-secondary">
               JPEG, PNG, WebP, AVIF, MP4, WebM, MOV. Server validation still runs after this check.
+              {" "}Up to {settings.max_upload_files_per_batch} files per batch.
             </p>
             <label className="mt-4 inline-flex h-11 cursor-pointer items-center justify-center rounded-full border border-border bg-surface px-5 text-xs font-semibold uppercase tracking-[0.14em] text-text-primary">
               Select files
