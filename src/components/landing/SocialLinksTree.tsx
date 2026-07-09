@@ -33,50 +33,73 @@ export function SocialLinksTree({ links }: { links: LandingSocialLink[] }) {
 
   useEffect(() => {
     if (!containerRef.current || displayLinks.length === 0) return;
+    
+    // Respect reduced motion
+    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
     const ctx = gsap.context(() => {
       const cards = gsap.utils.toArray<HTMLElement>('.social-card');
       const branches = gsap.utils.toArray<SVGElement>('.social-branch');
       
+      if (prefersReducedMotion) {
+        gsap.set(cards, { opacity: 1, y: 0 });
+        gsap.set(branches, { opacity: 0.5, scaleX: 1 });
+        if (vineRef.current) {
+          gsap.set(vineRef.current, { strokeDasharray: "none", strokeDashoffset: 0 });
+        }
+        return;
+      }
+
       // Animate vine drawing down
       if (vineRef.current) {
         const length = vineRef.current.getTotalLength() || 1000;
-        gsap.set(vineRef.current, { strokeDasharray: length, strokeDashoffset: length });
-        gsap.to(vineRef.current, {
-          strokeDashoffset: 0,
-          ease: "none",
-          scrollTrigger: {
-            trigger: containerRef.current,
-            start: "top 70%",
-            end: "bottom 80%",
-            scrub: 1,
+        gsap.fromTo(vineRef.current, 
+          { strokeDasharray: length, strokeDashoffset: length },
+          {
+            strokeDashoffset: 0,
+            ease: "none",
+            scrollTrigger: {
+              trigger: containerRef.current,
+              start: "top 85%",
+              end: "bottom 95%",
+              scrub: 1,
+            }
           }
-        });
+        );
       }
 
-      gsap.from(cards, {
-        opacity: 0,
-        y: 30,
-        duration: 1,
-        stagger: 0.2,
-        ease: "power2.out",
-        scrollTrigger: {
-          trigger: containerRef.current,
-          start: "top 75%",
+      gsap.fromTo(cards, 
+        { opacity: 0, y: 30 },
+        {
+          opacity: 1,
+          y: 0,
+          duration: 1,
+          stagger: 0.2,
+          ease: "power2.out",
+          scrollTrigger: {
+            trigger: containerRef.current,
+            start: "top 85%",
+            toggleActions: "play none none none"
+          }
         }
-      });
+      );
 
-      gsap.from(branches, {
-        opacity: 0,
-        scaleX: 0,
-        transformOrigin: (i, el) => el.classList.contains('branch-left') ? "right center" : "left center",
-        duration: 0.8,
-        stagger: 0.2,
-        ease: "power2.out",
-        scrollTrigger: {
-          trigger: containerRef.current,
-          start: "top 75%",
+      gsap.fromTo(branches, 
+        { opacity: 0, scaleX: 0 },
+        {
+          opacity: 0.5,
+          scaleX: 1,
+          transformOrigin: (i, el) => el.classList.contains('branch-left') ? "right center" : "left center",
+          duration: 0.8,
+          stagger: 0.2,
+          ease: "power2.out",
+          scrollTrigger: {
+            trigger: containerRef.current,
+            start: "top 85%",
+            toggleActions: "play none none none"
+          }
         }
-      });
+      );
     }, containerRef);
     return () => ctx.revert();
   }, [displayLinks.length]);
