@@ -29,11 +29,6 @@ export function HomeCreativeServices() {
           </div>
         ))}
       </div>
-      <div className="mt-16 text-center">
-        <Link href="/contact" className="inline-flex h-12 items-center justify-center rounded-full bg-accent px-8 text-sm font-medium uppercase tracking-[0.14em] text-accent-foreground transition-all hover:-translate-y-0.5 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-          Work with me
-        </Link>
-      </div>
     </section>
   );
 }

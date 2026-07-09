@@ -32,8 +32,8 @@ export function MagicalBackground({ config }: { config: LandingBackgroundSetting
   const presetClass = presets[config.preset] || presets.aura;
 
   const customGradients = [];
-  if (config.accent_color_1) customGradients.push(`radial-gradient(circle at top right, ${config.accent_color_1}33, transparent 50%)`);
-  if (config.accent_color_2) customGradients.push(`radial-gradient(circle at bottom left, ${config.accent_color_2}33, transparent 50%)`);
+  if (config.accent_color_1) customGradients.push(`radial-gradient(circle at top right, ${config.accent_color_1}40, transparent 60%)`);
+  if (config.accent_color_2) customGradients.push(`radial-gradient(circle at bottom left, ${config.accent_color_2}40, transparent 60%)`);
 
   const intensityOpacity = (config.intensity ?? 100) / 100;
   const mainOpacity = (config.opacity ?? 100) / 100;
@@ -42,7 +42,7 @@ export function MagicalBackground({ config }: { config: LandingBackgroundSetting
     <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden" aria-hidden="true" style={{ opacity: mainOpacity }}>
       
       {config.custom_url && (
-        <div className="absolute inset-0 opacity-40 mix-blend-luminosity dark:mix-blend-screen">
+        <div className="absolute inset-0 opacity-30 dark:opacity-40">
           {config.custom_url.match(/\.(mp4|webm)$/i) ? (
             <video src={config.custom_url} autoPlay loop muted playsInline className="h-full w-full object-cover" />
           ) : (
@@ -68,11 +68,11 @@ export function MagicalBackground({ config }: { config: LandingBackgroundSetting
       )}
 
       {config.particles && (
-        <div className="absolute inset-0 opacity-50 mix-blend-screen dark:opacity-30">
+        <div className="absolute inset-0 mix-blend-plus-lighter dark:mix-blend-screen" style={{ opacity: intensityOpacity * 0.8 }}>
           {PARTICLES.map((p, i) => (
             <div
               key={i}
-              className="magic-particle absolute h-1.5 w-1.5 rounded-full bg-white blur-[1px]"
+              className="magic-particle absolute h-1.5 w-1.5 rounded-full bg-white blur-[1px] shadow-[0_0_8px_rgba(255,255,255,0.8)]"
               style={{
                 top: p.top,
                 left: p.left,
