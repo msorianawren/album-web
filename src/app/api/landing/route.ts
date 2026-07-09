@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { requireAdmin } from "@/lib/auth";
 import { apiError, apiSuccess, toServerError } from "@/lib/errors";
 import { getLandingPage, saveLandingPage } from "@/lib/landing";
+import { revalidatePath } from "next/cache";
 
 export async function GET() {
   const landing = await getLandingPage();
@@ -17,6 +18,7 @@ export async function PATCH(request: NextRequest) {
   try {
     const body = await request.json().catch(() => ({}));
     const landing = await saveLandingPage(body);
+    revalidatePath("/");
     return apiSuccess({ landing });
   } catch (error) {
     return toServerError(error);

@@ -3,11 +3,12 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useRef, useState, type ChangeEvent, type FormEvent } from "react";
+import { useRouter } from "next/navigation";
 import { Eye, ImagePlus, Save, Trash2, Upload, X } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
-import type { Album, AlbumStatus, LandingPageContent } from "@/lib/types";
+import type { Album, AlbumStatus, LandingPageContent, Media } from "@/lib/types";
 
 interface StudioDashboardProps {
   initialAlbums: Album[];
@@ -23,6 +24,7 @@ interface QueuedFile {
 type LandingImageField = "hero_image_url" | "portrait_image_url" | "gallery_image_url";
 
 export function StudioDashboard({ initialAlbums, initialLanding }: StudioDashboardProps) {
+  const router = useRouter();
   const [albums, setAlbums] = useState(initialAlbums);
   const [landing, setLanding] = useState(initialLanding);
   const [selectedAlbumId, setSelectedAlbumId] = useState(initialAlbums[0]?.id ?? "");
@@ -149,23 +151,92 @@ export function StudioDashboard({ initialAlbums, initialLanding }: StudioDashboa
     event.target.value = "";
     if (!file) return;
 
-    const formData = new FormData();
-    formData.set("file", file);
-    formData.set("slot", field.replace("_url", ""));
     setUploadingLandingSlot(field);
-    setMessage("Uploading landing image...");
+    setMessage("Requesting upload URL...");
 
-    const response = await fetch("/api/landing/upload", {
-      method: "POST",
-      body: formData,
-    });
-    const payload = await response.json();
+    try {
+      const slot = field.replace("_image_url", "").replace("_url", "");
+      
+      // 1. Request presigned URL
+      const presignRes = await fetch("/api/landing/upload", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          slot,
+          filename: file.name,
+          mimeType: file.type,
+          size: file.size,
+        }),
+      });
 
-    if (payload.success) {
-      updateLandingField(field, payload.data.asset.previewUrl);
-      setMessage("Landing image uploaded. Save the landing page to publish it.");
-    } else {
-      setMessage(payload.message ?? "Landing image upload failed.");
+      const presignPayload = await presignRes.json();
+      if (!presignPayload.success) {
+        setMessage(presignPayload.message ?? "Failed to request upload URL.");
+        setUploadingLandingSlot(null);
+        return;
+      }
+
+      const { uploadUrl, r2Key } = presignPayload.data;
+
+      // 2. PUT file directly to storage
+      setMessage("Uploading image to storage...");
+      await new Promise<void>((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open("PUT", uploadUrl);
+        xhr.setRequestHeader("Content-Type", file.type);
+        xhr.onload = () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            resolve();
+          } else {
+            reject(new Error(`Storage server returned status ${xhr.status}.`));
+          }
+        };
+        xhr.onerror = () => reject(new Error("Storage upload network error."));
+        xhr.send(file);
+      });
+
+      // 3. Complete processing and optimization
+      setMessage("Optimizing and processing image...");
+      const completeRes = await fetch("/api/landing/upload/complete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          slot,
+          r2Key,
+        }),
+      });
+
+      const completePayload = await completeRes.json();
+      if (!completePayload.success) {
+        setMessage(completePayload.message ?? "Failed to finalize image upload.");
+        setUploadingLandingSlot(null);
+        return;
+      }
+
+      const finalUrl = completePayload.data.asset.previewUrl;
+      const nextLanding = { ...landing, [field]: finalUrl };
+      setLanding(nextLanding);
+
+      // 4. Auto-save the landing content with the new image URL
+      setMessage("Saving landing page settings...");
+      const saveResponse = await fetch("/api/landing", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(nextLanding),
+      });
+
+      const savePayload = await saveResponse.json();
+      if (!savePayload.success) {
+        setMessage(savePayload.message ?? "Image uploaded but auto-save failed.");
+        setUploadingLandingSlot(null);
+        return;
+      }
+
+      setLanding(savePayload.data.landing);
+      setMessage("Image uploaded and landing settings auto-saved.");
+      router.refresh();
+    } catch (err) {
+      setMessage(err instanceof Error ? err.message : "Image upload failed.");
     }
 
     setUploadingLandingSlot(null);
@@ -193,50 +264,118 @@ export function StudioDashboard({ initialAlbums, initialLanding }: StudioDashboa
 
   async function uploadFiles() {
     if (!selectedFiles.length || !selectedAlbumId) return;
-    const formData = new FormData();
-    formData.set("albumId", selectedAlbumId);
-
-    for (const item of selectedFiles) {
-      formData.append("files", item.file);
-    }
 
     setUploading(true);
     setMessage("Uploading media...");
-    const response = await fetch("/api/upload", {
-      method: "POST",
-      body: formData,
-    });
-    const payload = await response.json();
 
-    setMessage(
-      payload.success
-        ? `Uploaded ${payload.data.media.length} file(s).`
-        : payload.message ?? "Upload failed.",
-    );
+    const uploaded: Media[] = [];
+    const failed: { name: string; error: string }[] = [];
 
-    if (payload.success) {
-      selectedFiles.forEach((item) => URL.revokeObjectURL(item.url));
-      setSelectedFiles([]);
+    for (const item of selectedFiles) {
+      try {
+        setMessage(`Uploading ${item.file.name}...`);
+        const mediaType = item.file.type.startsWith("video/") ? "video" : "image";
+        
+        // 1. Get presigned URL
+        const presignRes = await fetch("/api/upload/presign", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            albumId: selectedAlbumId,
+            filename: item.file.name,
+            size: item.file.size,
+            mimeType: item.file.type,
+            mediaType,
+          }),
+        });
+
+        const presignPayload = await presignRes.json();
+        if (!presignPayload.success) {
+          throw new Error(presignPayload.message ?? "Failed to request upload URL.");
+        }
+
+        const { mediaId, uploadUrl, r2Key, publicUrl } = presignPayload.data;
+
+        // 2. PUT file directly to storage
+        await new Promise<void>((resolve, reject) => {
+          const xhr = new XMLHttpRequest();
+          xhr.open("PUT", uploadUrl);
+          xhr.setRequestHeader("Content-Type", item.file.type);
+          xhr.onload = () => {
+            if (xhr.status >= 200 && xhr.status < 300) {
+              resolve();
+            } else {
+              reject(new Error(`Storage server returned status ${xhr.status}.`));
+            }
+          };
+          xhr.onerror = () => reject(new Error("Storage upload network error."));
+          xhr.send(item.file);
+        });
+
+        // 3. Complete upload metadata
+        const completeRes = await fetch("/api/upload/complete", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            albumId: selectedAlbumId,
+            mediaId,
+            r2Key,
+            publicUrl,
+            filename: item.file.name,
+            size: item.file.size,
+            mimeType: item.file.type,
+            mediaType,
+          }),
+        });
+
+        const completePayload = await completeRes.json();
+        if (!completePayload.success) {
+          throw new Error(completePayload.message ?? "Failed to finalize upload.");
+        }
+
+        uploaded.push(completePayload.data.media);
+      } catch (err) {
+        failed.push({
+          name: item.file.name,
+          error: err instanceof Error ? err.message : "Upload failed.",
+        });
+      }
+    }
+
+    if (uploaded.length > 0) {
+      const failedNames = failed.map((f) => f.name);
+      const remaining = selectedFiles.filter((q) => failedNames.includes(q.file.name));
+      selectedFiles
+        .filter((q) => !failedNames.includes(q.file.name))
+        .forEach((item) => URL.revokeObjectURL(item.url));
+      setSelectedFiles(remaining);
+
       setAlbums((current) =>
         current.map((album) =>
           album.id === selectedAlbumId
             ? {
                 ...album,
-                media_count: album.media_count + payload.data.media.length,
+                media_count: album.media_count + uploaded.length,
                 photo_count:
                   album.photo_count +
-                  payload.data.media.filter(
+                  uploaded.filter(
                     (item: { media_type: string }) => item.media_type === "image",
                   ).length,
                 video_count:
                   album.video_count +
-                  payload.data.media.filter(
+                  uploaded.filter(
                     (item: { media_type: string }) => item.media_type === "video",
                   ).length,
               }
             : album,
         ),
       );
+    }
+
+    if (failed.length > 0) {
+      setMessage(`Uploaded ${uploaded.length}; ${failed.length} failed. First error: ${failed[0].error}`);
+    } else {
+      setMessage(`Uploaded ${uploaded.length} file(s) successfully.`);
     }
 
     if (fileInputRef.current) fileInputRef.current.value = "";

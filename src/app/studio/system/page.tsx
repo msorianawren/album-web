@@ -46,6 +46,9 @@ export default async function StudioSystemPage() {
         <Panel title="R2">
           <Info label="Bucket" value={health.r2Bucket.value ?? (health.r2Bucket.present ? "Configured" : "Missing")} />
           <Info label="Public URL" value={health.r2PublicUrl ?? "Missing"} />
+          <p className="rounded-[1rem] border border-border bg-background/60 p-3 text-xs text-text-secondary">
+            <strong>CORS Setup Required:</strong> Direct browser-to-R2 uploads require CORS configuration on your bucket. Allowed origins must include your production domain and localhost, with PUT allowed. See <code>R2_CORS_SETUP.md</code>.
+          </p>
         </Panel>
         <Panel title="Deployment">
           <Info label="Commit" value={health.deployment.vercelGitCommitSha ?? "Local or unavailable"} />

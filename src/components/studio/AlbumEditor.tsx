@@ -244,23 +244,94 @@ export function AlbumEditor({ album }: { album: AlbumDetail }) {
     }
     setUploading(true);
     setMessage("Uploading media...");
-    const formData = new FormData();
-    formData.set("albumId", album.id);
-    queuedFiles.forEach((item) => formData.append("files", item.file));
-    const response = await fetch("/api/upload", { method: "POST", body: formData });
-    const payload = await response.json();
-    setUploading(false);
-    if (!payload.success) {
-      setMessage(payload.message ?? "Upload failed.");
-      return;
+
+    const uploaded: Media[] = [];
+    const failed: { name: string; error: string }[] = [];
+
+    for (const item of queuedFiles) {
+      try {
+        setMessage(`Uploading ${item.file.name}...`);
+        const mediaType = item.file.type.startsWith("video/") ? "video" : "image";
+        
+        // 1. Get presigned URL
+        const presignRes = await fetch("/api/upload/presign", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            albumId: album.id,
+            filename: item.file.name,
+            size: item.file.size,
+            mimeType: item.file.type,
+            mediaType,
+          }),
+        });
+
+        const presignPayload = await presignRes.json();
+        if (!presignPayload.success) {
+          throw new Error(presignPayload.message ?? "Failed to request upload URL.");
+        }
+
+        const { mediaId, uploadUrl, r2Key, publicUrl } = presignPayload.data;
+
+        // 2. PUT file directly to storage
+        await new Promise<void>((resolve, reject) => {
+          const xhr = new XMLHttpRequest();
+          xhr.open("PUT", uploadUrl);
+          xhr.setRequestHeader("Content-Type", item.file.type);
+          xhr.onload = () => {
+            if (xhr.status >= 200 && xhr.status < 300) {
+              resolve();
+            } else {
+              reject(new Error(`Storage server returned status ${xhr.status}. R2 CORS configuration might be blocking PUT requests.`));
+            }
+          };
+          xhr.onerror = () => reject(new Error("Storage upload network error."));
+          xhr.send(item.file);
+        });
+
+        // 3. Complete upload metadata
+        const completeRes = await fetch("/api/upload/complete", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            albumId: album.id,
+            mediaId,
+            r2Key,
+            publicUrl,
+            filename: item.file.name,
+            size: item.file.size,
+            mimeType: item.file.type,
+            mediaType,
+          }),
+        });
+
+        const completePayload = await completeRes.json();
+        if (!completePayload.success) {
+          throw new Error(completePayload.message ?? "Failed to finalize upload.");
+        }
+
+        uploaded.push(completePayload.data.media);
+      } catch (err) {
+        failed.push({
+          name: item.file.name,
+          error: err instanceof Error ? err.message : "Upload failed.",
+        });
+      }
     }
-    setMedia((current) => [...payload.data.media, ...current]);
-    clearQueue();
-    setMessage(
-      payload.data.failed?.length
-        ? `Uploaded ${payload.data.media.length}; ${payload.data.failed.length} failed.`
-        : `Uploaded ${payload.data.media.length} file${payload.data.media.length === 1 ? "" : "s"}.`,
-    );
+
+    setUploading(false);
+    if (uploaded.length > 0) {
+      setMedia((current) => [...uploaded, ...current]);
+      const failedIds = failed.map((f) => queuedFiles.find((q) => q.file.name === f.name)?.id).filter(Boolean);
+      setQueuedFiles((current) => current.filter((q) => failedIds.includes(q.id)));
+    }
+
+    if (failed.length > 0) {
+      setMessage(`Uploaded ${uploaded.length}; ${failed.length} failed. First error: ${failed[0].error}`);
+    } else {
+      clearQueue();
+      setMessage(`Uploaded ${uploaded.length} file${uploaded.length === 1 ? "" : "s"} successfully.`);
+    }
   }
 
   return (

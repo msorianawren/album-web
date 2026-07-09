@@ -85,28 +85,101 @@ export function UploadManager({
       updateItem(item.id, { status: "failed", message: "Choose a target album first.", progress: 100 });
       return;
     }
-    updateItem(item.id, { status: "uploading", message: "Validating and stripping metadata...", progress: 25 });
-    const formData = new FormData();
-    formData.set("albumId", albumId);
-    formData.append("files", item.file);
-    const response = await fetch("/api/upload", { method: "POST", body: formData });
-    updateItem(item.id, { progress: 80, message: "Optimizing, uploading, and saving clean metadata..." });
-    const payload = await response.json();
-    if (!payload.success) {
-      updateItem(item.id, { status: "failed", progress: 100, message: payload.message ?? "Upload failed." });
-      return;
+
+    try {
+      updateItem(item.id, { status: "uploading", message: "Requesting upload URL...", progress: 10 });
+      
+      const mediaType = item.file.type.startsWith("video/") ? "video" : "image";
+      const presignRes = await fetch("/api/upload/presign", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          albumId,
+          filename: item.file.name,
+          size: item.file.size,
+          mimeType: item.file.type,
+          mediaType,
+        }),
+      });
+
+      const presignPayload = await presignRes.json();
+      if (!presignPayload.success) {
+        updateItem(item.id, { status: "failed", progress: 100, message: presignPayload.message ?? "Presign failed." });
+        return;
+      }
+
+      const { mediaId, uploadUrl, r2Key, publicUrl } = presignPayload.data;
+
+      updateItem(item.id, { status: "uploading", message: "Uploading directly to storage...", progress: 20 });
+
+      await new Promise<void>((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open("PUT", uploadUrl);
+        xhr.setRequestHeader("Content-Type", item.file.type);
+        
+        xhr.upload.onprogress = (e) => {
+          if (e.lengthComputable) {
+            const percentComplete = Math.round((e.loaded / e.total) * 60) + 20;
+            updateItem(item.id, { progress: percentComplete, message: `Uploading (${Math.round((e.loaded / e.total) * 100)}%)...` });
+          }
+        };
+
+        xhr.onload = () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            resolve();
+          } else {
+            reject(new Error(`Storage server returned status ${xhr.status}. R2 CORS may be blocking direct upload. Add PUT and Content-Type for this origin.`));
+          }
+        };
+
+        xhr.onerror = () => {
+          reject(new Error("Network error during direct storage upload. Check R2 CORS setup."));
+        };
+
+        xhr.send(item.file);
+      });
+
+      updateItem(item.id, { progress: 85, message: "Processing media and recording metadata..." });
+
+      const completeRes = await fetch("/api/upload/complete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          albumId,
+          mediaId,
+          r2Key,
+          publicUrl,
+          filename: item.file.name,
+          size: item.file.size,
+          mimeType: item.file.type,
+          mediaType,
+        }),
+      });
+
+      const completePayload = await completeRes.json();
+      if (!completePayload.success) {
+        updateItem(item.id, { status: "failed", progress: 100, message: completePayload.message ?? "Completion failed." });
+        return;
+      }
+
+      updateItem(item.id, { status: "done", progress: 100, message: "Upload and processing complete." });
+      const uploaded = completePayload.data.media as StudioMediaItem;
+      setRecent((current) => [
+        {
+          ...uploaded,
+          album_title: selectedAlbum?.title ?? null,
+          album_slug: selectedAlbum?.slug ?? null,
+          album_status: selectedAlbum?.status ?? null,
+        },
+        ...current,
+      ]);
+    } catch (err) {
+      updateItem(item.id, {
+        status: "failed",
+        progress: 100,
+        message: err instanceof Error ? err.message : "Upload failed.",
+      });
     }
-    updateItem(item.id, { status: "done", progress: 100, message: "Processed and uploaded." });
-    const uploaded = (payload.data.media ?? []) as StudioMediaItem[];
-    setRecent((current) => [
-      ...uploaded.map((media) => ({
-        ...media,
-        album_title: selectedAlbum?.title ?? null,
-        album_slug: selectedAlbum?.slug ?? null,
-        album_status: selectedAlbum?.status ?? null,
-      })),
-      ...current,
-    ]);
   }
 
   async function uploadAll() {

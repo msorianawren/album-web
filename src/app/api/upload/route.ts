@@ -59,6 +59,18 @@ export async function POST(request: NextRequest) {
       0,
     );
     const incomingBytes = files.reduce((sum, file) => sum + file.size, 0);
+
+    // DEPRECATED: This proxy upload route is capped at 4MB to prevent Vercel request body limits.
+    // Use /api/upload/presign and direct storage uploads instead.
+    const maxLegacySizeBytes = 4 * 1024 * 1024;
+    if (incomingBytes > maxLegacySizeBytes) {
+      return apiError(
+        "PAYLOAD_TOO_LARGE",
+        "File is too large for the proxy upload endpoint. Please use direct presigned R2 upload instead.",
+        413
+      );
+    }
+
     if (currentAlbumBytes + incomingBytes > settings.max_album_storage_mb * 1024 * 1024) {
       return apiError("PAYLOAD_TOO_LARGE", "This upload would exceed the album storage limit.", 413);
     }

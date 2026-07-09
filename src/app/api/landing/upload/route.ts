@@ -1,12 +1,15 @@
-import { randomUUID } from "node:crypto";
-import sharp from "sharp";
 import { NextRequest } from "next/server";
 import { requireAdmin } from "@/lib/auth";
 import { apiError, apiSuccess, toServerError } from "@/lib/errors";
-import { putR2Object } from "@/lib/r2";
-import { validateUploadFile } from "@/lib/upload-validation";
+import { getPresignedPutUrl, getPublicUrl } from "@/lib/r2";
+import { randomUUID } from "node:crypto";
 
 export const runtime = "nodejs";
+
+function extensionFromMime(mimeType: string) {
+  const fallback = mimeType.split("/").at(1) ?? "bin";
+  return fallback.replace("jpeg", "jpg");
+}
 
 export async function POST(request: NextRequest) {
   const session = await requireAdmin(request);
@@ -15,63 +18,42 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const formData = await request.formData();
-    const file = formData.get("file");
-    const slot = String(formData.get("slot") ?? "image").replace(/[^a-z0-9-]/gi, "-");
+    const body = await request.json().catch(() => ({}));
+    const { slot, filename, mimeType, size } = body;
 
-    if (!(file instanceof File)) {
-      return apiError("INVALID_INPUT", "file is required.", 400);
+    if (!slot || !filename || !mimeType || !size) {
+      return apiError("INVALID_INPUT", "slot, filename, mimeType, and size are required.", 400);
     }
 
-    const source = Buffer.from(await file.arrayBuffer());
-    const validation = validateUploadFile({
-      fileName: file.name,
-      mimeType: file.type,
-      size: file.size,
-      buffer: source,
-      options: {
-        enableVideoUploads: false,
-        maxImageSizeBytes: 30 * 1024 * 1024,
-      },
-    });
+    const cleanSlot = String(slot).replace(/[^a-z0-9-]/gi, "-");
 
-    if (!validation.ok || validation.value.mediaType !== "image") {
-      return apiError(
-        validation.ok ? "UNSUPPORTED_MEDIA_TYPE" : validation.code,
-        validation.ok ? "Only image uploads are supported for landing assets." : validation.message,
-        validation.ok ? 415 : validation.status,
-      );
+    // Validate type (images only)
+    if (!mimeType.startsWith("image/")) {
+      return apiError("UNSUPPORTED_MEDIA_TYPE", "Only images are supported for landing assets.", 415);
     }
 
-    const image = sharp(source, { failOn: "none" }).rotate();
-    const metadata = await image.metadata();
-    const assetKey = `landing/${slot}/${randomUUID()}/asset.webp`;
+    // Limit landing assets to 30MB
+    const maxSizeBytes = 30 * 1024 * 1024;
+    if (size > maxSizeBytes) {
+      return apiError("PAYLOAD_TOO_LARGE", "Landing asset exceeds the maximum 30 MB limit.", 413);
+    }
 
-    const asset = await image
-      .clone()
-      .resize({ width: 1800, withoutEnlargement: true })
-      .webp({ quality: 88 })
-      .toBuffer();
+    const ext = extensionFromMime(mimeType);
+    const originalKey = `landing/${cleanSlot}/${randomUUID()}/original.${ext}`;
 
-    const url = await putR2Object({
-      key: assetKey,
-      body: asset,
-      contentType: "image/webp",
-      cacheControl: "public, max-age=31536000, immutable",
+    const uploadUrl = await getPresignedPutUrl({
+      key: originalKey,
+      contentType: mimeType,
+      expiresIn: 300,
     });
 
-    return apiSuccess(
-      {
-        asset: {
-          url,
-          previewUrl: url,
-          width: metadata.width ?? null,
-          height: metadata.height ?? null,
-          metadataStripped: true,
-        },
-      },
-      { status: 201 },
-    );
+    const publicUrl = getPublicUrl(originalKey);
+
+    return apiSuccess({
+      uploadUrl,
+      r2Key: originalKey,
+      publicUrl,
+    });
   } catch (error) {
     return toServerError(error);
   }

@@ -23,13 +23,13 @@ export function HomeHero({ landing }: HomeHeroProps) {
             <span className="truncate">Premium model portfolio</span>
           </p>
           <h1 className="max-w-3xl break-words text-[3.2rem] font-semibold leading-[0.92] text-text-primary sm:text-7xl lg:text-8xl">
-            Oriana Wren
+            {landing.headline}
           </h1>
           <p className="mt-4 text-sm font-semibold uppercase tracking-[0.28em] text-text-secondary">
-            Professional Model
+            {landing.eyebrow}
           </p>
           <p className="mt-6 max-w-2xl break-words text-xl leading-8 text-text-primary/86 sm:text-3xl sm:leading-10">
-            Creating timeless visual stories through light, form & emotion.
+            {landing.subheadline}
           </p>
           <p className="mt-5 max-w-2xl break-words text-base leading-8 text-text-secondary">
             {landing.body}

@@ -1,9 +1,11 @@
 import "server-only";
 import {
   DeleteObjectsCommand,
+  GetObjectCommand,
   PutObjectCommand,
   S3Client,
 } from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 const accountId = process.env.R2_ACCOUNT_ID;
 const accessKeyId = process.env.R2_ACCESS_KEY_ID;
@@ -75,3 +77,35 @@ export async function deleteR2Objects(keys: Array<string | null | undefined>) {
     }),
   );
 }
+
+export async function getPresignedPutUrl({
+  key,
+  contentType,
+  expiresIn = 300,
+}: {
+  key: string;
+  contentType: string;
+  expiresIn?: number;
+}) {
+  const command = new PutObjectCommand({
+    Bucket: getR2Bucket(),
+    Key: key,
+    ContentType: contentType,
+  });
+  return getSignedUrl(r2, command, { expiresIn });
+}
+
+export async function getR2Object(key: string): Promise<Buffer> {
+  const response = await r2.send(
+    new GetObjectCommand({
+      Bucket: getR2Bucket(),
+      Key: key,
+    }),
+  );
+  if (!response.Body) {
+    throw new Error("Empty response body from R2");
+  }
+  const bytes = await response.Body.transformToByteArray();
+  return Buffer.from(bytes);
+}
+

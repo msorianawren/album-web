@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, type ReactNode } from "react";
+import { useRouter } from "next/navigation";
 import { CheckCircle2, Database, HardDrive, ImageUp, RotateCcw, Save, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -62,6 +63,7 @@ export function SettingsCenter({
   initialLanding: LandingPageContent;
   systemHealth: SystemHealthSummary;
 }) {
+  const router = useRouter();
   const [settings, setSettings] = useState(initialSettings);
   const [landing, setLanding] = useState(initialLanding);
   const [activeTab, setActiveTab] = useState<TabKey>("general");
@@ -120,18 +122,89 @@ export function SettingsCenter({
 
   async function uploadLandingAsset(field: "hero_image_url" | "portrait_image_url" | "gallery_image_url", file: File | null) {
     if (!file) return;
-    setLandingMessage("Uploading image...");
-    const formData = new FormData();
-    formData.set("slot", field.replace("_image_url", ""));
-    formData.set("file", file);
-    const response = await fetch("/api/landing/upload", { method: "POST", body: formData });
-    const payload = await response.json();
-    if (!payload.success) {
-      setLandingMessage(payload.message ?? "Image upload failed.");
-      return;
+    setLandingMessage("Requesting upload URL...");
+    
+    try {
+      const slot = field.replace("_image_url", "");
+      
+      // 1. Request presigned URL
+      const presignRes = await fetch("/api/landing/upload", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          slot,
+          filename: file.name,
+          mimeType: file.type,
+          size: file.size,
+        }),
+      });
+
+      const presignPayload = await presignRes.json();
+      if (!presignPayload.success) {
+        setLandingMessage(presignPayload.message ?? "Failed to request upload URL.");
+        return;
+      }
+
+      const { uploadUrl, r2Key } = presignPayload.data;
+
+      // 2. PUT file directly to storage
+      setLandingMessage("Uploading image to storage...");
+      await new Promise<void>((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open("PUT", uploadUrl);
+        xhr.setRequestHeader("Content-Type", file.type);
+        xhr.onload = () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            resolve();
+          } else {
+            reject(new Error(`Storage server returned status ${xhr.status}.`));
+          }
+        };
+        xhr.onerror = () => reject(new Error("Storage upload network error."));
+        xhr.send(file);
+      });
+
+      // 3. Complete processing and optimization
+      setLandingMessage("Optimizing and processing image...");
+      const completeRes = await fetch("/api/landing/upload/complete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          slot,
+          r2Key,
+        }),
+      });
+
+      const completePayload = await completeRes.json();
+      if (!completePayload.success) {
+        setLandingMessage(completePayload.message ?? "Failed to finalize image upload.");
+        return;
+      }
+
+      const finalUrl = completePayload.data.asset.previewUrl;
+      const nextLanding = { ...landing, [field]: finalUrl };
+      setLanding(nextLanding);
+
+      // 4. Auto-save the landing content with the new image URL
+      setLandingMessage("Saving landing page settings...");
+      const saveResponse = await fetch("/api/landing", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(nextLanding),
+      });
+
+      const savePayload = await saveResponse.json();
+      if (!savePayload.success) {
+        setLandingMessage(savePayload.message ?? "Image uploaded but auto-save failed.");
+        return;
+      }
+
+      setLanding(savePayload.data.landing);
+      setLandingMessage("Image uploaded and landing settings auto-saved.");
+      router.refresh();
+    } catch (err) {
+      setLandingMessage(err instanceof Error ? err.message : "Image upload failed.");
     }
-    updateLanding(field, payload.data.asset.previewUrl);
-    setLandingMessage("Image uploaded. Save landing to publish it.");
   }
 
   async function checkR2() {
