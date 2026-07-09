@@ -475,7 +475,50 @@ export function SettingsCenter({
                 <StatFields label="Stat 2" value={getLandingLocalized("stat_two_value")} caption={getLandingLocalized("stat_two_label")} onValue={(value) => updateLandingLocalized("stat_two_value", value)} onCaption={(value) => updateLandingLocalized("stat_two_label", value)} />
                 <StatFields label="Stat 3" value={getLandingLocalized("stat_three_value")} caption={getLandingLocalized("stat_three_label")} onValue={(value) => updateLandingLocalized("stat_three_value", value)} onCaption={(value) => updateLandingLocalized("stat_three_label", value)} />
               </div>
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="mt-8 border-t border-border pt-8">
+                <h3 className="mb-4 font-serif text-xl text-text-primary">Magical Background</h3>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <Toggle label="Enable Background" checked={landing.background_settings.enabled} onChange={(val) => updateLanding("background_settings", { ...landing.background_settings, enabled: val })} />
+                  <Select 
+                    label="Preset Theme" 
+                    value={landing.background_settings.preset} 
+                    onChange={(val) => updateLanding("background_settings", { ...landing.background_settings, preset: val as "aura" | "moonlit" | "bloom" | "pearl" | "porcelain" })} 
+                    options={["aura", "moonlit", "bloom", "pearl", "porcelain"]} 
+                  />
+                  <Toggle label="Show Grain" checked={landing.background_settings.grain} onChange={(val) => updateLanding("background_settings", { ...landing.background_settings, grain: val })} />
+                  <Toggle label="Show Particles" checked={landing.background_settings.particles} onChange={(val) => updateLanding("background_settings", { ...landing.background_settings, particles: val })} />
+                </div>
+              </div>
+
+              <div className="mt-8 border-t border-border pt-8">
+                <h3 className="mb-4 font-serif text-xl text-text-primary">Social Links</h3>
+                <div className="grid gap-4 md:grid-cols-2">
+                  {landing.social_links.map((link, idx) => (
+                    <div key={link.id} className="rounded-[1rem] border border-border bg-background/55 p-4">
+                      <div className="mb-4 flex items-center justify-between border-b border-border pb-2">
+                        <span className="font-medium text-sm text-text-primary">{link.platform}</span>
+                        <input type="checkbox" checked={link.enabled} onChange={(e) => {
+                            const updated = [...landing.social_links];
+                            updated[idx].enabled = e.target.checked;
+                            updateLanding("social_links", updated);
+                        }} className="h-4 w-4 accent-[var(--accent)]" />
+                      </div>
+                      <Field label="URL">
+                        <Input 
+                          value={link.url} 
+                          onChange={(e) => {
+                            const updated = [...landing.social_links];
+                            updated[idx].url = e.target.value;
+                            updateLanding("social_links", updated);
+                          }} 
+                        />
+                      </Field>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mt-8 border-t border-border pt-6">
                 <p className="text-sm text-text-secondary" aria-live="polite">{landingMessage}</p>
                 <Button onClick={saveLanding} disabled={savingLanding}>
                   <Save className="h-4 w-4" />

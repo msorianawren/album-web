@@ -29,6 +29,26 @@ export const defaultLandingPage: LandingPageContent = {
   stat_two_value: "Client books",
   stat_three_label: "Fast",
   stat_three_value: "R2 delivery",
+  social_links: [
+    { id: "1", platform: "Instagram", url: "", label: "", enabled: true, order: 1 },
+    { id: "2", platform: "Facebook", url: "", label: "", enabled: true, order: 2 },
+    { id: "3", platform: "Threads", url: "", label: "", enabled: true, order: 3 },
+    { id: "4", platform: "TikTok", url: "", label: "", enabled: true, order: 4 },
+    { id: "5", platform: "Telegram", url: "", label: "", enabled: true, order: 5 },
+  ],
+  media_items: [],
+  collaborators: [],
+  background_settings: {
+    enabled: true,
+    preset: "aura",
+    intensity: 100,
+    accent_color_1: null,
+    accent_color_2: null,
+    grain: true,
+    particles: true,
+    custom_url: null,
+    opacity: 100,
+  },
   translations: {},
 };
 
@@ -55,11 +75,22 @@ function cleanUrl(value: unknown, fallback: string) {
 }
 
 export function normalizeLandingPage(value: Partial<LandingPageContent> | null | undefined) {
+  const socialLinks = Array.isArray(value?.social_links) && value?.social_links.length > 0 
+    ? value?.social_links 
+    : defaultLandingPage.social_links;
+
   return {
     ...defaultLandingPage,
     ...(value ?? {}),
     id: landingId,
-  } satisfies LandingPageContent;
+    social_links: socialLinks,
+    media_items: Array.isArray(value?.media_items) ? value?.media_items : defaultLandingPage.media_items,
+    collaborators: Array.isArray(value?.collaborators) ? value?.collaborators : defaultLandingPage.collaborators,
+    background_settings: {
+      ...defaultLandingPage.background_settings,
+      ...(value?.background_settings ?? {}),
+    },
+  } as LandingPageContent;
 }
 
 export async function getLandingPage() {
@@ -99,6 +130,12 @@ export function landingPayloadFromInput(input: Record<string, unknown>) {
     stat_two_value: cleanText(input.stat_two_value, defaultLandingPage.stat_two_value, 40),
     stat_three_label: cleanText(input.stat_three_label, defaultLandingPage.stat_three_label, 40),
     stat_three_value: cleanText(input.stat_three_value, defaultLandingPage.stat_three_value, 40),
+    social_links: Array.isArray(input.social_links) ? input.social_links : defaultLandingPage.social_links,
+    media_items: Array.isArray(input.media_items) ? input.media_items : defaultLandingPage.media_items,
+    collaborators: Array.isArray(input.collaborators) ? input.collaborators : defaultLandingPage.collaborators,
+    background_settings: typeof input.background_settings === "object" && input.background_settings !== null 
+      ? { ...defaultLandingPage.background_settings, ...input.background_settings } 
+      : defaultLandingPage.background_settings,
     translations: typeof input.translations === "object" && input.translations !== null ? input.translations : {},
   } satisfies LandingPageContent;
 }

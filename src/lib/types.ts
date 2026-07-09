@@ -176,6 +176,50 @@ export interface UploadResult {
   media: Media[];
 }
 
+export interface LandingSocialLink {
+  id: string;
+  platform: string;
+  url: string;
+  label?: string | null;
+  enabled: boolean;
+  order: number;
+}
+
+export interface LandingMediaItem {
+  id: string;
+  type: "image" | "video";
+  url: string;
+  alt: string | null;
+  caption: string | null;
+  title: string | null;
+  poster_url: string | null;
+  enabled: boolean;
+  order: number;
+}
+
+export interface CollaboratorProfile {
+  id: string;
+  name: string;
+  role: string;
+  portrait_url: string | null;
+  bio: string | null;
+  portfolio_url: string | null;
+  enabled: boolean;
+  order: number;
+}
+
+export interface LandingBackgroundSettings {
+  enabled: boolean;
+  preset: "aura" | "moonlit" | "bloom" | "pearl" | "porcelain";
+  intensity: number;
+  accent_color_1: string | null;
+  accent_color_2: string | null;
+  grain: boolean;
+  particles: boolean;
+  custom_url: string | null;
+  opacity: number;
+}
+
 export interface PublicSession {
   userId: string | null;
   email: string | null;
@@ -209,6 +253,10 @@ export interface LandingPageContent {
   stat_two_value: string;
   stat_three_label: string;
   stat_three_value: string;
+  social_links: LandingSocialLink[];
+  media_items: LandingMediaItem[];
+  collaborators: CollaboratorProfile[];
+  background_settings: LandingBackgroundSettings;
   translations?: Record<string, any>;
   updated_at?: string;
 }

@@ -1,3 +1,5 @@
+import type { LandingBackgroundSettings } from "@/lib/types";
+
 const PARTICLES = [
   { top: "12%", left: "24%", delay: "1.2s", duration: "16s" },
   { top: "45%", left: "78%", delay: "2.4s", duration: "22s" },
@@ -16,27 +18,49 @@ const PARTICLES = [
   { top: "95%", left: "5%", delay: "1.1s", duration: "19s" },
 ];
 
-export function MagicalBackground() {
+export function MagicalBackground({ config }: { config: LandingBackgroundSettings }) {
+  if (!config.enabled) return null;
+
+  const presets = {
+    aura: "bg-[radial-gradient(ellipse_at_top_right,rgba(255,250,242,0.15),transparent_50%)] dark:bg-[radial-gradient(ellipse_at_top_right,rgba(244,238,228,0.05),transparent_50%)]",
+    moonlit: "bg-[radial-gradient(ellipse_at_top,rgba(200,210,240,0.15),transparent_60%)] dark:bg-[radial-gradient(ellipse_at_top,rgba(150,170,220,0.08),transparent_60%)]",
+    bloom: "bg-[radial-gradient(ellipse_at_center,rgba(255,220,230,0.15),transparent_70%)] dark:bg-[radial-gradient(ellipse_at_center,rgba(220,180,190,0.06),transparent_70%)]",
+    pearl: "bg-[radial-gradient(ellipse_at_top_left,rgba(255,245,235,0.2),transparent_60%)] dark:bg-[radial-gradient(ellipse_at_top_left,rgba(240,230,220,0.08),transparent_60%)]",
+    porcelain: "bg-[radial-gradient(circle_at_center,rgba(250,250,250,0.3),transparent_100%)] dark:bg-[radial-gradient(circle_at_center,rgba(250,250,250,0.04),transparent_100%)]",
+  };
+
+  const presetClass = presets[config.preset] || presets.aura;
+
   return (
-    <div className="pointer-events-none fixed inset-0 z-[-1] overflow-hidden" aria-hidden="true">
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(255,250,242,0.15),transparent_50%)] dark:bg-[radial-gradient(ellipse_at_top_right,rgba(244,238,228,0.05),transparent_50%)]" />
+    <div className="pointer-events-none fixed inset-0 z-[-1] overflow-hidden" aria-hidden="true" style={{ opacity: config.opacity / 100 }}>
+      <div className={`absolute inset-0 ${presetClass}`} />
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,rgba(63,51,43,0.05),transparent_50%)] dark:bg-[radial-gradient(ellipse_at_bottom_left,rgba(244,238,228,0.03),transparent_50%)]" />
       
-      {/* Particles/fireflies */}
-      <div className="absolute inset-0 opacity-50 mix-blend-screen dark:opacity-30">
-        {PARTICLES.map((p, i) => (
-          <div
-            key={i}
-            className="magic-particle absolute h-1.5 w-1.5 rounded-full bg-white blur-[1px]"
-            style={{
-              top: p.top,
-              left: p.left,
-              animationDelay: p.delay,
-              animationDuration: p.duration,
-            }}
-          />
-        ))}
-      </div>
+      {config.grain && (
+        <svg className="absolute inset-0 h-full w-full opacity-20 dark:opacity-10 mix-blend-overlay">
+          <filter id="noiseFilter">
+            <feTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch" />
+          </filter>
+          <rect width="100%" height="100%" filter="url(#noiseFilter)" />
+        </svg>
+      )}
+
+      {config.particles && (
+        <div className="absolute inset-0 opacity-50 mix-blend-screen dark:opacity-30">
+          {PARTICLES.map((p, i) => (
+            <div
+              key={i}
+              className="magic-particle absolute h-1.5 w-1.5 rounded-full bg-white blur-[1px]"
+              style={{
+                top: p.top,
+                left: p.left,
+                animationDelay: p.delay,
+                animationDuration: p.duration,
+              }}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }

@@ -8,6 +8,8 @@ import { SocialLinksTree } from "@/components/landing/SocialLinksTree";
 import { HomePrivateExperience } from "@/components/landing/HomePrivateExperience";
 import { HomeCreativeServices } from "@/components/landing/HomeCreativeServices";
 import { HomePersonalLetter } from "@/components/landing/HomePersonalLetter";
+import { HomeMediaGallery } from "@/components/landing/HomeMediaGallery";
+import { HomeCollaborators } from "@/components/landing/HomeCollaborators";
 
 import { getLandingPage } from "@/lib/landing";
 import { getAlbums } from "@/lib/albums";
@@ -32,15 +34,17 @@ export default async function Home() {
 
   return (
     <main className="relative min-h-screen bg-transparent">
-      <MagicalBackground />
+      <MagicalBackground config={landing.background_settings} />
       <AppHeader />
       <HomeHero landing={landing} locale={locale} dict={dict} />
       
       <HomeEditorialIntro landing={landing} />
       <HomeAlbumWorlds albums={albums} />
-      <SocialLinksTree links={profile.social_links || []} />
+      <HomeMediaGallery items={landing.media_items} />
+      <SocialLinksTree links={landing.social_links} />
       <HomePrivateExperience />
       <HomeCreativeServices />
+      <HomeCollaborators collaborators={landing.collaborators} />
       <HomePersonalLetter profile={profile} />
       
       <AppFooter />
