@@ -1,14 +1,20 @@
 import { AppHeader } from "@/components/AppHeader";
 import { getSiteSettings } from "@/lib/site-settings";
+import { getLandingPage } from "@/lib/landing";
+import { NatureAnimatedBackground } from "@/components/landing/NatureAnimatedBackground";
 import { Lock, Camera, Download, Mail } from "lucide-react";
 import Link from "next/link";
 
 export default async function ContactPage() {
-  const settings = await getSiteSettings();
+  const [settings, landing] = await Promise.all([
+    getSiteSettings(),
+    getLandingPage()
+  ]);
   const hasEmail = Boolean(settings.contact_email);
 
   return (
-    <main className="min-h-screen bg-background pb-20">
+    <main className="relative z-10 min-h-screen bg-transparent pb-20">
+      <NatureAnimatedBackground config={landing.background_settings} />
       <AppHeader />
       
       <section className="mx-auto w-full max-w-[1024px] px-4 py-12 sm:px-8 sm:py-20">

@@ -210,14 +210,16 @@ export interface CollaboratorProfile {
 
 export interface LandingBackgroundSettings {
   enabled: boolean;
-  preset: "aura" | "moonlit" | "bloom" | "pearl" | "porcelain";
+  preset: "sakura" | "fireflies" | "snow" | "autumn" | "mist";
   intensity: number;
+  opacity: number;
+  speed: number;
+  density: number;
+  blur: number;
   accent_color_1: string | null;
   accent_color_2: string | null;
-  grain: boolean;
-  particles: boolean;
   custom_url: string | null;
-  opacity: number;
+  apply_to_all_public_pages: boolean;
 }
 
 export interface PublicSession {

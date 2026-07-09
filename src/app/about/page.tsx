@@ -1,16 +1,22 @@
 import { AppHeader } from "@/components/AppHeader";
 import { getAboutProfile } from "@/lib/about";
+import { getLandingPage } from "@/lib/landing";
+import { NatureAnimatedBackground } from "@/components/landing/NatureAnimatedBackground";
 import Link from "next/link";
 import { Globe, MapPin, ExternalLink, Calendar, GraduationCap, Briefcase, Award } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
 export default async function AboutPage() {
-  const profile = await getAboutProfile();
+  const [profile, landing] = await Promise.all([
+    getAboutProfile(),
+    getLandingPage()
+  ]);
 
   if (!profile.is_public) {
     return (
-      <main className="min-h-screen bg-background">
+      <main className="relative z-10 min-h-screen bg-transparent">
+        <NatureAnimatedBackground config={landing.background_settings} />
         <AppHeader />
         <section className="mx-auto flex min-h-[60vh] max-w-[960px] items-center justify-center px-4 py-10">
           <p className="text-lg text-text-secondary">This profile is currently private.</p>
@@ -20,7 +26,8 @@ export default async function AboutPage() {
   }
 
   return (
-    <main className="min-h-screen bg-background pb-32">
+    <main className="relative z-10 min-h-screen bg-transparent pb-32">
+      <NatureAnimatedBackground config={landing.background_settings} />
       <AppHeader />
       
       {/* Hero Section */}

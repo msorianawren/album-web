@@ -10,9 +10,11 @@ import { LikeButton } from "@/components/media/LikeButton";
 import { MediaGrid } from "@/components/media/MediaGrid";
 import { getAlbum } from "@/lib/albums";
 import { getSiteSettings } from "@/lib/site-settings";
+import { getLandingPage } from "@/lib/landing";
 import { getPublicSession } from "@/lib/auth";
 import { cookies } from "next/headers";
 import { getDictionary } from "@/lib/getDictionary";
+import { NatureAnimatedBackground } from "@/components/landing/NatureAnimatedBackground";
 
 interface AlbumPageProps {
   params: Promise<{
@@ -78,7 +80,7 @@ import { AccessRequestModal } from "@/components/albums/AccessRequestModal";
 
 export default async function AlbumPage({ params }: AlbumPageProps) {
   const { id } = await params;
-  const [album, settings] = await Promise.all([getAlbum(id), getSiteSettings()]);
+  const [album, settings, landing] = await Promise.all([getAlbum(id), getSiteSettings(), getLandingPage()]);
 
   if (!album) notFound();
 
@@ -100,7 +102,8 @@ export default async function AlbumPage({ params }: AlbumPageProps) {
   };
 
   return (
-    <main className="min-h-screen bg-background">
+    <main className="relative z-10 min-h-screen bg-transparent">
+      <NatureAnimatedBackground config={landing.background_settings} />
       <AppHeader />
       <AlbumHeader album={localizedAlbum} dict={dict} />
       {album.locked ? (

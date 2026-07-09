@@ -1,5 +1,5 @@
 import { supabase } from "@/lib/supabase";
-import type { LandingPageContent } from "@/lib/types";
+import type { LandingPageContent, LandingBackgroundSettings } from "@/lib/types";
 
 const landingId = "home";
 
@@ -48,14 +48,16 @@ export const defaultLandingPage: LandingPageContent = {
   ],
   background_settings: {
     enabled: true,
-    preset: "aura",
+    preset: "sakura",
     intensity: 100,
+    opacity: 100,
+    speed: 50,
+    density: 50,
+    blur: 0,
     accent_color_1: null,
     accent_color_2: null,
-    grain: true,
-    particles: true,
     custom_url: null,
-    opacity: 100,
+    apply_to_all_public_pages: true,
   },
   translations: {},
 };
@@ -82,6 +84,14 @@ function cleanUrl(value: unknown, fallback: string) {
   return fallback;
 }
 
+function normalizeBackgroundSettings(bg: any): LandingBackgroundSettings {
+  const merged = { ...defaultLandingPage.background_settings, ...(bg || {}) };
+  if (!["sakura", "fireflies", "snow", "autumn", "mist"].includes(merged.preset)) {
+    merged.preset = "sakura";
+  }
+  return merged as LandingBackgroundSettings;
+}
+
 export function normalizeLandingPage(value: Partial<LandingPageContent> | null | undefined) {
   const defaultSocials = [...defaultLandingPage.social_links];
   const savedSocials = Array.isArray(value?.social_links) ? value?.social_links : [];
@@ -97,10 +107,7 @@ export function normalizeLandingPage(value: Partial<LandingPageContent> | null |
     social_links: mergedSocials,
     media_items: Array.isArray(value?.media_items) ? value?.media_items : defaultLandingPage.media_items,
     collaborators: Array.isArray(value?.collaborators) ? value?.collaborators : defaultLandingPage.collaborators,
-    background_settings: {
-      ...defaultLandingPage.background_settings,
-      ...(value?.background_settings ?? {}),
-    },
+    background_settings: normalizeBackgroundSettings(value?.background_settings),
   } as LandingPageContent;
 }
 
@@ -145,7 +152,7 @@ export function landingPayloadFromInput(input: Record<string, unknown>) {
     media_items: Array.isArray(input.media_items) ? input.media_items : defaultLandingPage.media_items,
     collaborators: Array.isArray(input.collaborators) ? input.collaborators : defaultLandingPage.collaborators,
     background_settings: typeof input.background_settings === "object" && input.background_settings !== null 
-      ? { ...defaultLandingPage.background_settings, ...input.background_settings } 
+      ? normalizeBackgroundSettings(input.background_settings)
       : defaultLandingPage.background_settings,
     translations: typeof input.translations === "object" && input.translations !== null ? input.translations : {},
   } satisfies LandingPageContent;

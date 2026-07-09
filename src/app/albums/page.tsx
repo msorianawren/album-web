@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { AlbumList } from "@/components/albums/AlbumList";
 import { AppHeader } from "@/components/AppHeader";
 import { getAlbums } from "@/lib/albums";
+import { getLandingPage } from "@/lib/landing";
+import { NatureAnimatedBackground } from "@/components/landing/NatureAnimatedBackground";
 
 interface AlbumsPageProps {
   searchParams: Promise<{
@@ -31,10 +33,14 @@ export default async function AlbumsPage({ searchParams }: AlbumsPageProps) {
   const dict = await getDictionary(locale);
 
   const filters = await searchParams;
-  const albums = await getAlbums({ ...filters, session });
+  const [albums, landing] = await Promise.all([
+    getAlbums({ ...filters, session }),
+    getLandingPage()
+  ]);
 
   return (
-    <main className="min-h-screen bg-background">
+    <main className="relative z-10 min-h-screen bg-transparent">
+      <NatureAnimatedBackground config={landing.background_settings} />
       <AppHeader />
       <section className="page-shell-1440 py-10 sm:py-14">
         <p className="text-xs font-semibold uppercase tracking-[0.24em] text-text-secondary">

@@ -1,7 +1,7 @@
 import { AppHeader } from "@/components/AppHeader";
 import { AppFooter } from "@/components/AppFooter";
 import { HomeHero } from "@/components/HomeHero";
-import { MagicalBackground } from "@/components/landing/MagicalBackground";
+import { NatureAnimatedBackground } from "@/components/landing/NatureAnimatedBackground";
 import { HomeEditorialIntro } from "@/components/landing/HomeEditorialIntro";
 import { HomeAlbumWorlds } from "@/components/landing/HomeAlbumWorlds";
 import { SocialLinksTree } from "@/components/landing/SocialLinksTree";
@@ -34,7 +34,7 @@ export default async function Home() {
 
   return (
     <main className="relative z-10 min-h-screen bg-transparent">
-      <MagicalBackground config={landing.background_settings} />
+      <NatureAnimatedBackground config={landing.background_settings} />
       <AppHeader />
       <HomeHero landing={landing} locale={locale} dict={dict} />
       

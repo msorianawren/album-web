@@ -483,20 +483,30 @@ export function SettingsCenter({
                 <StatFields label="Stat 3" value={getLandingLocalized("stat_three_value")} caption={getLandingLocalized("stat_three_label")} onValue={(value) => updateLandingLocalized("stat_three_value", value)} onCaption={(value) => updateLandingLocalized("stat_three_label", value)} />
               </div>
               <div className="mt-8 border-t border-border pt-8">
-                <h3 className="mb-4 font-serif text-xl text-text-primary">Magical Background</h3>
+                <h3 className="mb-4 font-serif text-xl text-text-primary">Nature Animated Background</h3>
                 <div className="grid gap-4 md:grid-cols-2">
                   <Toggle label="Enable Background" checked={landing.background_settings.enabled} onChange={(val) => updateLanding("background_settings", { ...landing.background_settings, enabled: val })} />
+                  <Toggle label="Apply to All Public Pages" checked={landing.background_settings.apply_to_all_public_pages ?? true} onChange={(val) => updateLanding("background_settings", { ...landing.background_settings, apply_to_all_public_pages: val })} />
                   <Select 
                     label="Preset Theme" 
                     value={landing.background_settings.preset} 
-                    onChange={(val) => updateLanding("background_settings", { ...landing.background_settings, preset: val as "aura" | "moonlit" | "bloom" | "pearl" | "porcelain" })} 
-                    options={["aura", "moonlit", "bloom", "pearl", "porcelain"]} 
+                    onChange={(val) => updateLanding("background_settings", { ...landing.background_settings, preset: val as any })} 
+                    options={["sakura", "fireflies", "snow", "autumn", "mist"]} 
                   />
                   <Field label="Opacity (0-100)">
-                    <Input type="number" min={0} max={100} value={landing.background_settings.opacity ?? 100} onChange={(e) => updateLanding("background_settings", { ...landing.background_settings, opacity: parseInt(e.target.value) || 100 })} />
+                    <Input type="number" min={0} max={100} value={landing.background_settings.opacity ?? 100} onChange={(e) => updateLanding("background_settings", { ...landing.background_settings, opacity: parseInt(e.target.value) || 0 })} />
                   </Field>
                   <Field label="Intensity (0-100)">
-                    <Input type="number" min={0} max={100} value={landing.background_settings.intensity ?? 100} onChange={(e) => updateLanding("background_settings", { ...landing.background_settings, intensity: parseInt(e.target.value) || 100 })} />
+                    <Input type="number" min={0} max={100} value={landing.background_settings.intensity ?? 100} onChange={(e) => updateLanding("background_settings", { ...landing.background_settings, intensity: parseInt(e.target.value) || 0 })} />
+                  </Field>
+                  <Field label="Speed (0-100)">
+                    <Input type="number" min={0} max={100} value={landing.background_settings.speed ?? 50} onChange={(e) => updateLanding("background_settings", { ...landing.background_settings, speed: parseInt(e.target.value) || 0 })} />
+                  </Field>
+                  <Field label="Density (0-100)">
+                    <Input type="number" min={0} max={100} value={landing.background_settings.density ?? 50} onChange={(e) => updateLanding("background_settings", { ...landing.background_settings, density: parseInt(e.target.value) || 0 })} />
+                  </Field>
+                  <Field label="Blur / Softness (0-100)">
+                    <Input type="number" min={0} max={100} value={landing.background_settings.blur ?? 0} onChange={(e) => updateLanding("background_settings", { ...landing.background_settings, blur: parseInt(e.target.value) || 0 })} />
                   </Field>
                   <Field label="Accent Color 1 (Hex)">
                     <Input placeholder="#ff0000" value={landing.background_settings.accent_color_1 ?? ""} onChange={(e) => updateLanding("background_settings", { ...landing.background_settings, accent_color_1: e.target.value })} />
@@ -504,8 +514,6 @@ export function SettingsCenter({
                   <Field label="Accent Color 2 (Hex)">
                     <Input placeholder="#0000ff" value={landing.background_settings.accent_color_2 ?? ""} onChange={(e) => updateLanding("background_settings", { ...landing.background_settings, accent_color_2: e.target.value })} />
                   </Field>
-                  <Toggle label="Show Grain" checked={landing.background_settings.grain} onChange={(val) => updateLanding("background_settings", { ...landing.background_settings, grain: val })} />
-                  <Toggle label="Show Particles" checked={landing.background_settings.particles} onChange={(val) => updateLanding("background_settings", { ...landing.background_settings, particles: val })} />
                 </div>
                 <div className="mt-4">
                   <ImageField label="Custom Background URL (Image or Video)" value={landing.background_settings.custom_url ?? ""} onValue={(value) => updateLanding("background_settings", { ...landing.background_settings, custom_url: value })} onUpload={async (file) => {
