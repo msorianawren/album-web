@@ -232,7 +232,7 @@ export function SettingsCenter({
     setLandingMessage("Landing page saved.");
   }
 
-  async function uploadLandingAsset(field: "hero_image_url" | "portrait_image_url" | "gallery_image_url", file: File | null) {
+  async function uploadLandingAsset(field: "hero_image_url" | "portrait_image_url" | "gallery_image_url" | "custom_background" | "media" | "portrait", file: File | null): Promise<string | void> {
     if (!file) return;
     setLandingMessage("Requesting upload URL...");
     
@@ -294,26 +294,33 @@ export function SettingsCenter({
       }
 
       const finalUrl = completePayload.data.asset.previewUrl;
-      const nextLanding = { ...landing, [field]: finalUrl };
-      setLanding(nextLanding);
 
-      // 4. Auto-save the landing content with the new image URL
-      setLandingMessage("Saving landing page settings...");
-      const saveResponse = await fetch("/api/landing", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(nextLanding),
-      });
+      // 4. Auto-save the landing content with the new image URL (only for top-level fields)
+      if (field === "hero_image_url" || field === "portrait_image_url" || field === "gallery_image_url") {
+        const nextLanding = { ...landing, [field]: finalUrl };
+        setLanding(nextLanding);
 
-      const savePayload = await saveResponse.json();
-      if (!savePayload.success) {
-        setLandingMessage(savePayload.message ?? "Image uploaded but auto-save failed.");
-        return;
+        setLandingMessage("Saving landing page settings...");
+        const saveResponse = await fetch("/api/landing", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(nextLanding),
+        });
+
+        const savePayload = await saveResponse.json();
+        if (!savePayload.success) {
+          setLandingMessage(savePayload.message ?? "Image uploaded but auto-save failed.");
+          return finalUrl;
+        }
+
+        setLanding(savePayload.data.landing);
+        setLandingMessage("Image uploaded and landing settings auto-saved.");
+        router.refresh();
+      } else {
+        setLandingMessage("Asset uploaded. Save landing page to apply changes.");
       }
 
-      setLanding(savePayload.data.landing);
-      setLandingMessage("Image uploaded and landing settings auto-saved.");
-      router.refresh();
+      return finalUrl;
     } catch (err) {
       setLandingMessage(err instanceof Error ? err.message : "Image upload failed.");
     }
@@ -485,8 +492,26 @@ export function SettingsCenter({
                     onChange={(val) => updateLanding("background_settings", { ...landing.background_settings, preset: val as "aura" | "moonlit" | "bloom" | "pearl" | "porcelain" })} 
                     options={["aura", "moonlit", "bloom", "pearl", "porcelain"]} 
                   />
+                  <Field label="Opacity (0-100)">
+                    <Input type="number" min={0} max={100} value={landing.background_settings.opacity ?? 100} onChange={(e) => updateLanding("background_settings", { ...landing.background_settings, opacity: parseInt(e.target.value) || 100 })} />
+                  </Field>
+                  <Field label="Intensity (0-100)">
+                    <Input type="number" min={0} max={100} value={landing.background_settings.intensity ?? 100} onChange={(e) => updateLanding("background_settings", { ...landing.background_settings, intensity: parseInt(e.target.value) || 100 })} />
+                  </Field>
+                  <Field label="Accent Color 1 (Hex)">
+                    <Input placeholder="#ff0000" value={landing.background_settings.accent_color_1 ?? ""} onChange={(e) => updateLanding("background_settings", { ...landing.background_settings, accent_color_1: e.target.value })} />
+                  </Field>
+                  <Field label="Accent Color 2 (Hex)">
+                    <Input placeholder="#0000ff" value={landing.background_settings.accent_color_2 ?? ""} onChange={(e) => updateLanding("background_settings", { ...landing.background_settings, accent_color_2: e.target.value })} />
+                  </Field>
                   <Toggle label="Show Grain" checked={landing.background_settings.grain} onChange={(val) => updateLanding("background_settings", { ...landing.background_settings, grain: val })} />
                   <Toggle label="Show Particles" checked={landing.background_settings.particles} onChange={(val) => updateLanding("background_settings", { ...landing.background_settings, particles: val })} />
+                </div>
+                <div className="mt-4">
+                  <ImageField label="Custom Background URL (Image or Video)" value={landing.background_settings.custom_url ?? ""} onValue={(value) => updateLanding("background_settings", { ...landing.background_settings, custom_url: value })} onUpload={async (file) => {
+                    const url = await uploadLandingAsset("custom_background", file);
+                    if (url) updateLanding("background_settings", { ...landing.background_settings, custom_url: url });
+                  }} />
                 </div>
               </div>
 
@@ -513,6 +538,122 @@ export function SettingsCenter({
                           }} 
                         />
                       </Field>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="mt-8 border-t border-border pt-8">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-serif text-xl text-text-primary">Media Gallery</h3>
+                  <Button onClick={() => updateLanding("media_items", [...landing.media_items, { id: Math.random().toString(36).slice(2), type: "image", url: "", enabled: true, order: landing.media_items.length + 1, title: "", caption: "", alt: "", poster_url: "" }])}>Add Media</Button>
+                </div>
+                <div className="grid gap-4 md:grid-cols-2">
+                  {landing.media_items.map((item, idx) => (
+                    <div key={item.id} className="rounded-[1rem] border border-border bg-background/55 p-4 flex flex-col gap-4">
+                      <div className="flex items-center justify-between border-b border-border pb-2">
+                        <span className="font-medium text-sm text-text-primary">Item {idx + 1}</span>
+                        <div className="flex items-center gap-2">
+                          <input type="checkbox" checked={item.enabled} onChange={(e) => {
+                              const updated = [...landing.media_items];
+                              updated[idx].enabled = e.target.checked;
+                              updateLanding("media_items", updated);
+                          }} className="h-4 w-4 accent-[var(--accent)]" />
+                          <button onClick={() => updateLanding("media_items", landing.media_items.filter((_, i) => i !== idx))} className="text-red-500 hover:text-red-600 text-xs uppercase">Remove</button>
+                        </div>
+                      </div>
+                      <Select label="Type" value={item.type} onChange={(v) => {
+                        const updated = [...landing.media_items];
+                        updated[idx].type = v as "image" | "video";
+                        updateLanding("media_items", updated);
+                      }} options={["image", "video"]} />
+                      <ImageField label="Media URL" value={item.url} onValue={(v) => {
+                        const updated = [...landing.media_items];
+                        updated[idx].url = v;
+                        updateLanding("media_items", updated);
+                      }} onUpload={async (f) => {
+                        const url = await uploadLandingAsset("media", f);
+                        if (url) {
+                          const updated = [...landing.media_items];
+                          updated[idx].url = url;
+                          updateLanding("media_items", updated);
+                        }
+                      }} />
+                      <Field label="Title"><Input value={item.title ?? ""} onChange={(e) => {
+                        const updated = [...landing.media_items];
+                        updated[idx].title = e.target.value;
+                        updateLanding("media_items", updated);
+                      }} /></Field>
+                      <Field label="Caption"><Textarea value={item.caption ?? ""} onChange={(e) => {
+                        const updated = [...landing.media_items];
+                        updated[idx].caption = e.target.value;
+                        updateLanding("media_items", updated);
+                      }} /></Field>
+                      <Field label="Order"><Input type="number" value={item.order} onChange={(e) => {
+                        const updated = [...landing.media_items];
+                        updated[idx].order = parseInt(e.target.value) || 0;
+                        updateLanding("media_items", updated);
+                      }} /></Field>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="mt-8 border-t border-border pt-8">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-serif text-xl text-text-primary">Creative Partners</h3>
+                  <Button onClick={() => updateLanding("collaborators", [...landing.collaborators, { id: Math.random().toString(36).slice(2), name: "", role: "", enabled: true, order: landing.collaborators.length + 1, bio: "", portfolio_url: "", portrait_url: "" }])}>Add Partner</Button>
+                </div>
+                <div className="grid gap-4 md:grid-cols-2">
+                  {landing.collaborators.map((collab, idx) => (
+                    <div key={collab.id} className="rounded-[1rem] border border-border bg-background/55 p-4 flex flex-col gap-4">
+                      <div className="flex items-center justify-between border-b border-border pb-2">
+                        <Input className="h-8 text-sm" placeholder="Name" value={collab.name} onChange={(e) => {
+                          const updated = [...landing.collaborators];
+                          updated[idx].name = e.target.value;
+                          updateLanding("collaborators", updated);
+                        }} />
+                        <div className="flex items-center gap-2 ml-4">
+                          <input type="checkbox" checked={collab.enabled} onChange={(e) => {
+                              const updated = [...landing.collaborators];
+                              updated[idx].enabled = e.target.checked;
+                              updateLanding("collaborators", updated);
+                          }} className="h-4 w-4 accent-[var(--accent)] shrink-0" />
+                          <button onClick={() => updateLanding("collaborators", landing.collaborators.filter((_, i) => i !== idx))} className="text-red-500 hover:text-red-600 text-xs uppercase shrink-0">Remove</button>
+                        </div>
+                      </div>
+                      <Field label="Role"><Input value={collab.role} onChange={(e) => {
+                        const updated = [...landing.collaborators];
+                        updated[idx].role = e.target.value;
+                        updateLanding("collaborators", updated);
+                      }} /></Field>
+                      <ImageField label="Portrait URL" value={collab.portrait_url ?? ""} onValue={(v) => {
+                        const updated = [...landing.collaborators];
+                        updated[idx].portrait_url = v;
+                        updateLanding("collaborators", updated);
+                      }} onUpload={async (f) => {
+                        const url = await uploadLandingAsset("portrait", f);
+                        if (url) {
+                          const updated = [...landing.collaborators];
+                          updated[idx].portrait_url = url;
+                          updateLanding("collaborators", updated);
+                        }
+                      }} />
+                      <Field label="Portfolio URL"><Input value={collab.portfolio_url ?? ""} onChange={(e) => {
+                        const updated = [...landing.collaborators];
+                        updated[idx].portfolio_url = e.target.value;
+                        updateLanding("collaborators", updated);
+                      }} /></Field>
+                      <Field label="Bio"><Textarea value={collab.bio ?? ""} onChange={(e) => {
+                        const updated = [...landing.collaborators];
+                        updated[idx].bio = e.target.value;
+                        updateLanding("collaborators", updated);
+                      }} /></Field>
+                      <Field label="Order"><Input type="number" value={collab.order} onChange={(e) => {
+                        const updated = [...landing.collaborators];
+                        updated[idx].order = parseInt(e.target.value) || 0;
+                        updateLanding("collaborators", updated);
+                      }} /></Field>
                     </div>
                   ))}
                 </div>

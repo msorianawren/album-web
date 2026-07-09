@@ -31,10 +31,32 @@ export function MagicalBackground({ config }: { config: LandingBackgroundSetting
 
   const presetClass = presets[config.preset] || presets.aura;
 
+  const customGradients = [];
+  if (config.accent_color_1) customGradients.push(`radial-gradient(circle at top right, ${config.accent_color_1}33, transparent 50%)`);
+  if (config.accent_color_2) customGradients.push(`radial-gradient(circle at bottom left, ${config.accent_color_2}33, transparent 50%)`);
+
+  const intensityOpacity = (config.intensity ?? 100) / 100;
+  const mainOpacity = (config.opacity ?? 100) / 100;
+
   return (
-    <div className="pointer-events-none fixed inset-0 z-[-1] overflow-hidden" aria-hidden="true" style={{ opacity: config.opacity / 100 }}>
-      <div className={`absolute inset-0 ${presetClass}`} />
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,rgba(63,51,43,0.05),transparent_50%)] dark:bg-[radial-gradient(ellipse_at_bottom_left,rgba(244,238,228,0.03),transparent_50%)]" />
+    <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden" aria-hidden="true" style={{ opacity: mainOpacity }}>
+      
+      {config.custom_url && (
+        <div className="absolute inset-0 opacity-40 mix-blend-luminosity dark:mix-blend-screen">
+          {config.custom_url.match(/\.(mp4|webm)$/i) ? (
+            <video src={config.custom_url} autoPlay loop muted playsInline className="h-full w-full object-cover" />
+          ) : (
+            <img src={config.custom_url} alt="" className="h-full w-full object-cover" />
+          )}
+        </div>
+      )}
+
+      <div className={`absolute inset-0 ${presetClass}`} style={{ opacity: intensityOpacity }} />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,rgba(63,51,43,0.05),transparent_50%)] dark:bg-[radial-gradient(ellipse_at_bottom_left,rgba(244,238,228,0.03),transparent_50%)]" style={{ opacity: intensityOpacity }} />
+      
+      {customGradients.length > 0 && (
+        <div className="absolute inset-0" style={{ backgroundImage: customGradients.join(', '), opacity: intensityOpacity }} />
+      )}
       
       {config.grain && (
         <svg className="absolute inset-0 h-full w-full opacity-20 dark:opacity-10 mix-blend-overlay">

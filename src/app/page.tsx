@@ -33,7 +33,7 @@ export default async function Home() {
   const dict = await getDictionary(locale);
 
   return (
-    <main className="relative min-h-screen bg-transparent">
+    <main className="relative z-10 min-h-screen bg-transparent">
       <MagicalBackground config={landing.background_settings} />
       <AppHeader />
       <HomeHero landing={landing} locale={locale} dict={dict} />

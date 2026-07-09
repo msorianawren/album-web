@@ -1,14 +1,14 @@
 import Link from "next/link";
 import { getSiteSettings } from "@/lib/site-settings";
-import { getAboutProfile } from "@/lib/about";
+import { getLandingPage } from "@/lib/landing";
 
 export async function AppFooter() {
-  const [settings, profile] = await Promise.all([
+  const [settings, landing] = await Promise.all([
     getSiteSettings(),
-    getAboutProfile(),
+    getLandingPage(),
   ]);
 
-  const socialLinks = profile.social_links || [];
+  const socialLinks = (landing.social_links || []).filter(l => l.enabled && !!l.url);
   const currentYear = new Date().getFullYear();
 
   const navLinks = [
@@ -19,7 +19,7 @@ export async function AppFooter() {
   ];
 
   return (
-    <footer className="border-t border-border bg-background px-6 py-16 sm:py-24">
+    <footer className="relative z-10 border-t border-border bg-background/95 backdrop-blur-md px-6 py-16 sm:py-24">
       <div className="mx-auto grid max-w-[1200px] gap-12 lg:grid-cols-[1fr_2fr]">
         <div className="flex flex-col gap-6">
           <Link href="/" className="inline-block">
@@ -60,23 +60,21 @@ export async function AppFooter() {
 
           <div>
             <h4 className="text-xs font-semibold uppercase tracking-[0.1em] text-text-primary">
-              Social
+              Connect
             </h4>
-            <ul className="mt-6 flex flex-col gap-4">
-              {socialLinks.length > 0 ? (
-                socialLinks.map((link) => (
+            {socialLinks.length > 0 ? (
+              <ul className="mt-6 flex flex-col gap-4">
+                {socialLinks.map((link) => (
                   <li key={link.id}>
                     <a href={link.url} target="_blank" rel="noreferrer" className="text-sm text-text-secondary transition hover:text-text-primary">
                       {link.platform}
                     </a>
                   </li>
-                ))
-              ) : (
-                <li>
-                  <span className="text-sm text-text-secondary">No public links</span>
-                </li>
-              )}
-            </ul>
+                ))}
+              </ul>
+            ) : (
+              <p className="mt-6 text-sm italic text-text-secondary">No public links</p>
+            )}
           </div>
 
           <div>

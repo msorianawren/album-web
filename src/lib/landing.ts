@@ -36,8 +36,16 @@ export const defaultLandingPage: LandingPageContent = {
     { id: "4", platform: "TikTok", url: "", label: "", enabled: true, order: 4 },
     { id: "5", platform: "Telegram", url: "", label: "", enabled: true, order: 5 },
   ],
-  media_items: [],
-  collaborators: [],
+  media_items: [
+    { id: "m1", type: "image", url: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=800&q=80", enabled: true, order: 1, title: "", caption: "", alt: "", poster_url: "" },
+    { id: "m2", type: "image", url: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=800&q=80", enabled: true, order: 2, title: "", caption: "", alt: "", poster_url: "" },
+    { id: "m3", type: "image", url: "https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?auto=format&fit=crop&w=800&q=80", enabled: true, order: 3, title: "", caption: "", alt: "", poster_url: "" },
+  ],
+  collaborators: [
+    { id: "c1", name: "Creative Director", role: "Direction", portrait_url: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=400&q=80", enabled: true, order: 1, bio: "", portfolio_url: "" },
+    { id: "c2", name: "Editorial Photographer", role: "Photography", portrait_url: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=400&q=80", enabled: true, order: 2, bio: "", portfolio_url: "" },
+    { id: "c3", name: "Beauty Artist", role: "Makeup", portrait_url: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=400&q=80", enabled: true, order: 3, bio: "", portfolio_url: "" },
+  ],
   background_settings: {
     enabled: true,
     preset: "aura",
@@ -75,15 +83,18 @@ function cleanUrl(value: unknown, fallback: string) {
 }
 
 export function normalizeLandingPage(value: Partial<LandingPageContent> | null | undefined) {
-  const socialLinks = Array.isArray(value?.social_links) && value?.social_links.length > 0 
-    ? value?.social_links 
-    : defaultLandingPage.social_links;
+  const defaultSocials = [...defaultLandingPage.social_links];
+  const savedSocials = Array.isArray(value?.social_links) ? value?.social_links : [];
+  const mergedSocials = defaultSocials.map(defaultLink => {
+    const existing = savedSocials.find((s: any) => s.platform === defaultLink.platform);
+    return existing ? { ...defaultLink, ...existing } : defaultLink;
+  });
 
   return {
     ...defaultLandingPage,
     ...(value ?? {}),
     id: landingId,
-    social_links: socialLinks,
+    social_links: mergedSocials,
     media_items: Array.isArray(value?.media_items) ? value?.media_items : defaultLandingPage.media_items,
     collaborators: Array.isArray(value?.collaborators) ? value?.collaborators : defaultLandingPage.collaborators,
     background_settings: {
