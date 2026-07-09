@@ -28,9 +28,9 @@ const nextConfig: NextConfig = {
       "form-action 'self'",
       "script-src 'self' 'unsafe-inline' https://accounts.google.com",
       "style-src 'self' 'unsafe-inline'",
-      `img-src 'self' data: blob: https://images.unsplash.com https://*.googleusercontent.com https://*.r2.dev ${r2PublicOrigin}`,
-      `media-src 'self' blob: https://*.r2.dev ${r2PublicOrigin}`,
-      `connect-src 'self' https://*.supabase.co https://*.r2.dev ${r2PublicOrigin}`,
+      `img-src 'self' data: blob: https://images.unsplash.com https://*.googleusercontent.com https://*.r2.dev ${r2PublicOrigin} https://pub-6723a3eac8f14389ad2429799e3b98a5.r2.dev https://*.supabase.co`,
+      `media-src 'self' blob: https://*.r2.dev ${r2PublicOrigin} https://pub-6723a3eac8f14389ad2429799e3b98a5.r2.dev`,
+      `connect-src 'self' https://*.supabase.co https://*.r2.dev ${r2PublicOrigin} https://*.r2.cloudflarestorage.com https://pub-6723a3eac8f14389ad2429799e3b98a5.r2.dev https://www.orianawren.com https://orianawren.com`,
       "font-src 'self' data:",
       "upgrade-insecure-requests",
     ].join("; ");
