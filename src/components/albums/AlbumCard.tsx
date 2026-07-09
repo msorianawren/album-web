@@ -125,14 +125,14 @@ export function AlbumCard({ album, dict, locale = "en" }: AlbumCardProps) {
             </div>
           ) : (
             <button 
-              className="inline-flex items-center justify-center gap-2 rounded-full bg-accent px-4 py-2 text-[0.75rem] font-semibold uppercase tracking-wider text-accent-foreground transition hover:-translate-y-0.5"
+              className="inline-flex items-center justify-center gap-2 rounded-full border border-border bg-surface px-4 py-2 text-[0.75rem] font-semibold uppercase tracking-wider text-text-primary shadow-sm transition hover:-translate-y-0.5 hover:bg-background"
               onClick={(e) => {
                 e.preventDefault();
                 // We will dispatch a custom event to open the request modal
                 document.dispatchEvent(new CustomEvent("open-access-request", { detail: album }));
               }}
             >
-              {dict?.albums?.request_access || "Request Admin Permission"}
+              {dict?.albums?.request_access || "Request private access"}
             </button>
           )}
         </div>

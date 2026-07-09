@@ -39,8 +39,14 @@ export default async function AboutPage() {
                 <img src={profile.profile_image_url} alt={profile.display_name ?? ""} className="h-full w-full object-cover" />
               </div>
             ) : (
-              <div className="flex h-48 w-48 items-center justify-center rounded-[2rem] bg-surface-secondary shadow-xl sm:h-64 sm:w-64 md:h-80 md:w-80 lg:h-[400px] lg:w-[320px]">
-                <span className="text-4xl text-text-secondary">No Image</span>
+              <div className="relative flex h-48 w-48 overflow-hidden items-center justify-center rounded-[2rem] border border-border bg-surface shadow-xl sm:h-64 sm:w-64 md:h-80 md:w-80 lg:h-[400px] lg:w-[320px]">
+                <div className="absolute inset-0 bg-gradient-to-br from-surface/50 to-surface-secondary/50" />
+                <div className="relative flex flex-col items-center gap-3 text-center px-4">
+                  <span className="text-2xl font-light italic text-text-secondary sm:text-3xl">
+                    {profile.display_name?.[0]?.toUpperCase() || "O"}
+                  </span>
+                  <span className="text-[0.65rem] uppercase tracking-[0.2em] text-text-secondary">Portrait coming soon</span>
+                </div>
               </div>
             )}
           </div>
@@ -115,7 +121,7 @@ export default async function AboutPage() {
       {profile.quote && (
         <section className="mx-auto mt-24 w-full max-w-[1024px] px-4 sm:px-8">
           <div className="relative rounded-[2rem] bg-surface/50 p-8 text-center sm:p-16">
-            <span className="absolute -top-6 left-1/2 -translate-x-1/2 text-8xl text-border/50">"</span>
+            <span className="absolute -top-6 left-1/2 -translate-x-1/2 text-8xl text-border/50">&quot;</span>
             <p className="relative z-10 mx-auto max-w-[800px] text-2xl font-medium italic leading-relaxed text-text-primary sm:text-4xl sm:leading-snug">
               {profile.quote}
             </p>

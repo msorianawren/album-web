@@ -90,18 +90,7 @@ export async function AppHeader() {
               <Shield className="h-4 w-4" aria-hidden="true" />
               <span className="hidden lg:inline whitespace-nowrap">{dict.nav.studio}</span>
             </Link>
-          ) : session.userId ? (
-            <span className="hidden h-11 shrink-0 items-center justify-center rounded-full border border-border bg-surface/70 px-5 text-xs font-semibold uppercase tracking-[0.16em] text-text-primary sm:inline-flex whitespace-nowrap">
-              {dict?.common?.signed_in || "Signed in"}
-            </span>
-          ) : (
-            <Link
-              href="/login"
-              className="hidden h-11 shrink-0 items-center justify-center rounded-full border border-border bg-surface/70 px-5 text-xs font-semibold uppercase tracking-[0.16em] text-text-primary transition hover:bg-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:inline-flex whitespace-nowrap"
-            >
-              {dict.nav.login}
-            </Link>
-          )}
+          ) : null}
           <PublicMobileNav session={session} navItems={navItems} />
           <UserMenu session={session} dict={dict} />
         </div>
@@ -125,13 +114,6 @@ export async function AppHeader() {
             className="flex h-10 shrink-0 items-center justify-center rounded-full bg-accent px-4 text-xs font-semibold uppercase tracking-[0.12em] text-accent-foreground shadow-sm shadow-text-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             {dict.nav.studio}
-          </Link>
-        ) : !session.userId ? (
-          <Link
-            href="/login"
-            className="flex h-10 shrink-0 items-center justify-center rounded-full border border-border bg-surface/82 px-4 text-xs font-semibold uppercase tracking-[0.12em] text-text-primary shadow-sm shadow-text-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          >
-            {dict.nav.login}
           </Link>
         ) : null}
       </nav>

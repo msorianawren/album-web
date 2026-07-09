@@ -93,9 +93,11 @@ export function UserMenu({ session, dict }: UserMenuProps) {
         aria-label="Open user menu"
       >
         <Avatar name={initialsName} imageUrl={session.avatarUrl ?? undefined} />
-        <span className="hidden max-w-[120px] truncate text-xs font-semibold text-text-primary md:block">
-          {session.userId ? name : (dict?.common?.guest || "Guest")}
-        </span>
+        {session.userId && (
+          <span className="hidden max-w-[120px] truncate text-xs font-semibold text-text-primary md:block">
+            {name}
+          </span>
+        )}
       </button>
 
       <div

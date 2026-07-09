@@ -74,16 +74,19 @@ export function AlbumList({ albums, dict, locale = "en" }: AlbumListProps) {
       )}
 
       {albums.filter((a) => a.status === "private").length > 0 && (
-        <div className="mt-10 border-t border-border pt-16">
-          <div className="mb-7">
-            <h2 className="text-xl font-semibold text-text-primary sm:text-2xl">
+        <div className="mt-16 border-t border-border pt-16">
+          <div className="mb-10 max-w-2xl">
+            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-text-secondary mb-2">
+              Restricted Access
+            </p>
+            <h2 className="text-2xl font-semibold text-text-primary sm:text-3xl">
               {dict?.albums?.private_albums || "Private Albums"}
             </h2>
-            <p className="mt-2 text-sm text-text-secondary">
-              {dict?.albums?.private_albums_desc || "These collections are restricted. You must request admin permission to view them."}
+            <p className="mt-3 text-sm leading-6 text-text-secondary">
+              {dict?.albums?.private_albums_desc || "These collections are reserved for authorized guests. You must request private access to view them."}
             </p>
           </div>
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {albums
               .filter((a) => a.status === "private")
               .map((album) => (

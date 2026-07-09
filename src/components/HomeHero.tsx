@@ -47,7 +47,7 @@ export function HomeHero({ landing, locale = "en", dict }: HomeHeroProps) {
           <p className="mt-5 max-w-2xl break-words text-base leading-8 text-text-secondary">
             {body}
           </p>
-          <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+          <div className="mt-10 flex flex-col gap-3 sm:flex-row sm:gap-4">
             <a
               href={primaryHref}
               className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-accent px-6 text-sm font-semibold uppercase text-accent-foreground shadow-2xl shadow-text-primary/10 transition-all duration-300 hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.98]"
@@ -66,7 +66,7 @@ export function HomeHero({ landing, locale = "en", dict }: HomeHeroProps) {
 
           <div className="mt-8 grid max-w-xl grid-cols-1 overflow-hidden rounded-[1.4rem] border border-border bg-surface/60 shadow-xl shadow-text-primary/5 backdrop-blur sm:mt-10 sm:grid-cols-3">
             {stats.map((stat) => (
-              <div key={`${stat.label}-${stat.value}`} className="min-w-0 border-b border-border p-4 last:border-b-0 sm:border-b-0 sm:border-r sm:last:border-r-0">
+              <div key={`${stat.label}-${stat.value}`} className="min-w-0 border-b border-border p-4 transition-colors hover:bg-surface/80 last:border-b-0 sm:border-b-0 sm:border-r sm:last:border-r-0">
                 <p className="break-words text-lg font-semibold text-text-primary">{stat.value}</p>
                 <p className="mt-1 break-words text-[0.68rem] font-semibold uppercase text-text-secondary">
                   {stat.label}

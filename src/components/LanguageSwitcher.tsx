@@ -10,8 +10,12 @@ export function LanguageSwitcher({ dict }: { dict?: any }) {
   const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
-    setLocale(getStoredLocale());
-  }, []);
+    const stored = getStoredLocale();
+    if (stored !== locale) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setLocale(stored);
+    }
+  }, [locale]);
 
   function handleLocaleChange(newLocale: AppLocale) {
     setLocale(newLocale);

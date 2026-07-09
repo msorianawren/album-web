@@ -20,10 +20,6 @@ export default function AccessRequestsPage() {
   const [requests, setRequests] = useState<AccessRequest[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchRequests();
-  }, []);
-
   async function fetchRequests() {
     setLoading(true);
     try {
@@ -38,6 +34,11 @@ export default function AccessRequestsPage() {
       setLoading(false);
     }
   }
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchRequests();
+  }, []);
 
   async function updateRequest(id: string, status: "approved" | "rejected") {
     try {
@@ -107,7 +108,7 @@ export default function AccessRequestsPage() {
                   <span>{req.requester_phone}</span>
                 </div>
                 <p className="mt-4 text-sm text-text-primary bg-background/50 p-3 rounded-xl border border-border">
-                  "{req.reason}"
+                  &quot;{req.reason}&quot;
                 </p>
                 <div className="mt-3 text-xs text-text-secondary">
                   Requested on {new Date(req.created_at).toLocaleDateString()}
