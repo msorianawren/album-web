@@ -20,10 +20,15 @@
     "contact": "Liên hệ",
     "explore": "Khám phá",
     "albums": "Bộ sưu tập",
-    "studio": "Quản trị",
+    "studio": "Studio",
     "settings": "Cài đặt",
     "login": "Đăng nhập",
     "about": "Giới thiệu"
+  },
+  "landing": {
+    "premium_portfolio": "Hồ sơ người mẫu cao cấp",
+    "featured_story": "Câu chuyện nổi bật",
+    "studio_note": "Ghi chú từ studio"
   },
   "albums": {
     "archive_subtitle": "Kho lưu trữ",

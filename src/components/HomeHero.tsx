@@ -3,16 +3,29 @@ import type { LandingPageContent } from "@/lib/types";
 
 interface HomeHeroProps {
   landing: LandingPageContent;
+  locale?: string;
+  dict?: any;
 }
 
-export function HomeHero({ landing }: HomeHeroProps) {
+export function HomeHero({ landing, locale = "en", dict }: HomeHeroProps) {
+  const trans = landing.translations?.[locale] || {};
+  const headline = trans.headline || landing.headline;
+  const eyebrow = trans.eyebrow || landing.eyebrow;
+  const subheadline = trans.subheadline || landing.subheadline;
+  const body = trans.body || landing.body;
+  const primaryCtaLabel = trans.primary_cta_label || landing.primary_cta_label;
+  const secondaryCtaLabel = trans.secondary_cta_label || landing.secondary_cta_label;
+  const featureTitle = trans.feature_title || landing.feature_title;
+  const featureBody = trans.feature_body || landing.feature_body;
+  
+  const stats = [
+    { label: trans.stat_one_label || landing.stat_one_label, value: trans.stat_one_value || landing.stat_one_value },
+    { label: trans.stat_two_label || landing.stat_two_label, value: trans.stat_two_value || landing.stat_two_value },
+    { label: trans.stat_three_label || landing.stat_three_label, value: trans.stat_three_value || landing.stat_three_value },
+  ];
+
   const primaryHref = landing.primary_cta_href === "#albums" ? "/albums" : landing.primary_cta_href;
   const secondaryHref = landing.secondary_cta_href === "#albums" ? "/albums" : landing.secondary_cta_href;
-  const stats = [
-    { label: landing.stat_one_label, value: landing.stat_one_value },
-    { label: landing.stat_two_label, value: landing.stat_two_value },
-    { label: landing.stat_three_label, value: landing.stat_three_value },
-  ];
 
   return (
     <section className="relative isolate overflow-hidden">
@@ -20,26 +33,26 @@ export function HomeHero({ landing }: HomeHeroProps) {
         <div className="relative z-10 flex min-w-0 flex-col justify-center animate-editorial-in">
           <p className="mb-5 inline-flex w-fit max-w-full items-center gap-2 rounded-full border border-border bg-surface/70 px-4 py-2 text-[0.68rem] font-semibold uppercase text-text-secondary shadow-sm backdrop-blur sm:text-xs">
             <Sparkles className="h-3.5 w-3.5 text-muted-accent" aria-hidden="true" />
-            <span className="truncate">Premium model portfolio</span>
+            <span className="truncate">{dict?.landing?.premium_portfolio || "Premium model portfolio"}</span>
           </p>
           <h1 className="max-w-3xl break-words text-[3.2rem] font-semibold leading-[0.92] text-text-primary sm:text-7xl lg:text-8xl">
-            {landing.headline}
+            {headline}
           </h1>
           <p className="mt-4 text-sm font-semibold uppercase tracking-[0.28em] text-text-secondary">
-            {landing.eyebrow}
+            {eyebrow}
           </p>
           <p className="mt-6 max-w-2xl break-words text-xl leading-8 text-text-primary/86 sm:text-3xl sm:leading-10">
-            {landing.subheadline}
+            {subheadline}
           </p>
           <p className="mt-5 max-w-2xl break-words text-base leading-8 text-text-secondary">
-            {landing.body}
+            {body}
           </p>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
             <a
               href={primaryHref}
               className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-accent px-6 text-sm font-semibold uppercase text-accent-foreground shadow-2xl shadow-text-primary/10 transition-all duration-300 hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.98]"
             >
-              {landing.primary_cta_label}
+              {primaryCtaLabel}
               <ArrowRight className="h-4 w-4" aria-hidden="true" />
             </a>
             <a
@@ -47,7 +60,7 @@ export function HomeHero({ landing }: HomeHeroProps) {
               className="inline-flex h-12 items-center justify-center gap-2 rounded-full border border-border bg-surface/75 px-6 text-sm font-semibold uppercase text-text-primary shadow-lg shadow-text-primary/5 backdrop-blur transition-all duration-300 hover:-translate-y-0.5 hover:bg-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.98]"
             >
               <Camera className="h-4 w-4" aria-hidden="true" />
-              {landing.secondary_cta_label}
+              {secondaryCtaLabel}
             </a>
           </div>
 
@@ -74,8 +87,8 @@ export function HomeHero({ landing }: HomeHeroProps) {
             <div className="absolute inset-0 bg-[linear-gradient(180deg,transparent_42%,rgba(0,0,0,0.42))]" />
             <div className="absolute bottom-4 left-4 right-4 flex items-end justify-between gap-3 text-white sm:bottom-5 sm:left-5 sm:right-5 sm:items-center">
               <div className="min-w-0">
-                <p className="text-xs font-semibold uppercase opacity-80">Featured story</p>
-                <p className="mt-1 line-clamp-2 text-base font-semibold sm:text-lg">{landing.feature_title}</p>
+                <p className="text-xs font-semibold uppercase opacity-80">{dict?.landing?.featured_story || "Featured story"}</p>
+                <p className="mt-1 line-clamp-2 text-base font-semibold sm:text-lg">{featureTitle}</p>
               </div>
               <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/25 bg-white/15 backdrop-blur sm:h-12 sm:w-12">
                 <Play className="h-4 w-4 fill-current" aria-hidden="true" />
@@ -104,10 +117,10 @@ export function HomeHero({ landing }: HomeHeroProps) {
               </div>
               <div className="flex min-w-0 flex-col justify-between p-2">
                 <p className="text-xs font-semibold uppercase text-text-secondary">
-                  Studio note
+                  {dict?.landing?.studio_note || "Studio note"}
                 </p>
                 <p className="mt-2 text-sm leading-6 text-text-primary">
-                  {landing.feature_body}
+                  {featureBody}
                 </p>
                 <span className="mt-4 h-1.5 w-16 rounded-full bg-muted-accent" />
               </div>

@@ -6,9 +6,10 @@ import type { Album } from "@/lib/types";
 interface AlbumListProps {
   albums: Album[];
   dict?: any;
+  locale?: string;
 }
 
-export function AlbumList({ albums, dict }: AlbumListProps) {
+export function AlbumList({ albums, dict, locale = "en" }: AlbumListProps) {
   if (!albums.length) {
     return (
       <section className="mx-auto flex w-full max-w-[1440px] flex-col items-center px-4 py-20 text-center sm:px-8 lg:px-12">
@@ -67,7 +68,7 @@ export function AlbumList({ albums, dict }: AlbumListProps) {
           {albums
             .filter((a) => a.status !== "private")
             .map((album) => (
-              <AlbumCard key={album.id} album={album} dict={dict} />
+              <AlbumCard key={album.id} album={album} dict={dict} locale={locale} />
             ))}
         </div>
       )}
@@ -86,7 +87,7 @@ export function AlbumList({ albums, dict }: AlbumListProps) {
             {albums
               .filter((a) => a.status === "private")
               .map((album) => (
-                <AlbumCard key={album.id} album={album} dict={dict} />
+                <AlbumCard key={album.id} album={album} dict={dict} locale={locale} />
               ))}
           </div>
         </div>

@@ -47,7 +47,7 @@ export default async function AlbumsPage({ searchParams }: AlbumsPageProps) {
           {dict.albums.archive_desc}
         </p>
       </section>
-      <AlbumList albums={albums} dict={dict} />
+      <AlbumList albums={albums} dict={dict} locale={locale} />
       <AccessRequestModal />
     </main>
   );

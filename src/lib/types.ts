@@ -31,6 +31,7 @@ export interface Album {
   default_media_sort?: string | null;
   created_at: string;
   updated_at?: string;
+  translations?: Record<string, any>;
   preview_items?: AlbumPreviewItem[];
 }
 
@@ -208,6 +209,7 @@ export interface LandingPageContent {
   stat_two_value: string;
   stat_three_label: string;
   stat_three_value: string;
+  translations?: Record<string, any>;
   updated_at?: string;
 }
 

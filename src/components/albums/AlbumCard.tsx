@@ -10,9 +10,10 @@ import { formatMediaCount } from "@/lib/utils";
 interface AlbumCardProps {
   album: Album;
   dict?: any;
+  locale?: string;
 }
 
-export function AlbumCard({ album, dict }: AlbumCardProps) {
+export function AlbumCard({ album, dict, locale = "en" }: AlbumCardProps) {
   const previewItems = album.preview_items ?? [];
   const previewImages = album.status === "private" 
     ? [album.safe_preview_url].filter(Boolean) as string[]
@@ -83,14 +84,13 @@ export function AlbumCard({ album, dict }: AlbumCardProps) {
       </div>
       <div className="mt-5 px-1">
         <h3 className="break-words text-xl font-semibold text-text-primary">
-          {album.title}
+          {album.translations?.[locale]?.title || album.title}
         </h3>
         <p className="mt-2 line-clamp-2 text-sm leading-6 text-text-secondary">
-          {album.description}
+          {album.translations?.[locale]?.description || album.description}
         </p>
         <div className="mt-4 flex flex-wrap items-center gap-2 text-[0.72rem] uppercase tracking-[0.18em] text-text-secondary">
-          <span>{album.media_count} {dict?.albums?.works || "works"}</span>
-          <span>{formatMediaCount(album.photo_count, album.video_count)}</span>
+          <span>{formatMediaCount(album.photo_count, album.video_count, dict)}</span>
           <span className="inline-flex items-center gap-1">
             <Heart className="h-3 w-3" aria-hidden="true" />
             {album.like_count}

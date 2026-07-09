@@ -5,19 +5,17 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export function formatPhotoCount(count: number) {
-  return `${new Intl.NumberFormat("en").format(count)} ${
-    count === 1 ? "photo" : "photos"
-  }`;
+export function formatPhotoCount(count: number, dict?: any) {
+  const label = count === 1 ? (dict?.albums?.photo || "photo") : (dict?.albums?.photos || "photos");
+  return `${new Intl.NumberFormat("en").format(count)} ${label}`;
 }
 
-export function formatMediaCount(photoCount: number, videoCount: number) {
-  const photos = `${new Intl.NumberFormat("en").format(photoCount)} ${
-    photoCount === 1 ? "photo" : "photos"
-  }`;
-  const videos = `${new Intl.NumberFormat("en").format(videoCount)} ${
-    videoCount === 1 ? "video" : "videos"
-  }`;
+export function formatMediaCount(photoCount: number, videoCount: number, dict?: any) {
+  const photoLabel = photoCount === 1 ? (dict?.albums?.photo || "photo") : (dict?.albums?.photos || "photos");
+  const videoLabel = videoCount === 1 ? (dict?.albums?.video || "video") : (dict?.albums?.videos || "videos");
+  
+  const photos = `${new Intl.NumberFormat("en").format(photoCount)} ${photoLabel}`;
+  const videos = `${new Intl.NumberFormat("en").format(videoCount)} ${videoLabel}`;
 
   return `${photos} - ${videos}`;
 }

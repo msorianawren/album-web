@@ -22,6 +22,7 @@ import { Textarea } from "@/components/ui/Textarea";
 import { mediaSortLabels, mediaSortModes, parseMediaSortMode } from "@/lib/media-sort";
 import type { AlbumDetail, AlbumStatus, Media } from "@/lib/types";
 import { formatBytes, slugify } from "@/lib/utils";
+import { LOCALES } from "@/lib/i18n";
 
 interface QueuedFile {
   id: string;
@@ -44,7 +45,32 @@ export function AlbumEditor({ album }: { album: AlbumDetail }) {
   const [status, setStatus] = useState<AlbumStatus>(album.status);
   const [coverUrl, setCoverUrl] = useState(album.cover_url ?? "");
   const [defaultMediaSort, setDefaultMediaSort] = useState(parseMediaSortMode(album.default_media_sort, "smart"));
+  const [translations, setTranslations] = useState<Record<string, any>>(album.translations || {});
+  const [activeLocale, setActiveLocale] = useState("en");
   const [media, setMedia] = useState(album.media);
+
+  function getLocalizedValue(key: "title" | "description") {
+    if (activeLocale === "en") {
+      return key === "title" ? title : description;
+    }
+    return translations[activeLocale]?.[key] ?? "";
+  }
+
+  function updateLocalizedValue(key: "title" | "description", value: string) {
+    if (activeLocale === "en") {
+      if (key === "title") setTitle(value);
+      if (key === "description") setDescription(value);
+    } else {
+      setTranslations((prev) => ({
+        ...prev,
+        [activeLocale]: {
+          ...(prev[activeLocale] || {}),
+          [key]: value
+        }
+      }));
+    }
+  }
+
   const [queuedFiles, setQueuedFiles] = useState<QueuedFile[]>([]);
   const [dragOver, setDragOver] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -113,6 +139,7 @@ export function AlbumEditor({ album }: { album: AlbumDetail }) {
         status,
         cover_url: coverUrl || null,
         default_media_sort: defaultMediaSort,
+        translations,
       }),
     });
     const payload = await response.json();
@@ -338,23 +365,42 @@ export function AlbumEditor({ album }: { album: AlbumDetail }) {
     <div className="grid gap-5">
       <section className="grid gap-5 rounded-[1.4rem] border border-border bg-surface/82 p-5 shadow-xl shadow-text-primary/5 xl:grid-cols-[1.05fr_0.95fr]">
         <div className="grid gap-4">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-text-secondary">Album information</p>
-            <h2 className="mt-2 text-2xl font-semibold text-text-primary">Identity, visibility, and metadata</h2>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-text-secondary">Album information</p>
+              <h2 className="mt-2 text-2xl font-semibold text-text-primary">Identity, visibility, and metadata</h2>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-text-primary">Editing language:</span>
+              <select
+                value={activeLocale}
+                onChange={(e) => setActiveLocale(e.target.value)}
+                className="h-9 rounded-[0.8rem] border border-border bg-surface px-3 text-sm text-text-primary outline-none focus:ring-2 focus:ring-ring"
+              >
+                <option value="en">English (Default)</option>
+                {Object.entries(LOCALES)
+                  .filter(([code]) => code !== "en")
+                  .map(([code, name]) => (
+                    <option key={code} value={code}>
+                      {name}
+                    </option>
+                  ))}
+              </select>
+            </div>
           </div>
           <div className="grid gap-4 lg:grid-cols-2">
             <label className="grid gap-2">
               <span className="text-sm font-medium text-text-primary">Title</span>
-              <Input value={title} onChange={(event) => setTitle(event.target.value)} maxLength={120} />
+              <Input value={getLocalizedValue("title")} onChange={(event) => updateLocalizedValue("title", event.target.value)} maxLength={120} />
             </label>
             <label className="grid gap-2">
-              <span className="text-sm font-medium text-text-primary">Slug</span>
+              <span className="text-sm font-medium text-text-primary">Slug (URL - Not translated)</span>
               <Input value={slug} onChange={(event) => setSlug(slugify(event.target.value))} maxLength={120} />
             </label>
           </div>
           <label className="grid gap-2">
             <span className="text-sm font-medium text-text-primary">Description / mood text</span>
-            <Textarea value={description} onChange={(event) => setDescription(event.target.value)} maxLength={500} />
+            <Textarea value={getLocalizedValue("description")} onChange={(event) => updateLocalizedValue("description", event.target.value)} maxLength={500} />
           </label>
           <div className="grid gap-4 lg:grid-cols-2">
             <label className="grid gap-2">

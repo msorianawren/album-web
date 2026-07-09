@@ -43,16 +43,16 @@ FOR ALL
 TO authenticated 
 USING (
     EXISTS (
-        SELECT 1 FROM public.users 
-        WHERE users.id = auth.uid() 
-        AND users.role IN ('founder', 'admin')
+        SELECT 1 FROM public.user_profiles 
+        WHERE user_profiles.user_id = auth.uid() 
+        AND user_profiles.role IN ('founder', 'admin')
     )
 )
 WITH CHECK (
     EXISTS (
-        SELECT 1 FROM public.users 
-        WHERE users.id = auth.uid() 
-        AND users.role IN ('founder', 'admin')
+        SELECT 1 FROM public.user_profiles 
+        WHERE user_profiles.user_id = auth.uid() 
+        AND user_profiles.role IN ('founder', 'admin')
     )
 );
 

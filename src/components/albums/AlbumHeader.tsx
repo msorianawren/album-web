@@ -8,9 +8,10 @@ import { formatMediaCount } from "@/lib/utils";
 
 interface AlbumHeaderProps {
   album: AlbumDetail;
+  dict?: any;
 }
 
-export function AlbumHeader({ album }: AlbumHeaderProps) {
+export function AlbumHeader({ album, dict }: AlbumHeaderProps) {
   const previewImages = [
     ...(album.media ?? [])
       .filter((item) => item.media_type === "image")
@@ -49,7 +50,7 @@ export function AlbumHeader({ album }: AlbumHeaderProps) {
         <div className="flex flex-wrap items-center gap-3">
           <AlbumStatusBadge status={album.status} />
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-text-secondary">
-            {formatMediaCount(album.photo_count, album.video_count)}
+            {formatMediaCount(album.photo_count, album.video_count, dict)}
           </p>
         </div>
         <h1 className="mt-5 break-words text-[2.7rem] font-semibold leading-[1] text-text-primary sm:text-7xl">

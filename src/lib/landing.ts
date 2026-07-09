@@ -29,6 +29,7 @@ export const defaultLandingPage: LandingPageContent = {
   stat_two_value: "Client books",
   stat_three_label: "Fast",
   stat_three_value: "R2 delivery",
+  translations: {},
 };
 
 const landingColumns = Object.keys(defaultLandingPage).join(",");
@@ -98,6 +99,7 @@ export function landingPayloadFromInput(input: Record<string, unknown>) {
     stat_two_value: cleanText(input.stat_two_value, defaultLandingPage.stat_two_value, 40),
     stat_three_label: cleanText(input.stat_three_label, defaultLandingPage.stat_three_label, 40),
     stat_three_value: cleanText(input.stat_three_value, defaultLandingPage.stat_three_value, 40),
+    translations: typeof input.translations === "object" && input.translations !== null ? input.translations : {},
   } satisfies LandingPageContent;
 }
 

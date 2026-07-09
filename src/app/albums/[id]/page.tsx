@@ -11,6 +11,8 @@ import { MediaGrid } from "@/components/media/MediaGrid";
 import { getAlbum } from "@/lib/albums";
 import { getSiteSettings } from "@/lib/site-settings";
 import { getPublicSession } from "@/lib/auth";
+import { cookies } from "next/headers";
+import { getDictionary } from "@/lib/getDictionary";
 
 interface AlbumPageProps {
   params: Promise<{
@@ -22,6 +24,8 @@ export async function generateMetadata({ params }: AlbumPageProps): Promise<Meta
   const { id } = await params;
   const album = await getAlbum(id);
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ?? "";
+  const cookieStore = await cookies();
+  const locale = (cookieStore.get("NEXT_LOCALE")?.value as string) || "en";
 
   if (!album) {
     return {
@@ -40,11 +44,15 @@ export async function generateMetadata({ params }: AlbumPageProps): Promise<Meta
     };
   }
 
-  const title = `${album.title} | Oriana Wren`;
+  const trans = album.translations?.[locale] || {};
+  const localizedTitle = trans.title || album.title;
+  const localizedDesc = trans.description || album.description;
+
+  const title = `${localizedTitle} | Oriana Wren`;
   const description =
-    album.description ?? `${album.photo_count} photos and ${album.video_count} videos.`;
+    localizedDesc ?? `${album.photo_count} photos and ${album.video_count} videos.`;
   const url = siteUrl ? `${siteUrl}/albums/${album.slug}` : undefined;
-  const images = album.cover_url ? [{ url: album.cover_url, alt: album.title }] : undefined;
+  const images = album.cover_url ? [{ url: album.cover_url, alt: localizedTitle }] : undefined;
 
   return {
     title,
@@ -79,10 +87,22 @@ export default async function AlbumPage({ params }: AlbumPageProps) {
     redirect(`/login?redirect=/albums/${album.slug}`);
   }
 
+  const cookieStore = await cookies();
+  const locale = (cookieStore.get("NEXT_LOCALE")?.value as "en" | "vi") || "en";
+  const dict = await getDictionary(locale);
+
+  // Apply localized translation
+  const trans = album.translations?.[locale] || {};
+  const localizedAlbum = {
+    ...album,
+    title: trans.title || album.title,
+    description: trans.description || album.description,
+  };
+
   return (
     <main className="min-h-screen bg-background">
       <AppHeader />
-      <AlbumHeader album={album} />
+      <AlbumHeader album={localizedAlbum} dict={dict} />
       {album.locked ? (
         <LockedAlbumState album={album} />
       ) : (

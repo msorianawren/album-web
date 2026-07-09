@@ -25,6 +25,11 @@
     "login": "Login",
     "about": "About"
   },
+  "landing": {
+    "premium_portfolio": "Premium model portfolio",
+    "featured_story": "Featured story",
+    "studio_note": "Studio note"
+  },
   "albums": {
     "archive_subtitle": "Album archive",
     "archive_title": "Editorial books, private collections, and moving image stories.",

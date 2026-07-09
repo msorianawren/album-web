@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
 import type { AlbumStatus, LandingPageContent, SiteSettings, AboutProfile } from "@/lib/types";
 import { AboutSettingsTab } from "@/components/studio/settings/AboutSettingsTab";
+import { LOCALES } from "@/lib/i18n";
 
 type TabKey =
   | "general"
@@ -72,6 +73,7 @@ export function SettingsCenter({
   const [settings, setSettings] = useState(initialSettings);
   const [landing, setLanding] = useState(initialLanding);
   const [activeTab, setActiveTab] = useState<TabKey>("general");
+  const [activeLandingLocale, setActiveLandingLocale] = useState<string>("en");
   const [saving, setSaving] = useState(false);
   const [savingLanding, setSavingLanding] = useState(false);
   const [landingMessage, setLandingMessage] = useState("");
@@ -87,6 +89,22 @@ export function SettingsCenter({
 
   function updateLanding<K extends keyof LandingPageContent>(key: K, value: LandingPageContent[K]) {
     setLanding((current) => ({ ...current, [key]: value }));
+  }
+
+  function getLandingLocalized<K extends keyof LandingPageContent>(key: K): string {
+    if (activeLandingLocale === "en") return (landing[key] as string) || "";
+    return landing.translations?.[activeLandingLocale]?.[key] ?? "";
+  }
+
+  function updateLandingLocalized<K extends keyof LandingPageContent>(key: K, value: string) {
+    if (activeLandingLocale === "en") {
+      updateLanding(key, value as any);
+    } else {
+      const trans = { ...(landing.translations || {}) };
+      if (!trans[activeLandingLocale]) trans[activeLandingLocale] = {};
+      trans[activeLandingLocale][key] = value;
+      updateLanding("translations", trans);
+    }
   }
 
   async function save() {
@@ -392,33 +410,50 @@ export function SettingsCenter({
 
       {activeTab === "landing" ? (
         <Panel title="Landing Page" description="Edit the public first impression: copy, calls to action, stats, and homepage imagery.">
+          <div className="mb-4">
+            <span className="text-sm font-medium text-text-primary mr-3">Editing language:</span>
+            <select
+              value={activeLandingLocale}
+              onChange={(e) => setActiveLandingLocale(e.target.value)}
+              className="h-9 rounded-[0.8rem] border border-border bg-surface px-3 text-sm text-text-primary outline-none focus:ring-2 focus:ring-ring"
+            >
+              <option value="en">English (Default)</option>
+              {Object.entries(LOCALES)
+                .filter(([code]) => code !== "en")
+                .map(([code, name]) => (
+                  <option key={code} value={code}>
+                    {name}
+                  </option>
+                ))}
+            </select>
+          </div>
           <div className="grid gap-5 xl:grid-cols-[1.05fr_0.95fr]">
             <div className="grid gap-4">
               <div className="grid gap-4 md:grid-cols-2">
                 <Field label="Eyebrow">
-                  <Input value={landing.eyebrow} onChange={(event) => updateLanding("eyebrow", event.target.value)} maxLength={80} />
+                  <Input value={getLandingLocalized("eyebrow")} onChange={(event) => updateLandingLocalized("eyebrow", event.target.value)} maxLength={80} />
                 </Field>
                 <Field label="Headline">
-                  <Input value={landing.headline} onChange={(event) => updateLanding("headline", event.target.value)} maxLength={140} />
+                  <Input value={getLandingLocalized("headline")} onChange={(event) => updateLandingLocalized("headline", event.target.value)} maxLength={140} />
                 </Field>
               </div>
               <Field label="Subheadline">
-                <Input value={landing.subheadline} onChange={(event) => updateLanding("subheadline", event.target.value)} maxLength={220} />
+                <Input value={getLandingLocalized("subheadline")} onChange={(event) => updateLandingLocalized("subheadline", event.target.value)} maxLength={220} />
               </Field>
               <Field label="Body">
-                <Textarea value={landing.body} onChange={(event) => updateLanding("body", event.target.value)} maxLength={500} />
+                <Textarea value={getLandingLocalized("body")} onChange={(event) => updateLandingLocalized("body", event.target.value)} maxLength={500} />
               </Field>
               <div className="grid gap-4 md:grid-cols-2">
                 <Field label="Primary CTA label">
-                  <Input value={landing.primary_cta_label} onChange={(event) => updateLanding("primary_cta_label", event.target.value)} maxLength={40} />
+                  <Input value={getLandingLocalized("primary_cta_label")} onChange={(event) => updateLandingLocalized("primary_cta_label", event.target.value)} maxLength={40} />
                 </Field>
-                <Field label="Primary CTA link">
+                <Field label="Primary CTA link (Links are not translated)">
                   <Input value={landing.primary_cta_href} onChange={(event) => updateLanding("primary_cta_href", event.target.value)} placeholder="#albums" />
                 </Field>
                 <Field label="Secondary CTA label">
-                  <Input value={landing.secondary_cta_label} onChange={(event) => updateLanding("secondary_cta_label", event.target.value)} maxLength={40} />
+                  <Input value={getLandingLocalized("secondary_cta_label")} onChange={(event) => updateLandingLocalized("secondary_cta_label", event.target.value)} maxLength={40} />
                 </Field>
-                <Field label="Secondary CTA link">
+                <Field label="Secondary CTA link (Links are not translated)">
                   <Input value={landing.secondary_cta_href} onChange={(event) => updateLanding("secondary_cta_href", event.target.value)} placeholder="/about" />
                 </Field>
               </div>
@@ -429,16 +464,16 @@ export function SettingsCenter({
               </div>
               <div className="grid gap-4 md:grid-cols-2">
                 <Field label="Feature title">
-                  <Input value={landing.feature_title} onChange={(event) => updateLanding("feature_title", event.target.value)} maxLength={140} />
+                  <Input value={getLandingLocalized("feature_title")} onChange={(event) => updateLandingLocalized("feature_title", event.target.value)} maxLength={140} />
                 </Field>
                 <Field label="Feature body">
-                  <Textarea value={landing.feature_body} onChange={(event) => updateLanding("feature_body", event.target.value)} maxLength={420} />
+                  <Textarea value={getLandingLocalized("feature_body")} onChange={(event) => updateLandingLocalized("feature_body", event.target.value)} maxLength={420} />
                 </Field>
               </div>
               <div className="grid gap-4 md:grid-cols-3">
-                <StatFields label="Stat 1" value={landing.stat_one_value} caption={landing.stat_one_label} onValue={(value) => updateLanding("stat_one_value", value)} onCaption={(value) => updateLanding("stat_one_label", value)} />
-                <StatFields label="Stat 2" value={landing.stat_two_value} caption={landing.stat_two_label} onValue={(value) => updateLanding("stat_two_value", value)} onCaption={(value) => updateLanding("stat_two_label", value)} />
-                <StatFields label="Stat 3" value={landing.stat_three_value} caption={landing.stat_three_label} onValue={(value) => updateLanding("stat_three_value", value)} onCaption={(value) => updateLanding("stat_three_label", value)} />
+                <StatFields label="Stat 1" value={getLandingLocalized("stat_one_value")} caption={getLandingLocalized("stat_one_label")} onValue={(value) => updateLandingLocalized("stat_one_value", value)} onCaption={(value) => updateLandingLocalized("stat_one_label", value)} />
+                <StatFields label="Stat 2" value={getLandingLocalized("stat_two_value")} caption={getLandingLocalized("stat_two_label")} onValue={(value) => updateLandingLocalized("stat_two_value", value)} onCaption={(value) => updateLandingLocalized("stat_two_label", value)} />
+                <StatFields label="Stat 3" value={getLandingLocalized("stat_three_value")} caption={getLandingLocalized("stat_three_label")} onValue={(value) => updateLandingLocalized("stat_three_value", value)} onCaption={(value) => updateLandingLocalized("stat_three_label", value)} />
               </div>
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <p className="text-sm text-text-secondary" aria-live="polite">{landingMessage}</p>
@@ -448,7 +483,7 @@ export function SettingsCenter({
                 </Button>
               </div>
             </div>
-            <LandingPreview landing={landing} />
+            <LandingPreview landing={landing} activeLandingLocale={activeLandingLocale} />
           </div>
         </Panel>
       ) : null}
@@ -711,7 +746,20 @@ function StatFields({
   );
 }
 
-function LandingPreview({ landing }: { landing: LandingPageContent }) {
+function LandingPreview({ landing, activeLandingLocale = "en" }: { landing: LandingPageContent, activeLandingLocale?: string }) {
+  const trans = landing.translations?.[activeLandingLocale] || {};
+  const headline = trans.headline || landing.headline;
+  const eyebrow = trans.eyebrow || landing.eyebrow;
+  const subheadline = trans.subheadline || landing.subheadline;
+  const primaryCtaLabel = trans.primary_cta_label || landing.primary_cta_label;
+  const secondaryCtaLabel = trans.secondary_cta_label || landing.secondary_cta_label;
+  const statOneLabel = trans.stat_one_label || landing.stat_one_label;
+  const statOneValue = trans.stat_one_value || landing.stat_one_value;
+  const statTwoLabel = trans.stat_two_label || landing.stat_two_label;
+  const statTwoValue = trans.stat_two_value || landing.stat_two_value;
+  const statThreeLabel = trans.stat_three_label || landing.stat_three_label;
+  const statThreeValue = trans.stat_three_value || landing.stat_three_value;
+
   return (
     <aside className="sticky top-24 min-w-0 self-start overflow-hidden rounded-[1.4rem] border border-border bg-background shadow-2xl shadow-text-primary/10">
       <div className="relative min-h-[34rem] overflow-hidden">
@@ -719,14 +767,14 @@ function LandingPreview({ landing }: { landing: LandingPageContent }) {
         <img src={landing.hero_image_url} alt="" className="absolute inset-0 h-full w-full object-cover" />
         <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(0,0,0,0.70),rgba(0,0,0,0.22)_62%,rgba(0,0,0,0.08))]" />
         <div className="relative z-10 flex min-h-[34rem] flex-col justify-end p-5 text-white sm:p-8">
-          <p className="break-words text-xs font-semibold uppercase tracking-[0.16em] text-white/78">{landing.eyebrow}</p>
-          <h3 className="mt-3 break-words text-4xl font-semibold leading-none sm:text-5xl">{landing.headline}</h3>
-          <p className="mt-4 break-words text-sm leading-6 text-white/82">{landing.subheadline}</p>
+          <p className="break-words text-xs font-semibold uppercase tracking-[0.16em] text-white/78">{eyebrow}</p>
+          <h3 className="mt-3 break-words text-4xl font-semibold leading-none sm:text-5xl">{headline}</h3>
+          <p className="mt-4 break-words text-sm leading-6 text-white/82">{subheadline}</p>
           <div className="mt-5 grid overflow-hidden rounded-[1.1rem] border border-white/18 bg-white/12 backdrop-blur">
             {[
-              [landing.stat_one_value, landing.stat_one_label],
-              [landing.stat_two_value, landing.stat_two_label],
-              [landing.stat_three_value, landing.stat_three_label],
+              [statOneValue, statOneLabel],
+              [statTwoValue, statTwoLabel],
+              [statThreeValue, statThreeLabel],
             ].map(([value, caption]) => (
               <div key={`${value}-${caption}`} className="border-b border-white/14 p-4 last:border-b-0">
                 <p className="break-words font-semibold">{value}</p>
@@ -736,10 +784,10 @@ function LandingPreview({ landing }: { landing: LandingPageContent }) {
           </div>
           <div className="mt-5 grid gap-2 sm:grid-cols-2">
             <span className="rounded-full bg-white px-4 py-3 text-center text-xs font-semibold uppercase tracking-[0.14em] text-text-primary">
-              {landing.primary_cta_label}
+              {primaryCtaLabel}
             </span>
             <span className="rounded-full border border-white/24 bg-white/10 px-4 py-3 text-center text-xs font-semibold uppercase tracking-[0.14em] text-white">
-              {landing.secondary_cta_label}
+              {secondaryCtaLabel}
             </span>
           </div>
         </div>
