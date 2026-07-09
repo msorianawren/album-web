@@ -104,7 +104,7 @@ export function UploadManager({
 
       const presignPayload = await presignRes.json();
       if (!presignPayload.success) {
-        updateItem(item.id, { status: "failed", progress: 100, message: presignPayload.message ?? "Presign failed." });
+        updateItem(item.id, { status: "failed", progress: 100, message: `[PRESIGN_FAILED] ${presignPayload.message ?? "Presign failed."}` });
         return;
       }
 
@@ -127,13 +127,15 @@ export function UploadManager({
         xhr.onload = () => {
           if (xhr.status >= 200 && xhr.status < 300) {
             resolve();
+          } else if (xhr.status === 403) {
+            reject(new Error("[CORS_BLOCKED] Storage server returned 403. Check R2 CORS setup."));
           } else {
-            reject(new Error(`Storage server returned status ${xhr.status}. R2 CORS may be blocking direct upload. Add PUT and Content-Type for this origin.`));
+            reject(new Error(`[R2_PUT_FAILED] Storage server returned status ${xhr.status}.`));
           }
         };
 
         xhr.onerror = () => {
-          reject(new Error("Network error during direct storage upload. Check R2 CORS setup."));
+          reject(new Error("[CSP_BLOCKED] Upload blocked by site Content Security Policy. R2 upload endpoint is missing from connect-src. (Or CORS failed)"));
         };
 
         xhr.send(item.file);
@@ -158,7 +160,7 @@ export function UploadManager({
 
       const completePayload = await completeRes.json();
       if (!completePayload.success) {
-        updateItem(item.id, { status: "failed", progress: 100, message: completePayload.message ?? "Completion failed." });
+        updateItem(item.id, { status: "failed", progress: 100, message: `[COMPLETE_FAILED] ${completePayload.message ?? "Completion failed."}` });
         return;
       }
 

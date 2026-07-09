@@ -10,21 +10,25 @@ Apply the following JSON CORS rule in your Cloudflare R2 Bucket settings (under 
 [
   {
     "AllowedOrigins": [
-      "http://localhost:3000",
-      "https://your-production-domain.vercel.app"
+      "https://www.orianawren.com",
+      "https://orianawren.com",
+      "http://localhost:3000"
     ],
     "AllowedMethods": [
-      "PUT",
       "GET",
-      "HEAD"
+      "HEAD",
+      "PUT",
+      "POST",
+      "OPTIONS"
     ],
     "AllowedHeaders": [
-      "Content-Type"
+      "*"
     ],
     "ExposeHeaders": [
-      "ETag"
-    ],
-    "MaxAgeSeconds": 3600
+      "ETag",
+      "Content-Length",
+      "Content-Type"
+    ]
   }
 ]
 ```
