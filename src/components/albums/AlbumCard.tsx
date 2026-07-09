@@ -6,6 +6,7 @@ import { Heart, Lock, MessageCircle, RefreshCw } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import type { Album } from "@/lib/types";
 import { formatMediaCount } from "@/lib/utils";
+import { ScrollReveal } from "@/components/ui/ScrollReveal";
 
 interface AlbumCardProps {
   album: Album;
@@ -27,11 +28,12 @@ export function AlbumCard({ album, dict, locale = "en" }: AlbumCardProps) {
   const videoPreview = album.status !== "private" && previewItems.find((item) => item.media_type === "video");
 
   return (
-    <Link
-      href={`/albums/${album.slug}`}
-      className="group block min-w-0 rounded-[1.8rem] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-    >
-      <div className="overflow-hidden rounded-[1.8rem] border border-border bg-surface/75 p-2 shadow-lg shadow-text-primary/5 transition duration-500 ease-out group-hover:-translate-y-1 group-hover:bg-surface group-hover:shadow-2xl group-hover:shadow-text-primary/10">
+    <ScrollReveal>
+      <Link
+        href={`/albums/${album.slug}`}
+        className="group block min-w-0 rounded-[1.8rem] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      >
+        <div className="overflow-hidden rounded-[1.8rem] border border-[var(--glass-border)] bg-[var(--glass-bg)] p-2 shadow-[0_8px_30px_rgb(0,0,0,0.04)] backdrop-blur-md transition duration-500 ease-out group-hover:-translate-y-1 group-hover:bg-surface group-hover:shadow-2xl group-hover:shadow-text-primary/10">
         <div className="living-preview-frame relative aspect-[3/4] overflow-hidden rounded-[1.45rem] bg-surface-secondary">
           {previewImages.length ? (
             previewImages.map((src, index) => (
@@ -137,6 +139,7 @@ export function AlbumCard({ album, dict, locale = "en" }: AlbumCardProps) {
           )}
         </div>
       )}
-    </Link>
+      </Link>
+    </ScrollReveal>
   );
 }

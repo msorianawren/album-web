@@ -2,7 +2,10 @@
 
 import { usePathname } from "next/navigation";
 import type { LandingBackgroundSettings } from "@/lib/types";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
+import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { CustomCursor } from "@/components/ui/CustomCursor";
 
 const generateParticles = (count: number) => {
   return Array.from({ length: count }).map((_, i) => ({
@@ -19,12 +22,34 @@ export function NatureAnimatedBackground({ config }: { config: LandingBackground
   const pathname = usePathname();
   const [mounted, setMounted] = useState(false);
   const [particles, setParticles] = useState<any[]>([]);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const layerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setMounted(true);
     const count = Math.floor((config.density / 100) * 80) + 5;
-    setParticles(generateParticles(count));
-  }, [config.density]);
+    setParticles(generateParticles(config.preset === "rain" ? count * 1.5 : count));
+  }, [config.density, config.preset]);
+
+  useEffect(() => {
+    if (!mounted || !layerRef.current) return;
+    
+    gsap.registerPlugin(ScrollTrigger);
+    const ctx = gsap.context(() => {
+      gsap.to(layerRef.current, {
+        yPercent: 15,
+        ease: "none",
+        scrollTrigger: {
+          trigger: document.body,
+          start: "top top",
+          end: "bottom top",
+          scrub: true,
+        }
+      });
+    }, containerRef);
+    
+    return () => ctx.revert();
+  }, [mounted]);
 
   if (!mounted) return null;
   if (config.enabled === false || (config.enabled as unknown) === "false") return null;
@@ -41,10 +66,12 @@ export function NatureAnimatedBackground({ config }: { config: LandingBackground
   } as React.CSSProperties;
 
   return (
-    <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden" aria-hidden="true" style={cssVars}>
+    <>
+      <CustomCursor preset={config.preset as any} />
+      <div ref={containerRef} className="pointer-events-none fixed inset-0 z-0 overflow-hidden" aria-hidden="true" style={cssVars}>
       <style>{`
         .nature-container { opacity: var(--nature-opacity); transition: opacity 1s; }
-        .nature-layer { position: absolute; inset: -10%; filter: blur(var(--nature-blur)); }
+        .nature-layer { position: absolute; inset: -20%; filter: blur(var(--nature-blur)); will-change: transform; }
         
         @keyframes fall-sakura {
           0% { transform: translate3d(0, -20vh, 0) rotate(0deg); }
@@ -65,8 +92,9 @@ export function NatureAnimatedBackground({ config }: { config: LandingBackground
           position: absolute; width: 5px; height: 5px;
           background: #e3d38f; border-radius: 50%;
           box-shadow: 0 0 10px 2px #e3d38f;
-          mix-blend-mode: plus-lighter;
+          opacity: calc(0.6 * var(--nature-intensity));
         }
+        .theme-night .firefly { mix-blend-mode: screen; opacity: 1; }
 
         @keyframes fall-snow {
           0% { transform: translate3d(0, -20vh, 0); }
@@ -74,10 +102,10 @@ export function NatureAnimatedBackground({ config }: { config: LandingBackground
         }
         .snow-flake {
           position: absolute; width: 7px; height: 7px;
-          background: white; border-radius: 50%;
+          background: rgba(0,0,0,0.2); border-radius: 50%;
           opacity: calc(0.7 * var(--nature-intensity));
-          box-shadow: 0 0 6px 1px white;
         }
+        .theme-night .snow-flake { background: white; box-shadow: 0 0 6px 1px white; }
 
         @keyframes fall-autumn {
           0% { transform: translate3d(0, -20vh, 0) rotate3d(1, 1, 0, 0deg); }
@@ -96,12 +124,11 @@ export function NatureAnimatedBackground({ config }: { config: LandingBackground
         .mist-layer {
           position: absolute; inset: -50%;
           background: 
-            radial-gradient(circle at 50% 50%, rgba(255,255,255,0.06) 0%, transparent 60%),
-            radial-gradient(circle at 20% 80%, rgba(255,255,255,0.08) 0%, transparent 60%);
+            radial-gradient(circle at 50% 50%, rgba(0,0,0,0.03) 0%, transparent 60%),
+            radial-gradient(circle at 20% 80%, rgba(0,0,0,0.02) 0%, transparent 60%);
           background-size: 200% 200%;
           animation: pan-mist 60s linear infinite;
           opacity: var(--nature-intensity);
-          mix-blend-mode: plus-lighter;
         }
         .theme-night .mist-layer {
           background: 
@@ -110,8 +137,21 @@ export function NatureAnimatedBackground({ config }: { config: LandingBackground
           mix-blend-mode: screen;
         }
 
+        @keyframes fall-rain {
+          0% { transform: translate3d(0, -20vh, 0); }
+          100% { transform: translate3d(5vw, 120vh, 0); }
+        }
+        .rain-drop {
+          position: absolute; width: 1px; height: 40px;
+          background: linear-gradient(to bottom, rgba(0,0,0,0), rgba(0,0,0,0.15));
+          opacity: calc(0.6 * var(--nature-intensity));
+        }
+        .theme-night .rain-drop {
+          background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0.3));
+        }
+
         @media (prefers-reduced-motion: reduce) {
-          .sakura-petal, .firefly, .snow-flake, .autumn-leaf, .mist-layer {
+          .sakura-petal, .firefly, .snow-flake, .autumn-leaf, .mist-layer, .rain-drop {
             animation-duration: 0s !important;
             animation-play-state: paused !important;
           }
@@ -130,7 +170,7 @@ export function NatureAnimatedBackground({ config }: { config: LandingBackground
           </div>
         )}
 
-        <div className="nature-layer">
+        <div ref={layerRef} className="nature-layer">
           {config.preset === "mist" && <div className="mist-layer" style={{ animationDuration: `${60 * speedMultiplier}s` }} />}
           
           {config.preset !== "mist" && particles.map(p => {
@@ -138,12 +178,14 @@ export function NatureAnimatedBackground({ config }: { config: LandingBackground
               config.preset === "sakura" ? "fall-sakura" :
               config.preset === "fireflies" ? "float-firefly" :
               config.preset === "snow" ? "fall-snow" :
+              config.preset === "rain" ? "fall-rain" :
               "fall-autumn";
             
             const className = 
               config.preset === "sakura" ? "sakura-petal" :
               config.preset === "fireflies" ? "firefly" :
               config.preset === "snow" ? "snow-flake" :
+              config.preset === "rain" ? "rain-drop" :
               "autumn-leaf";
 
             return (
@@ -156,7 +198,7 @@ export function NatureAnimatedBackground({ config }: { config: LandingBackground
                   transform: `scale(${p.scale})`,
                   animationName,
                   animationDelay: `-${p.delay}s`,
-                  animationDuration: `${p.durationBase * speedMultiplier}s`,
+                  animationDuration: config.preset === "rain" ? `${(p.durationBase * 0.2) * speedMultiplier}s` : `${p.durationBase * speedMultiplier}s`,
                   animationTimingFunction: config.preset === "fireflies" ? "ease-in-out" : "linear",
                   animationIterationCount: "infinite",
                 }}
@@ -178,6 +220,7 @@ export function NatureAnimatedBackground({ config }: { config: LandingBackground
           />
         )}
       </div>
-    </div>
+      </div>
+    </>
   );
 }

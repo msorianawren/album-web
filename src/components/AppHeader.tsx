@@ -30,7 +30,7 @@ export async function AppHeader() {
   const mobileItems = navItems.filter((item) => item.label !== dict.nav.explore);
 
   return (
-    <header className="sticky top-0 z-40 border-b border-border bg-background/80 backdrop-blur-xl">
+    <header className="sticky top-0 z-40 border-b border-[var(--glass-border)] bg-[var(--glass-bg)] backdrop-blur-xl">
       <div className="mx-auto flex min-h-16 w-full max-w-[1440px] items-center gap-2 px-3 sm:min-h-20 sm:gap-4 sm:px-8 lg:px-12">
         <Link
           href="/"

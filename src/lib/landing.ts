@@ -86,7 +86,7 @@ function cleanUrl(value: unknown, fallback: string) {
 
 function normalizeBackgroundSettings(bg: any): LandingBackgroundSettings {
   const merged = { ...defaultLandingPage.background_settings, ...(bg || {}) };
-  if (!["sakura", "fireflies", "snow", "autumn", "mist"].includes(merged.preset)) {
+  if (!["sakura", "fireflies", "snow", "autumn", "mist", "rain"].includes(merged.preset)) {
     merged.preset = "sakura";
   }
   return merged as LandingBackgroundSettings;

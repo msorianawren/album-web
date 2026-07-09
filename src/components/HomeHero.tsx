@@ -1,5 +1,6 @@
 import { ArrowRight, Camera, Play, Sparkles } from "lucide-react";
 import type { LandingPageContent } from "@/lib/types";
+import { ScrollReveal } from "@/components/ui/ScrollReveal";
 
 interface HomeHeroProps {
   landing: LandingPageContent;
@@ -30,8 +31,8 @@ export function HomeHero({ landing, locale = "en", dict }: HomeHeroProps) {
   return (
     <section className="relative isolate overflow-hidden">
       <div className="page-shell-1440 grid min-w-0 gap-8 pb-10 pt-8 md:pb-16 md:pt-16 lg:min-h-[760px] lg:grid-cols-[0.86fr_1.14fr]">
-        <div className="relative z-10 flex min-w-0 flex-col justify-center animate-editorial-in">
-          <p className="mb-5 inline-flex w-fit max-w-full items-center gap-2 rounded-full border border-border bg-surface/70 px-4 py-2 text-[0.68rem] font-semibold uppercase text-text-secondary shadow-sm backdrop-blur sm:text-xs">
+        <ScrollReveal className="relative z-10 flex min-w-0 flex-col justify-center">
+          <p className="mb-5 inline-flex w-fit max-w-full items-center gap-2 rounded-full border border-[var(--glass-border)] bg-[var(--glass-bg)] px-4 py-2 text-[0.68rem] font-semibold uppercase text-text-secondary shadow-sm backdrop-blur-md sm:text-xs">
             <Sparkles className="h-3.5 w-3.5 text-muted-accent" aria-hidden="true" />
             <span className="truncate">{dict?.landing?.premium_portfolio || "Premium model portfolio"}</span>
           </p>
@@ -57,7 +58,7 @@ export function HomeHero({ landing, locale = "en", dict }: HomeHeroProps) {
             </a>
             <a
               href={secondaryHref}
-              className="inline-flex h-12 items-center justify-center gap-2 rounded-full border border-border bg-surface/75 px-6 text-sm font-semibold uppercase text-text-primary shadow-lg shadow-text-primary/5 backdrop-blur transition-all duration-300 hover:-translate-y-0.5 hover:bg-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.98]"
+              className="inline-flex h-12 items-center justify-center gap-2 rounded-full border border-[var(--glass-border)] bg-[var(--glass-bg)] px-6 text-sm font-semibold uppercase text-text-primary shadow-[0_8px_30px_rgb(0,0,0,0.04)] backdrop-blur-md transition-all duration-300 hover:-translate-y-0.5 hover:bg-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.98]"
             >
               <Camera className="h-4 w-4" aria-hidden="true" />
               {secondaryCtaLabel}
@@ -74,9 +75,9 @@ export function HomeHero({ landing, locale = "en", dict }: HomeHeroProps) {
               </div>
             ))}
           </div>
-        </div>
+        </ScrollReveal>
 
-        <div className="relative grid gap-4 animate-editorial-in [animation-delay:160ms] sm:min-h-[500px] lg:min-h-[680px]">
+        <ScrollReveal delay={0.2} className="relative z-0 hidden lg:block animate-editorial-in-slow sm:min-h-[500px] lg:min-h-[680px]">
           <div className="relative h-[28rem] overflow-hidden rounded-[1.6rem] border border-border bg-surface/50 shadow-2xl shadow-text-primary/10 sm:absolute sm:inset-x-10 sm:top-0 sm:h-[74%] sm:rounded-[2.2rem] lg:inset-x-0">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
@@ -126,7 +127,7 @@ export function HomeHero({ landing, locale = "en", dict }: HomeHeroProps) {
               </div>
             </div>
           </div>
-        </div>
+        </ScrollReveal>
       </div>
     </section>
   );

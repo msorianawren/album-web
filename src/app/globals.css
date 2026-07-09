@@ -15,6 +15,11 @@
   --lightbox-border: rgba(255, 250, 242, 0.2);
   --ring: rgba(111, 93, 76, 0.34);
   --muted-accent: #75806f;
+
+  /* UI Polish Additions */
+  --cursor-color: #241a14;
+  --glass-bg: rgba(255, 250, 243, 0.6);
+  --glass-border: rgba(63, 51, 43, 0.08);
 }
 
 .theme-night {
@@ -32,6 +37,11 @@
   --lightbox-border: rgba(244, 238, 228, 0.22);
   --ring: rgba(216, 201, 184, 0.36);
   --muted-accent: #a3b8a1;
+
+  /* UI Polish Additions */
+  --cursor-color: #f4eee4;
+  --glass-bg: rgba(27, 30, 31, 0.6);
+  --glass-border: rgba(244, 238, 228, 0.08);
 }
 
 @theme inline {

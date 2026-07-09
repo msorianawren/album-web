@@ -210,7 +210,7 @@ export interface CollaboratorProfile {
 
 export interface LandingBackgroundSettings {
   enabled: boolean;
-  preset: "sakura" | "fireflies" | "snow" | "autumn" | "mist";
+  preset: "sakura" | "fireflies" | "snow" | "autumn" | "mist" | "rain";
   intensity: number;
   opacity: number;
   speed: number;

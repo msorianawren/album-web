@@ -491,7 +491,7 @@ export function SettingsCenter({
                     label="Preset Theme" 
                     value={landing.background_settings.preset} 
                     onChange={(val) => updateLanding("background_settings", { ...landing.background_settings, preset: val as any })} 
-                    options={["sakura", "fireflies", "snow", "autumn", "mist"]} 
+                    options={["sakura", "fireflies", "snow", "autumn", "mist", "rain"]} 
                   />
                   <Field label="Opacity (0-100)">
                     <Input type="number" min={0} max={100} value={landing.background_settings.opacity ?? 100} onChange={(e) => updateLanding("background_settings", { ...landing.background_settings, opacity: parseInt(e.target.value) || 0 })} />
