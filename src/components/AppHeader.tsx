@@ -4,6 +4,7 @@ import { getPublicSession } from "@/lib/auth";
 import { Input } from "@/components/ui/Input";
 import { PublicMobileNav } from "@/components/PublicMobileNav";
 import { UserMenu } from "@/components/UserMenu";
+import { getSiteSettings } from "@/lib/site-settings";
 
 const navItems = [
   { href: "/", label: "Home" },
@@ -14,7 +15,10 @@ const navItems = [
 ];
 
 export async function AppHeader() {
-  const session = await getPublicSession();
+  const [session, settings] = await Promise.all([
+    getPublicSession(),
+    getSiteSettings(),
+  ]);
   const mobileItems = navItems.filter((item) => item.label !== "Explore");
 
   return (
@@ -22,14 +26,25 @@ export async function AppHeader() {
       <div className="mx-auto flex min-h-16 w-full max-w-[1440px] items-center gap-2 px-3 sm:min-h-20 sm:gap-4 sm:px-8 lg:px-12">
         <Link
           href="/"
-          className="flex min-w-0 shrink flex-col rounded-xl text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:shrink-0"
+          className="flex min-w-0 shrink flex-col justify-center rounded-xl text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:shrink-0"
         >
-          <span className="truncate text-sm font-semibold uppercase tracking-[0.18em] sm:text-lg sm:tracking-[0.22em]">
-            Oriana Wren
-          </span>
-          <span className="truncate text-[0.56rem] uppercase tracking-[0.22em] text-text-secondary sm:text-[0.64rem] sm:tracking-[0.3em]">
-            Professional Model
-          </span>
+          {settings.site_logo_url ? (
+            /* eslint-disable-next-line @next/next/no-img-element */
+            <img 
+              src={settings.site_logo_url} 
+              alt={settings.site_logo_alt ?? settings.site_name} 
+              className="h-8 w-auto object-contain sm:h-10" 
+            />
+          ) : (
+            <>
+              <span className="truncate text-sm font-semibold uppercase tracking-[0.18em] sm:text-lg sm:tracking-[0.22em]">
+                {settings.site_name || "Oriana Wren"}
+              </span>
+              <span className="truncate text-[0.56rem] uppercase tracking-[0.22em] text-text-secondary sm:text-[0.64rem] sm:tracking-[0.3em]">
+                {settings.site_description || "Professional Model"}
+              </span>
+            </>
+          )}
         </Link>
 
         <nav className="ml-4 hidden items-center gap-1 lg:flex" aria-label="Primary">

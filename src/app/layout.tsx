@@ -2,13 +2,24 @@ import type { Metadata, Viewport } from "next";
 import { OAuthHashHandler } from "@/components/auth/OAuthHashHandler";
 import "./globals.css";
 
-export const metadata: Metadata = {
-  title: {
-    default: "Album Web",
-    template: "%s | Album Web",
-  },
-  description: "A premium minimal photo gallery for private and public albums.",
-};
+import { getSiteSettings } from "@/lib/site-settings";
+
+export async function generateMetadata(): Promise<Metadata> {
+  const settings = await getSiteSettings();
+  
+  return {
+    title: {
+      default: settings.seo_title || settings.site_name || "Album Web",
+      template: `%s | ${settings.site_name || "Album Web"}`,
+    },
+    description: settings.seo_description || settings.site_description || "A premium minimal photo gallery.",
+    icons: settings.site_favicon_url ? {
+      icon: settings.site_favicon_url,
+      shortcut: settings.site_favicon_url,
+      apple: settings.site_favicon_url,
+    } : undefined,
+  };
+}
 
 export const viewport: Viewport = {
   width: "device-width",

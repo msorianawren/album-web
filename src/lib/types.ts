@@ -198,6 +198,8 @@ export interface SiteSettings {
   site_name: string;
   site_description: string;
   site_logo_url: string | null;
+  site_logo_alt: string | null;
+  site_favicon_url: string | null;
   contact_email: string | null;
   default_album_status: AlbumStatus;
   allow_public_comments: boolean;

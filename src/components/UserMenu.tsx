@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "reac
 import Link from "next/link";
 import { LogIn, LogOut, Moon, Sun, UserRound } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import type { PublicSession } from "@/lib/types";
 
 type ThemeMode = "day" | "night";
@@ -130,6 +131,8 @@ export function UserMenu({ session }: UserMenuProps) {
             <span className="theme-toggle-knob absolute left-1 top-1 h-4 w-4 rounded-full bg-accent transition" />
           </span>
         </button>
+
+        <LanguageSwitcher />
 
         {session.userId ? (
           <button

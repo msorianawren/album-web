@@ -102,6 +102,54 @@ export function SettingsCenter({
     setMessage("Settings saved.");
   }
 
+  async function uploadSettingsAsset(type: "logo" | "favicon", file: File | null) {
+    if (!file) return;
+    setMessage(`Requesting upload URL for ${type}...`);
+    
+    try {
+      const presignRes = await fetch("/api/studio/settings/upload-presign", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          filename: file.name,
+          mimeType: file.type,
+          size: file.size,
+          type,
+        }),
+      });
+
+      const presignPayload = await presignRes.json();
+      if (!presignPayload.success) {
+        setMessage(presignPayload.message ?? `Failed to request upload URL for ${type}.`);
+        return;
+      }
+
+      const { uploadUrl, publicUrl } = presignPayload.data;
+
+      setMessage(`Uploading ${type} to storage...`);
+      await new Promise<void>((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open("PUT", uploadUrl);
+        xhr.setRequestHeader("Content-Type", file.type);
+        xhr.onload = () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            resolve();
+          } else {
+            reject(new Error(`Storage server returned status ${xhr.status}.`));
+          }
+        };
+        xhr.onerror = () => reject(new Error("Storage upload network error."));
+        xhr.send(file);
+      });
+
+      setMessage(`${type} uploaded. You must save to apply changes.`);
+      if (type === "logo") update("site_logo_url", publicUrl);
+      if (type === "favicon") update("site_favicon_url", publicUrl);
+    } catch (err) {
+      setMessage(err instanceof Error ? err.message : `${type} upload failed.`);
+    }
+  }
+
   async function saveLanding() {
     setSavingLanding(true);
     setLandingMessage("Saving landing page...");
@@ -267,8 +315,22 @@ export function SettingsCenter({
             <Textarea value={settings.site_description} onChange={(event) => update("site_description", event.target.value)} maxLength={500} />
           </Field>
           <div className="grid gap-4 lg:grid-cols-2">
-            <Field label="Logo URL">
-              <Input value={settings.site_logo_url ?? ""} onChange={(event) => update("site_logo_url", event.target.value)} placeholder="https://..." />
+            <ImageField
+              label="Website Logo URL"
+              value={settings.site_logo_url ?? ""}
+              onValue={(value) => update("site_logo_url", value)}
+              onUpload={(file) => uploadSettingsAsset("logo", file)}
+            />
+            <ImageField
+              label="Favicon URL (Optional)"
+              value={settings.site_favicon_url ?? ""}
+              onValue={(value) => update("site_favicon_url", value)}
+              onUpload={(file) => uploadSettingsAsset("favicon", file)}
+            />
+          </div>
+          <div className="grid gap-4 lg:grid-cols-2">
+            <Field label="Logo alt text">
+              <Input value={settings.site_logo_alt ?? ""} onChange={(event) => update("site_logo_alt", event.target.value)} />
             </Field>
             <Field label="Contact email">
               <Input value={settings.contact_email ?? ""} onChange={(event) => update("contact_email", event.target.value)} type="email" />
