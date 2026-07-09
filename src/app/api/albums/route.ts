@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { requireAdmin } from "@/lib/auth";
+import { getPublicSession, requireAdmin } from "@/lib/auth";
 import { logAuditEvent } from "@/lib/audit";
 import { apiError, apiSuccess, toServerError } from "@/lib/errors";
 import { getAlbums } from "@/lib/albums";
@@ -18,7 +18,8 @@ export async function GET(request: NextRequest) {
     return apiError("INVALID_INPUT", "Invalid album filters.", 400);
   }
 
-  const albums = await getAlbums(parsed.data);
+  const session = await getPublicSession();
+  const albums = await getAlbums({ ...parsed.data, session });
   return apiSuccess({ albums });
 }
 

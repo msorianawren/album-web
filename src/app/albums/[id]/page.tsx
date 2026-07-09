@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { AlbumHeader } from "@/components/albums/AlbumHeader";
 import { AlbumDownloadButton } from "@/components/albums/AlbumDownloadButton";
 import { LockedAlbumState } from "@/components/albums/LockedAlbumState";
@@ -10,6 +10,7 @@ import { LikeButton } from "@/components/media/LikeButton";
 import { MediaGrid } from "@/components/media/MediaGrid";
 import { getAlbum } from "@/lib/albums";
 import { getSiteSettings } from "@/lib/site-settings";
+import { getPublicSession } from "@/lib/auth";
 
 interface AlbumPageProps {
   params: Promise<{
@@ -65,11 +66,18 @@ export async function generateMetadata({ params }: AlbumPageProps): Promise<Meta
   };
 }
 
+import { AccessRequestModal } from "@/components/albums/AccessRequestModal";
+
 export default async function AlbumPage({ params }: AlbumPageProps) {
   const { id } = await params;
   const [album, settings] = await Promise.all([getAlbum(id), getSiteSettings()]);
 
   if (!album) notFound();
+
+  const session = await getPublicSession();
+  if (!session?.userId) {
+    redirect(`/login?redirect=/albums/${album.slug}`);
+  }
 
   return (
     <main className="min-h-screen bg-background">
@@ -101,6 +109,7 @@ export default async function AlbumPage({ params }: AlbumPageProps) {
           <CommentSection albumId={album.id} />
         </>
       )}
+      <AccessRequestModal />
     </main>
   );
 }

@@ -1,0 +1,55 @@
+{
+  "common": {
+    "search": "Search",
+    "logout": "Logout",
+    "save": "Save",
+    "cancel": "Cancel",
+    "loading": "Loading...",
+    "error": "An error occurred",
+    "guest": "Guest",
+    "theme_mode": "Theme mode",
+    "founder_account": "Founder account",
+    "admin_account": "Admin account",
+    "member_account": "Member account",
+    "google_accounts_only": "Google accounts only"
+  },
+  "nav": {
+    "albums": "Albums",
+    "studio": "Studio",
+    "settings": "Settings",
+    "login": "Login",
+    "about": "About"
+  },
+  "albums": {
+    "archive_subtitle": "Album archive",
+    "archive_title": "Editorial books, private collections, and moving image stories.",
+    "archive_desc": "This is the dedicated album space for browsing visual collections, opening galleries, liking work, commenting, and downloading approved images.",
+    "public_albums": "Public Albums",
+    "public_albums_desc": "Browse public editorials, updating shoots, and featured works.",
+    "private_albums": "Private Albums",
+    "private_albums_desc": "These collections are restricted. You must request admin permission to view them.",
+    "search_placeholder": "Search editorial, studio, campaign...",
+    "all_statuses": "All statuses",
+    "status_public": "Public",
+    "status_updating": "Updating",
+    "status_private": "Private",
+    "no_albums": "No albums available",
+    "no_albums_desc": "Public collections will appear here when the owner publishes them.",
+    "works": "works",
+    "request_access": "Request Admin Permission",
+    "access_approved": "Access Approved",
+    "request_pending": "Request Pending",
+    "request_rejected": "Request Rejected",
+    "private_album": "Private album",
+    "private_album_desc": "This album is private. Please contact the owner for access."
+  },
+  "about": {
+    "title": "About",
+    "biography": "Biography",
+    "contact": "Contact",
+    "skills": "Skills & Expertise",
+    "experience": "Experience",
+    "education": "Education",
+    "awards": "Awards & Recognition"
+  }
+}

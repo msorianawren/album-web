@@ -11,6 +11,7 @@ type ThemeMode = "day" | "night";
 
 interface UserMenuProps {
   session: PublicSession;
+  dict?: any;
 }
 
 const themeEvent = "album-theme-change";
@@ -33,21 +34,21 @@ function syncThemeClass(mode: ThemeMode) {
   document.documentElement.classList.toggle("theme-night", mode === "night");
 }
 
-export function UserMenu({ session }: UserMenuProps) {
+export function UserMenu({ session, dict }: UserMenuProps) {
   const [open, setOpen] = useState(false);
   const theme = useSyncExternalStore(subscribeTheme, getStoredTheme, () => "day" as ThemeMode);
   const menuRef = useRef<HTMLDivElement>(null);
 
-  const name = session.displayName ?? session.email ?? "Guest";
+  const name = session.displayName ?? session.email ?? (dict?.common?.guest || "Guest");
   const roleLabel = session.isFounder
-    ? "Founder account"
+    ? (dict?.common?.founder_account || "Founder account")
     : session.isAdmin
-      ? "Admin account"
+      ? (dict?.common?.admin_account || "Admin account")
       : session.userId
-        ? "Member account"
-        : "Guest";
+        ? (dict?.common?.member_account || "Member account")
+        : (dict?.common?.guest || "Guest");
 
-  const initialsName = useMemo(() => name || "Guest", [name]);
+  const initialsName = useMemo(() => name || (dict?.common?.guest || "Guest"), [name, dict]);
 
   useEffect(() => {
     syncThemeClass(theme);
@@ -93,7 +94,7 @@ export function UserMenu({ session }: UserMenuProps) {
       >
         <Avatar name={initialsName} imageUrl={session.avatarUrl ?? undefined} />
         <span className="hidden max-w-[120px] truncate text-xs font-semibold text-text-primary md:block">
-          {session.userId ? name : "Guest"}
+          {session.userId ? name : (dict?.common?.guest || "Guest")}
         </span>
       </button>
 
@@ -125,7 +126,7 @@ export function UserMenu({ session }: UserMenuProps) {
               <Sun className="absolute inset-0 h-4 w-4 theme-sun-icon" />
               <Moon className="absolute inset-0 h-4 w-4 theme-moon-icon" />
             </span>
-            Theme mode
+            {dict?.common?.theme_mode || "Theme mode"}
           </span>
           <span className="relative h-6 w-11 rounded-full border border-border bg-background">
             <span className="theme-toggle-knob absolute left-1 top-1 h-4 w-4 rounded-full bg-accent transition" />
@@ -140,7 +141,7 @@ export function UserMenu({ session }: UserMenuProps) {
             className="mt-1 flex w-full items-center gap-3 rounded-[1rem] px-3 py-3 text-left text-sm font-medium text-text-primary transition hover:bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             <Shield className="h-4 w-4 text-muted-accent" aria-hidden="true" />
-            Studio
+            {dict?.nav?.studio || "Studio"}
           </Link>
         ) : null}
 
@@ -151,7 +152,7 @@ export function UserMenu({ session }: UserMenuProps) {
             onClick={logout}
           >
             <LogOut className="h-4 w-4 text-muted-accent" aria-hidden="true" />
-            Logout
+            {dict?.common?.logout || "Logout"}
           </button>
         ) : (
           <Link
@@ -159,13 +160,13 @@ export function UserMenu({ session }: UserMenuProps) {
             className="mt-1 flex w-full items-center gap-3 rounded-[1rem] px-3 py-3 text-sm font-medium text-text-primary transition hover:bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             <LogIn className="h-4 w-4 text-muted-accent" aria-hidden="true" />
-            Login with Google
+            {dict?.nav?.login || "Login with Google"}
           </Link>
         )}
 
         <div className="mt-2 flex items-center gap-2 rounded-[1rem] border border-border px-3 py-2 text-xs text-text-secondary">
           <UserRound className="h-3.5 w-3.5" aria-hidden="true" />
-          Google accounts only
+          {dict?.common?.google_accounts_only || "Google accounts only"}
         </div>
       </div>
     </div>

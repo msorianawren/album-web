@@ -146,6 +146,39 @@ export default async function AboutPage() {
         </section>
       )}
 
+      {/* Skills & Languages Row */}
+      {(profile.skills?.length > 0 || profile.languages?.length > 0) && (
+        <section className="mx-auto mt-24 w-full max-w-[1024px] px-4 sm:px-8">
+          <div className="grid gap-16 md:grid-cols-2 md:gap-8">
+            {profile.skills?.length > 0 && (
+              <div>
+                <h3 className="text-2xl font-semibold text-text-primary">Skills & Expertise</h3>
+                <div className="mt-6 flex flex-wrap gap-2">
+                  {profile.skills.map((skill, i) => (
+                    <span key={i} className="rounded-full bg-surface-secondary px-4 py-2 text-sm font-medium text-text-primary">
+                      {skill}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+            {profile.languages?.length > 0 && (
+              <div>
+                <h3 className="text-2xl font-semibold text-text-primary">Languages</h3>
+                <div className="mt-6 space-y-4">
+                  {profile.languages.map((lang, i) => (
+                    <div key={i} className="flex items-center justify-between border-b border-border pb-4">
+                      <span className="font-medium text-text-primary">{lang.language}</span>
+                      <span className="text-sm text-text-secondary">{lang.proficiency}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </section>
+      )}
+
       {/* Timeline (Education & Career) */}
       {(profile.education?.length > 0 || profile.career?.length > 0) && (
         <section className="mx-auto mt-24 w-full max-w-[1024px] px-4 sm:px-8">
@@ -219,6 +252,77 @@ export default async function AboutPage() {
         </section>
       )}
 
+      {/* Achievements */}
+      {profile.achievements?.length > 0 && (
+        <section className="mx-auto mt-24 w-full max-w-[1024px] px-4 sm:px-8">
+          <h3 className="flex items-center gap-3 text-2xl font-semibold text-text-primary">
+            <Award className="h-6 w-6 text-accent" />
+            Awards & Recognition
+          </h3>
+          <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {profile.achievements.map((item, index) => (
+              <div key={index} className="rounded-2xl border border-border bg-surface p-6 transition-all hover:shadow-lg">
+                <span className="text-xs font-bold text-accent">{item.year}</span>
+                <h4 className="mt-2 text-lg font-semibold text-text-primary">{item.title}</h4>
+                <p className="mt-2 text-sm leading-relaxed text-text-secondary">{item.description}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Hobbies & Personal Info */}
+      {(profile.hobbies?.length > 0 || profile.personality_traits?.length > 0) && (
+        <section className="mx-auto mt-24 w-full max-w-[1024px] px-4 sm:px-8">
+          <div className="grid gap-16 md:grid-cols-2 md:gap-8">
+            {profile.hobbies?.length > 0 && (
+              <div>
+                <h3 className="text-2xl font-semibold text-text-primary">Interests & Hobbies</h3>
+                <div className="mt-6 flex flex-wrap gap-2">
+                  {profile.hobbies.map((hobby, i) => (
+                    <span key={i} className="rounded-full bg-background px-4 py-2 text-sm text-text-primary border border-border">
+                      {hobby.name}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+            {profile.personality_traits?.length > 0 && (
+              <div>
+                <h3 className="text-2xl font-semibold text-text-primary">Personality</h3>
+                <div className="mt-6 flex flex-wrap gap-2">
+                  {profile.personality_traits.map((trait, i) => (
+                    <span key={i} className="rounded-full bg-accent/10 px-4 py-2 text-sm font-medium text-accent">
+                      {trait}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </section>
+      )}
+
+      {/* Social Links */}
+      {profile.social_links?.length > 0 && (
+        <section className="mx-auto mt-24 w-full max-w-[1024px] px-4 text-center sm:px-8">
+          <h3 className="text-2xl font-semibold text-text-primary">Connect</h3>
+          <div className="mt-8 flex flex-wrap justify-center gap-4">
+            {profile.social_links.map((link, i) => (
+              <a
+                key={i}
+                href={link.url}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-2 rounded-full border border-border bg-surface px-6 py-3 text-sm font-medium text-text-primary transition hover:bg-background"
+              >
+                <ExternalLink className="h-4 w-4" />
+                {link.platform}
+              </a>
+            ))}
+          </div>
+        </section>
+      )}
     </main>
   );
 }

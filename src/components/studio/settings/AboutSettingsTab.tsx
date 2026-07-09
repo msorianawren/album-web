@@ -125,6 +125,86 @@ export function AboutSettingsTab({ initialProfile, uploadAsset, onUpdate }: Abou
           <Textarea value={profile.quote ?? ""} onChange={(e) => update("quote", e.target.value)} />
         </Field>
       </Section>
+
+      <Section title="Personal Metrics" description="Basic physical or personal attributes.">
+        <div className="grid gap-4 md:grid-cols-3">
+          <Field label="Age"><Input value={profile.personal_metrics?.age ?? ""} onChange={(e) => update("personal_metrics", { ...profile.personal_metrics, age: e.target.value })} /></Field>
+          <Field label="Height"><Input value={profile.personal_metrics?.height ?? ""} onChange={(e) => update("personal_metrics", { ...profile.personal_metrics, height: e.target.value })} /></Field>
+          <Field label="Weight"><Input value={profile.personal_metrics?.weight ?? ""} onChange={(e) => update("personal_metrics", { ...profile.personal_metrics, weight: e.target.value })} /></Field>
+          <Field label="Measurements"><Input value={profile.personal_metrics?.measurements ?? ""} onChange={(e) => update("personal_metrics", { ...profile.personal_metrics, measurements: e.target.value })} /></Field>
+          <Field label="IQ"><Input value={profile.personal_metrics?.iq ?? ""} onChange={(e) => update("personal_metrics", { ...profile.personal_metrics, iq: e.target.value })} /></Field>
+          <Field label="EQ"><Input value={profile.personal_metrics?.eq ?? ""} onChange={(e) => update("personal_metrics", { ...profile.personal_metrics, eq: e.target.value })} /></Field>
+        </div>
+      </Section>
+
+      <Section title="Skills & Traits" description="Arrays of strings for skills, languages, etc.">
+        <Field label="Skills (comma-separated)">
+          <Input 
+            value={profile.skills?.join(", ") ?? ""} 
+            onChange={(e) => update("skills", e.target.value.split(",").map(s => s.trim()).filter(Boolean))} 
+          />
+        </Field>
+        <Field label="Personality Traits (comma-separated)">
+          <Input 
+            value={profile.personality_traits?.join(", ") ?? ""} 
+            onChange={(e) => update("personality_traits", e.target.value.split(",").map(s => s.trim()).filter(Boolean))} 
+          />
+        </Field>
+        <Field label="Hobbies (comma-separated)">
+          <Input 
+            value={profile.hobbies?.map(h => h.name).join(", ") ?? ""} 
+            onChange={(e) => update("hobbies", e.target.value.split(",").map(s => ({ id: crypto.randomUUID(), name: s.trim() })).filter(h => h.name))} 
+          />
+        </Field>
+      </Section>
+
+      <Section title="Complex Data (JSON)" description="Edit complex arrays like Career, Education, Achievements, Languages, Social Links as JSON for now.">
+        <Field label="Career (JSON)">
+          <Textarea 
+            className="min-h-[150px] font-mono text-xs" 
+            value={JSON.stringify(profile.career ?? [], null, 2)} 
+            onChange={(e) => {
+              try { update("career", JSON.parse(e.target.value)); } catch {}
+            }} 
+          />
+        </Field>
+        <Field label="Education (JSON)">
+          <Textarea 
+            className="min-h-[150px] font-mono text-xs" 
+            value={JSON.stringify(profile.education ?? [], null, 2)} 
+            onChange={(e) => {
+              try { update("education", JSON.parse(e.target.value)); } catch {}
+            }} 
+          />
+        </Field>
+        <Field label="Achievements (JSON)">
+          <Textarea 
+            className="min-h-[150px] font-mono text-xs" 
+            value={JSON.stringify(profile.achievements ?? [], null, 2)} 
+            onChange={(e) => {
+              try { update("achievements", JSON.parse(e.target.value)); } catch {}
+            }} 
+          />
+        </Field>
+        <Field label="Languages (JSON)">
+          <Textarea 
+            className="min-h-[150px] font-mono text-xs" 
+            value={JSON.stringify(profile.languages ?? [], null, 2)} 
+            onChange={(e) => {
+              try { update("languages", JSON.parse(e.target.value)); } catch {}
+            }} 
+          />
+        </Field>
+        <Field label="Social Links (JSON)">
+          <Textarea 
+            className="min-h-[150px] font-mono text-xs" 
+            value={JSON.stringify(profile.social_links ?? [], null, 2)} 
+            onChange={(e) => {
+              try { update("social_links", JSON.parse(e.target.value)); } catch {}
+            }} 
+          />
+        </Field>
+      </Section>
       
       <div className="flex justify-end">
         <Button onClick={handleSave} disabled={saving}>{saving ? "Saving..." : "Save Changes"}</Button>

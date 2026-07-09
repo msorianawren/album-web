@@ -1,0 +1,55 @@
+{
+  "common": {
+    "search": "Tìm kiếm",
+    "logout": "Đăng xuất",
+    "save": "Lưu",
+    "cancel": "Hủy",
+    "loading": "Đang tải...",
+    "error": "Đã xảy ra lỗi",
+    "guest": "Khách",
+    "theme_mode": "Giao diện",
+    "founder_account": "Tài khoản Nhà sáng lập",
+    "admin_account": "Tài khoản Quản trị",
+    "member_account": "Tài khoản Thành viên",
+    "google_accounts_only": "Chỉ dùng tài khoản Google"
+  },
+  "nav": {
+    "albums": "Bộ sưu tập",
+    "studio": "Quản trị",
+    "settings": "Cài đặt",
+    "login": "Đăng nhập",
+    "about": "Giới thiệu"
+  },
+  "albums": {
+    "archive_subtitle": "Kho lưu trữ",
+    "archive_title": "Bộ sưu tập cá nhân, hình ảnh nghệ thuật và những câu chuyện.",
+    "archive_desc": "Đây là không gian dành riêng để duyệt các bộ sưu tập, tương tác với hình ảnh và tải xuống các nội dung được cấp phép.",
+    "public_albums": "Bộ sưu tập Công khai",
+    "public_albums_desc": "Duyệt các bộ ảnh công khai, bộ ảnh đang cập nhật và tác phẩm nổi bật.",
+    "private_albums": "Bộ sưu tập Riêng tư",
+    "private_albums_desc": "Những bộ sưu tập này bị hạn chế. Bạn phải yêu cầu quyền truy cập từ quản trị viên để xem.",
+    "search_placeholder": "Tìm kiếm bộ sưu tập...",
+    "all_statuses": "Tất cả trạng thái",
+    "status_public": "Công khai",
+    "status_updating": "Đang cập nhật",
+    "status_private": "Riêng tư",
+    "no_albums": "Không có bộ sưu tập nào",
+    "no_albums_desc": "Các bộ sưu tập công khai sẽ xuất hiện ở đây khi chủ sở hữu xuất bản chúng.",
+    "works": "tác phẩm",
+    "request_access": "Yêu cầu quyền truy cập",
+    "access_approved": "Đã cấp quyền",
+    "request_pending": "Đang chờ duyệt",
+    "request_rejected": "Bị từ chối",
+    "private_album": "Bộ sưu tập riêng tư",
+    "private_album_desc": "Bộ sưu tập này là riêng tư. Vui lòng liên hệ với chủ sở hữu để truy cập."
+  },
+  "about": {
+    "title": "Giới thiệu",
+    "biography": "Tiểu sử",
+    "contact": "Liên hệ",
+    "skills": "Kỹ năng & Chuyên môn",
+    "experience": "Kinh nghiệm làm việc",
+    "education": "Học vấn",
+    "awards": "Giải thưởng & Công nhận"
+  }
+}

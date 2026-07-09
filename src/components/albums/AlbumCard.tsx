@@ -7,18 +7,21 @@ import { formatMediaCount } from "@/lib/utils";
 
 interface AlbumCardProps {
   album: Album;
+  dict?: any;
 }
 
-export function AlbumCard({ album }: AlbumCardProps) {
+export function AlbumCard({ album, dict }: AlbumCardProps) {
   const previewItems = album.preview_items ?? [];
-  const previewImages = [
-    ...previewItems
-      .filter((item) => item.media_type === "image")
-      .map((item) => item.thumbnail_url ?? item.medium_url ?? item.url)
-      .filter(Boolean),
-    album.cover_url,
-  ].filter((value, index, values): value is string => Boolean(value) && values.indexOf(value) === index).slice(0, 4);
-  const videoPreview = previewItems.find((item) => item.media_type === "video");
+  const previewImages = album.status === "private" 
+    ? [album.safe_preview_url].filter(Boolean) as string[]
+    : [
+        ...previewItems
+          .filter((item) => item.media_type === "image")
+          .map((item) => item.thumbnail_url ?? item.medium_url ?? item.url)
+          .filter(Boolean),
+        album.cover_url,
+      ].filter((value, index, values): value is string => Boolean(value) && values.indexOf(value) === index).slice(0, 4);
+  const videoPreview = album.status !== "private" && previewItems.find((item) => item.media_type === "video");
 
   return (
     <Link
@@ -68,10 +71,10 @@ export function AlbumCard({ album }: AlbumCardProps) {
           ) : null}
           <div className="absolute inset-x-0 bottom-0 translate-y-3 bg-gradient-to-t from-black/70 to-transparent p-5 pt-16 opacity-0 transition duration-500 group-hover:translate-y-0 group-hover:opacity-100">
             <p className="text-xs font-semibold uppercase text-white/75">
-              Open collection
+              {dict?.albums?.open_collection || "Open collection"}
             </p>
             <p className="mt-1 text-sm leading-6 text-white">
-              {album.media_count} curated work{album.media_count === 1 ? "" : "s"}
+              {album.media_count} {dict?.albums?.works || "works"}
             </p>
           </div>
         </div>
@@ -84,7 +87,7 @@ export function AlbumCard({ album }: AlbumCardProps) {
           {album.description}
         </p>
         <div className="mt-4 flex flex-wrap items-center gap-2 text-[0.72rem] uppercase tracking-[0.18em] text-text-secondary">
-          <span>{album.media_count} works</span>
+          <span>{album.media_count} {dict?.albums?.works || "works"}</span>
           <span>{formatMediaCount(album.photo_count, album.video_count)}</span>
           <span className="inline-flex items-center gap-1">
             <Heart className="h-3 w-3" aria-hidden="true" />
@@ -96,6 +99,34 @@ export function AlbumCard({ album }: AlbumCardProps) {
           </span>
         </div>
       </div>
+      {album.status === "private" && (
+        <div className="mt-4 px-1">
+          {album.access_request_status === "approved" ? (
+            <div className="inline-flex items-center gap-2 rounded-full border border-green-500/30 bg-green-500/10 px-3 py-1 text-[0.75rem] font-semibold uppercase tracking-wider text-green-600 dark:text-green-400">
+              {dict?.albums?.access_approved || "Approved"}
+            </div>
+          ) : album.access_request_status === "pending" ? (
+            <div className="inline-flex items-center gap-2 rounded-full border border-yellow-500/30 bg-yellow-500/10 px-3 py-1 text-[0.75rem] font-semibold uppercase tracking-wider text-yellow-600 dark:text-yellow-400">
+              {dict?.albums?.request_pending || "Pending"}
+            </div>
+          ) : album.access_request_status === "rejected" ? (
+            <div className="inline-flex items-center gap-2 rounded-full border border-red-500/30 bg-red-500/10 px-3 py-1 text-[0.75rem] font-semibold uppercase tracking-wider text-red-600 dark:text-red-400">
+              {dict?.albums?.request_rejected || "Rejected"}
+            </div>
+          ) : (
+            <button 
+              className="inline-flex items-center justify-center gap-2 rounded-full bg-accent px-4 py-2 text-[0.75rem] font-semibold uppercase tracking-wider text-accent-foreground transition hover:-translate-y-0.5"
+              onClick={(e) => {
+                e.preventDefault();
+                // We will dispatch a custom event to open the request modal
+                document.dispatchEvent(new CustomEvent("open-access-request", { detail: album }));
+              }}
+            >
+              {dict?.albums?.request_access || "Request Admin Permission"}
+            </button>
+          )}
+        </div>
+      )}
     </Link>
   );
 }

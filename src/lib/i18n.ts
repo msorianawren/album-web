@@ -35,3 +35,11 @@ export function setStoredLocale(locale: AppLocale) {
     // Ignore error
   }
 }
+
+export function getServerLocale() {
+  try {
+    // We can't import cookies directly in this shared file without causing issues in client components,
+    // so we'll fetch it in server components directly from next/headers.
+  } catch (e) {}
+  return DEFAULT_LOCALE;
+}

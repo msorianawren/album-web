@@ -23,7 +23,7 @@ export function LanguageSwitcher() {
     <div className="relative mt-1 flex w-full items-center justify-between gap-3 rounded-[1rem] px-3 py-3 text-left text-sm font-medium text-text-primary transition hover:bg-background focus-within:ring-2 focus-within:ring-ring">
       <span className="inline-flex items-center gap-3 pointer-events-none">
         <Globe className="h-4 w-4 text-muted-accent" aria-hidden="true" />
-        Language
+        {locale === "vi" ? "Ngôn ngữ" : "Language"}
       </span>
       <select
         value={locale}

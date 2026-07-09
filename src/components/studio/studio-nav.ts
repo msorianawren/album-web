@@ -15,6 +15,7 @@ import {
 export const studioNavItems = [
   { href: "/studio", label: "Dashboard", icon: LayoutDashboard },
   { href: "/studio/albums", label: "Albums", icon: BookImage },
+  { href: "/studio/access-requests", label: "Access Requests", icon: ShieldCheck },
   { href: "/studio/media", label: "Media Library", icon: Images },
   { href: "/studio/uploads", label: "Uploads", icon: UploadCloud },
   { href: "/studio/comments", label: "Comments", icon: MessageSquareText },

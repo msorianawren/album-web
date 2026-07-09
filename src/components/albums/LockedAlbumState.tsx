@@ -31,6 +31,30 @@ export function LockedAlbumState({ album }: { album: AlbumDetail }) {
           {album.private_message ??
             "This album is private. Please contact the owner for access."}
         </p>
+        
+        {album.access_request_status === "approved" ? (
+          <div className="mt-8 inline-flex self-start items-center gap-2 rounded-full border border-green-500/30 bg-green-500/10 px-4 py-2 text-sm font-semibold uppercase tracking-wider text-green-600 dark:text-green-400">
+            Access Approved
+          </div>
+        ) : album.access_request_status === "pending" ? (
+          <div className="mt-8 inline-flex self-start items-center gap-2 rounded-full border border-yellow-500/30 bg-yellow-500/10 px-4 py-2 text-sm font-semibold uppercase tracking-wider text-yellow-600 dark:text-yellow-400">
+            Request Pending
+          </div>
+        ) : album.access_request_status === "rejected" ? (
+          <div className="mt-8 inline-flex self-start items-center gap-2 rounded-full border border-red-500/30 bg-red-500/10 px-4 py-2 text-sm font-semibold uppercase tracking-wider text-red-600 dark:text-red-400">
+            Request Rejected
+          </div>
+        ) : (
+          <button 
+            className="mt-8 self-start inline-flex items-center justify-center gap-2 rounded-full bg-accent px-6 py-3 text-sm font-semibold uppercase tracking-wider text-accent-foreground transition hover:-translate-y-0.5"
+            onClick={(e) => {
+              e.preventDefault();
+              document.dispatchEvent(new CustomEvent("open-access-request", { detail: album }));
+            }}
+          >
+            Request Admin Permission
+          </button>
+        )}
       </div>
     </section>
   );

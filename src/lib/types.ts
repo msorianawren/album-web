@@ -21,6 +21,8 @@ export interface Album {
   status: AlbumStatus;
   cover_url: string | null;
   cover_media_id: string | null;
+  safe_preview_url?: string | null;
+  access_request_status?: "pending" | "approved" | "rejected" | null;
   photo_count: number;
   video_count: number;
   media_count: number;
@@ -30,6 +32,22 @@ export interface Album {
   created_at: string;
   updated_at?: string;
   preview_items?: AlbumPreviewItem[];
+}
+
+export interface AlbumAccessRequest {
+  id: string;
+  album_id: string;
+  requester_user_id: string | null;
+  requester_email: string | null;
+  requester_name: string;
+  requester_phone: string;
+  reason: string;
+  status: "pending" | "approved" | "rejected";
+  admin_note: string | null;
+  reviewed_by: string | null;
+  reviewed_at: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface Media {
@@ -341,6 +359,7 @@ export interface AboutProfile {
   hobbies: HobbyItem[];
   languages: LanguageItem[];
   achievements: AchievementItem[];
+  skills: string[];
   personal_metrics: PersonalMetrics;
   personality_traits: string[];
   relationship_status: string | null;
