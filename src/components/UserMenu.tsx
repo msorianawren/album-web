@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
-import { LogIn, LogOut, Moon, Sun, UserRound } from "lucide-react";
+import { LogIn, LogOut, Moon, Sun, UserRound, Shield } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import type { PublicSession } from "@/lib/types";
@@ -133,6 +133,16 @@ export function UserMenu({ session }: UserMenuProps) {
         </button>
 
         <LanguageSwitcher />
+
+        {session.isAdmin ? (
+          <Link
+            href="/studio"
+            className="mt-1 flex w-full items-center gap-3 rounded-[1rem] px-3 py-3 text-left text-sm font-medium text-text-primary transition hover:bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <Shield className="h-4 w-4 text-muted-accent" aria-hidden="true" />
+            Studio
+          </Link>
+        ) : null}
 
         {session.userId ? (
           <button

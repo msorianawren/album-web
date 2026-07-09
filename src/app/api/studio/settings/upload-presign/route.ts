@@ -25,7 +25,8 @@ export async function POST(request: NextRequest) {
       return apiError("INVALID_INPUT", "filename, size, mimeType, and type are required.", 400);
     }
 
-    if (type !== "logo" && type !== "favicon") {
+    const allowedTypes = ["logo", "favicon", "about-profile", "about-cover"];
+    if (!allowedTypes.includes(type)) {
       return apiError("INVALID_INPUT", "Invalid asset type.", 400);
     }
 

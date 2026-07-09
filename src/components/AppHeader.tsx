@@ -75,10 +75,11 @@ export async function AppHeader() {
         {session.isAdmin ? (
           <Link
             href="/studio"
-            className="hidden h-11 items-center justify-center gap-2 rounded-full bg-accent px-5 text-xs font-semibold uppercase tracking-[0.16em] text-accent-foreground transition-all hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.98] sm:inline-flex"
+            className="hidden h-10 w-10 shrink-0 items-center justify-center gap-2 rounded-full bg-accent text-xs font-semibold uppercase tracking-[0.16em] text-accent-foreground transition-all hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.98] sm:flex lg:h-11 lg:w-auto lg:px-5"
+            aria-label="Studio"
           >
             <Shield className="h-4 w-4" aria-hidden="true" />
-            Studio
+            <span className="hidden lg:inline">Studio</span>
           </Link>
         ) : session.userId ? (
           <span className="hidden h-11 items-center justify-center rounded-full border border-border bg-surface/70 px-5 text-xs font-semibold uppercase tracking-[0.16em] text-text-primary sm:inline-flex">

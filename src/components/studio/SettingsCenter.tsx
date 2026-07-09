@@ -6,11 +6,13 @@ import { CheckCircle2, Database, HardDrive, ImageUp, RotateCcw, Save, ShieldChec
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
-import type { AlbumStatus, LandingPageContent, SiteSettings } from "@/lib/types";
+import type { AlbumStatus, LandingPageContent, SiteSettings, AboutProfile } from "@/lib/types";
+import { AboutSettingsTab } from "@/components/studio/settings/AboutSettingsTab";
 
 type TabKey =
   | "general"
   | "landing"
+  | "about"
   | "appearance"
   | "albums"
   | "media"
@@ -40,6 +42,7 @@ interface SystemHealthSummary {
 const tabs: Array<{ key: TabKey; label: string }> = [
   { key: "general", label: "General" },
   { key: "landing", label: "Landing" },
+  { key: "about", label: "About Profile" },
   { key: "appearance", label: "Appearance" },
   { key: "albums", label: "Albums" },
   { key: "media", label: "Media" },
@@ -57,10 +60,12 @@ const videoTypes = ["video/mp4", "video/webm", "video/quicktime"];
 export function SettingsCenter({
   initialSettings,
   initialLanding,
+  initialAboutProfile,
   systemHealth,
 }: {
   initialSettings: SiteSettings;
   initialLanding: LandingPageContent;
+  initialAboutProfile: AboutProfile;
   systemHealth: SystemHealthSummary;
 }) {
   const router = useRouter();
@@ -148,6 +153,47 @@ export function SettingsCenter({
     } catch (err) {
       setMessage(err instanceof Error ? err.message : `${type} upload failed.`);
     }
+  }
+
+  async function uploadAboutAsset(type: "about-profile" | "about-cover", file: File): Promise<string> {
+    setMessage(`Requesting upload URL for ${type}...`);
+    
+    const presignRes = await fetch("/api/studio/settings/upload-presign", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        filename: file.name,
+        mimeType: file.type,
+        size: file.size,
+        type,
+      }),
+    });
+
+    const presignPayload = await presignRes.json();
+    if (!presignPayload.success) {
+      throw new Error(presignPayload.message ?? `Failed to request upload URL for ${type}.`);
+    }
+
+    const { uploadUrl, publicUrl } = presignPayload.data;
+
+    setMessage(`Uploading ${type} to storage...`);
+    await new Promise<void>((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open("PUT", uploadUrl);
+      xhr.setRequestHeader("Content-Type", file.type);
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          resolve();
+        } else {
+          reject(new Error(`Storage server returned status ${xhr.status}.`));
+        }
+      };
+      xhr.onerror = () => reject(new Error("Storage upload network error."));
+      xhr.send(file);
+    });
+
+    setMessage(`${type} uploaded.`);
+    return publicUrl;
   }
 
   async function saveLanding() {
@@ -405,6 +451,23 @@ export function SettingsCenter({
             <LandingPreview landing={landing} />
           </div>
         </Panel>
+      ) : null}
+
+      {activeTab === "about" ? (
+        <AboutSettingsTab
+          initialProfile={initialAboutProfile}
+          uploadAsset={uploadAboutAsset}
+          onUpdate={async (profile) => {
+            const res = await fetch("/api/studio/about", {
+              method: "PATCH",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(profile),
+            });
+            const payload = await res.json();
+            if (!payload.success) throw new Error(payload.message ?? "Failed to save about profile.");
+            setMessage("About profile saved successfully.");
+          }}
+        />
       ) : null}
 
       {activeTab === "appearance" ? (

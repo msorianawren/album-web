@@ -276,3 +276,83 @@ export interface StudioCommentItem {
   album_title: string | null;
   album_slug: string | null;
 }
+
+export interface EducationItem {
+  id: string;
+  school: string;
+  program: string;
+  period: string;
+  description: string;
+}
+
+export interface CareerItem {
+  id: string;
+  role: string;
+  company: string;
+  period: string;
+  description: string;
+}
+
+export interface AchievementItem {
+  id: string;
+  title: string;
+  year: string;
+  description: string;
+}
+
+export interface HobbyItem {
+  id: string;
+  name: string;
+}
+
+export interface LanguageItem {
+  id: string;
+  language: string;
+  proficiency: string;
+}
+
+export interface PersonalMetrics {
+  age?: string;
+  height?: string;
+  weight?: string;
+  measurements?: string;
+  iq?: string;
+  eq?: string;
+}
+
+export interface SocialLinkItem {
+  id: string;
+  platform: string;
+  url: string;
+}
+
+export interface AboutProfile {
+  id: string;
+  display_name: string | null;
+  professional_title: string | null;
+  tagline: string | null;
+  short_bio: string | null;
+  full_bio: string | null;
+  birthplace: string | null;
+  location: string | null;
+  nationality: string | null;
+  education: EducationItem[];
+  career: CareerItem[];
+  hobbies: HobbyItem[];
+  languages: LanguageItem[];
+  achievements: AchievementItem[];
+  personal_metrics: PersonalMetrics;
+  personality_traits: string[];
+  relationship_status: string | null;
+  quote: string | null;
+  profile_image_url: string | null;
+  cover_image_url: string | null;
+  gallery_media_ids: string[];
+  primary_cta_label: string | null;
+  primary_cta_href: string | null;
+  secondary_cta_label: string | null;
+  secondary_cta_href: string | null;
+  social_links: SocialLinkItem[];
+  is_public: boolean;
+  updated_at?: string;
+}
