@@ -29,6 +29,34 @@ export function NatureAnimatedBackground({ config }: { config: LandingBackground
     setMounted(true);
     const count = Math.floor((config.density / 100) * 80) + 5;
     setParticles(generateParticles(config.preset === "rain" ? count * 1.5 : count));
+
+    // Inject global CSS variables for UI integration
+    const root = document.documentElement;
+    if (config.preset === "sakura") {
+      root.style.setProperty("--preset-accent", "rgba(255, 183, 197, 0.4)");
+      root.style.setProperty("--preset-glow", "0 0 20px rgba(255, 183, 197, 0.15)");
+      root.style.setProperty("--preset-hover-bg", "rgba(255, 183, 197, 0.05)");
+    } else if (config.preset === "autumn") {
+      root.style.setProperty("--preset-accent", "rgba(194, 107, 66, 0.4)");
+      root.style.setProperty("--preset-glow", "0 0 20px rgba(194, 107, 66, 0.15)");
+      root.style.setProperty("--preset-hover-bg", "rgba(194, 107, 66, 0.05)");
+    } else if (config.preset === "rain") {
+      root.style.setProperty("--preset-accent", "rgba(150, 180, 200, 0.4)");
+      root.style.setProperty("--preset-glow", "0 0 20px rgba(150, 180, 200, 0.15)");
+      root.style.setProperty("--preset-hover-bg", "rgba(150, 180, 200, 0.05)");
+    } else if (config.preset === "snow") {
+      root.style.setProperty("--preset-accent", "rgba(255, 255, 255, 0.5)");
+      root.style.setProperty("--preset-glow", "0 0 20px rgba(255, 255, 255, 0.2)");
+      root.style.setProperty("--preset-hover-bg", "rgba(255, 255, 255, 0.05)");
+    } else if (config.preset === "fireflies") {
+      root.style.setProperty("--preset-accent", "rgba(227, 211, 143, 0.4)");
+      root.style.setProperty("--preset-glow", "0 0 20px rgba(227, 211, 143, 0.15)");
+      root.style.setProperty("--preset-hover-bg", "rgba(227, 211, 143, 0.05)");
+    } else {
+      root.style.setProperty("--preset-accent", "rgba(200, 200, 200, 0.3)");
+      root.style.setProperty("--preset-glow", "0 0 20px rgba(200, 200, 200, 0.1)");
+      root.style.setProperty("--preset-hover-bg", "rgba(200, 200, 200, 0.05)");
+    }
   }, [config.density, config.preset]);
 
   useEffect(() => {

@@ -20,6 +20,11 @@
   --cursor-color: #241a14;
   --glass-bg: rgba(255, 250, 243, 0.6);
   --glass-border: rgba(63, 51, 43, 0.08);
+  
+  /* Preset Global Fallbacks */
+  --preset-accent: rgba(111, 93, 76, 0.4);
+  --preset-glow: 0 0 20px rgba(111, 93, 76, 0.1);
+  --preset-hover-bg: rgba(111, 93, 76, 0.05);
 }
 
 .theme-night {
@@ -42,6 +47,11 @@
   --cursor-color: #f4eee4;
   --glass-bg: rgba(27, 30, 31, 0.6);
   --glass-border: rgba(244, 238, 228, 0.08);
+
+  /* Preset Global Fallbacks */
+  --preset-accent: rgba(216, 201, 184, 0.4);
+  --preset-glow: 0 0 20px rgba(216, 201, 184, 0.1);
+  --preset-hover-bg: rgba(216, 201, 184, 0.05);
 }
 
 @theme inline {
