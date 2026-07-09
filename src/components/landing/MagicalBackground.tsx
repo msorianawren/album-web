@@ -19,70 +19,113 @@ const PARTICLES = [
 ];
 
 export function MagicalBackground({ config }: { config: LandingBackgroundSettings }) {
-  if (!config.enabled) return null;
+  if (config.enabled === false || (config.enabled as unknown) === "false") return null;
 
   const presets = {
-    aura: "bg-[radial-gradient(ellipse_at_top_right,rgba(255,250,242,0.15),transparent_50%)] dark:bg-[radial-gradient(ellipse_at_top_right,rgba(244,238,228,0.05),transparent_50%)]",
-    moonlit: "bg-[radial-gradient(ellipse_at_top,rgba(200,210,240,0.15),transparent_60%)] dark:bg-[radial-gradient(ellipse_at_top,rgba(150,170,220,0.08),transparent_60%)]",
-    bloom: "bg-[radial-gradient(ellipse_at_center,rgba(255,220,230,0.15),transparent_70%)] dark:bg-[radial-gradient(ellipse_at_center,rgba(220,180,190,0.06),transparent_70%)]",
-    pearl: "bg-[radial-gradient(ellipse_at_top_left,rgba(255,245,235,0.2),transparent_60%)] dark:bg-[radial-gradient(ellipse_at_top_left,rgba(240,230,220,0.08),transparent_60%)]",
-    porcelain: "bg-[radial-gradient(circle_at_center,rgba(250,250,250,0.3),transparent_100%)] dark:bg-[radial-gradient(circle_at_center,rgba(250,250,250,0.04),transparent_100%)]",
+    aura: {
+      light: "radial-gradient(ellipse at top right, rgba(255,250,242,0.15), transparent 50%)",
+      dark: "radial-gradient(ellipse at top right, rgba(244,238,228,0.05), transparent 50%)"
+    },
+    moonlit: {
+      light: "radial-gradient(ellipse at top, rgba(200,210,240,0.15), transparent 60%)",
+      dark: "radial-gradient(ellipse at top, rgba(150,170,220,0.08), transparent 60%)"
+    },
+    bloom: {
+      light: "radial-gradient(ellipse at center, rgba(255,220,230,0.15), transparent 70%)",
+      dark: "radial-gradient(ellipse at center, rgba(220,180,190,0.06), transparent 70%)"
+    },
+    pearl: {
+      light: "radial-gradient(ellipse at top left, rgba(255,245,235,0.2), transparent 60%)",
+      dark: "radial-gradient(ellipse at top left, rgba(240,230,220,0.08), transparent 60%)"
+    },
+    porcelain: {
+      light: "radial-gradient(circle at center, rgba(250,250,250,0.3), transparent 100%)",
+      dark: "radial-gradient(circle at center, rgba(250,250,250,0.04), transparent 100%)"
+    }
   };
 
-  const presetClass = presets[config.preset] || presets.aura;
+  const currentPreset = presets[config.preset] || presets.aura;
 
-  const customGradients = [];
-  if (config.accent_color_1) customGradients.push(`radial-gradient(circle at top right, ${config.accent_color_1}40, transparent 60%)`);
-  if (config.accent_color_2) customGradients.push(`radial-gradient(circle at bottom left, ${config.accent_color_2}40, transparent 60%)`);
+  const intensityOpacity = (Number(config.intensity) || 100) / 100;
+  const mainOpacity = (Number(config.opacity) || 100) / 100;
 
-  const intensityOpacity = (config.intensity ?? 100) / 100;
-  const mainOpacity = (config.opacity ?? 100) / 100;
+  const cssVars = {
+    "--mbg-opacity": mainOpacity,
+    "--mbg-intensity": intensityOpacity,
+    "--mbg-preset-light": currentPreset.light,
+    "--mbg-preset-dark": currentPreset.dark,
+    "--mbg-accent-1-light": config.accent_color_1 ? `radial-gradient(circle at top right, ${config.accent_color_1}60, transparent 60%)` : "none",
+    "--mbg-accent-1-dark": config.accent_color_1 ? `radial-gradient(circle at top right, ${config.accent_color_1}40, transparent 60%)` : "none",
+    "--mbg-accent-2-light": config.accent_color_2 ? `radial-gradient(circle at bottom left, ${config.accent_color_2}60, transparent 60%)` : "none",
+    "--mbg-accent-2-dark": config.accent_color_2 ? `radial-gradient(circle at bottom left, ${config.accent_color_2}40, transparent 60%)` : "none",
+  } as React.CSSProperties;
 
   return (
-    <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden" aria-hidden="true" style={{ opacity: mainOpacity }}>
-      
-      {config.custom_url && (
-        <div className="absolute inset-0 opacity-30 dark:opacity-40">
-          {config.custom_url.match(/\.(mp4|webm)$/i) ? (
-            <video src={config.custom_url} autoPlay loop muted playsInline className="h-full w-full object-cover" />
-          ) : (
-            <img src={config.custom_url} alt="" className="h-full w-full object-cover" />
-          )}
-        </div>
-      )}
+    <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden" aria-hidden="true" style={cssVars}>
+      <style>{`
+        .mbg-container { opacity: var(--mbg-opacity); }
+        .mbg-preset { opacity: var(--mbg-intensity); background-image: var(--mbg-preset-light); }
+        .mbg-base { opacity: var(--mbg-intensity); background-image: radial-gradient(ellipse at bottom left, rgba(63,51,43,0.05), transparent 50%); }
+        .mbg-accents { opacity: var(--mbg-intensity); background-image: var(--mbg-accent-1-light), var(--mbg-accent-2-light); }
+        .mbg-particles { opacity: calc(var(--mbg-intensity) * 0.8); mix-blend-mode: plus-lighter; }
+        .mbg-custom-url { opacity: 0.3; }
+        
+        .theme-night .mbg-preset { background-image: var(--mbg-preset-dark); }
+        .theme-night .mbg-base { background-image: radial-gradient(ellipse at bottom left, rgba(244,238,228,0.03), transparent 50%); }
+        .theme-night .mbg-accents { background-image: var(--mbg-accent-1-dark), var(--mbg-accent-2-dark); }
+        .theme-night .mbg-particles { mix-blend-mode: screen; }
+        .theme-night .mbg-custom-url { opacity: 0.4; }
+        
+        @keyframes mbg-particle-float {
+          0%, 100% { transform: translateY(0) scale(1); opacity: 0.4; }
+          50% { transform: translateY(-20px) scale(1.2); opacity: 1; }
+        }
+        .magic-particle { animation-name: mbg-particle-float; animation-timing-function: ease-in-out; animation-iteration-count: infinite; }
+      `}</style>
 
-      <div className={`absolute inset-0 ${presetClass}`} style={{ opacity: intensityOpacity }} />
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,rgba(63,51,43,0.05),transparent_50%)] dark:bg-[radial-gradient(ellipse_at_bottom_left,rgba(244,238,228,0.03),transparent_50%)]" style={{ opacity: intensityOpacity }} />
-      
-      {customGradients.length > 0 && (
-        <div className="absolute inset-0" style={{ backgroundImage: customGradients.join(', '), opacity: intensityOpacity }} />
-      )}
-      
-      {config.grain && (
-        <svg className="absolute inset-0 h-full w-full opacity-20 dark:opacity-10 mix-blend-overlay">
-          <filter id="noiseFilter">
-            <feTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch" />
-          </filter>
-          <rect width="100%" height="100%" filter="url(#noiseFilter)" />
-        </svg>
-      )}
+      <div className="mbg-container absolute inset-0">
+        
+        {config.custom_url && (
+          <div className="mbg-custom-url absolute inset-0">
+            {config.custom_url.match(/\.(mp4|webm)$/i) ? (
+              <video src={config.custom_url} autoPlay loop muted playsInline className="h-full w-full object-cover" />
+            ) : (
+              <img src={config.custom_url} alt="" className="h-full w-full object-cover" />
+            )}
+          </div>
+        )}
 
-      {config.particles && (
-        <div className="absolute inset-0 mix-blend-plus-lighter dark:mix-blend-screen" style={{ opacity: intensityOpacity * 0.8 }}>
-          {PARTICLES.map((p, i) => (
-            <div
-              key={i}
-              className="magic-particle absolute h-1.5 w-1.5 rounded-full bg-white blur-[1px] shadow-[0_0_8px_rgba(255,255,255,0.8)]"
-              style={{
-                top: p.top,
-                left: p.left,
-                animationDelay: p.delay,
-                animationDuration: p.duration,
-              }}
-            />
-          ))}
-        </div>
-      )}
+        <div className="mbg-preset absolute inset-0" />
+        <div className="mbg-base absolute inset-0" />
+        <div className="mbg-accents absolute inset-0" />
+
+        {config.grain && (
+          <svg className="absolute inset-0 h-full w-full opacity-20 dark:opacity-10 mix-blend-overlay">
+            <filter id="noiseFilter">
+              <feTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch" />
+            </filter>
+            <rect width="100%" height="100%" filter="url(#noiseFilter)" />
+          </svg>
+        )}
+
+        {config.particles && (
+          <div className="mbg-particles absolute inset-0">
+            {PARTICLES.map((p, i) => (
+              <div
+                key={i}
+                className="magic-particle absolute h-1.5 w-1.5 rounded-full bg-white blur-[1px] shadow-[0_0_8px_rgba(255,255,255,0.8)]"
+                style={{
+                  top: p.top,
+                  left: p.left,
+                  animationDelay: p.delay,
+                  animationDuration: p.duration,
+                }}
+              />
+            ))}
+          </div>
+        )}
+
+      </div>
     </div>
   );
 }
