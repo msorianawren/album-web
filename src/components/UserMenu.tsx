@@ -133,7 +133,7 @@ export function UserMenu({ session, dict }: UserMenuProps) {
           </span>
         </button>
 
-        <LanguageSwitcher />
+        <LanguageSwitcher dict={dict} />
 
         {session.isAdmin ? (
           <Link

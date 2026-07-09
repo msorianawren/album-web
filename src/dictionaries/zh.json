@@ -1,0 +1,60 @@
+{
+  "common": {
+    "search": "搜索",
+    "logout": "登出",
+    "save": "保存",
+    "cancel": "取消",
+    "loading": "加载中...",
+    "error": "发生错误",
+    "guest": "访客",
+    "theme_mode": "主题模式",
+    "founder_account": "创始人账户",
+    "admin_account": "管理员账户",
+    "member_account": "会员账户",
+    "google_accounts_only": "仅限 Google 账户",
+    "language": "语言",
+    "signed_in": "已登录"
+  },
+  "nav": {
+    "home": "首页",
+    "contact": "联系我们",
+    "explore": "探索",
+    "albums": "相册",
+    "studio": "工作室",
+    "settings": "设置",
+    "login": "登录",
+    "about": "关于"
+  },
+  "albums": {
+    "archive_subtitle": "相册档案",
+    "archive_title": "社论书籍、私人收藏和动态影像故事。",
+    "archive_desc": "这是专门的相册空间，用于浏览视觉收藏、打开画廊、点赞作品、评论和下载批准的图像。",
+    "public_albums": "公开相册",
+    "public_albums_desc": "浏览公开的社论、更新的拍摄和特色作品。",
+    "private_albums": "私人相册",
+    "private_albums_desc": "这些收藏受到限制。您必须请求管理员权限才能查看。",
+    "search_placeholder": "搜索社论、工作室、活动...",
+    "all_statuses": "所有状态",
+    "status_public": "公开",
+    "status_updating": "更新中",
+    "status_private": "私人",
+    "no_albums": "没有可用的相册",
+    "no_albums_desc": "当所有者发布它们时，公开的收藏将显示在这里。",
+    "works": "作品",
+    "request_access": "请求访问",
+    "access_approved": "访问已批准",
+    "request_pending": "请求待处理",
+    "request_rejected": "请求被拒绝",
+    "private_album": "私人相册",
+    "private_album_desc": "此相册是私人的。请联系所有者以获取访问权限。"
+  },
+  "about": {
+    "title": "关于",
+    "biography": "传记",
+    "contact": "联系",
+    "skills": "技能与专长",
+    "experience": "经验",
+    "education": "教育",
+    "awards": "奖项与认可"
+  }
+}

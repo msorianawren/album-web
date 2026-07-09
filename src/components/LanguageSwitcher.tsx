@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Globe } from "lucide-react";
 import { AppLocale, LOCALES, getStoredLocale, setStoredLocale } from "@/lib/i18n";
 
-export function LanguageSwitcher() {
+export function LanguageSwitcher({ dict }: { dict?: any }) {
   const [locale, setLocale] = useState<AppLocale>("en");
 
   useEffect(() => {
@@ -23,7 +23,7 @@ export function LanguageSwitcher() {
     <div className="relative mt-1 flex w-full items-center justify-between gap-3 rounded-[1rem] px-3 py-3 text-left text-sm font-medium text-text-primary transition hover:bg-background focus-within:ring-2 focus-within:ring-ring">
       <span className="inline-flex items-center gap-3 pointer-events-none">
         <Globe className="h-4 w-4 text-muted-accent" aria-hidden="true" />
-        {locale === "vi" ? "Ngôn ngữ" : "Language"}
+        {dict?.common?.language || "Language"}
       </span>
       <select
         value={locale}
@@ -37,7 +37,7 @@ export function LanguageSwitcher() {
           </option>
         ))}
       </select>
-      <span className="pointer-events-none text-xs text-text-secondary">
+      <span className="pointer-events-none text-xs text-text-secondary whitespace-nowrap">
         {LOCALES[locale]}
       </span>
     </div>

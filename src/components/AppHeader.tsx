@@ -22,12 +22,12 @@ export async function AppHeader() {
   ]);
 
   const navItems = [
-    { href: "/", label: "Home" },
+    { href: "/", label: dict.nav.home || "Home" },
     { href: "/albums", label: dict.nav.albums },
     { href: "/about", label: dict.nav.about },
-    { href: "/contact", label: "Contact Us" },
+    { href: "/contact", label: dict.nav.contact || "Contact Us" },
   ];
-  const mobileItems = navItems.filter((item) => item.label !== "Explore");
+  const mobileItems = navItems.filter((item) => item.label !== dict.nav.explore);
 
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-background/80 backdrop-blur-xl">
@@ -55,19 +55,19 @@ export async function AppHeader() {
           )}
         </Link>
 
-        <nav className="ml-4 hidden items-center gap-1 lg:flex" aria-label="Primary">
+        <nav className="ml-4 hidden items-center gap-1 xl:flex shrink-0" aria-label="Primary">
           {navItems.map((item) => (
             <Link
               key={`${item.href}-${item.label}`}
               href={item.href}
-              className="rounded-full px-3 py-2 text-sm font-medium text-text-secondary transition hover:bg-surface/70 hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="rounded-full px-3 py-2 text-sm font-medium text-text-secondary transition whitespace-nowrap hover:bg-surface/70 hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               {item.label}
             </Link>
           ))}
         </nav>
 
-        <form action="/albums" className="relative ml-auto hidden w-full max-w-sm md:block">
+        <form action="/albums" className="relative ml-auto hidden w-full max-w-sm shrink lg:block">
           <Search
             className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-text-secondary"
             aria-hidden="true"
@@ -76,33 +76,35 @@ export async function AppHeader() {
             name="q"
             aria-label="Search albums"
             placeholder="Search portfolio"
-            className="pl-11"
+            className="pl-11 min-w-[140px]"
           />
         </form>
 
-        {session.isAdmin ? (
-          <Link
-            href="/studio"
-            className="hidden h-10 w-10 shrink-0 items-center justify-center gap-2 rounded-full bg-accent text-xs font-semibold uppercase tracking-[0.16em] text-accent-foreground transition-all hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.98] sm:flex lg:h-11 lg:w-auto lg:px-5"
-            aria-label={dict.nav.studio}
-          >
-            <Shield className="h-4 w-4" aria-hidden="true" />
-            <span className="hidden lg:inline">{dict.nav.studio}</span>
-          </Link>
-        ) : session.userId ? (
-          <span className="hidden h-11 items-center justify-center rounded-full border border-border bg-surface/70 px-5 text-xs font-semibold uppercase tracking-[0.16em] text-text-primary sm:inline-flex">
-            {dict.nav.login.replace("Login", "Signed in")} {/* Assuming no specific translation for Signed In yet, but should probably be in dictionary */}
-          </span>
-        ) : (
-          <Link
-            href="/login"
-            className="hidden h-11 items-center justify-center rounded-full border border-border bg-surface/70 px-5 text-xs font-semibold uppercase tracking-[0.16em] text-text-primary transition hover:bg-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:inline-flex"
-          >
-            {dict.nav.login}
-          </Link>
-        )}
-        <PublicMobileNav session={session} navItems={navItems} />
-        <UserMenu session={session} dict={dict} />
+        <div className="ml-auto lg:ml-4 flex items-center shrink-0 gap-2">
+          {session.isAdmin ? (
+            <Link
+              href="/studio"
+              className="hidden h-10 w-10 shrink-0 items-center justify-center gap-2 rounded-full bg-accent text-xs font-semibold uppercase tracking-[0.16em] text-accent-foreground transition-all hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.98] sm:flex lg:h-11 lg:w-auto lg:px-5"
+              aria-label={dict.nav.studio}
+            >
+              <Shield className="h-4 w-4" aria-hidden="true" />
+              <span className="hidden lg:inline whitespace-nowrap">{dict.nav.studio}</span>
+            </Link>
+          ) : session.userId ? (
+            <span className="hidden h-11 shrink-0 items-center justify-center rounded-full border border-border bg-surface/70 px-5 text-xs font-semibold uppercase tracking-[0.16em] text-text-primary sm:inline-flex whitespace-nowrap">
+              {dict?.common?.signed_in || "Signed in"}
+            </span>
+          ) : (
+            <Link
+              href="/login"
+              className="hidden h-11 shrink-0 items-center justify-center rounded-full border border-border bg-surface/70 px-5 text-xs font-semibold uppercase tracking-[0.16em] text-text-primary transition hover:bg-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:inline-flex whitespace-nowrap"
+            >
+              {dict.nav.login}
+            </Link>
+          )}
+          <PublicMobileNav session={session} navItems={navItems} />
+          <UserMenu session={session} dict={dict} />
+        </div>
       </div>
       <nav
         className="mx-auto flex w-full max-w-[1440px] gap-2 overflow-x-auto border-t border-border/70 px-3 py-2 sm:px-8 lg:hidden"

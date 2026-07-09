@@ -1,0 +1,60 @@
+{
+  "common": {
+    "search": "検索",
+    "logout": "ログアウト",
+    "save": "保存",
+    "cancel": "キャンセル",
+    "loading": "読み込み中...",
+    "error": "エラーが発生しました",
+    "guest": "ゲスト",
+    "theme_mode": "テーマモード",
+    "founder_account": "創設者アカウント",
+    "admin_account": "管理者アカウント",
+    "member_account": "メンバーアカウント",
+    "google_accounts_only": "Google アカウントのみ",
+    "language": "言語",
+    "signed_in": "ログイン済み"
+  },
+  "nav": {
+    "home": "ホーム",
+    "contact": "お問い合わせ",
+    "explore": "探索",
+    "albums": "アルバム",
+    "studio": "スタジオ",
+    "settings": "設定",
+    "login": "ログイン",
+    "about": "アバウト"
+  },
+  "albums": {
+    "archive_subtitle": "アルバムアーカイブ",
+    "archive_title": "エディトリアルブック、プライベートコレクション、動画のストーリー。",
+    "archive_desc": "これは、ビジュアルコレクションの閲覧、ギャラリーを開く、作品にいいねする、コメントする、承認された画像をダウンロードするための専用のアルバムスペースです。",
+    "public_albums": "公開アルバム",
+    "public_albums_desc": "公開エディトリアル、更新中の撮影、特集作品を閲覧します。",
+    "private_albums": "プライベートアルバム",
+    "private_albums_desc": "これらのコレクションは制限されています。表示するには管理者の許可を要求する必要があります。",
+    "search_placeholder": "エディトリアル、スタジオ、キャンペーンを検索...",
+    "all_statuses": "すべてのステータス",
+    "status_public": "公開",
+    "status_updating": "更新中",
+    "status_private": "プライベート",
+    "no_albums": "利用可能なアルバムがありません",
+    "no_albums_desc": "所有者が公開すると、ここに公開コレクションが表示されます。",
+    "works": "作品",
+    "request_access": "アクセスをリクエスト",
+    "access_approved": "アクセス承認済み",
+    "request_pending": "リクエスト保留中",
+    "request_rejected": "リクエスト拒否",
+    "private_album": "プライベートアルバム",
+    "private_album_desc": "このアルバムはプライベートです。アクセスするには所有者にお問い合わせください。"
+  },
+  "about": {
+    "title": "アバウト",
+    "biography": "バイオグラフィー",
+    "contact": "お問い合わせ",
+    "skills": "スキルと専門知識",
+    "experience": "経験",
+    "education": "教育",
+    "awards": "賞と表彰"
+  }
+}

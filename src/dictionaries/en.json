@@ -11,9 +11,14 @@
     "founder_account": "Founder account",
     "admin_account": "Admin account",
     "member_account": "Member account",
-    "google_accounts_only": "Google accounts only"
+    "google_accounts_only": "Google accounts only",
+    "language": "Language",
+    "signed_in": "Signed in"
   },
   "nav": {
+    "home": "Home",
+    "contact": "Contact Us",
+    "explore": "Explore",
     "albums": "Albums",
     "studio": "Studio",
     "settings": "Settings",

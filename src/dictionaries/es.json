@@ -1,0 +1,60 @@
+{
+  "common": {
+    "search": "Buscar",
+    "logout": "Cerrar sesión",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "loading": "Cargando...",
+    "error": "Se produjo un error",
+    "guest": "Invitado",
+    "theme_mode": "Modo de tema",
+    "founder_account": "Cuenta de fundador",
+    "admin_account": "Cuenta de administrador",
+    "member_account": "Cuenta de miembro",
+    "google_accounts_only": "Solo cuentas de Google",
+    "language": "Idioma",
+    "signed_in": "Sesión iniciada"
+  },
+  "nav": {
+    "home": "Inicio",
+    "contact": "Contacto",
+    "explore": "Explorar",
+    "albums": "Álbumes",
+    "studio": "Estudio",
+    "settings": "Ajustes",
+    "login": "Iniciar sesión",
+    "about": "Acerca de"
+  },
+  "albums": {
+    "archive_subtitle": "Archivo de álbumes",
+    "archive_title": "Libros editoriales, colecciones privadas e historias de imágenes en movimiento.",
+    "archive_desc": "Este es el espacio de álbum dedicado para buscar colecciones visuales, abrir galerías, dar me gusta al trabajo, comentar y descargar imágenes aprobadas.",
+    "public_albums": "Álbumes públicos",
+    "public_albums_desc": "Explora editoriales públicos, sesiones de actualización y trabajos destacados.",
+    "private_albums": "Álbumes privados",
+    "private_albums_desc": "Estas colecciones están restringidas. Debe solicitar permiso al administrador para verlas.",
+    "search_placeholder": "Buscar editorial, estudio, campaña...",
+    "all_statuses": "Todos los estados",
+    "status_public": "Público",
+    "status_updating": "Actualizando",
+    "status_private": "Privado",
+    "no_albums": "No hay álbumes disponibles",
+    "no_albums_desc": "Las colecciones públicas aparecerán aquí cuando el propietario las publique.",
+    "works": "obras",
+    "request_access": "Solicitar acceso",
+    "access_approved": "Acceso aprobado",
+    "request_pending": "Solicitud pendiente",
+    "request_rejected": "Solicitud rechazada",
+    "private_album": "Álbum privado",
+    "private_album_desc": "Este álbum es privado. Comuníquese con el propietario para obtener acceso."
+  },
+  "about": {
+    "title": "Acerca de",
+    "biography": "Biografía",
+    "contact": "Contacto",
+    "skills": "Habilidades y experiencia",
+    "experience": "Experiencia",
+    "education": "Educación",
+    "awards": "Premios y reconocimientos"
+  }
+}

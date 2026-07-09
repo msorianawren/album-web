@@ -1,0 +1,60 @@
+{
+  "common": {
+    "search": "검색",
+    "logout": "로그아웃",
+    "save": "저장",
+    "cancel": "취소",
+    "loading": "로딩 중...",
+    "error": "오류가 발생했습니다",
+    "guest": "게스트",
+    "theme_mode": "테마 모드",
+    "founder_account": "설립자 계정",
+    "admin_account": "관리자 계정",
+    "member_account": "회원 계정",
+    "google_accounts_only": "Google 계정 전용",
+    "language": "언어",
+    "signed_in": "로그인됨"
+  },
+  "nav": {
+    "home": "홈",
+    "contact": "문의하기",
+    "explore": "탐색",
+    "albums": "앨범",
+    "studio": "스튜디오",
+    "settings": "설정",
+    "login": "로그인",
+    "about": "소개"
+  },
+  "albums": {
+    "archive_subtitle": "앨범 아카이브",
+    "archive_title": "에디토리얼 북, 개인 컬렉션, 동영상 스토리.",
+    "archive_desc": "이곳은 시각적 컬렉션 검색, 갤러리 열기, 작품에 좋아요 누르기, 댓글 달기 및 승인된 이미지 다운로드를 위한 전용 앨범 공간입니다.",
+    "public_albums": "공개 앨범",
+    "public_albums_desc": "공개 에디토리얼, 업데이트 중인 촬영 및 주요 작품을 찾아보세요.",
+    "private_albums": "비공개 앨범",
+    "private_albums_desc": "이 컬렉션은 제한되어 있습니다. 보려면 관리자 권한을 요청해야 합니다.",
+    "search_placeholder": "에디토리얼, 스튜디오, 캠페인 검색...",
+    "all_statuses": "모든 상태",
+    "status_public": "공개",
+    "status_updating": "업데이트 중",
+    "status_private": "비공개",
+    "no_albums": "사용 가능한 앨범이 없습니다",
+    "no_albums_desc": "소유자가 게시하면 여기에 공개 컬렉션이 표시됩니다.",
+    "works": "작품",
+    "request_access": "액세스 요청",
+    "access_approved": "액세스 승인됨",
+    "request_pending": "요청 대기 중",
+    "request_rejected": "요청 거부됨",
+    "private_album": "비공개 앨범",
+    "private_album_desc": "이 앨범은 비공개입니다. 액세스하려면 소유자에게 문의하세요."
+  },
+  "about": {
+    "title": "소개",
+    "biography": "약력",
+    "contact": "연락처",
+    "skills": "기술 및 전문 지식",
+    "experience": "경험",
+    "education": "교육",
+    "awards": "수상 및 표창"
+  }
+}

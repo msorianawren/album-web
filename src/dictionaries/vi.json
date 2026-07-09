@@ -11,9 +11,14 @@
     "founder_account": "Tài khoản Nhà sáng lập",
     "admin_account": "Tài khoản Quản trị",
     "member_account": "Tài khoản Thành viên",
-    "google_accounts_only": "Chỉ dùng tài khoản Google"
+    "google_accounts_only": "Chỉ dùng tài khoản Google",
+    "language": "Ngôn ngữ",
+    "signed_in": "Đã đăng nhập"
   },
   "nav": {
+    "home": "Trang chủ",
+    "contact": "Liên hệ",
+    "explore": "Khám phá",
     "albums": "Bộ sưu tập",
     "studio": "Quản trị",
     "settings": "Cài đặt",

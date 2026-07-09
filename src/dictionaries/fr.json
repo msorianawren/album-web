@@ -1,0 +1,60 @@
+{
+  "common": {
+    "search": "Chercher",
+    "logout": "Déconnexion",
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "loading": "Chargement...",
+    "error": "Une erreur s'est produite",
+    "guest": "Invité",
+    "theme_mode": "Mode thème",
+    "founder_account": "Compte fondateur",
+    "admin_account": "Compte administrateur",
+    "member_account": "Compte membre",
+    "google_accounts_only": "Comptes Google uniquement",
+    "language": "Langue",
+    "signed_in": "Connecté"
+  },
+  "nav": {
+    "home": "Accueil",
+    "contact": "Contact",
+    "explore": "Explorer",
+    "albums": "Albums",
+    "studio": "Studio",
+    "settings": "Paramètres",
+    "login": "Connexion",
+    "about": "À propos"
+  },
+  "albums": {
+    "archive_subtitle": "Archives des albums",
+    "archive_title": "Livres éditoriaux, collections privées et histoires d'images en mouvement.",
+    "archive_desc": "Il s'agit de l'espace d'album dédié pour parcourir les collections visuelles, ouvrir des galeries, aimer le travail, commenter et télécharger des images approuvées.",
+    "public_albums": "Albums publics",
+    "public_albums_desc": "Parcourez les éditoriaux publics, les mises à jour et les œuvres en vedette.",
+    "private_albums": "Albums privés",
+    "private_albums_desc": "Ces collections sont restreintes. Vous devez demander l'autorisation de l'administrateur pour les voir.",
+    "search_placeholder": "Rechercher un éditorial, studio, campagne...",
+    "all_statuses": "Tous les statuts",
+    "status_public": "Public",
+    "status_updating": "Mise à jour",
+    "status_private": "Privé",
+    "no_albums": "Aucun album disponible",
+    "no_albums_desc": "Les collections publiques apparaîtront ici lorsque le propriétaire les publiera.",
+    "works": "œuvres",
+    "request_access": "Demander l'accès",
+    "access_approved": "Accès approuvé",
+    "request_pending": "Demande en attente",
+    "request_rejected": "Demande rejetée",
+    "private_album": "Album privé",
+    "private_album_desc": "Cet album est privé. Veuillez contacter le propriétaire pour y accéder."
+  },
+  "about": {
+    "title": "À propos",
+    "biography": "Biographie",
+    "contact": "Contact",
+    "skills": "Compétences et expertise",
+    "experience": "Expérience",
+    "education": "Éducation",
+    "awards": "Prix et reconnaissance"
+  }
+}

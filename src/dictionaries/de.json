@@ -1,0 +1,60 @@
+{
+  "common": {
+    "search": "Suchen",
+    "logout": "Abmelden",
+    "save": "Speichern",
+    "cancel": "Abbrechen",
+    "loading": "Wird geladen...",
+    "error": "Ein Fehler ist aufgetreten",
+    "guest": "Gast",
+    "theme_mode": "Designmodus",
+    "founder_account": "Gründerkonto",
+    "admin_account": "Admin-Konto",
+    "member_account": "Mitgliedskonto",
+    "google_accounts_only": "Nur Google-Konten",
+    "language": "Sprache",
+    "signed_in": "Angemeldet"
+  },
+  "nav": {
+    "home": "Startseite",
+    "contact": "Kontakt",
+    "explore": "Entdecken",
+    "albums": "Alben",
+    "studio": "Studio",
+    "settings": "Einstellungen",
+    "login": "Anmelden",
+    "about": "Über uns"
+  },
+  "albums": {
+    "archive_subtitle": "Alben-Archiv",
+    "archive_title": "Redaktionelle Bücher, private Sammlungen und Bewegtbildgeschichten.",
+    "archive_desc": "Dies ist der dedizierte Albenbereich zum Durchsuchen visueller Sammlungen, Öffnen von Galerien, Liken von Arbeiten, Kommentieren und Herunterladen genehmigter Bilder.",
+    "public_albums": "Öffentliche Alben",
+    "public_albums_desc": "Durchsuchen Sie öffentliche Editorials, aktualisierte Shootings und hervorgehobene Arbeiten.",
+    "private_albums": "Private Alben",
+    "private_albums_desc": "Diese Sammlungen sind eingeschränkt. Sie müssen die Admin-Berechtigung anfordern, um sie anzuzeigen.",
+    "search_placeholder": "Editorial, Studio, Kampagne suchen...",
+    "all_statuses": "Alle Status",
+    "status_public": "Öffentlich",
+    "status_updating": "Aktualisierung",
+    "status_private": "Privat",
+    "no_albums": "Keine Alben verfügbar",
+    "no_albums_desc": "Öffentliche Sammlungen werden hier angezeigt, wenn der Eigentümer sie veröffentlicht.",
+    "works": "werke",
+    "request_access": "Zugriff anfordern",
+    "access_approved": "Zugriff genehmigt",
+    "request_pending": "Anfrage ausstehend",
+    "request_rejected": "Anfrage abgelehnt",
+    "private_album": "Privates Album",
+    "private_album_desc": "Dieses Album ist privat. Bitte kontaktieren Sie den Eigentümer für den Zugriff."
+  },
+  "about": {
+    "title": "Über uns",
+    "biography": "Biografie",
+    "contact": "Kontakt",
+    "skills": "Fähigkeiten & Expertise",
+    "experience": "Erfahrung",
+    "education": "Ausbildung",
+    "awards": "Auszeichnungen & Anerkennung"
+  }
+}

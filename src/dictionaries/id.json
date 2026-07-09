@@ -1,0 +1,60 @@
+{
+  "common": {
+    "search": "Cari",
+    "logout": "Keluar",
+    "save": "Simpan",
+    "cancel": "Batal",
+    "loading": "Memuat...",
+    "error": "Terjadi kesalahan",
+    "guest": "Tamu",
+    "theme_mode": "Mode tema",
+    "founder_account": "Akun pendiri",
+    "admin_account": "Akun admin",
+    "member_account": "Akun anggota",
+    "google_accounts_only": "Hanya akun Google",
+    "language": "Bahasa",
+    "signed_in": "Masuk"
+  },
+  "nav": {
+    "home": "Beranda",
+    "contact": "Hubungi Kami",
+    "explore": "Jelajahi",
+    "albums": "Album",
+    "studio": "Studio",
+    "settings": "Pengaturan",
+    "login": "Masuk",
+    "about": "Tentang"
+  },
+  "albums": {
+    "archive_subtitle": "Arsip album",
+    "archive_title": "Buku editorial, koleksi pribadi, dan cerita gambar bergerak.",
+    "archive_desc": "Ini adalah ruang album khusus untuk menelusuri koleksi visual, membuka galeri, menyukai karya, berkomentar, dan mengunduh gambar yang disetujui.",
+    "public_albums": "Album Publik",
+    "public_albums_desc": "Jelajahi editorial publik, pembaruan pemotretan, dan karya unggulan.",
+    "private_albums": "Album Pribadi",
+    "private_albums_desc": "Koleksi ini dibatasi. Anda harus meminta izin admin untuk melihatnya.",
+    "search_placeholder": "Cari editorial, studio, kampanye...",
+    "all_statuses": "Semua status",
+    "status_public": "Publik",
+    "status_updating": "Memperbarui",
+    "status_private": "Pribadi",
+    "no_albums": "Tidak ada album yang tersedia",
+    "no_albums_desc": "Koleksi publik akan muncul di sini saat pemilik menerbitkannya.",
+    "works": "karya",
+    "request_access": "Minta Akses",
+    "access_approved": "Akses Disetujui",
+    "request_pending": "Permintaan Tertunda",
+    "request_rejected": "Permintaan Ditolak",
+    "private_album": "Album pribadi",
+    "private_album_desc": "Album ini bersifat pribadi. Silakan hubungi pemilik untuk akses."
+  },
+  "about": {
+    "title": "Tentang",
+    "biography": "Biografi",
+    "contact": "Kontak",
+    "skills": "Keterampilan & Keahlian",
+    "experience": "Pengalaman",
+    "education": "Pendidikan",
+    "awards": "Penghargaan & Pengakuan"
+  }
+}
