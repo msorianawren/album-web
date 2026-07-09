@@ -515,6 +515,14 @@ export function SettingsCenter({
           <Toggle label="Show counts on cards" checked={settings.show_counts_on_cards} onChange={(value) => update("show_counts_on_cards", value)} />
           <Toggle label="Show updated date" checked={settings.show_updated_date} onChange={(value) => update("show_updated_date", value)} />
           <Toggle label="Show status badges" checked={settings.show_status_badges} onChange={(value) => update("show_status_badges", value)} />
+          <div className="mt-4 grid gap-4 border-t border-border pt-4">
+            <Field label="Footer description">
+              <Textarea value={settings.footer_description ?? ""} onChange={(event) => update("footer_description", event.target.value)} maxLength={500} />
+            </Field>
+            <Field label="Footer note">
+              <Textarea value={settings.footer_note ?? ""} onChange={(event) => update("footer_note", event.target.value)} maxLength={300} />
+            </Field>
+          </div>
         </Panel>
       ) : null}
 

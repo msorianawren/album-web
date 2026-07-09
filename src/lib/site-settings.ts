@@ -67,6 +67,8 @@ export const defaultSiteSettings: SiteSettings = {
   seo_description: null,
   og_image_url: null,
   twitter_card: "summary_large_image",
+  footer_description: "Oriana Wren is a private editorial album space for cinematic portraits, travel diaries, Vietnamese elegance, fashion stories, and selected visual collections.",
+  footer_note: "Some albums are public, some are still being updated, and selected collections remain private by request.",
 };
 
 export const siteSettingsSchema = z.object({
@@ -131,6 +133,8 @@ export const siteSettingsSchema = z.object({
   seo_description: z.string().trim().max(300).optional().nullable(),
   og_image_url: z.string().trim().url().optional().nullable().or(z.literal("")),
   twitter_card: z.enum(["summary", "summary_large_image"]),
+  footer_description: z.string().trim().max(500),
+  footer_note: z.string().trim().max(300),
 });
 
 function normalizeNullableUrl(value: string | null | undefined) {
@@ -170,6 +174,8 @@ export async function saveSiteSettings(input: unknown) {
     seo_description: parsed.seo_description?.trim() || null,
     og_image_url: normalizeNullableUrl(parsed.og_image_url),
     watermark_text: parsed.watermark_text?.trim() || null,
+    footer_description: parsed.footer_description.trim() || defaultSiteSettings.footer_description,
+    footer_note: parsed.footer_note.trim() || defaultSiteSettings.footer_note,
   };
 
   const { data, error } = await supabase

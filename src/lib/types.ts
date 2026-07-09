@@ -276,6 +276,8 @@ export interface SiteSettings {
   seo_description: string | null;
   og_image_url: string | null;
   twitter_card: "summary" | "summary_large_image";
+  footer_description: string;
+  footer_note: string;
   updated_at?: string;
 }
 
