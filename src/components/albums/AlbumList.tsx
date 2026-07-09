@@ -2,6 +2,7 @@ import { Camera } from "lucide-react";
 import { AlbumCard } from "@/components/albums/AlbumCard";
 import { Button } from "@/components/ui/Button";
 import type { Album } from "@/lib/types";
+import { ScrollReveal } from "@/components/ui/ScrollReveal";
 
 interface AlbumListProps {
   albums: Album[];
@@ -31,7 +32,7 @@ export function AlbumList({ albums, dict, locale = "en" }: AlbumListProps) {
       id="albums"
       className="mx-auto w-full max-w-[1440px] px-4 pb-20 sm:px-8 lg:px-12"
     >
-      <div className="mb-7 flex items-end justify-between gap-4 animate-editorial-in">
+      <ScrollReveal className="mb-7 flex items-end justify-between gap-4">
         <div className="min-w-0">
           <p className="text-xs font-semibold uppercase tracking-[0.24em] text-text-secondary">
             Selected books
@@ -43,8 +44,9 @@ export function AlbumList({ albums, dict, locale = "en" }: AlbumListProps) {
             {dict?.albums?.public_albums_desc || "Browse public editorials, updating shoots, and featured works."}
           </p>
         </div>
-      </div>
-      <form action="/albums" className="mb-8 grid gap-3 rounded-[1.3rem] border border-border bg-surface/75 p-3 shadow-xl shadow-text-primary/5 backdrop-blur sm:rounded-[1.6rem] sm:p-4 md:grid-cols-[1fr_180px_auto]">
+      </ScrollReveal>
+      <ScrollReveal delay={0.1}>
+        <form action="/albums" className="mb-8 grid gap-3 rounded-[1.3rem] border border-[var(--glass-border)] bg-[var(--glass-bg)] p-3 shadow-[0_8px_30px_rgb(0,0,0,0.04)] backdrop-blur-md sm:rounded-[1.6rem] sm:p-4 md:grid-cols-[1fr_180px_auto]">
         <input
           name="q"
           placeholder={dict?.albums?.search_placeholder || "Search editorial, studio, campaign..."}
@@ -62,6 +64,7 @@ export function AlbumList({ albums, dict, locale = "en" }: AlbumListProps) {
         </select>
         <Button type="submit" className="w-full md:w-auto">{dict?.common?.search || "Search"}</Button>
       </form>
+      </ScrollReveal>
       
       {albums.filter((a) => a.status !== "private").length > 0 && (
         <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 mb-20">
@@ -86,7 +89,7 @@ export function AlbumList({ albums, dict, locale = "en" }: AlbumListProps) {
               {dict?.albums?.private_albums_desc || "These collections are reserved for authorized guests. You must request private access to view them."}
             </p>
           </div>
-          <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {albums
               .filter((a) => a.status === "private")
               .map((album) => (

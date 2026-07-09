@@ -1,12 +1,13 @@
 import type { AboutProfile } from "@/lib/types";
+import { ScrollReveal } from "@/components/ui/ScrollReveal";
 
 export function HomePersonalLetter({ profile }: { profile: AboutProfile }) {
   const quote = profile.quote || "Art is not what you see, but what you make others see.";
 
   return (
-    <section className="mx-auto w-full max-w-[800px] px-6 py-32 text-center">
+    <ScrollReveal className="mx-auto w-full max-w-[800px] px-6 py-32 text-center" delay={0.2} duration={1.2}>
       <div className="relative">
-        <span className="absolute -top-12 left-1/2 -translate-x-1/2 font-serif text-8xl text-border/40">
+        <span className="absolute -top-12 left-1/2 -translate-x-1/2 font-serif text-8xl text-text-primary/10">
           &quot;
         </span>
         <p className="relative z-10 font-serif text-2xl font-light italic leading-relaxed text-text-primary sm:text-3xl sm:leading-loose">
@@ -19,6 +20,6 @@ export function HomePersonalLetter({ profile }: { profile: AboutProfile }) {
           </span>
         </div>
       </div>
-    </section>
+    </ScrollReveal>
   );
 }
