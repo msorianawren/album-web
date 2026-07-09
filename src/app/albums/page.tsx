@@ -25,10 +25,6 @@ import { getDictionary } from "@/lib/getDictionary";
 
 export default async function AlbumsPage({ searchParams }: AlbumsPageProps) {
   const session = await getPublicSession();
-  
-  if (!session?.userId) {
-    redirect("/login?redirect=/albums");
-  }
 
   const cookieStore = await cookies();
   const locale = (cookieStore.get("NEXT_LOCALE")?.value as "en" | "vi") || "en";

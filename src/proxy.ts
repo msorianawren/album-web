@@ -71,11 +71,20 @@ function hasCrossOriginMutation(request: NextRequest) {
 
 function isPublicPath(pathname: string) {
   return (
+    pathname === "/" ||
+    pathname.startsWith("/albums") ||
+    pathname.startsWith("/about") ||
+    pathname.startsWith("/contact") ||
     pathname === "/boycott" ||
     pathname.startsWith("/auth/callback") ||
     pathname.startsWith("/api/auth/login") ||
     pathname.startsWith("/api/auth/register") ||
-    pathname.startsWith("/api/auth/session")
+    pathname.startsWith("/api/auth/session") ||
+    pathname.startsWith("/api/albums") ||
+    pathname.startsWith("/api/media") ||
+    pathname.startsWith("/api/comments") ||
+    pathname.startsWith("/api/likes") ||
+    pathname.startsWith("/api/search")
   );
 }
 
