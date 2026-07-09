@@ -5,7 +5,6 @@ import type { LandingBackgroundSettings } from "@/lib/types";
 import { useEffect, useState, useRef } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { CustomCursor } from "@/components/ui/CustomCursor";
 
 const generateParticles = (count: number) => {
   return Array.from({ length: count }).map((_, i) => ({
@@ -17,6 +16,8 @@ const generateParticles = (count: number) => {
     scale: 0.4 + Math.random() * 0.8,
   }));
 };
+
+import { NatureSettlingEffect } from "./NatureSettlingEffect";
 
 export function NatureAnimatedBackground({ config }: { config: LandingBackgroundSettings }) {
   const pathname = usePathname();
@@ -72,20 +73,21 @@ export function NatureAnimatedBackground({ config }: { config: LandingBackground
           start: "top top",
           end: "bottom top",
           scrub: true,
-        }
+        },
       });
     }, containerRef);
     
     return () => ctx.revert();
-  }, [mounted]);
+  }, [mounted, pathname]);
 
   if (!mounted) return null;
   if (config.enabled === false || (config.enabled as unknown) === "false") return null;
   if (pathname?.startsWith("/studio") || pathname?.startsWith("/login")) return null;
   if (!config.apply_to_all_public_pages && pathname !== "/") return null;
 
+  const blurVal = config.preset === "mist" ? 6 : 2;
+  const isDark = true; 
   const speedMultiplier = config.speed > 0 ? 50 / config.speed : 999;
-  const blurVal = (config.blur / 100) * 12;
 
   const cssVars = {
     "--nature-opacity": (config.opacity / 100).toString(),
@@ -95,7 +97,7 @@ export function NatureAnimatedBackground({ config }: { config: LandingBackground
 
   return (
     <>
-      <CustomCursor preset={config.preset as any} />
+      <NatureSettlingEffect preset={config.preset as string} />
       <div ref={containerRef} className="pointer-events-none fixed inset-0 z-0 overflow-hidden" aria-hidden="true" style={cssVars}>
       <style>{`
         .nature-container { opacity: var(--nature-opacity); transition: opacity 1s; }

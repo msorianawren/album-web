@@ -78,7 +78,7 @@ export function HomeHero({ landing, locale = "en", dict }: HomeHeroProps) {
         </ScrollReveal>
 
         <ScrollReveal delay={0.2} className="relative z-0 hidden lg:block animate-editorial-in-slow sm:min-h-[500px] lg:min-h-[680px]">
-          <div className="relative h-[28rem] overflow-hidden rounded-[1.6rem] border border-border bg-surface/50 shadow-2xl shadow-text-primary/10 sm:absolute sm:inset-x-10 sm:top-0 sm:h-[74%] sm:rounded-[2.2rem] lg:inset-x-0">
+          <div data-nature-surface="hero-frame" className="relative h-[28rem] overflow-hidden rounded-[1.6rem] border border-border bg-surface/50 shadow-2xl shadow-text-primary/10 sm:absolute sm:inset-x-10 sm:top-0 sm:h-[74%] sm:rounded-[2.2rem] lg:inset-x-0">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={landing.hero_image_url}
@@ -97,7 +97,7 @@ export function HomeHero({ landing, locale = "en", dict }: HomeHeroProps) {
             </div>
           </div>
 
-          <div className="relative w-full overflow-hidden rounded-[1.4rem] border border-border bg-surface p-2 shadow-2xl shadow-text-primary/12 sm:absolute sm:bottom-0 sm:left-0 sm:w-[46%] sm:rounded-[1.6rem]">
+          <div data-nature-surface="hero-frame" className="relative w-full overflow-hidden rounded-[1.4rem] border border-border bg-surface p-2 shadow-2xl shadow-text-primary/12 sm:absolute sm:bottom-0 sm:left-0 sm:w-[46%] sm:rounded-[1.6rem]">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={landing.portrait_image_url}

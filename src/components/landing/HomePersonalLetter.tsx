@@ -6,7 +6,7 @@ export function HomePersonalLetter({ profile }: { profile: AboutProfile }) {
 
   return (
     <ScrollReveal className="mx-auto w-full max-w-[800px] px-6 py-32 text-center" delay={0.2} duration={1.2}>
-      <div className="relative">
+      <div data-nature-surface="section-card" className="relative p-8">
         <span className="absolute -top-12 left-1/2 -translate-x-1/2 font-serif text-8xl text-text-primary/10">
           &quot;
         </span>
