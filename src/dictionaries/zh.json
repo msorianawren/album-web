@@ -46,7 +46,11 @@
     "request_pending": "请求待处理",
     "request_rejected": "请求被拒绝",
     "private_album": "私人相册",
-    "private_album_desc": "此相册是私人的。请联系所有者以获取访问权限。"
+    "private_album_desc": "此相册是私人的。请联系所有者以获取访问权限。",
+    "photo": "张照片",
+    "video": "个视频",
+    "welcome_badge": "欢迎",
+    "open_collection": "打开收藏"
   },
   "about": {
     "title": "关于",
@@ -56,5 +60,10 @@
     "experience": "经验",
     "education": "教育",
     "awards": "奖项与认可"
+  },
+  "landing": {
+    "premium_portfolio": "高级模特作品集",
+    "featured_story": "精选故事",
+    "studio_note": "工作室笔记"
   }
 }

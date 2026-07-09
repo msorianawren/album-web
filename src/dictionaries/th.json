@@ -46,7 +46,11 @@
     "request_pending": "รอดำเนินการคำขอ",
     "request_rejected": "ปฏิเสธคำขอ",
     "private_album": "อัลบั้มส่วนตัว",
-    "private_album_desc": "อัลบั้มนี้เป็นส่วนตัว โปรดติดต่อเจ้าของเพื่อเข้าถึง"
+    "private_album_desc": "อัลบั้มนี้เป็นส่วนตัว โปรดติดต่อเจ้าของเพื่อเข้าถึง",
+    "photo": "รูปภาพ",
+    "video": "วิดีโอ",
+    "welcome_badge": "ยินดีต้อนรับ",
+    "open_collection": "เปิดคอลเลกชัน"
   },
   "about": {
     "title": "เกี่ยวกับ",
@@ -56,5 +60,10 @@
     "experience": "ประสบการณ์",
     "education": "การศึกษา",
     "awards": "รางวัลและการยอมรับ"
+  },
+  "landing": {
+    "premium_portfolio": "พอร์ตโฟลิโอนางแบบระดับพรีเมียม",
+    "featured_story": "เรื่องราวเด่น",
+    "studio_note": "บันทึกจากสตูดิโอ"
   }
 }

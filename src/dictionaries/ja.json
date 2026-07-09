@@ -46,7 +46,11 @@
     "request_pending": "リクエスト保留中",
     "request_rejected": "リクエスト拒否",
     "private_album": "プライベートアルバム",
-    "private_album_desc": "このアルバムはプライベートです。アクセスするには所有者にお問い合わせください。"
+    "private_album_desc": "このアルバムはプライベートです。アクセスするには所有者にお問い合わせください。",
+    "photo": "枚の写真",
+    "video": "本の動画",
+    "welcome_badge": "ようこそ",
+    "open_collection": "コレクションを開く"
   },
   "about": {
     "title": "アバウト",
@@ -56,5 +60,10 @@
     "experience": "経験",
     "education": "教育",
     "awards": "賞と表彰"
+  },
+  "landing": {
+    "premium_portfolio": "プレミアムモデルポートフォリオ",
+    "featured_story": "注目のストーリー",
+    "studio_note": "スタジオノート"
   }
 }

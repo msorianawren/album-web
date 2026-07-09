@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { Heart, Lock, MessageCircle, RefreshCw } from "lucide-react";
-import { AlbumStatusBadge } from "@/components/ui/Badge";
+import { Badge } from "@/components/ui/Badge";
 import type { Album } from "@/lib/types";
 import { formatMediaCount } from "@/lib/utils";
 
@@ -55,7 +55,15 @@ export function AlbumCard({ album, dict, locale = "en" }: AlbumCardProps) {
           )}
           <div className="living-preview-light" aria-hidden="true" />
           <div className="absolute left-4 top-4">
-            <AlbumStatusBadge status={album.status} />
+            <Badge
+              className={album.status === "public" ? "bg-accent text-accent-foreground" : album.status === "updating" ? "border-accent text-accent" : ""}
+            >
+              {album.status === "public" 
+                ? (dict?.albums?.welcome_badge || "Welcome") 
+                : album.status === "updating" 
+                ? (dict?.albums?.status_updating || "Updating") 
+                : (dict?.albums?.status_private || "Private")}
+            </Badge>
           </div>
           {videoPreview ? (
             <div className="absolute bottom-4 left-4 rounded-full border border-lightbox-border bg-lightbox-control px-3 py-1.5 text-[0.65rem] font-semibold uppercase tracking-[0.14em] text-accent-foreground backdrop-blur">

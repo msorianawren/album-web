@@ -28,7 +28,7 @@
   "landing": {
     "premium_portfolio": "Hồ sơ người mẫu cao cấp",
     "featured_story": "Câu chuyện nổi bật",
-    "studio_note": "Ghi chú từ studio"
+    "studio_note": "Ghi chú studio"
   },
   "albums": {
     "archive_subtitle": "Kho lưu trữ",
@@ -51,7 +51,11 @@
     "request_pending": "Đang chờ duyệt",
     "request_rejected": "Bị từ chối",
     "private_album": "Bộ sưu tập riêng tư",
-    "private_album_desc": "Bộ sưu tập này là riêng tư. Vui lòng liên hệ với chủ sở hữu để truy cập."
+    "private_album_desc": "Bộ sưu tập này là riêng tư. Vui lòng liên hệ với chủ sở hữu để truy cập.",
+    "photo": "ẢNH",
+    "video": "VIDEO",
+    "welcome_badge": "Chào mừng",
+    "open_collection": "Mở bộ sưu tập"
   },
   "about": {
     "title": "Giới thiệu",

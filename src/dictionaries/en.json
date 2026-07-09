@@ -51,7 +51,11 @@
     "request_pending": "Request Pending",
     "request_rejected": "Request Rejected",
     "private_album": "Private album",
-    "private_album_desc": "This album is private. Please contact the owner for access."
+    "private_album_desc": "This album is private. Please contact the owner for access.",
+    "photo": "PHOTOS",
+    "video": "VIDEOS",
+    "welcome_badge": "Welcome",
+    "open_collection": "Open collection"
   },
   "about": {
     "title": "About",

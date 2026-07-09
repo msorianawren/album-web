@@ -46,7 +46,11 @@
     "request_pending": "Permintaan Tertunda",
     "request_rejected": "Permintaan Ditolak",
     "private_album": "Album pribadi",
-    "private_album_desc": "Album ini bersifat pribadi. Silakan hubungi pemilik untuk akses."
+    "private_album_desc": "Album ini bersifat pribadi. Silakan hubungi pemilik untuk akses.",
+    "photo": "FOTO",
+    "video": "VIDEO",
+    "welcome_badge": "Selamat datang",
+    "open_collection": "Buka koleksi"
   },
   "about": {
     "title": "Tentang",
@@ -56,5 +60,10 @@
     "experience": "Pengalaman",
     "education": "Pendidikan",
     "awards": "Penghargaan & Pengakuan"
+  },
+  "landing": {
+    "premium_portfolio": "Portofolio model premium",
+    "featured_story": "Cerita unggulan",
+    "studio_note": "Catatan studio"
   }
 }

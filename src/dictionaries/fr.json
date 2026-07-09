@@ -46,7 +46,11 @@
     "request_pending": "Demande en attente",
     "request_rejected": "Demande rejetée",
     "private_album": "Album privé",
-    "private_album_desc": "Cet album est privé. Veuillez contacter le propriétaire pour y accéder."
+    "private_album_desc": "Cet album est privé. Veuillez contacter le propriétaire pour y accéder.",
+    "photo": "PHOTOS",
+    "video": "VIDÉOS",
+    "welcome_badge": "Bienvenue",
+    "open_collection": "Ouvrir la collection"
   },
   "about": {
     "title": "À propos",
@@ -56,5 +60,10 @@
     "experience": "Expérience",
     "education": "Éducation",
     "awards": "Prix et reconnaissance"
+  },
+  "landing": {
+    "premium_portfolio": "Portfolio de modèle premium",
+    "featured_story": "Histoire à la une",
+    "studio_note": "Note de studio"
   }
 }
