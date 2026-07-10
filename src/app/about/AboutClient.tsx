@@ -5,7 +5,7 @@ import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import type { AboutProfile } from "@/lib/types";
 import Link from "next/link";
-import { Globe, MapPin, ExternalLink } from "lucide-react";
+import { Globe, MapPin, ExternalLink, ArrowRight } from "lucide-react";
 
 if (typeof window !== "undefined") {
   gsap.registerPlugin(ScrollTrigger);
@@ -26,48 +26,58 @@ export function AboutClient({ profile }: AboutClientProps) {
     if (!containerRef.current) return;
 
     const ctx = gsap.context(() => {
-      // Set initial states
-      gsap.set(".hero-element", { y: 20, opacity: 0 });
-      gsap.set(".reveal-section", { y: 30, opacity: 0 });
-      gsap.set(".stagger-container > *", { y: 15, opacity: 0 });
+      gsap.set(".hero-fade", { opacity: 0, y: 30 });
+      gsap.set(".hero-image", { opacity: 0, scale: 0.95 });
+      gsap.set(".reveal-text", { opacity: 0, y: 40 });
+      gsap.set(".reveal-line", { scaleX: 0, transformOrigin: "left" });
+      gsap.set(".stagger-fade > *", { opacity: 0, y: 20 });
 
-      // Hero animations
-      gsap.to(".hero-element", {
-        y: 0,
-        opacity: 1,
-        duration: 0.6,
-        stagger: 0.05,
-        ease: "power2.out",
-      });
+      // Hero Timeline
+      const tl = gsap.timeline({ defaults: { ease: "power2.out" } });
+      tl.to(".hero-image", { opacity: 1, scale: 1, duration: 1.2, ease: "power3.out" })
+        .to(".hero-fade", { opacity: 1, y: 0, duration: 0.8, stagger: 0.1 }, "-=0.8");
 
-      // Section reveal animations
-      const sections = gsap.utils.toArray<HTMLElement>(".reveal-section");
-      sections.forEach((section) => {
-        gsap.to(section, {
-          y: 0,
+      // Scroll reveals
+      const revealTexts = gsap.utils.toArray<HTMLElement>(".reveal-text");
+      revealTexts.forEach((el) => {
+        gsap.to(el, {
           opacity: 1,
-          duration: 0.6,
+          y: 0,
+          duration: 0.8,
           ease: "power2.out",
           scrollTrigger: {
-            trigger: section,
-            start: "top 80%",
+            trigger: el,
+            start: "top 85%",
             once: true,
           },
         });
       });
-      
-      // Stagger items inside lists/grids
-      const staggerContainers = gsap.utils.toArray<HTMLElement>(".stagger-container");
+
+      const revealLines = gsap.utils.toArray<HTMLElement>(".reveal-line");
+      revealLines.forEach((el) => {
+        gsap.to(el, {
+          scaleX: 1,
+          duration: 0.8,
+          ease: "power2.inOut",
+          scrollTrigger: {
+            trigger: el,
+            start: "top 85%",
+            once: true,
+          },
+        });
+      });
+
+      const staggerContainers = gsap.utils.toArray<HTMLElement>(".stagger-fade");
       staggerContainers.forEach((container) => {
         gsap.to(container.children, {
-          y: 0,
           opacity: 1,
-          duration: 0.4,
+          y: 0,
+          duration: 0.6,
           stagger: 0.05,
           ease: "power2.out",
           scrollTrigger: {
             trigger: container,
-            start: "top 80%",
+            start: "top 85%",
             once: true,
           },
         });
@@ -79,327 +89,324 @@ export function AboutClient({ profile }: AboutClientProps) {
   }, []);
 
   return (
-    <main ref={containerRef} className="relative z-10 min-h-screen bg-transparent pb-32">
+    <main ref={containerRef} className="relative z-10 bg-background text-text-primary selection:bg-accent/20">
       
-      {/* Hero Section */}
-      <section className="relative w-full">
+      {/* 1. EDITORIAL HERO SECTION */}
+      <section className="relative min-h-[90vh] w-full overflow-hidden flex flex-col justify-end pt-32 pb-12 sm:pb-20">
+        
+        {/* Massive Cover Background (Right Aligned) */}
         {profile.cover_image_url && (
-          <div className="absolute inset-0 h-[55vh] w-full overflow-hidden opacity-40 sm:h-[65vh]">
-            <div className="absolute inset-0 bg-gradient-to-b from-background/5 via-background/40 to-background z-10" />
-            <img src={profile.cover_image_url} alt="" className="h-full w-full object-cover hero-element mix-blend-overlay" />
+          <div className="absolute top-0 right-0 h-full w-full md:w-[75%] lg:w-[65%] origin-right">
+            <div className="absolute inset-0 bg-gradient-to-r from-background via-background/40 to-transparent z-10" />
+            <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent z-10 h-full" />
+            <img src={profile.cover_image_url} alt="" className="hero-image h-full w-full object-cover object-center opacity-80 mix-blend-overlay" />
           </div>
         )}
-        
-        <div className="relative z-20 mx-auto mt-20 flex w-full max-w-[1100px] flex-col items-center gap-10 px-4 sm:mt-32 sm:px-8 md:flex-row md:items-end md:gap-16">
-          <div className="shrink-0 hero-element relative group">
-            <div className="absolute -inset-4 rounded-[2.5rem] bg-gradient-to-br from-surface/20 to-transparent blur-xl transition-all duration-300 group-hover:from-text-secondary/10" />
-            {profile.profile_image_url ? (
-              <div className="relative h-56 w-56 overflow-hidden rounded-[2rem] border border-[var(--glass-border)] shadow-xl shadow-black/5 sm:h-72 sm:w-72 md:h-96 md:w-80 lg:h-[450px] lg:w-[350px]">
-                <img src={profile.profile_image_url} alt={profile.display_name ?? ""} className="h-full w-full object-cover transition-opacity duration-300" />
-              </div>
-            ) : (
-              <div className="relative flex h-56 w-56 overflow-hidden items-center justify-center rounded-[2rem] border border-[var(--glass-border)] bg-[var(--glass-bg)] backdrop-blur-md shadow-xl shadow-black/5 sm:h-72 sm:w-72 md:h-96 md:w-80 lg:h-[450px] lg:w-[350px]">
-                <div className="absolute inset-0 bg-gradient-to-br from-surface/20 to-surface-secondary/20" />
-                <div className="relative flex flex-col items-center gap-4 text-center px-6">
-                  <span className="font-serif text-5xl font-light italic text-text-secondary sm:text-6xl">
-                    {profile.display_name?.[0]?.toUpperCase() || "O"}
-                  </span>
-                  <div className="h-px w-8 bg-border" />
-                  <span className="text-[0.65rem] uppercase tracking-[0.2em] text-text-secondary">Visual Identity</span>
-                </div>
-              </div>
-            )}
-          </div>
+
+        <div className="relative z-20 w-full max-w-[1400px] mx-auto px-6 sm:px-12 md:px-20 h-full flex flex-col justify-between">
           
-          <div className="flex flex-col items-center text-center md:items-start md:pb-8 md:text-left">
-            <div className="hero-element flex flex-wrap justify-center gap-3 md:justify-start">
+          {/* Top Info Bar */}
+          <div className="hero-fade flex flex-wrap items-start justify-between w-full md:w-[40%] gap-6 mb-20 md:mb-0">
+            <div className="flex flex-col gap-3">
               {profile.tagline && (
-                <span className="rounded-full border border-border/50 bg-surface/30 backdrop-blur-sm px-3 py-1 text-[0.65rem] uppercase tracking-[0.2em] text-text-secondary">
+                <span className="text-xs uppercase tracking-[0.25em] text-text-secondary font-medium">
                   {profile.tagline}
                 </span>
               )}
-              {profile.nationality && (
-                <span className="flex items-center gap-1.5 rounded-full border border-border/50 bg-surface/30 backdrop-blur-sm px-3 py-1 text-[0.7rem] font-light text-text-secondary">
-                  <Globe className="h-3 w-3" /> {profile.nationality}
-                </span>
-              )}
-              {profile.location && (
-                <span className="flex items-center gap-1.5 rounded-full border border-border/50 bg-surface/30 backdrop-blur-sm px-3 py-1 text-[0.7rem] font-light text-text-secondary">
-                  <MapPin className="h-3 w-3" /> {profile.location}
+              {profile.professional_title && (
+                <span className="text-lg font-serif italic text-text-primary">
+                  {profile.professional_title}
                 </span>
               )}
             </div>
             
-            <h1 className="hero-element mt-6 font-serif text-5xl font-normal tracking-tight text-text-primary sm:text-6xl lg:text-7xl">
-              {profile.display_name}
-            </h1>
-            <h2 className="hero-element mt-4 text-xl font-light text-text-secondary sm:text-2xl">
-              {profile.professional_title}
-            </h2>
-            
-            <div className="hero-element mt-10 flex flex-wrap justify-center gap-4 md:justify-start">
-              {profile.primary_cta_href && (
-                <Link
-                  href={profile.primary_cta_href}
-                  className="inline-flex h-12 items-center justify-center rounded-full bg-text-primary px-8 text-[0.8rem] uppercase tracking-wider text-background transition-all duration-300 ease-out hover:-translate-y-0.5 hover:shadow-lg hover:shadow-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                >
-                  {profile.primary_cta_label || "View Portfolio"}
-                </Link>
-              )}
-              {profile.secondary_cta_href && (
-                <Link
-                  href={profile.secondary_cta_href}
-                  className="inline-flex h-12 items-center justify-center rounded-full border border-border/50 bg-surface/50 backdrop-blur-md px-8 text-[0.8rem] uppercase tracking-wider text-text-primary transition-all duration-300 ease-out hover:-translate-y-0.5 hover:bg-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                >
-                  {profile.secondary_cta_label || "Contact"}
-                </Link>
-              )}
+            <div className="flex flex-col gap-2 text-right md:text-left text-xs uppercase tracking-widest text-text-secondary">
+              {profile.location && <span className="flex items-center gap-2"><MapPin className="h-3 w-3" /> {profile.location}</span>}
+              {profile.nationality && <span className="flex items-center gap-2"><Globe className="h-3 w-3" /> {profile.nationality}</span>}
             </div>
+          </div>
+
+          {/* Massive Display Name & Portrait */}
+          <div className="relative mt-auto w-full flex flex-col md:flex-row items-end justify-between gap-12">
+            
+            <div className="relative z-30">
+              <h1 className="hero-fade font-serif text-[4rem] sm:text-[6rem] md:text-[8rem] lg:text-[10rem] font-normal tracking-tighter leading-[0.85] text-text-primary mix-blend-difference">
+                {profile.display_name?.split(" ").map((word, i) => (
+                  <span key={i} className="block">{word}</span>
+                ))}
+              </h1>
+              
+              <div className="hero-fade mt-10 flex gap-6">
+                {profile.primary_cta_href && (
+                  <Link href={profile.primary_cta_href} className="group flex items-center gap-3 text-sm uppercase tracking-widest border-b border-text-primary pb-1 transition-all hover:pr-4">
+                    {profile.primary_cta_label || "View Portfolio"} <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-2" />
+                  </Link>
+                )}
+              </div>
+            </div>
+
+            {/* Overlapping Portrait */}
+            {profile.profile_image_url && (
+              <div className="hero-image relative z-20 shrink-0 w-full max-w-[280px] sm:max-w-[320px] md:max-w-[400px] lg:max-w-[480px] aspect-[3/4] overflow-hidden bg-surface shadow-2xl shadow-black/10">
+                <img src={profile.profile_image_url} alt="" className="h-full w-full object-cover" />
+              </div>
+            )}
           </div>
         </div>
       </section>
 
-      {/* Biography */}
+
+      {/* 2. BIOGRAPHY (2-Column Magazine Layout) */}
       {(profile.short_bio || profile.full_bio) && (
-        <section className="reveal-section mx-auto mt-24 w-full max-w-[1024px] px-4 sm:mt-40 sm:px-8">
-          <div className="grid gap-12 md:grid-cols-12 md:gap-8">
-            <div className="md:col-span-4">
-              <h3 className="font-serif text-3xl font-normal tracking-tight text-text-primary">Biography</h3>
-              <div className="mt-6 h-px w-16 bg-border" />
+        <section className="relative w-full max-w-[1400px] mx-auto px-6 sm:px-12 md:px-20 mt-32 md:mt-48">
+          <div className="reveal-line w-full h-[1px] bg-border mb-16" />
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-12 md:gap-24">
+            
+            {/* Sticky Header */}
+            <div className="md:col-span-4 lg:col-span-3">
+              <div className="sticky top-32">
+                <h3 className="reveal-text font-serif text-3xl md:text-4xl lg:text-5xl font-normal text-text-primary">
+                  Biography
+                </h3>
+                <span className="reveal-text block mt-4 text-xs uppercase tracking-widest text-text-secondary">
+                  Chapter 01
+                </span>
+              </div>
             </div>
-            <div className="md:col-span-8">
-              <div className="mx-auto max-w-[680px] space-y-6 text-[1.125rem] font-light leading-relaxed text-text-secondary">
+
+            {/* Editorial Text */}
+            <div className="md:col-span-8 lg:col-span-7">
+              <div className="max-w-[680px] space-y-8 text-[1.125rem] font-light leading-[1.8] text-text-secondary">
                 {profile.full_bio ? (
                   profile.full_bio.split("\n").filter(Boolean).map((para, i) => (
-                    <p key={i} className="first-letter:float-left first-letter:mr-3 first-letter:text-5xl first-letter:font-serif first-letter:text-text-primary">
+                    <p key={i} className={`reveal-text ${i === 0 ? "first-letter:float-left first-letter:mr-4 first-letter:text-[5.5rem] first-letter:leading-[0.8] first-letter:font-serif first-letter:text-text-primary first-letter:font-normal" : ""}`}>
                       {para}
                     </p>
                   ))
                 ) : (
-                  <p className="first-letter:float-left first-letter:mr-3 first-letter:text-5xl first-letter:font-serif first-letter:text-text-primary">
+                  <p className="reveal-text first-letter:float-left first-letter:mr-4 first-letter:text-[5.5rem] first-letter:leading-[0.8] first-letter:font-serif first-letter:text-text-primary first-letter:font-normal">
                     {profile.short_bio}
                   </p>
                 )}
               </div>
             </div>
+
           </div>
         </section>
       )}
 
-      {/* Quote */}
+
+      {/* 3. QUOTE (Massive Breakout) */}
       {profile.quote && (
-        <section className="reveal-section mx-auto mt-32 w-full max-w-[900px] px-4 sm:px-8">
-          <div className="relative rounded-[2.5rem] border border-[var(--glass-border)] bg-[var(--glass-bg)] p-12 text-center backdrop-blur-md sm:p-20 shadow-xl shadow-black/5">
-            <span className="absolute -top-8 left-1/2 -translate-x-1/2 font-serif text-8xl text-border/40">"</span>
-            <p className="relative z-10 mx-auto max-w-[680px] font-serif text-2xl font-light italic leading-relaxed text-text-primary sm:text-4xl sm:leading-snug">
+        <section className="relative w-full px-6 sm:px-12 mt-32 md:mt-48 py-24 md:py-40 bg-surface/30">
+          <div className="max-w-[1200px] mx-auto text-center flex flex-col items-center">
+            <span className="reveal-text block font-serif text-accent/30 text-6xl md:text-8xl mb-6">"</span>
+            <p className="reveal-text max-w-[900px] font-serif text-3xl md:text-5xl lg:text-6xl font-normal italic leading-tight text-text-primary">
               {profile.quote}
             </p>
-            <div className="mx-auto mt-8 h-px w-24 bg-border/50" />
           </div>
         </section>
       )}
 
-      {/* Metrics */}
-      {profile.personal_metrics && Object.values(profile.personal_metrics).some(v => v) && (
-        <section className="reveal-section mx-auto mt-32 w-full max-w-[1024px] px-4 sm:px-8">
-          <div className="mb-12 flex items-center justify-between border-b border-border/50 pb-4">
-            <h3 className="font-serif text-2xl font-normal tracking-tight text-text-primary">Measurements</h3>
-          </div>
-          <div className="stagger-container grid grid-cols-2 gap-6 sm:grid-cols-3 md:grid-cols-6">
-            {Object.entries(profile.personal_metrics).map(([key, value]) => {
-              if (!value) return null;
-              const label = key.replace(/_/g, " ");
-              return (
-                <div key={key} className="group flex flex-col items-center justify-center rounded-[1.5rem] border border-border/50 bg-surface/30 p-6 text-center backdrop-blur-md transition-all duration-300 ease-out hover:-translate-y-1 hover:border-border hover:bg-surface hover:shadow-lg hover:shadow-black/5">
-                  <p className="text-[0.65rem] uppercase tracking-widest text-text-secondary transition-colors">
-                    {label}
-                  </p>
-                  <p className="mt-3 font-serif text-2xl font-light text-text-primary">
-                    {value}
-                  </p>
+
+      {/* 4. MEASUREMENTS & EXPERTISE */}
+      <section className="relative w-full max-w-[1400px] mx-auto px-6 sm:px-12 md:px-20 mt-32 md:mt-48">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-24">
+          
+          {/* Metrics Grid */}
+          {profile.personal_metrics && Object.values(profile.personal_metrics).some(v => v) && (
+            <div>
+              <div className="reveal-line w-full h-[1px] bg-border mb-12" />
+              <h3 className="reveal-text font-serif text-3xl mb-12">Measurements</h3>
+              <div className="stagger-fade grid grid-cols-2 sm:grid-cols-3 gap-y-12 gap-x-8">
+                {Object.entries(profile.personal_metrics).map(([key, value]) => {
+                  if (!value) return null;
+                  const label = key.replace(/_/g, " ");
+                  return (
+                    <div key={key} className="flex flex-col border-l border-border/50 pl-4">
+                      <span className="text-[0.65rem] uppercase tracking-widest text-text-secondary mb-2">
+                        {label}
+                      </span>
+                      <span className="font-serif text-xl md:text-2xl text-text-primary">
+                        {value}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Skills & Traits */}
+          <div className="flex flex-col gap-16">
+            {profile.skills?.length > 0 && (
+              <div>
+                <div className="reveal-line w-full h-[1px] bg-border mb-12" />
+                <h3 className="reveal-text font-serif text-3xl mb-8">Expertise</h3>
+                <div className="stagger-fade flex flex-wrap gap-3">
+                  {profile.skills.map((skill, i) => (
+                    <span key={i} className="px-5 py-2 text-sm font-light border border-border/50 text-text-primary rounded-full bg-surface/10 hover:bg-surface/50 transition-colors duration-300">
+                      {skill}
+                    </span>
+                  ))}
                 </div>
-              );
-            })}
-          </div>
-        </section>
-      )}
-
-      {/* Skills & Languages Row */}
-      {(profile.skills?.length > 0 || profile.languages?.length > 0 || profile.hobbies?.length > 0 || profile.personality_traits?.length > 0) && (
-        <section className="reveal-section mx-auto mt-32 w-full max-w-[1024px] px-4 sm:px-8">
-          <div className="grid gap-16 md:grid-cols-2 md:gap-12">
+              </div>
+            )}
             
-            <div className="flex flex-col gap-16">
-              {profile.skills?.length > 0 && (
-                <div>
-                  <h3 className="mb-6 font-serif text-2xl font-normal tracking-tight text-text-primary">Expertise</h3>
-                  <div className="stagger-container flex flex-wrap gap-3">
-                    {profile.skills.map((skill, i) => (
-                      <span key={i} className="rounded-full border border-border/50 bg-surface/40 px-5 py-2.5 text-[0.8rem] font-light text-text-primary backdrop-blur-sm transition-all duration-300 hover:border-border hover:bg-surface">
-                        {skill}
-                      </span>
-                    ))}
-                  </div>
+            {profile.personality_traits?.length > 0 && (
+              <div>
+                <div className="reveal-line w-full h-[1px] bg-border mb-12" />
+                <h3 className="reveal-text font-serif text-3xl mb-8">Personality</h3>
+                <div className="stagger-fade flex flex-wrap gap-x-8 gap-y-4">
+                  {profile.personality_traits.map((trait, i) => (
+                    <span key={i} className="text-lg font-serif italic text-text-secondary">
+                      {trait}
+                    </span>
+                  ))}
                 </div>
-              )}
-              {profile.personality_traits?.length > 0 && (
-                <div>
-                  <h3 className="mb-6 font-serif text-2xl font-normal tracking-tight text-text-primary">Personality</h3>
-                  <div className="stagger-container flex flex-wrap gap-3">
-                    {profile.personality_traits.map((trait, i) => (
-                      <span key={i} className="rounded-full bg-surface-secondary/50 px-5 py-2.5 text-[0.8rem] font-light text-text-secondary transition-all duration-300 hover:bg-surface-secondary">
-                        {trait}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <div className="flex flex-col gap-16">
-              {profile.languages?.length > 0 && (
-                <div>
-                  <h3 className="mb-6 font-serif text-2xl font-normal tracking-tight text-text-primary">Languages</h3>
-                  <div className="stagger-container space-y-4 rounded-[2rem] border border-[var(--glass-border)] bg-[var(--glass-bg)] p-8 backdrop-blur-md shadow-lg shadow-black/5">
-                    {profile.languages.map((lang, i) => (
-                      <div key={i} className="group flex items-center justify-between border-b border-border/40 pb-4 last:border-0 last:pb-0">
-                        <span className="font-light text-text-primary transition-colors">{lang.language}</span>
-                        <span className="text-[0.65rem] uppercase tracking-widest text-text-secondary">{lang.proficiency}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-              {profile.hobbies?.length > 0 && (
-                <div>
-                  <h3 className="mb-6 font-serif text-2xl font-normal tracking-tight text-text-primary">Interests</h3>
-                  <div className="stagger-container flex flex-wrap gap-3">
-                    {profile.hobbies.map((hobby, i) => (
-                      <span key={i} className="flex items-center gap-2 rounded-full border border-border/50 bg-transparent px-4 py-2 text-[0.8rem] font-light text-text-secondary transition-all duration-300 hover:border-text-secondary/50">
-                        <span className="h-1.5 w-1.5 rounded-full bg-border/50" />
-                        {hobby.name}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-
+              </div>
+            )}
           </div>
-        </section>
-      )}
 
-      {/* Timeline (Career & Education) */}
-      {(profile.education?.length > 0 || profile.career?.length > 0) && (
-        <section className="reveal-section mx-auto mt-32 w-full max-w-[1024px] px-4 sm:px-8">
-          <div className="grid gap-16 md:grid-cols-2 md:gap-12">
+        </div>
+      </section>
+
+
+      {/* 5. TIMELINE (Career & Education) */}
+      {(profile.career?.length > 0 || profile.education?.length > 0) && (
+        <section className="relative w-full max-w-[1400px] mx-auto px-6 sm:px-12 md:px-20 mt-32 md:mt-48">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-24 lg:gap-32">
+            
             {profile.career?.length > 0 && (
               <div>
-                <div className="mb-10 flex items-center gap-4 border-b border-border/50 pb-4">
-                  <h3 className="font-serif text-2xl font-normal tracking-tight text-text-primary">Experience</h3>
-                </div>
-                <div className="stagger-container space-y-10">
+                <div className="reveal-line w-full h-[1px] bg-border mb-16" />
+                <h3 className="reveal-text font-serif text-4xl mb-16">Experience</h3>
+                <div className="stagger-fade space-y-16">
                   {profile.career.map((item, index) => (
-                    <div key={index} className="group relative pl-8">
-                      <div className="absolute left-0 top-1.5 h-3 w-3 rounded-full border border-border bg-surface transition-transform duration-300 group-hover:bg-text-secondary" />
-                      {index !== profile.career.length - 1 && (
-                        <div className="absolute bottom-[-2.5rem] left-[0.32rem] top-6 w-px bg-border/40" />
-                      )}
-                      <p className="text-[0.65rem] uppercase tracking-widest text-text-secondary">
+                    <div key={index} className="grid grid-cols-1 sm:grid-cols-[100px_1fr] gap-6 group">
+                      <span className="text-[0.75rem] font-medium uppercase tracking-widest text-text-secondary pt-1">
                         {item.period}
-                      </p>
-                      <h4 className="mt-2 font-serif text-[1.15rem] font-normal text-text-primary">
-                        {item.role}
-                      </h4>
-                      <p className="mt-1 text-sm font-light text-text-secondary">
-                        {item.company}
-                      </p>
-                      {item.description && (
-                        <p className="mt-4 text-sm font-light leading-relaxed text-text-secondary max-w-[400px]">
-                          {item.description}
-                        </p>
-                      )}
+                      </span>
+                      <div className="flex flex-col pb-16 border-b border-border/30 sm:border-b-0 group-last:border-0 group-last:pb-0">
+                        <h4 className="font-serif text-2xl text-text-primary mb-2">
+                          {item.role}
+                        </h4>
+                        <span className="text-sm uppercase tracking-widest text-text-secondary mb-4">
+                          {item.company}
+                        </span>
+                        {item.description && (
+                          <p className="text-base font-light leading-relaxed text-text-secondary">
+                            {item.description}
+                          </p>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>
               </div>
             )}
-            
+
             {profile.education?.length > 0 && (
               <div>
-                <div className="mb-10 flex items-center gap-4 border-b border-border/50 pb-4">
-                  <h3 className="font-serif text-2xl font-normal tracking-tight text-text-primary">Education</h3>
-                </div>
-                <div className="stagger-container space-y-10">
+                <div className="reveal-line w-full h-[1px] bg-border mb-16" />
+                <h3 className="reveal-text font-serif text-4xl mb-16">Education</h3>
+                <div className="stagger-fade space-y-16">
                   {profile.education.map((item, index) => (
-                    <div key={index} className="group relative pl-8">
-                      <div className="absolute left-0 top-1.5 h-3 w-3 rounded-full border border-border bg-surface transition-transform duration-300 group-hover:bg-text-secondary" />
-                      {index !== profile.education.length - 1 && (
-                        <div className="absolute bottom-[-2.5rem] left-[0.32rem] top-6 w-px bg-border/40" />
-                      )}
-                      <p className="text-[0.65rem] uppercase tracking-widest text-text-secondary">
+                    <div key={index} className="grid grid-cols-1 sm:grid-cols-[100px_1fr] gap-6 group">
+                      <span className="text-[0.75rem] font-medium uppercase tracking-widest text-text-secondary pt-1">
                         {item.period}
-                      </p>
-                      <h4 className="mt-2 font-serif text-[1.15rem] font-normal text-text-primary">
-                        {item.program}
-                      </h4>
-                      <p className="mt-1 text-sm font-light text-text-secondary">
-                        {item.school}
-                      </p>
-                      {item.description && (
-                        <p className="mt-4 text-sm font-light leading-relaxed text-text-secondary max-w-[400px]">
-                          {item.description}
-                        </p>
-                      )}
+                      </span>
+                      <div className="flex flex-col pb-16 border-b border-border/30 sm:border-b-0 group-last:border-0 group-last:pb-0">
+                        <h4 className="font-serif text-2xl text-text-primary mb-2">
+                          {item.program}
+                        </h4>
+                        <span className="text-sm uppercase tracking-widest text-text-secondary mb-4">
+                          {item.school}
+                        </span>
+                        {item.description && (
+                          <p className="text-base font-light leading-relaxed text-text-secondary">
+                            {item.description}
+                          </p>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>
               </div>
             )}
+
           </div>
         </section>
       )}
 
-      {/* Achievements */}
-      {profile.achievements?.length > 0 && (
-        <section className="reveal-section mx-auto mt-32 w-full max-w-[1024px] px-4 sm:px-8">
-          <div className="mb-10 flex items-center justify-center gap-4 text-center">
-            <h3 className="font-serif text-3xl font-normal tracking-tight text-text-primary">Recognition</h3>
-          </div>
-          <div className="stagger-container mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {profile.achievements.map((item, index) => (
-              <div key={index} className="group flex flex-col rounded-[2rem] border border-[var(--glass-border)] bg-[var(--glass-bg)] p-8 backdrop-blur-md transition-all duration-300 ease-out hover:-translate-y-1 hover:border-border/60 hover:shadow-lg hover:shadow-black/5">
-                <span className="inline-flex w-fit items-center text-[0.65rem] uppercase tracking-widest text-text-secondary">
-                  {item.year}
-                </span>
-                <h4 className="mt-5 font-serif text-xl font-normal text-text-primary transition-colors">{item.title}</h4>
-                <p className="mt-4 text-sm font-light leading-relaxed text-text-secondary">{item.description}</p>
+
+      {/* 6. LANGUAGES & RECOGNITION */}
+      {(profile.languages?.length > 0 || profile.achievements?.length > 0) && (
+        <section className="relative w-full max-w-[1400px] mx-auto px-6 sm:px-12 md:px-20 mt-32 md:mt-48">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-24 lg:gap-32">
+            
+            {profile.languages?.length > 0 && (
+              <div>
+                <div className="reveal-line w-full h-[1px] bg-border mb-12" />
+                <h3 className="reveal-text font-serif text-3xl mb-12">Languages</h3>
+                <div className="stagger-fade flex flex-col w-full">
+                  {profile.languages.map((lang, i) => (
+                    <div key={i} className="flex items-center justify-between py-6 border-b border-border/50">
+                      <span className="font-serif text-2xl text-text-primary">{lang.language}</span>
+                      <span className="text-xs uppercase tracking-widest text-text-secondary">{lang.proficiency}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
-            ))}
+            )}
+
+            {profile.achievements?.length > 0 && (
+              <div>
+                <div className="reveal-line w-full h-[1px] bg-border mb-12" />
+                <h3 className="reveal-text font-serif text-3xl mb-12">Recognition</h3>
+                <div className="stagger-fade space-y-12">
+                  {profile.achievements.map((item, index) => (
+                    <div key={index} className="flex flex-col group border-l border-border/50 pl-6 hover:border-text-primary transition-colors duration-300">
+                      <span className="text-xs uppercase tracking-widest text-text-secondary mb-3">
+                        {item.year}
+                      </span>
+                      <h4 className="font-serif text-2xl text-text-primary mb-3">
+                        {item.title}
+                      </h4>
+                      <p className="text-base font-light leading-relaxed text-text-secondary">
+                        {item.description}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
           </div>
         </section>
       )}
 
-      {/* Social Links */}
+
+      {/* 7. CONNECT (Footer Area) */}
       {profile.social_links?.length > 0 && (
-        <section className="reveal-section mx-auto mt-32 w-full max-w-[1024px] px-4 text-center sm:px-8">
-          <h3 className="font-serif text-3xl font-normal tracking-tight text-text-primary">Connect</h3>
-          <div className="mt-4 flex items-center justify-center">
-            <div className="h-px w-16 bg-border/50" />
-          </div>
-          <div className="stagger-container mt-10 flex flex-wrap justify-center gap-4">
-            {profile.social_links.map((link, i) => (
-              <a
-                key={i}
-                href={link.url}
-                target="_blank"
-                rel="noreferrer"
-                className="group inline-flex items-center gap-2 rounded-full border border-border/50 bg-surface/30 px-8 py-4 text-sm font-light text-text-primary backdrop-blur-md transition-all duration-300 ease-out hover:-translate-y-0.5 hover:border-border hover:bg-surface hover:shadow-lg hover:shadow-black/5"
-              >
-                <ExternalLink className="h-4 w-4 text-text-secondary transition-colors group-hover:text-text-primary" />
-                {link.platform}
-              </a>
-            ))}
+        <section className="relative w-full mt-32 md:mt-48 pb-32">
+          <div className="max-w-[1400px] mx-auto px-6 sm:px-12 md:px-20 text-center">
+            <h3 className="reveal-text font-serif text-[3rem] md:text-[5rem] lg:text-[7rem] font-normal tracking-tight text-text-primary opacity-20">
+              Connect
+            </h3>
+            <div className="stagger-fade mt-12 flex flex-wrap justify-center gap-x-12 gap-y-6">
+              {profile.social_links.map((link, i) => (
+                <a
+                  key={i}
+                  href={link.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="group flex items-center gap-3 text-sm uppercase tracking-widest text-text-secondary hover:text-text-primary transition-colors duration-300 border-b border-transparent hover:border-text-primary pb-1"
+                >
+                  {link.platform} <ExternalLink className="h-3 w-3" />
+                </a>
+              ))}
+            </div>
           </div>
         </section>
       )}
