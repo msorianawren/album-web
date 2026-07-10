@@ -11,11 +11,15 @@ export async function GET(request: NextRequest) {
 
   try {
     const search = request.nextUrl.searchParams.get("q") ?? "";
-    const [users, roleLogs] = await Promise.all([
-      listAdminUsers(search),
+    const page = parseInt(request.nextUrl.searchParams.get("page") ?? "1") || 1;
+    const limit = parseInt(request.nextUrl.searchParams.get("limit") ?? "30") || 30;
+    const filter = request.nextUrl.searchParams.get("filter") ?? "all";
+    
+    const [{ users, count }, roleLogs] = await Promise.all([
+      listAdminUsers(search, page, limit, filter),
       getRoleAuditLogs(80),
     ]);
-    return apiSuccess({ users, roleLogs });
+    return apiSuccess({ users, count, roleLogs });
   } catch (error) {
     return toServerError(error);
   }

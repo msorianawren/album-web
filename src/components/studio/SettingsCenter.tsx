@@ -913,7 +913,7 @@ export function SettingsCenter({
       </section>
 
       {/* Sticky Save Bar for Settings and Landing (About handles its own) */}
-      {activeTab !== "about" && (isSettingsDirty || isLandingDirty || message || landingMessage) && (
+      {activeTab !== "about" && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-6 rounded-full border border-border bg-background/80 backdrop-blur-xl px-5 py-3 shadow-2xl shadow-text-primary/10 transition-all">
           <div className="relative flex items-center h-5 overflow-hidden">
             <AnimatePresence mode="wait">

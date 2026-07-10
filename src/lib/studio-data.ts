@@ -92,19 +92,21 @@ export async function getStudioComments(limit = 200): Promise<StudioCommentItem[
 
 export async function getStudioUsersAndLogs() {
   noStore();
-  const [users, { data: logs }, roleLogs] = await Promise.all([
-    listAdminUsers(),
+  const [{ users, count }, { data: logs, count: countLogs }, roleLogs] = await Promise.all([
+    listAdminUsers("", 1, 30, "all"),
     supabase
       .from("audit_logs")
-      .select("*")
+      .select("*", { count: "exact" })
       .order("created_at", { ascending: false })
-      .limit(200),
-    getRoleAuditLogs(80),
+      .limit(30),
+    getRoleAuditLogs(30),
   ]);
 
   return {
     users,
+    totalUsers: count,
     logs: (logs ?? []) as AuditLog[],
+    totalLogs: countLogs ?? 0,
     roleLogs,
   };
 }
@@ -290,11 +292,12 @@ async function tableExists(table: string) {
 
 export async function getSystemHealth(session?: PublicSession) {
   noStore();
-  const [albums, media, comments, likes, settings] = await Promise.all([
+  const [albums, media, comments, likes, users, settings] = await Promise.all([
     countRows("albums"),
     countRows("media"),
     countRows("comments"),
     countRows("likes"),
+    countRows("user_profiles"),
     getSiteSettings().catch(() => defaultSiteSettings),
   ]);
 
@@ -337,7 +340,7 @@ export async function getSystemHealth(session?: PublicSession) {
           email: session.email,
         }
       : null,
-    counts: { albums, media, comments, likes },
+    counts: { albums, media, comments, likes, users },
     tableChecks,
     settings,
     deployment: {

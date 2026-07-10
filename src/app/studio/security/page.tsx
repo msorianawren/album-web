@@ -6,7 +6,7 @@ import { getStudioUsersAndLogs, getSystemHealth } from "@/lib/studio-data";
 
 export default async function StudioSecurityPage() {
   const session = await getPublicSession();
-  const [{ users, logs, roleLogs }, health] = await Promise.all([
+  const [{ users, totalUsers, logs, totalLogs, roleLogs }, health] = await Promise.all([
     getStudioUsersAndLogs(),
     getSystemHealth(session),
   ]);
@@ -63,7 +63,9 @@ export default async function StudioSecurityPage() {
 
       <SecurityConsole
         initialUsers={users}
+        initialTotalUsers={totalUsers}
         initialLogs={logs}
+        initialTotalLogs={totalLogs}
         initialRoleLogs={roleLogs}
         session={session}
       />

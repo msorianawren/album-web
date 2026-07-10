@@ -31,13 +31,21 @@ function isUuid(value: string) {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
 }
 
-export async function listAdminUsers(search = "", limit = 200): Promise<AdminUserProfile[]> {
+export async function listAdminUsers(search = "", page = 1, limit = 30, filter = "all"): Promise<{ users: AdminUserProfile[], count: number }> {
   const term = search.trim();
+  const offset = (page - 1) * limit;
+
   let query = supabase
     .from("user_profiles")
-    .select("*")
+    .select("*", { count: "exact" })
     .order("last_seen_at", { ascending: false })
-    .limit(limit);
+    .range(offset, offset + limit - 1);
+
+  if (filter === "blocked") {
+    query = query.eq("is_blocked", true);
+  } else if (filter === "admins") {
+    query = query.in("role", ["admin", "founder"]);
+  }
 
   if (term) {
     if (isUuid(term)) {
@@ -48,9 +56,13 @@ export async function listAdminUsers(search = "", limit = 200): Promise<AdminUse
     }
   }
 
-  const { data, error } = await query;
+  const { data, count, error } = await query;
   if (error) throw new Error(error.message);
-  return ((data ?? []) as UserProfile[]).map(normalizeAdminProfile);
+  
+  return {
+    users: ((data ?? []) as UserProfile[]).map(normalizeAdminProfile),
+    count: count ?? 0
+  };
 }
 
 export async function getAdminProfile(userId: string) {
