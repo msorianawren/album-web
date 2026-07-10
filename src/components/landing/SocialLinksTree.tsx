@@ -43,7 +43,7 @@ export function SocialLinksTree({ links }: { links: LandingSocialLink[] }) {
       
       if (prefersReducedMotion) {
         gsap.set(cards, { opacity: 1, y: 0 });
-        gsap.set(branches, { opacity: 0.5, scaleX: 1 });
+        gsap.set(branches, { opacity: 1, scaleX: 1 });
         if (vineRef.current) {
           gsap.set(vineRef.current, { strokeDasharray: "none", strokeDashoffset: 0 });
         }
@@ -52,7 +52,7 @@ export function SocialLinksTree({ links }: { links: LandingSocialLink[] }) {
 
       // Animate vine drawing down
       if (vineRef.current) {
-        const length = vineRef.current.getTotalLength() || 1000;
+        const length = vineRef.current.getTotalLength() || 2000;
         gsap.fromTo(vineRef.current, 
           { strokeDasharray: length, strokeDashoffset: length },
           {
@@ -60,9 +60,9 @@ export function SocialLinksTree({ links }: { links: LandingSocialLink[] }) {
             ease: "none",
             scrollTrigger: {
               trigger: containerRef.current,
-              start: "top 85%",
-              end: "bottom 95%",
-              scrub: 1,
+              start: "top 80%",
+              end: "bottom 90%",
+              scrub: 0.5,
             }
           }
         );
@@ -73,12 +73,12 @@ export function SocialLinksTree({ links }: { links: LandingSocialLink[] }) {
         {
           opacity: 1,
           y: 0,
-          duration: 1,
+          duration: 0.8,
           stagger: 0.2,
           ease: "power2.out",
           scrollTrigger: {
             trigger: containerRef.current,
-            start: "top 85%",
+            start: "top 75%",
             toggleActions: "play none none none"
           }
         }
@@ -87,15 +87,15 @@ export function SocialLinksTree({ links }: { links: LandingSocialLink[] }) {
       gsap.fromTo(branches, 
         { opacity: 0, scaleX: 0 },
         {
-          opacity: 0.5,
+          opacity: 1,
           scaleX: 1,
           transformOrigin: (i, el) => el.classList.contains('branch-left') ? "right center" : "left center",
-          duration: 0.8,
+          duration: 0.6,
           stagger: 0.2,
           ease: "power2.out",
           scrollTrigger: {
             trigger: containerRef.current,
-            start: "top 85%",
+            start: "top 75%",
             toggleActions: "play none none none"
           }
         }
@@ -107,61 +107,73 @@ export function SocialLinksTree({ links }: { links: LandingSocialLink[] }) {
   if (displayLinks.length === 0) return null;
 
   return (
-    <section ref={containerRef} className="relative mx-auto w-full max-w-[800px] px-6 py-32 text-center overflow-hidden">
+    <section ref={containerRef} className="relative z-20 mx-auto w-full max-w-[800px] px-6 py-32 text-center bg-transparent">
+      {/* Remove faded full-section photo overlay and enforce clean solid layout */}
       <div className="mb-20">
-        <h2 className="font-serif text-3xl font-light italic text-text-primary sm:text-4xl">
+        <h2 className="font-serif text-3xl font-normal italic text-text-primary sm:text-4xl drop-shadow-sm">
           Follow the branches of my visual world.
         </h2>
-        <p className="mx-auto mt-4 max-w-md text-sm leading-relaxed text-text-secondary">
+        <p className="mx-auto mt-4 max-w-md text-sm leading-relaxed text-text-secondary font-medium">
           Portraits, travel notes, behind-the-scenes moments, and selected updates live across the channels I choose to share.
         </p>
       </div>
 
       <div className="relative mx-auto flex flex-col items-center">
-        {/* Organic Vine Path */}
-        <svg 
-          className="absolute left-[1.1rem] sm:left-1/2 top-[-2rem] bottom-[-4rem] w-6 h-[calc(100%+6rem)] -ml-3 sm:-ml-3 z-0 text-border opacity-40" 
-          preserveAspectRatio="none" 
-          viewBox="0 0 20 100"
-        >
-          <path
-            ref={vineRef}
-            d="M 10 0 Q 18 5 10 10 T 10 20 T 10 30 T 10 40 T 10 50 T 10 60 T 10 70 T 10 80 T 10 90 T 10 100"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.5"
-            vectorEffect="non-scaling-stroke"
-          />
-        </svg>
+        {/* Organic Vine Path Container */}
+        <div className="absolute inset-y-0 left-[2.2rem] w-[100px] sm:left-1/2 sm:-ml-[50px] z-0 pointer-events-none">
+          {/* Main Trunk SVG */}
+          <svg 
+            className="h-full w-full text-accent" 
+            preserveAspectRatio="none" 
+            viewBox="0 0 100 1000"
+          >
+            <path
+              ref={vineRef}
+              d="M 50 0 C 60 100, 30 200, 50 300 C 70 400, 40 500, 50 600 C 60 700, 30 800, 50 900 C 70 1000, 50 1000, 50 1000"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              vectorEffect="non-scaling-stroke"
+              className="drop-shadow-sm"
+            />
+            {/* Small leaves along the trunk */}
+            <path d="M 53 150 Q 60 145 65 155 Q 55 160 53 150" fill="currentColor" opacity="0.8" />
+            <path d="M 47 350 Q 35 345 35 355 Q 45 365 47 350" fill="currentColor" opacity="0.8" />
+            <path d="M 54 550 Q 65 545 65 555 Q 55 565 54 550" fill="currentColor" opacity="0.8" />
+            <path d="M 45 750 Q 30 740 30 755 Q 40 765 45 750" fill="currentColor" opacity="0.8" />
+          </svg>
+        </div>
         
-        <div className="relative z-10 flex w-full flex-col gap-12 sm:gap-16">
+        <div className="relative z-10 flex w-full flex-col gap-12 sm:gap-20 py-8">
           {displayLinks.map((link, idx) => {
             const isLeft = idx % 2 === 0;
             const Icon = ICONS[link.platform] || ICONS.Instagram;
+            
             return (
-              <div key={link.id} className={`flex w-full ${isLeft ? "justify-start sm:justify-end sm:pr-[50%] sm:-mr-4" : "justify-start sm:pl-[50%] sm:-ml-4"} items-center relative pl-12 sm:pl-0`}>
+              <div key={link.id} className={`flex w-full ${isLeft ? "justify-start sm:justify-end sm:pr-[50%] sm:-mr-4" : "justify-start sm:pl-[50%] sm:-ml-4"} items-center relative pl-16 sm:pl-0`}>
                 
-                {/* Branch SVG */}
-                <svg className={`social-branch absolute hidden sm:block w-16 h-8 text-border opacity-50 ${isLeft ? "right-[calc(50%-1rem)] branch-left" : "left-[calc(50%-1rem)] branch-right"}`} viewBox="0 0 64 32" fill="none" stroke="currentColor" strokeWidth="1.5">
+                {/* Branch Connector (Desktop) */}
+                <svg className={`social-branch pointer-events-none absolute hidden sm:block w-20 h-10 text-accent ${isLeft ? "right-[calc(50%-1.5rem)] branch-left" : "left-[calc(50%-1.5rem)] branch-right"}`} viewBox="0 0 100 50" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
                   {isLeft ? (
                     <>
-                      <path d="M64 16 Q 32 16 0 8" />
-                      <path d="M32 16 Q 28 8 20 8" fill="currentColor" opacity="0.4"/>
-                      <circle cx="20" cy="8" r="1.5" fill="currentColor" />
+                      <path d="M100 25 C 60 25, 40 15, 0 25" />
+                      <circle cx="5" cy="25" r="4" fill="currentColor" />
+                      <path d="M50 20 Q 40 10 30 15 Q 40 25 50 20" fill="currentColor" opacity="0.7" />
                     </>
                   ) : (
                     <>
-                      <path d="M0 16 Q 32 16 64 8" />
-                      <path d="M32 16 Q 36 8 44 8" fill="currentColor" opacity="0.4"/>
-                      <circle cx="44" cy="8" r="1.5" fill="currentColor" />
+                      <path d="M0 25 C 40 25, 60 15, 100 25" />
+                      <circle cx="95" cy="25" r="4" fill="currentColor" />
+                      <path d="M50 20 Q 60 10 70 15 Q 60 25 50 20" fill="currentColor" opacity="0.7" />
                     </>
                   )}
                 </svg>
 
-                {/* Mobile Branch */}
-                <svg className="social-branch absolute sm:hidden w-8 h-8 left-4 text-border opacity-50 branch-right" viewBox="0 0 32 32" fill="none" stroke="currentColor" strokeWidth="1.5">
-                  <path d="M0 16 Q 16 16 32 8" />
-                  <path d="M16 16 Q 20 8 24 8" fill="currentColor" opacity="0.4"/>
+                {/* Branch Connector (Mobile) */}
+                <svg className="social-branch pointer-events-none absolute sm:hidden w-12 h-8 left-8 text-accent branch-right" viewBox="0 0 50 30" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                  <path d="M0 15 C 20 15, 30 10, 50 15" />
+                  <circle cx="45" cy="15" r="3" fill="currentColor" />
                 </svg>
                 
                 <a
@@ -169,15 +181,18 @@ export function SocialLinksTree({ links }: { links: LandingSocialLink[] }) {
                   target="_blank"
                   rel="noreferrer"
                   data-nature-surface="social-card"
-                  className={`social-card group relative flex w-full max-w-[260px] items-center gap-4 rounded-[1.6rem] border border-[var(--glass-border)] bg-[var(--glass-bg)] p-3 pr-6 text-text-primary shadow-[0_8px_30px_rgb(0,0,0,0.04)] backdrop-blur-md transition duration-500 hover:-translate-y-1 hover:border-[var(--preset-accent)] hover:bg-[var(--preset-hover-bg)] hover:shadow-[var(--preset-glow)] ${isLeft ? "sm:mr-8 mr-0" : "sm:ml-8 ml-0"}`}
+                  className={`social-card group relative flex w-full max-w-[280px] items-center gap-4 rounded-[1.2rem] border-2 border-border bg-surface px-5 py-4 text-text-primary shadow-[0_4px_20px_rgb(0,0,0,0.06)] transition-all duration-300 hover:-translate-y-1 hover:border-accent hover:shadow-[0_8px_30px_rgb(0,0,0,0.12)] ${isLeft ? "sm:mr-10 mr-0" : "sm:ml-10 ml-0"}`}
                 >
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-[var(--glass-border)] bg-surface/50 text-text-secondary transition-colors duration-500 group-hover:bg-[var(--preset-accent)] group-hover:text-surface">
+                  {/* Subtle hover glow tied to card */}
+                  <div className="absolute inset-0 -z-10 rounded-[1.2rem] bg-accent/5 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+                  
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-surface-secondary text-text-secondary transition-colors duration-300 group-hover:bg-accent group-hover:text-accent-foreground shadow-sm border border-border/50">
                     {Icon}
                   </div>
                   <div className="flex flex-col items-start text-left">
-                    <span className="text-sm font-semibold tracking-wide uppercase">{link.platform}</span>
+                    <span className="text-sm font-bold tracking-wider uppercase text-text-primary">{link.platform}</span>
                     {link.label && (
-                      <span className="text-xs text-text-secondary opacity-80">{link.label}</span>
+                      <span className="text-xs font-medium text-text-secondary mt-0.5">{link.label}</span>
                     )}
                   </div>
                 </a>
