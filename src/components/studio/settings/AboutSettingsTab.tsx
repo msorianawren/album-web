@@ -203,13 +203,27 @@ export function AboutSettingsTab({ initialProfile, uploadAsset, onUpdate }: Abou
         </div>
       </Section>
 
-      {/* Basic implementation for the JSON fields. For a complete robust UI we'd build full repeaters. */}
-      {/* Due to space and time I am building simpler textual mapping for arrays if needed or a simple repeater. */}
-
       <Section title="Feature Quote" description="A highly emphasized statement.">
         <Field label="Quote text">
           <Textarea value={profile.quote ?? ""} onChange={(e) => update("quote", e.target.value)} />
         </Field>
+      </Section>
+
+      <Section title="Call to Action" description="Buttons shown on the public About page hero.">
+        <div className="grid gap-4 lg:grid-cols-2">
+          <Field label="Primary CTA Label">
+            <Input value={profile.primary_cta_label ?? ""} onChange={(e) => update("primary_cta_label", e.target.value)} placeholder="e.g., View Portfolio" />
+          </Field>
+          <Field label="Primary CTA Link">
+            <Input value={profile.primary_cta_href ?? ""} onChange={(e) => update("primary_cta_href", e.target.value)} placeholder="e.g., /albums" />
+          </Field>
+          <Field label="Secondary CTA Label">
+            <Input value={profile.secondary_cta_label ?? ""} onChange={(e) => update("secondary_cta_label", e.target.value)} placeholder="e.g., Contact Me" />
+          </Field>
+          <Field label="Secondary CTA Link">
+            <Input value={profile.secondary_cta_href ?? ""} onChange={(e) => update("secondary_cta_href", e.target.value)} placeholder="e.g., /contact" />
+          </Field>
+        </div>
       </Section>
 
       <Section title="Personal Metrics" description="Basic physical or personal attributes.">
