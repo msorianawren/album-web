@@ -9,8 +9,8 @@ import { enforceRateLimit } from "@/lib/security-rate-limit";
 import { getSiteSettings } from "@/lib/site-settings";
 
 export const runtime = "nodejs";
-const maxZipImages = 150;
-const maxZipSourceBytes = 500 * 1024 * 1024;
+const maxZipImages = 100;
+const maxZipSourceBytes = 150 * 1024 * 1024;
 
 interface AlbumDownloadProps {
   params: Promise<{ id: string }>;
@@ -73,11 +73,20 @@ export async function GET(request: NextRequest, { params }: AlbumDownloadProps) 
     let added = 0;
 
     for (const [index, image] of images.entries()) {
-      const sourceUrl =
-        session.isAdmin && settings.allow_original_downloads && image.original_download_allowed
-          ? image.url
-          : image.medium_url ?? image.thumbnail_url ?? image.url;
-      const response = await fetch(sourceUrl);
+      const canDownloadOriginal = session.isAdmin || (settings.allow_original_downloads && image.original_download_allowed);
+      let sourceUrl = image.medium_url ?? image.thumbnail_url;
+
+      if (canDownloadOriginal) {
+        sourceUrl = image.url;
+      } else if (!sourceUrl) {
+        if (image.metadata_stripped) {
+          sourceUrl = image.url;
+        } else {
+          continue;
+        }
+      }
+
+      const response = await fetch(sourceUrl!);
       if (!response.ok) continue;
       const length = Number(response.headers.get("content-length") ?? 0);
       if (length && length > maxZipSourceBytes) continue;
@@ -95,11 +104,26 @@ export async function GET(request: NextRequest, { params }: AlbumDownloadProps) 
       return apiError("NOT_FOUND", "No source images could be downloaded.", 404);
     }
 
-    const content = await zip.generateAsync({
+    const nodeStream = zip.generateNodeStream({
       type: "nodebuffer",
       compression: "DEFLATE",
       compressionOptions: { level: 6 },
     });
+
+    const stream = new ReadableStream({
+      start(controller) {
+        nodeStream.on("data", (chunk) => {
+          controller.enqueue(new Uint8Array(chunk));
+        });
+        nodeStream.on("end", () => {
+          controller.close();
+        });
+        nodeStream.on("error", (err) => {
+          controller.error(err);
+        });
+      },
+    });
+
     const filename = `${safeFilename(album.title, "album")}.zip`;
     await logAuditEvent({
       request,
@@ -113,7 +137,7 @@ export async function GET(request: NextRequest, { params }: AlbumDownloadProps) 
       },
     });
 
-    return new Response(new Uint8Array(content), {
+    return new Response(stream, {
       headers: {
         "Content-Type": "application/zip",
         "Content-Disposition": `attachment; filename="${filename}"`,
