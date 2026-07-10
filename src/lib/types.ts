@@ -430,4 +430,6 @@ export interface AboutProfile {
   social_links: SocialLinkItem[];
   is_public: boolean;
   updated_at?: string;
+  _is_demo?: boolean;
+  _demo_sections?: string[];
 }

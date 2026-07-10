@@ -58,11 +58,11 @@ export async function AppFooter() {
             </ul>
           </div>
 
-          <div>
-            <h4 className="text-xs font-semibold uppercase tracking-[0.1em] text-text-primary">
-              Connect
-            </h4>
-            {socialLinks.length > 0 ? (
+          {(socialLinks.length > 0 || settings.contact_email) && (
+            <div>
+              <h4 className="text-xs font-semibold uppercase tracking-[0.1em] text-text-primary">
+                Connect
+              </h4>
               <ul className="mt-6 flex flex-col gap-4">
                 {socialLinks.map((link) => (
                   <li key={link.id}>
@@ -71,11 +71,16 @@ export async function AppFooter() {
                     </a>
                   </li>
                 ))}
+                {settings.contact_email && socialLinks.length === 0 && (
+                  <li>
+                    <a href={`mailto:${settings.contact_email}`} className="text-sm text-text-secondary transition hover:text-text-primary">
+                      Email
+                    </a>
+                  </li>
+                )}
               </ul>
-            ) : (
-              <p className="mt-6 text-sm italic text-text-secondary">No public links</p>
-            )}
-          </div>
+            </div>
+          )}
 
           <div>
             <h4 className="text-xs font-semibold uppercase tracking-[0.1em] text-text-primary">

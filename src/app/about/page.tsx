@@ -1,5 +1,5 @@
 import { AppHeader } from "@/components/AppHeader";
-import { getAboutProfile } from "@/lib/about";
+import { getAboutProfileForDisplay } from "@/lib/about";
 import { getLandingPage } from "@/lib/landing";
 import { NatureAnimatedBackground } from "@/components/landing/NatureAnimatedBackground";
 import { AboutClient } from "./AboutClient";
@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 
 export default async function AboutPage() {
   const [profile, landing] = await Promise.all([
-    getAboutProfile(),
+    getAboutProfileForDisplay({ allowDemoFallback: true }),
     getLandingPage()
   ]);
 

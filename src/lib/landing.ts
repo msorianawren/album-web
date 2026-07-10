@@ -95,10 +95,16 @@ function normalizeBackgroundSettings(bg: any): LandingBackgroundSettings {
 export function normalizeLandingPage(value: Partial<LandingPageContent> | null | undefined) {
   const defaultSocials = [...defaultLandingPage.social_links];
   const savedSocials = Array.isArray(value?.social_links) ? value?.social_links : [];
-  const mergedSocials = defaultSocials.map(defaultLink => {
-    const existing = savedSocials.find((s: any) => s.platform === defaultLink.platform);
-    return existing ? { ...defaultLink, ...existing } : defaultLink;
-  });
+  
+  const mergedSocials = [...defaultSocials];
+  for (const saved of savedSocials) {
+    const index = mergedSocials.findIndex(d => d.platform === saved.platform);
+    if (index >= 0) {
+      mergedSocials[index] = { ...mergedSocials[index], ...saved };
+    } else {
+      mergedSocials.push(saved as any);
+    }
+  }
 
   return {
     ...defaultLandingPage,

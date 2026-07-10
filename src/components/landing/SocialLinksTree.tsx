@@ -123,7 +123,7 @@ export function SocialLinksTree({ links }: { links: LandingSocialLink[] }) {
         <div className="absolute inset-y-0 left-[2.2rem] w-[100px] sm:left-1/2 sm:-ml-[50px] z-0 pointer-events-none">
           {/* Main Trunk SVG */}
           <svg 
-            className="h-full w-full text-accent" 
+            className="h-full w-full text-text-secondary/60 dark:text-text-secondary/40" 
             preserveAspectRatio="none" 
             viewBox="0 0 100 1000"
           >
@@ -132,16 +132,16 @@ export function SocialLinksTree({ links }: { links: LandingSocialLink[] }) {
               d="M 50 0 C 60 100, 30 200, 50 300 C 70 400, 40 500, 50 600 C 60 700, 30 800, 50 900 C 70 1000, 50 1000, 50 1000"
               fill="none"
               stroke="currentColor"
-              strokeWidth="2.5"
+              strokeWidth="3.5"
               strokeLinecap="round"
               vectorEffect="non-scaling-stroke"
               className="drop-shadow-sm"
             />
             {/* Small leaves along the trunk */}
-            <path d="M 53 150 Q 60 145 65 155 Q 55 160 53 150" fill="currentColor" opacity="0.8" />
-            <path d="M 47 350 Q 35 345 35 355 Q 45 365 47 350" fill="currentColor" opacity="0.8" />
-            <path d="M 54 550 Q 65 545 65 555 Q 55 565 54 550" fill="currentColor" opacity="0.8" />
-            <path d="M 45 750 Q 30 740 30 755 Q 40 765 45 750" fill="currentColor" opacity="0.8" />
+            <path d="M 53 150 Q 60 145 65 155 Q 55 160 53 150" fill="currentColor" opacity="0.9" />
+            <path d="M 47 350 Q 35 345 35 355 Q 45 365 47 350" fill="currentColor" opacity="0.9" />
+            <path d="M 54 550 Q 65 545 65 555 Q 55 565 54 550" fill="currentColor" opacity="0.9" />
+            <path d="M 45 750 Q 30 740 30 755 Q 40 765 45 750" fill="currentColor" opacity="0.9" />
           </svg>
         </div>
         

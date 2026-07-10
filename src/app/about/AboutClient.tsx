@@ -71,6 +71,14 @@ export function AboutClient({ profile }: AboutClientProps) {
 
   return (
     <main ref={containerRef} className="relative z-10 bg-transparent text-text-primary selection:bg-accent/20">
+      
+      {profile._is_demo && (
+        <div className="fixed top-0 left-0 w-full z-[100] bg-surface-secondary border-b border-border/50 py-2.5 text-center px-4 backdrop-blur-sm">
+          <p className="text-[0.7rem] uppercase tracking-[0.1em] text-text-secondary font-medium">
+            Preview content shown because About Profile is not fully configured yet.
+          </p>
+        </div>
+      )}
 
       {/* ═══════════════════════════════════════════
           SECTION 1: EDITORIAL HERO
@@ -78,12 +86,18 @@ export function AboutClient({ profile }: AboutClientProps) {
       <section className="relative min-h-[85vh] w-full overflow-hidden flex flex-col justify-end pt-28 pb-12 sm:pb-20">
 
         {/* Cover background — right-aligned editorial crop */}
-        {profile.cover_image_url && (
+        {(profile.cover_image_url || profile._is_demo) && (
           <div className="absolute top-0 right-0 h-full w-full md:w-[70%] lg:w-[62%]" aria-hidden="true">
             <div className="absolute inset-0 z-10 bg-gradient-to-r from-background via-background/60 to-transparent" />
             <div className="absolute inset-0 z-10 bg-gradient-to-t from-background via-transparent to-transparent" />
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={profile.cover_image_url} alt="" className="about-hero-img h-full w-full object-cover" loading="eager" />
+            {profile.cover_image_url ? (
+              /* eslint-disable-next-line @next/next/no-img-element */
+              <img src={profile.cover_image_url} alt="" className="about-hero-img h-full w-full object-cover" loading="eager" />
+            ) : (
+              <div className="about-hero-img h-full w-full bg-surface-secondary/30 flex items-center justify-center border-l border-border/10">
+                <span className="text-[0.65rem] uppercase tracking-[0.25em] text-text-secondary/30 -rotate-90">Editorial Cover Box</span>
+              </div>
+            )}
           </div>
         )}
 
@@ -143,10 +157,17 @@ export function AboutClient({ profile }: AboutClientProps) {
             </div>
 
             {/* Right — Portrait */}
-            {profile.profile_image_url && (
-              <div className="about-hero-img shrink-0 w-full max-w-[260px] sm:max-w-[300px] md:max-w-[360px] lg:max-w-[420px] aspect-[3/4] overflow-hidden bg-surface-secondary">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={profile.profile_image_url} alt={profile.display_name ?? "Portrait"} className="h-full w-full object-cover" loading="eager" />
+            {(profile.profile_image_url || profile._is_demo) && (
+              <div className="about-hero-img shrink-0 w-full max-w-[260px] sm:max-w-[300px] md:max-w-[360px] lg:max-w-[420px] aspect-[3/4] overflow-hidden bg-surface-secondary border border-border/10 relative shadow-sm">
+                {profile.profile_image_url ? (
+                  /* eslint-disable-next-line @next/next/no-img-element */
+                  <img src={profile.profile_image_url} alt={profile.display_name ?? "Portrait"} className="h-full w-full object-cover" loading="eager" />
+                ) : (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center">
+                    <div className="h-20 w-20 mb-6 border border-border/20 rounded-full" />
+                    <span className="text-[0.65rem] uppercase tracking-[0.25em] text-text-secondary/40">Portrait Frame</span>
+                  </div>
+                )}
               </div>
             )}
           </div>

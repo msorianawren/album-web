@@ -1,3 +1,4 @@
+import { unstable_noStore as noStore } from "next/cache";
 import { supabase } from "@/lib/supabase";
 import type { AboutProfile, EducationItem, CareerItem, HobbyItem, LanguageItem, AchievementItem, PersonalMetrics, SocialLinkItem } from "@/lib/types";
 
@@ -67,6 +68,7 @@ export function normalizeAboutProfile(value: Partial<AboutProfile> | null | unde
 }
 
 export async function getAboutProfile(): Promise<AboutProfile> {
+  noStore();
   const { data, error } = await supabase
     .from("about_profile")
     .select(aboutColumns)
@@ -83,6 +85,7 @@ export function aboutPayloadFromInput(input: Record<string, unknown>): AboutProf
 }
 
 export async function saveAboutProfile(input: Record<string, unknown>): Promise<AboutProfile> {
+  noStore();
   const payload = aboutPayloadFromInput(input);
   
   const { data, error } = await supabase
@@ -93,4 +96,72 @@ export async function saveAboutProfile(input: Record<string, unknown>): Promise<
 
   if (error) throw error;
   return normalizeAboutProfile(data as Partial<AboutProfile>);
+}
+
+export async function getAboutProfileForDisplay(options: { allowDemoFallback?: boolean } = {}): Promise<AboutProfile> {
+  const profile = await getAboutProfile();
+  
+  if (!options.allowDemoFallback) {
+    return profile;
+  }
+
+  // We consider the profile empty or incomplete if it lacks a custom quote, bio, or cover image
+  const isDemo = !profile.cover_image_url || !profile.full_bio || profile.career.length === 0;
+
+  if (!isDemo) {
+    return profile;
+  }
+
+  const demoSections: string[] = [];
+  const p = { ...profile, _is_demo: true, _demo_sections: demoSections };
+
+  if (!p.professional_title) {
+    p.professional_title = "Creative Direction Placeholder";
+    demoSections.push("Title");
+  }
+  if (!p.tagline) {
+    p.tagline = "Editorial Portfolio Preview";
+    demoSections.push("Tagline");
+  }
+  if (!p.full_bio) {
+    p.full_bio = "This is a placeholder biography. Oriana Wren is a professional model and creative director specializing in cinematic campaigns, intimate portraits, and quiet luxury stories.\n\nShe has collaborated with renowned photographers and brands to shape visual narratives. (Preview content shown because About Profile is not fully configured yet.)";
+    p.short_bio = p.full_bio;
+    demoSections.push("Biography");
+  }
+  if (!p.quote) {
+    p.quote = "Art is not what you see, but what you make others see.";
+    demoSections.push("Quote");
+  }
+  if (p.skills.length === 0) {
+    p.skills = ["Visual Storytelling Preview", "Editorial Modeling", "Creative Direction", "Art Curation", "Studio Practice Placeholder"];
+    demoSections.push("Skills");
+  }
+  if (p.languages.length === 0) {
+    p.languages = [
+      { id: "demo-lang-1", language: "Language Preview", proficiency: "Native" },
+      { id: "demo-lang-2", language: "Language Preview", proficiency: "Fluent" }
+    ];
+    demoSections.push("Languages");
+  }
+  if (p.career.length === 0) {
+    p.career = [
+      { id: "demo-car-1", role: "Career Milestone Preview", company: "Editorial Magazine", period: "2022 - Present", description: "Creative Direction Placeholder for visual stories." },
+      { id: "demo-car-2", role: "Model Placeholder", company: "Luxury Brand", period: "2019 - 2022", description: "Campaign features and lookbooks." }
+    ];
+    demoSections.push("Career");
+  }
+  if (p.education.length === 0) {
+    p.education = [
+      { id: "demo-edu-1", program: "Fine Arts Preview", school: "University Placeholder", period: "2015 - 2019", description: "Focus on visual arts and storytelling." }
+    ];
+    demoSections.push("Education");
+  }
+  if (p.achievements.length === 0) {
+    p.achievements = [
+      { id: "demo-ach-1", title: "Achievement Preview", year: "2023", description: "Awarded for exceptional visual direction in editorial." }
+    ];
+    demoSections.push("Achievements");
+  }
+
+  return p;
 }

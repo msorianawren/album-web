@@ -14,13 +14,13 @@ export function AlbumList({ albums, dict, locale = "en" }: AlbumListProps) {
   if (!albums.length) {
     return (
       <section className="mx-auto flex w-full max-w-[1440px] flex-col items-center px-4 py-20 text-center sm:px-8 lg:px-12">
-        <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-3xl bg-surface">
-          <Camera className="h-7 w-7 text-text-secondary" aria-hidden="true" />
+        <div className="mb-8 flex h-20 w-20 items-center justify-center rounded-full bg-surface-secondary border border-border/50">
+          <Camera className="h-8 w-8 text-text-secondary/50" aria-hidden="true" />
         </div>
-        <h2 className="text-2xl font-semibold text-text-primary">
+        <h2 className="font-serif text-3xl sm:text-4xl font-normal text-text-primary mb-4">
           {dict?.albums?.no_albums || "No albums available"}
         </h2>
-        <p className="mt-3 max-w-md text-text-secondary">
+        <p className="max-w-md text-[0.95rem] text-text-secondary font-light">
           {dict?.albums?.no_albums_desc || "Public collections will appear here when the owner publishes them."}
         </p>
       </section>
@@ -34,13 +34,13 @@ export function AlbumList({ albums, dict, locale = "en" }: AlbumListProps) {
     >
       <ScrollReveal className="mb-7 flex items-end justify-between gap-4">
         <div className="min-w-0">
-          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-text-secondary">
+          <p className="text-[0.68rem] font-medium uppercase tracking-[0.2em] text-text-secondary mb-3">
             Selected books
           </p>
-          <h2 className="mt-2 text-2xl font-semibold text-text-primary sm:text-3xl">
+          <h2 className="font-serif text-3xl font-normal text-text-primary sm:text-4xl mb-4">
             {dict?.albums?.public_albums || "Public Albums"}
           </h2>
-          <p className="mt-2 text-sm text-text-secondary">
+          <p className="text-[0.95rem] font-light text-text-secondary">
             {dict?.albums?.public_albums_desc || "Browse public editorials, updating shoots, and featured works."}
           </p>
         </div>
@@ -78,14 +78,14 @@ export function AlbumList({ albums, dict, locale = "en" }: AlbumListProps) {
 
       {albums.filter((a) => a.status === "private").length > 0 && (
         <div className="mt-16 border-t border-border pt-16">
-          <div className="mb-10 max-w-2xl">
-            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-text-secondary mb-2">
+          <div className="mb-14 max-w-2xl">
+            <p className="text-[0.68rem] font-medium uppercase tracking-[0.2em] text-text-secondary mb-3">
               Restricted Access
             </p>
-            <h2 className="text-2xl font-semibold text-text-primary sm:text-3xl">
+            <h2 className="font-serif text-3xl font-normal text-text-primary sm:text-4xl mb-4">
               {dict?.albums?.private_albums || "Private Albums"}
             </h2>
-            <p className="mt-3 text-sm leading-6 text-text-secondary">
+            <p className="text-[0.95rem] font-light leading-[1.6] text-text-secondary">
               {dict?.albums?.private_albums_desc || "These collections are reserved for authorized guests. You must request private access to view them."}
             </p>
           </div>

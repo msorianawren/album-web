@@ -162,7 +162,7 @@ export function MediaViewer({
                 <>
                   <Button
                     variant="secondary"
-                    className="h-10 rounded-full border-lightbox-border bg-white/10 px-3 text-white backdrop-blur-md hover:bg-white hover:text-black transition-colors"
+                    className="h-10 rounded-full border-lightbox-border bg-white/10 px-3 text-white backdrop-blur-md hover:bg-white hover:text-black focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none transition-colors"
                     onClick={() => setAutoPlay((current) => !current)}
                     aria-label={autoPlay ? "Pause slideshow" : "Start slideshow"}
                   >
@@ -171,7 +171,7 @@ export function MediaViewer({
                   {scale > 1 && (
                     <Button
                       variant="secondary"
-                      className="h-10 rounded-full border-lightbox-border bg-white/10 px-3 text-white backdrop-blur-md hover:bg-white hover:text-black transition-colors"
+                      className="h-10 rounded-full border-lightbox-border bg-white/10 px-3 text-white backdrop-blur-md hover:bg-white hover:text-black focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none transition-colors"
                       onClick={resetZoom}
                       aria-label="Reset Zoom"
                     >
@@ -184,10 +184,10 @@ export function MediaViewer({
             </div>
 
             <div className="flex items-center gap-2">
-              <Button
-                variant="secondary"
-                className="h-10 rounded-full border-lightbox-border bg-white/10 px-3 text-white backdrop-blur-md hover:bg-white hover:text-black transition-colors"
-                onClick={toggleFullscreen}
+                <Button
+                  variant="secondary"
+                  className="h-10 rounded-full border-lightbox-border bg-white/10 px-3 text-white backdrop-blur-md hover:bg-white hover:text-black focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none transition-colors"
+                  onClick={toggleFullscreen}
                 aria-label="Toggle Fullscreen"
               >
                 {isFullscreen ? (
@@ -200,10 +200,10 @@ export function MediaViewer({
                 )}
               </Button>
               {!isFullscreen && (
-                <Button
-                  variant="secondary"
-                  className="h-10 rounded-full border-lightbox-border bg-white/10 px-3 text-white backdrop-blur-md hover:bg-white hover:text-black transition-colors"
-                  onClick={onClose}
+                  <Button
+                    variant="secondary"
+                    className="h-10 rounded-full border-lightbox-border bg-white/10 px-3 text-white backdrop-blur-md hover:bg-white hover:text-black focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none transition-colors"
+                    onClick={onClose}
                   aria-label="Close media viewer"
                 >
                   <X className="h-4 w-4" aria-hidden="true" />
@@ -221,18 +221,18 @@ export function MediaViewer({
             {/* Navigation Arrows - Center Stage */}
             {!isFullscreen && (
               <>
-                <Button
-                  variant="secondary"
-                  className="absolute left-2 md:left-6 z-10 h-12 w-12 rounded-full border-lightbox-border bg-white/10 p-0 text-white backdrop-blur-md hover:bg-white hover:text-black transition-colors"
-                  onClick={(event) => { event.stopPropagation(); onPrevious(); }}
+                  <Button
+                    variant="secondary"
+                    className="absolute left-2 md:left-6 z-10 h-12 w-12 rounded-full border-lightbox-border bg-white/10 p-0 text-white backdrop-blur-md hover:bg-white hover:text-black focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none transition-colors"
+                    onClick={(event) => { event.stopPropagation(); onPrevious(); }}
                   aria-label="Previous media"
                 >
                   <ChevronLeft className="h-6 w-6" aria-hidden="true" />
                 </Button>
-                <Button
-                  variant="secondary"
-                  className="absolute right-2 md:right-6 z-10 h-12 w-12 rounded-full border-lightbox-border bg-white/10 p-0 text-white backdrop-blur-md hover:bg-white hover:text-black transition-colors"
-                  onClick={(event) => { event.stopPropagation(); onNext(); }}
+                  <Button
+                    variant="secondary"
+                    className="absolute right-2 md:right-6 z-10 h-12 w-12 rounded-full border-lightbox-border bg-white/10 p-0 text-white backdrop-blur-md hover:bg-white hover:text-black focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none transition-colors"
+                    onClick={(event) => { event.stopPropagation(); onNext(); }}
                   aria-label="Next media"
                 >
                   <ChevronRight className="h-6 w-6" aria-hidden="true" />
@@ -268,11 +268,15 @@ export function MediaViewer({
                   width={imageWidth}
                   height={imageHeight}
                   sizes="100vw"
-                  className="max-h-full max-w-full object-contain pointer-events-none"
+                  className="max-h-full max-w-full object-contain pointer-events-none pb-8"
                   unoptimized
                   priority
                   draggable={false}
-                  onLoad={() => setLoadedImages((current) => ({ ...current, [item.id]: true }))}
+                  onLoad={() => {
+                    setTimeout(() => {
+                      setLoadedImages((current) => ({ ...current, [item.id]: true }));
+                    }, 0);
+                  }}
                 />
               ) : (
                 <video
@@ -314,8 +318,8 @@ export function MediaViewer({
                         key={thumb.id}
                         type="button"
                         onClick={() => onSelect(index)}
-                        className={`relative h-12 w-16 shrink-0 overflow-hidden rounded-lg border transition ${
-                          index === currentIndex ? "border-white" : "border-transparent opacity-50 hover:opacity-100"
+                        className={`relative h-12 w-16 shrink-0 overflow-hidden rounded-lg border focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none transition ${
+                          index === currentIndex ? "border-white opacity-100" : "border-transparent opacity-50 hover:opacity-100 focus-visible:opacity-100"
                         }`}
                       >
                         {thumb.media_type === "image" ? (
