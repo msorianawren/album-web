@@ -55,7 +55,11 @@
     "photo": "PHOTOS",
     "video": "VIDEOS",
     "welcome_badge": "Welcome",
-    "open_collection": "Open collection"
+    "open_collection": "Open collection",
+    "recently_viewed": "Recently viewed",
+    "viewed": "Viewed",
+    "welcome_back": "Welcome back",
+    "continue_from_photo": "Continue from photo"
   },
   "about": {
     "title": "About",

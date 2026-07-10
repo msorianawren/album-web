@@ -60,7 +60,7 @@ export function AlbumHeader({ album, dict }: AlbumHeaderProps) {
         <p className="max-w-[500px] text-[1.05rem] leading-[1.8] font-light text-text-secondary">
           {album.description}
         </p>
-        <AlbumMemoryHint albumId={album.id} />
+        <AlbumMemoryHint albumId={album.id} dict={dict} />
         <div className="mt-12 flex flex-wrap gap-4 items-center">
           <ShareButton title={album.title} />
           {album.download_allowed ? (

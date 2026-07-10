@@ -5,9 +5,10 @@ import { ArrowRight } from "lucide-react";
 
 interface AlbumMemoryHintProps {
   albumId: string;
+  dict?: any;
 }
 
-export function AlbumMemoryHint({ albumId }: AlbumMemoryHintProps) {
+export function AlbumMemoryHint({ albumId, dict }: AlbumMemoryHintProps) {
   const { getAlbumViewState, isClient } = useAlbumViewMemory();
   const viewState = getAlbumViewState(albumId);
 
@@ -30,7 +31,7 @@ export function AlbumMemoryHint({ albumId }: AlbumMemoryHintProps) {
       className="mt-6 flex items-center gap-3 rounded-full border border-border/50 bg-surface/30 px-5 py-2.5 text-sm font-medium text-text-primary backdrop-blur-md transition-colors hover:bg-surface/60 hover:border-border"
     >
       <span className="flex h-2 w-2 rounded-full bg-accent animate-pulse" />
-      Welcome back. Continue from photo {viewState.record.lastMediaIndex + 1}?
+      {dict?.albums?.welcome_back || "Welcome back"}. {dict?.albums?.continue_from_photo || "Continue from photo"} {viewState.record.lastMediaIndex + 1}?
       <ArrowRight className="h-4 w-4 text-text-secondary" />
     </button>
   );

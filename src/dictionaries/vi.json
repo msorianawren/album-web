@@ -55,7 +55,11 @@
     "photo": "ẢNH",
     "video": "VIDEO",
     "welcome_badge": "Chào mừng",
-    "open_collection": "Mở bộ sưu tập"
+    "open_collection": "Mở bộ sưu tập",
+    "recently_viewed": "Vừa mới xem",
+    "viewed": "Đã xem",
+    "welcome_back": "Chào mừng trở lại",
+    "continue_from_photo": "Tiếp tục xem từ ảnh"
   },
   "about": {
     "title": "Giới thiệu",

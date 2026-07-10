@@ -74,14 +74,14 @@ export function AlbumCard({ album, dict, locale = "en" }: AlbumCardProps) {
           {viewState.isRecentlyViewed && (
             <div className="absolute left-4 top-12 mt-2">
               <Badge className="bg-white/90 text-black backdrop-blur-md font-medium tracking-widest text-[0.6rem] uppercase border-none shadow-sm">
-                Recently viewed
+                {dict?.albums?.recently_viewed || "Recently viewed"}
               </Badge>
             </div>
           )}
           {!viewState.isRecentlyViewed && viewState.isViewed && (
             <div className="absolute left-4 top-12 mt-2">
               <Badge className="bg-black/40 text-white/90 backdrop-blur-md font-medium tracking-widest text-[0.6rem] uppercase border border-white/20 shadow-sm">
-                Viewed
+                {dict?.albums?.viewed || "Viewed"}
               </Badge>
             </div>
           )}
