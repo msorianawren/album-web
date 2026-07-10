@@ -14,6 +14,8 @@ const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "";
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY ?? "";
 const adminId = process.env.DEFAULT_OWNER_ID ?? "";
 
+const ALLOWED_HOSTS = new Set(["orianawren.com", "www.orianawren.com"]);
+
 const rateBuckets = new Map<string, { count: number; resetAt: number }>();
 
 function getAccessToken(request: NextRequest) {
@@ -273,6 +275,16 @@ function responseUnauthenticated(request: NextRequest, clearCookies: boolean) {
 }
 
 export async function proxy(request: NextRequest, event: NextFetchEvent) {
+  const host = request.headers.get("host")?.split(":")[0] ?? "";
+  const isLocal = host === "localhost" || host === "127.0.0.1" || host.endsWith(".local");
+
+  if (process.env.NODE_ENV === "production" && !isLocal && !ALLOWED_HOSTS.has(host)) {
+    const url = request.nextUrl.clone();
+    url.protocol = "https:";
+    url.host = "www.orianawren.com";
+    return NextResponse.redirect(url, 308);
+  }
+
   const pathname = request.nextUrl.pathname;
 
   if (rateLimit(request)) {
