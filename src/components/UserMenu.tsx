@@ -137,6 +137,14 @@ export function UserMenu({ session, dict }: UserMenuProps) {
 
         <LanguageSwitcher dict={dict} />
 
+        <Link
+          href="/profile"
+          className="mt-1 flex w-full items-center gap-3 rounded-[1rem] px-3 py-3 text-left text-sm font-medium text-text-primary transition hover:bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <UserRound className="h-4 w-4 text-muted-accent" aria-hidden="true" />
+          {dict?.nav?.profile || "My Profile & Rules"}
+        </Link>
+
         {session.isAdmin ? (
           <Link
             href="/studio"

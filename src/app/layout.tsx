@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { OAuthHashHandler } from "@/components/auth/OAuthHashHandler";
+import { AudioUXProvider } from "@/components/ui/AudioUXProvider";
 import "./globals.css";
 
 import { getSiteSettings } from "@/lib/site-settings";
@@ -46,6 +47,7 @@ export default function RootLayout({
         />
       </head>
       <body className="flex min-h-full flex-col">
+        <AudioUXProvider />
         <OAuthHashHandler />
         {children}
       </body>
