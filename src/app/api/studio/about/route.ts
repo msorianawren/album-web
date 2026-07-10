@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { ZodError } from "zod";
 import { requireAdmin } from "@/lib/auth";
 import { apiError, apiSuccess, toServerError } from "@/lib/errors";
+import { revalidatePath } from "next/cache";
 import { getAboutProfile, saveAboutProfile } from "@/lib/about";
 
 export async function GET(request: NextRequest) {
@@ -19,6 +20,8 @@ export async function PATCH(request: NextRequest) {
   try {
     const body = await request.json().catch(() => ({}));
     const profile = await saveAboutProfile(body);
+    revalidatePath("/about");
+    revalidatePath("/studio");
     return apiSuccess({ profile });
   } catch (error) {
     if (error instanceof ZodError) {

@@ -691,8 +691,11 @@ export function SettingsCenter({
               body: JSON.stringify(profile),
             });
             const payload = await res.json();
-            if (!payload.success) throw new Error(payload.message ?? "Failed to save about profile.");
+            if (!payload.success) {
+              throw new Error(payload.message ?? "Failed to save about profile.");
+            }
             setMessage("About profile saved successfully.");
+            router.refresh();
           }}
         />
       ) : null}

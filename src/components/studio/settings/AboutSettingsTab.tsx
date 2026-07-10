@@ -7,6 +7,15 @@ import { Textarea } from "@/components/ui/Textarea";
 import { Button } from "@/components/ui/Button";
 import type { AboutProfile } from "@/lib/types";
 
+function Toggle({ label, checked, onChange }: { label: string; checked: boolean; onChange: (value: boolean) => void }) {
+  return (
+    <label className="flex items-center justify-between gap-4 rounded-[1.1rem] border border-border bg-background/55 p-4">
+      <span className="text-sm font-medium text-text-primary">{label}</span>
+      <input type="checkbox" checked={checked} onChange={(event) => onChange(event.target.checked)} className="h-5 w-5 accent-[var(--accent)]" />
+    </label>
+  );
+}
+
 interface AboutSettingsTabProps {
   initialProfile: AboutProfile;
   uploadAsset: (type: "about-profile" | "about-cover", file: File) => Promise<string>;
@@ -36,7 +45,7 @@ function Field({ label, description, children }: { label: string; description?: 
   );
 }
 
-function ArrayRepeater<T extends { id: string }>({
+function ArrayRepeater<T>({
   items,
   onChange,
   renderItem,
@@ -47,7 +56,7 @@ function ArrayRepeater<T extends { id: string }>({
   items: T[];
   onChange: (items: T[]) => void;
   renderItem: (item: T, index: number, update: (data: Partial<T>) => void) => React.ReactNode;
-  emptyItem: Omit<T, 'id'>;
+  emptyItem: Omit<T, "id">;
   title: string;
   addLabel: string;
 }) {
@@ -64,11 +73,15 @@ function ArrayRepeater<T extends { id: string }>({
           <p className="text-xs text-text-secondary italic">No items added.</p>
         )}
         {items.map((item, index) => (
-          <div key={item.id} className="relative rounded-xl border border-border bg-surface/50 p-4">
+          <div key={index} className="relative rounded-xl border border-border bg-surface/50 p-4">
             <Button
               variant="icon"
               className="absolute right-2 top-2 h-7 w-7 text-red-500 hover:text-red-600 hover:bg-red-500/10 hover:border-red-500/20"
-              onClick={() => onChange(items.filter(i => i.id !== item.id))}
+              onClick={() => {
+                const newItems = [...items];
+                newItems.splice(index, 1);
+                onChange(newItems);
+              }}
             >
               <Trash2 className="h-3 w-3" />
             </Button>
@@ -89,11 +102,18 @@ function ArrayRepeater<T extends { id: string }>({
 export function AboutSettingsTab({ initialProfile, uploadAsset, onUpdate }: AboutSettingsTabProps) {
   const [profile, setProfile] = useState<AboutProfile>(initialProfile);
   const [saving, setSaving] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
+  const [successMsg, setSuccessMsg] = useState("");
 
   async function handleSave() {
     setSaving(true);
+    setErrorMsg("");
+    setSuccessMsg("");
     try {
       await onUpdate(profile);
+      setSuccessMsg("Profile saved successfully.");
+    } catch (err) {
+      setErrorMsg(err instanceof Error ? err.message : "Failed to save profile.");
     } finally {
       setSaving(false);
     }
@@ -107,10 +127,26 @@ export function AboutSettingsTab({ initialProfile, uploadAsset, onUpdate }: Abou
     <div className="grid gap-8 pb-32">
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-medium text-text-primary">About Profile</h2>
-        <Button onClick={handleSave} disabled={saving}>{saving ? "Saving..." : "Save Changes"}</Button>
+        <div className="flex items-center gap-4">
+          {errorMsg && <p className="text-sm font-medium text-red-500">{errorMsg}</p>}
+          {successMsg && <p className="text-sm font-medium text-green-500">{successMsg}</p>}
+          <Button onClick={handleSave} disabled={saving}>{saving ? "Saving..." : "Save Changes"}</Button>
+        </div>
       </div>
 
       <Section title="Hero Information" description="The primary details shown at the top of your biography.">
+        <div className="mb-4">
+          <Toggle 
+            label="Public Profile Enabled" 
+            checked={profile.is_public ?? true} 
+            onChange={(val) => update("is_public", val)} 
+          />
+          {profile.is_public === false && (
+            <p className="mt-2 text-sm text-amber-500">
+              Warning: Your About page is currently private and will not be shown to the public.
+            </p>
+          )}
+        </div>
         <div className="grid gap-4 lg:grid-cols-2">
           <Field label="Display Name">
             <Input value={profile.display_name ?? ""} onChange={(e) => update("display_name", e.target.value)} />
