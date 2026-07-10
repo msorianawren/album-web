@@ -5,6 +5,8 @@ import { Plus, Trash2 } from "lucide-react";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
 import { Button } from "@/components/ui/Button";
+import { motion, AnimatePresence } from "framer-motion";
+import { CheckCircle2, AlertCircle, Save } from "lucide-react";
 import type { AboutProfile } from "@/lib/types";
 
 function Toggle({ label, checked, onChange }: { label: string; checked: boolean; onChange: (value: boolean) => void }) {
@@ -112,8 +114,10 @@ export function AboutSettingsTab({ initialProfile, uploadAsset, onUpdate }: Abou
     try {
       await onUpdate(profile);
       setSuccessMsg("Profile saved successfully.");
+      setTimeout(() => setSuccessMsg(""), 4000);
     } catch (err) {
       setErrorMsg(err instanceof Error ? err.message : "Failed to save profile.");
+      setTimeout(() => setErrorMsg(""), 6000);
     } finally {
       setSaving(false);
     }
@@ -124,14 +128,9 @@ export function AboutSettingsTab({ initialProfile, uploadAsset, onUpdate }: Abou
   }
 
   return (
-    <div className="grid gap-8 pb-32">
+    <div className="grid gap-8 pb-40">
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-medium text-text-primary">About Profile</h2>
-        <div className="flex items-center gap-4">
-          {errorMsg && <p className="text-sm font-medium text-red-500">{errorMsg}</p>}
-          {successMsg && <p className="text-sm font-medium text-green-500">{successMsg}</p>}
-          <Button onClick={handleSave} disabled={saving}>{saving ? "Saving..." : "Save Changes"}</Button>
-        </div>
       </div>
 
       <Section title="Hero Information" description="The primary details shown at the top of your biography.">
@@ -345,8 +344,29 @@ export function AboutSettingsTab({ initialProfile, uploadAsset, onUpdate }: Abou
         />
       </Section>
       
-      <div className="flex justify-end">
-        <Button onClick={handleSave} disabled={saving}>{saving ? "Saving..." : "Save Changes"}</Button>
+      {/* Sticky Save Bar */}
+      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-6 rounded-full border border-border bg-background/80 backdrop-blur-xl px-5 py-3 shadow-2xl shadow-text-primary/10">
+        <div className="relative flex items-center h-5 overflow-hidden">
+          <AnimatePresence mode="wait">
+            {errorMsg ? (
+              <motion.div key="error" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="flex items-center gap-2 text-sm font-medium text-red-500">
+                <AlertCircle className="h-4 w-4 shrink-0" /> <span className="truncate max-w-[200px] sm:max-w-[300px]">{errorMsg}</span>
+              </motion.div>
+            ) : successMsg ? (
+              <motion.div key="success" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="flex items-center gap-2 text-sm font-medium text-green-500">
+                <CheckCircle2 className="h-4 w-4 shrink-0" /> <span>{successMsg}</span>
+              </motion.div>
+            ) : (
+              <motion.div key="idle" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-sm font-medium text-text-secondary hidden sm:block">
+                Unsaved changes will be lost
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+        <Button onClick={handleSave} disabled={saving} className="rounded-full shrink-0">
+          <Save className="h-4 w-4 mr-2" />
+          {saving ? "Saving..." : "Save Profile"}
+        </Button>
       </div>
     </div>
   );

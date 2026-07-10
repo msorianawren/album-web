@@ -8,6 +8,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const settings = await getSiteSettings();
   
   return {
+    metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://www.orianawren.com"),
     title: {
       default: settings.seo_title || settings.site_name || "Album Web",
       template: `%s | ${settings.site_name || "Album Web"}`,
