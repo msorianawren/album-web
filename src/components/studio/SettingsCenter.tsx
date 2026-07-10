@@ -667,6 +667,20 @@ export function SettingsCenter({
                 </div>
               </div>
 
+              <div className="mt-8 border-t border-border pt-8">
+                <h3 className="mb-4 font-serif text-xl text-text-primary">Section Visibility</h3>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <Toggle label="Editorial Intro" checked={landing.section_toggles?.editorial_intro !== false} onChange={(v) => updateLanding("section_toggles", { ...landing.section_toggles, editorial_intro: v })} />
+                  <Toggle label="Album Worlds" checked={landing.section_toggles?.album_worlds !== false} onChange={(v) => updateLanding("section_toggles", { ...landing.section_toggles, album_worlds: v })} />
+                  <Toggle label="Media Gallery" checked={landing.section_toggles?.media_gallery !== false} onChange={(v) => updateLanding("section_toggles", { ...landing.section_toggles, media_gallery: v })} />
+                  <Toggle label="Social Links Tree" checked={landing.section_toggles?.social_tree !== false} onChange={(v) => updateLanding("section_toggles", { ...landing.section_toggles, social_tree: v })} />
+                  <Toggle label="Private Experience" checked={landing.section_toggles?.private_experience !== false} onChange={(v) => updateLanding("section_toggles", { ...landing.section_toggles, private_experience: v })} />
+                  <Toggle label="Creative Services" checked={landing.section_toggles?.creative_services !== false} onChange={(v) => updateLanding("section_toggles", { ...landing.section_toggles, creative_services: v })} />
+                  <Toggle label="Collaborators" checked={landing.section_toggles?.collaborators !== false} onChange={(v) => updateLanding("section_toggles", { ...landing.section_toggles, collaborators: v })} />
+                  <Toggle label="Personal Letter" checked={landing.section_toggles?.personal_letter !== false} onChange={(v) => updateLanding("section_toggles", { ...landing.section_toggles, personal_letter: v })} />
+                </div>
+              </div>
+
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mt-8 border-t border-border pt-6">
                 <p className="text-sm text-text-secondary" aria-live="polite">{landingMessage}</p>
                 <Button onClick={saveLanding} disabled={savingLanding}>
@@ -706,10 +720,19 @@ export function SettingsCenter({
             <Select label="Default theme" value={settings.default_theme} onChange={(value) => update("default_theme", value as SiteSettings["default_theme"])} options={["dark", "light", "system"]} />
             <Select label="Homepage layout" value={settings.homepage_layout} onChange={(value) => update("homepage_layout", value as SiteSettings["homepage_layout"])} options={["featured", "grid", "minimal"]} />
             <Select label="Album card density" value={settings.album_card_density} onChange={(value) => update("album_card_density", value as SiteSettings["album_card_density"])} options={["comfortable", "compact"]} />
+            
+            <Select label="Homepage Hero Preset" value={settings.homepage_hero_preset} onChange={(value) => update("homepage_hero_preset", value)} options={["cinematic", "editorial", "minimal", "split"]} />
+            <Select label="Social Tree Style" value={settings.social_tree_style} onChange={(value) => update("social_tree_style", value)} options={["botanical", "clean", "grid"]} />
+            <Select label="Collaborator Mode" value={settings.collaborator_mode} onChange={(value) => update("collaborator_mode", value)} options={["portraits", "list", "cards"]} />
+            <Select label="Homepage Gallery Mode" value={settings.homepage_gallery_mode} onChange={(value) => update("homepage_gallery_mode", value)} options={["editorial_grid", "masonry", "carousel"]} />
+            <Select label="Album List Layout" value={settings.album_list_layout} onChange={(value) => update("album_list_layout", value)} options={["editorial", "grid", "list"]} />
+            <Select label="Album Viewer Style" value={settings.album_viewer_style} onChange={(value) => update("album_viewer_style", value)} options={["clean", "cinematic", "immersive"]} />
           </div>
-          <Toggle label="Show counts on cards" checked={settings.show_counts_on_cards} onChange={(value) => update("show_counts_on_cards", value)} />
-          <Toggle label="Show updated date" checked={settings.show_updated_date} onChange={(value) => update("show_updated_date", value)} />
-          <Toggle label="Show status badges" checked={settings.show_status_badges} onChange={(value) => update("show_status_badges", value)} />
+          <div className="mt-4 grid gap-4 border-t border-border pt-4">
+            <Toggle label="Show counts on cards" checked={settings.show_counts_on_cards} onChange={(value) => update("show_counts_on_cards", value)} />
+            <Toggle label="Show updated date" checked={settings.show_updated_date} onChange={(value) => update("show_updated_date", value)} />
+            <Toggle label="Show status badges" checked={settings.show_status_badges} onChange={(value) => update("show_status_badges", value)} />
+          </div>
           <div className="mt-4 grid gap-4 border-t border-border pt-4">
             <Field label="Footer description">
               <Textarea value={settings.footer_description ?? ""} onChange={(event) => update("footer_description", event.target.value)} maxLength={500} />

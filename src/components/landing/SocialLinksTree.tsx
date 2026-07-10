@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import type { LandingSocialLink } from "@/lib/types";
+import type { LandingSocialLink, SiteSettings } from "@/lib/types";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 
@@ -25,11 +25,12 @@ const ICONS: Record<string, React.ReactNode> = {
   ),
 };
 
-export function SocialLinksTree({ links }: { links: LandingSocialLink[] }) {
+export function SocialLinksTree({ links, settings }: { links: LandingSocialLink[], settings?: SiteSettings }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const vineRef = useRef<SVGPathElement>(null);
   
-  const displayLinks = [...links].filter(l => l.enabled).sort((a, b) => a.order - b.order);
+  const displayLinks = [...links].filter(l => l.enabled && l.url.trim() !== "").sort((a, b) => a.order - b.order);
+  const stylePreset = settings?.social_tree_style || "botanical";
 
   useEffect(() => {
     if (!containerRef.current || displayLinks.length === 0) return;
@@ -106,6 +107,40 @@ export function SocialLinksTree({ links }: { links: LandingSocialLink[] }) {
 
   if (displayLinks.length === 0) return null;
 
+  if (stylePreset === "clean" || stylePreset === "grid") {
+    return (
+      <section ref={containerRef} className="relative z-20 mx-auto w-full max-w-[1000px] px-6 py-24 md:py-32 bg-transparent text-center">
+        <div className="mb-16">
+          <h2 className="font-serif text-3xl font-normal italic text-text-primary sm:text-5xl drop-shadow-sm">
+            Connect
+          </h2>
+        </div>
+        <div className={`grid gap-4 ${stylePreset === "grid" ? "grid-cols-2 sm:grid-cols-3" : "grid-cols-1 sm:grid-cols-2 max-w-[600px] mx-auto"} `}>
+          {displayLinks.map((link) => {
+            const Icon = ICONS[link.platform] || ICONS.Instagram;
+            return (
+              <a
+                key={link.id}
+                href={link.url || "#"}
+                target="_blank"
+                rel="noreferrer"
+                className="social-card group flex items-center justify-center gap-4 rounded-full border border-border/40 bg-surface/30 px-6 py-4 transition-all duration-300 hover:-translate-y-1 hover:border-text-primary/30 hover:bg-surface/60"
+              >
+                <div className="text-text-secondary transition-colors duration-300 group-hover:text-text-primary">
+                  {Icon}
+                </div>
+                <div className="flex flex-col items-start text-left">
+                  <span className="text-[0.7rem] font-bold tracking-widest uppercase text-text-primary">{link.platform}</span>
+                </div>
+              </a>
+            );
+          })}
+        </div>
+      </section>
+    );
+  }
+
+  // Botanical
   return (
     <section ref={containerRef} className="relative z-20 mx-auto w-full max-w-[800px] px-6 py-32 text-center bg-transparent">
       {/* Remove faded full-section photo overlay and enforce clean solid layout */}

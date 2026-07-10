@@ -344,6 +344,20 @@ export function AboutSettingsTab({ initialProfile, uploadAsset, onUpdate }: Abou
         />
       </Section>
       
+      <Section title="Section Visibility" description="Toggle which sections appear on your public About page.">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <Toggle label="Biography" checked={profile.section_toggles?.biography !== false} onChange={(v) => update("section_toggles", { ...profile.section_toggles, biography: v })} />
+          <Toggle label="Feature Quote" checked={profile.section_toggles?.quote !== false} onChange={(v) => update("section_toggles", { ...profile.section_toggles, quote: v })} />
+          <Toggle label="Personal Metrics" checked={profile.section_toggles?.metrics !== false} onChange={(v) => update("section_toggles", { ...profile.section_toggles, metrics: v })} />
+          <Toggle label="Skills & Traits" checked={profile.section_toggles?.skills !== false} onChange={(v) => update("section_toggles", { ...profile.section_toggles, skills: v })} />
+          <Toggle label="Career" checked={profile.section_toggles?.career !== false} onChange={(v) => update("section_toggles", { ...profile.section_toggles, career: v })} />
+          <Toggle label="Education" checked={profile.section_toggles?.education !== false} onChange={(v) => update("section_toggles", { ...profile.section_toggles, education: v })} />
+          <Toggle label="Achievements" checked={profile.section_toggles?.achievements !== false} onChange={(v) => update("section_toggles", { ...profile.section_toggles, achievements: v })} />
+          <Toggle label="Languages" checked={profile.section_toggles?.languages !== false} onChange={(v) => update("section_toggles", { ...profile.section_toggles, languages: v })} />
+          <Toggle label="Social Links" checked={profile.section_toggles?.social !== false} onChange={(v) => update("section_toggles", { ...profile.section_toggles, social: v })} />
+        </div>
+      </Section>
+      
       {/* Sticky Save Bar */}
       <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-6 rounded-full border border-border bg-background/80 backdrop-blur-xl px-5 py-3 shadow-2xl shadow-text-primary/10">
         <div className="relative flex items-center h-5 overflow-hidden">

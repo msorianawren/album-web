@@ -18,7 +18,7 @@ export async function PATCH(request: NextRequest) {
   try {
     const body = await request.json().catch(() => ({}));
     const landing = await saveLandingPage(body);
-    revalidatePath("/");
+    revalidatePath("/", "layout");
     return apiSuccess({ landing });
   } catch (error) {
     return toServerError(error);

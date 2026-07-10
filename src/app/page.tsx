@@ -14,6 +14,7 @@ import { HomeCollaborators } from "@/components/landing/HomeCollaborators";
 import { getLandingPage } from "@/lib/landing";
 import { getAlbums } from "@/lib/albums";
 import { getAboutProfile } from "@/lib/about";
+import { getSiteSettings } from "@/lib/site-settings";
 
 import { cookies } from "next/headers";
 import { AppLocale } from "@/lib/i18n";
@@ -22,10 +23,11 @@ import { getDictionary } from "@/lib/getDictionary";
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
-  const [landing, profile, albums] = await Promise.all([
+  const [landing, profile, albums, settings] = await Promise.all([
     getLandingPage(),
     getAboutProfile(),
     getAlbums(),
+    getSiteSettings(),
   ]);
 
   const cookieStore = await cookies();
@@ -36,16 +38,16 @@ export default async function Home() {
     <main className="relative z-10 min-h-screen bg-transparent">
       <NatureAnimatedBackground config={landing.background_settings} />
       <AppHeader />
-      <HomeHero landing={landing} locale={locale} dict={dict} />
+      <HomeHero landing={landing} settings={settings} locale={locale} dict={dict} />
       
-      <HomeEditorialIntro landing={landing} />
-      <HomeAlbumWorlds albums={albums} />
-      <HomeMediaGallery items={landing.media_items} />
-      <SocialLinksTree links={landing.social_links} />
-      <HomePrivateExperience />
-      <HomeCreativeServices />
-      <HomeCollaborators collaborators={landing.collaborators} />
-      <HomePersonalLetter profile={profile} />
+      {landing.section_toggles?.editorial_intro !== false && <HomeEditorialIntro landing={landing} settings={settings} />}
+      {landing.section_toggles?.album_worlds !== false && <HomeAlbumWorlds albums={albums} settings={settings} />}
+      {landing.section_toggles?.media_gallery !== false && <HomeMediaGallery items={landing.media_items} settings={settings} />}
+      {landing.section_toggles?.social_tree !== false && <SocialLinksTree links={landing.social_links} settings={settings} />}
+      {landing.section_toggles?.private_experience !== false && <HomePrivateExperience />}
+      {landing.section_toggles?.creative_services !== false && <HomeCreativeServices />}
+      {landing.section_toggles?.collaborators !== false && <HomeCollaborators collaborators={landing.collaborators} settings={settings} />}
+      {landing.section_toggles?.personal_letter !== false && <HomePersonalLetter profile={profile} />}
       
       <AppFooter />
     </main>

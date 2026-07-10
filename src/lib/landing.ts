@@ -60,6 +60,7 @@ export const defaultLandingPage: LandingPageContent = {
     apply_to_all_public_pages: true,
   },
   translations: {},
+  section_toggles: {},
 };
 
 const landingColumns = Object.keys(defaultLandingPage).join(",");
@@ -114,6 +115,7 @@ export function normalizeLandingPage(value: Partial<LandingPageContent> | null |
     media_items: Array.isArray(value?.media_items) ? value?.media_items : defaultLandingPage.media_items,
     collaborators: Array.isArray(value?.collaborators) ? value?.collaborators : defaultLandingPage.collaborators,
     background_settings: normalizeBackgroundSettings(value?.background_settings),
+    section_toggles: typeof value?.section_toggles === 'object' && value.section_toggles !== null ? value.section_toggles : {},
   } as LandingPageContent;
 }
 
@@ -160,7 +162,8 @@ export function landingPayloadFromInput(input: Record<string, unknown>) {
     background_settings: typeof input.background_settings === "object" && input.background_settings !== null 
       ? normalizeBackgroundSettings(input.background_settings)
       : defaultLandingPage.background_settings,
-    translations: typeof input.translations === "object" && input.translations !== null ? input.translations : {},
+    translations: typeof input.translations === "object" && input.translations !== null ? (input.translations as Record<string, any>) : {},
+    section_toggles: typeof input.section_toggles === "object" && input.section_toggles !== null ? (input.section_toggles as Record<string, boolean>) : {},
   } satisfies LandingPageContent;
 }
 

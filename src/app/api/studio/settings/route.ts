@@ -3,6 +3,7 @@ import { ZodError } from "zod";
 import { requireAdmin } from "@/lib/auth";
 import { apiError, apiSuccess, toServerError } from "@/lib/errors";
 import { getSiteSettings, saveSiteSettings } from "@/lib/site-settings";
+import { revalidatePath } from "next/cache";
 
 export async function GET(request: NextRequest) {
   const session = await requireAdmin(request);
@@ -19,6 +20,7 @@ export async function PATCH(request: NextRequest) {
   try {
     const body = await request.json().catch(() => ({}));
     const settings = await saveSiteSettings(body);
+    revalidatePath("/", "layout");
     return apiSuccess({ settings });
   } catch (error) {
     if (error instanceof ZodError) {

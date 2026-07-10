@@ -262,6 +262,7 @@ export interface LandingPageContent {
   collaborators: CollaboratorProfile[];
   background_settings: LandingBackgroundSettings;
   translations?: Record<string, any>;
+  section_toggles?: Record<string, boolean>;
   updated_at?: string;
 }
 
@@ -282,7 +283,13 @@ export interface SiteSettings {
   maintenance_message: string | null;
   default_theme: "dark" | "light" | "system";
   homepage_layout: "featured" | "grid" | "minimal";
+  homepage_hero_preset: string;
+  social_tree_style: string;
+  collaborator_mode: string;
+  homepage_gallery_mode: string;
   album_card_density: "comfortable" | "compact";
+  album_list_layout: string;
+  album_viewer_style: string;
   show_counts_on_cards: boolean;
   show_updated_date: boolean;
   show_status_badges: boolean;
@@ -429,6 +436,7 @@ export interface AboutProfile {
   secondary_cta_href: string | null;
   social_links: SocialLinkItem[];
   is_public: boolean;
+  section_toggles?: Record<string, boolean>;
   updated_at?: string;
   _is_demo?: boolean;
   _demo_sections?: string[];

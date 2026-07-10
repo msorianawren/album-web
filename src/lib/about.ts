@@ -64,6 +64,7 @@ export function normalizeAboutProfile(value: Partial<AboutProfile> | null | unde
     personality_traits: ensureArray<string>(value?.personality_traits),
     gallery_media_ids: ensureArray<string>(value?.gallery_media_ids),
     social_links: ensureArray<SocialLinkItem>(value?.social_links),
+    section_toggles: typeof value?.section_toggles === 'object' ? value.section_toggles as Record<string, boolean> : {},
   };
 }
 
@@ -124,7 +125,7 @@ export async function getAboutProfileForDisplay(options: { allowDemoFallback?: b
     demoSections.push("Tagline");
   }
   if (!p.full_bio) {
-    p.full_bio = "This is a placeholder biography. Oriana Wren is a professional model and creative director specializing in cinematic campaigns, intimate portraits, and quiet luxury stories.\n\nShe has collaborated with renowned photographers and brands to shape visual narratives. (Preview content shown because About Profile is not fully configured yet.)";
+    p.full_bio = "This is an Editorial Portfolio Preview. The About Profile is currently in Demo Mode because it is not fully configured yet.\n\nCreative Direction Placeholder for visual stories. Studio Practice Placeholder. (Please configure your About Profile in Settings to replace this preview content.)";
     p.short_bio = p.full_bio;
     demoSections.push("Biography");
   }
@@ -145,20 +146,20 @@ export async function getAboutProfileForDisplay(options: { allowDemoFallback?: b
   }
   if (p.career.length === 0) {
     p.career = [
-      { id: "demo-car-1", role: "Career Milestone Preview", company: "Editorial Magazine", period: "2022 - Present", description: "Creative Direction Placeholder for visual stories." },
-      { id: "demo-car-2", role: "Model Placeholder", company: "Luxury Brand", period: "2019 - 2022", description: "Campaign features and lookbooks." }
+      { id: "demo-car-1", role: "Career Milestone Preview", company: "Editorial Magazine Placeholder", period: "2022 - Present", description: "Creative Direction Placeholder for visual stories." },
+      { id: "demo-car-2", role: "Model Placeholder", company: "Luxury Brand Preview", period: "2019 - 2022", description: "Campaign features and lookbooks preview." }
     ];
     demoSections.push("Career");
   }
   if (p.education.length === 0) {
     p.education = [
-      { id: "demo-edu-1", program: "Fine Arts Preview", school: "University Placeholder", period: "2015 - 2019", description: "Focus on visual arts and storytelling." }
+      { id: "demo-edu-1", program: "Education Placeholder", school: "University Preview", period: "2015 - 2019", description: "Focus on visual arts and storytelling preview." }
     ];
     demoSections.push("Education");
   }
   if (p.achievements.length === 0) {
     p.achievements = [
-      { id: "demo-ach-1", title: "Achievement Preview", year: "2023", description: "Awarded for exceptional visual direction in editorial." }
+      { id: "demo-ach-1", title: "Achievement Preview", year: "2023", description: "Achievement description placeholder." }
     ];
     demoSections.push("Achievements");
   }

@@ -18,16 +18,17 @@ interface AboutClientProps {
 export function AboutClient({ profile }: AboutClientProps) {
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const hasMetrics = profile.personal_metrics && Object.values(profile.personal_metrics).some(v => v);
-  const hasCareer = profile.career?.length > 0;
-  const hasEducation = profile.education?.length > 0;
-  const hasSkills = profile.skills?.length > 0;
-  const hasTraits = profile.personality_traits?.length > 0;
-  const hasHobbies = profile.hobbies?.length > 0;
-  const hasLanguages = profile.languages?.length > 0;
-  const hasAchievements = profile.achievements?.length > 0;
-  const hasSocialLinks = profile.social_links?.length > 0;
-  const hasBio = profile.short_bio || profile.full_bio;
+  const hasMetrics = profile.section_toggles?.metrics !== false && profile.personal_metrics && Object.values(profile.personal_metrics).some(v => v);
+  const hasCareer = profile.section_toggles?.career !== false && profile.career?.length > 0;
+  const hasEducation = profile.section_toggles?.education !== false && profile.education?.length > 0;
+  const hasSkills = profile.section_toggles?.skills !== false && profile.skills?.length > 0;
+  const hasTraits = profile.section_toggles?.skills !== false && profile.personality_traits?.length > 0;
+  const hasHobbies = profile.section_toggles?.skills !== false && profile.hobbies?.length > 0;
+  const hasLanguages = profile.section_toggles?.languages !== false && profile.languages?.length > 0;
+  const hasAchievements = profile.section_toggles?.achievements !== false && profile.achievements?.length > 0;
+  const hasSocialLinks = profile.section_toggles?.social !== false && profile.social_links?.length > 0;
+  const hasBio = profile.section_toggles?.biography !== false && (profile.short_bio || profile.full_bio);
+  const hasQuote = profile.section_toggles?.quote !== false && profile.quote;
 
   useEffect(() => {
     const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -73,9 +74,9 @@ export function AboutClient({ profile }: AboutClientProps) {
     <main ref={containerRef} className="relative z-10 bg-transparent text-text-primary selection:bg-accent/20">
       
       {profile._is_demo && (
-        <div className="fixed top-0 left-0 w-full z-[100] bg-surface-secondary border-b border-border/50 py-2.5 text-center px-4 backdrop-blur-sm">
-          <p className="text-[0.7rem] uppercase tracking-[0.1em] text-text-secondary font-medium">
-            Preview content shown because About Profile is not fully configured yet.
+        <div className="fixed top-0 left-0 w-full z-[100] bg-surface-secondary/90 border-b border-border py-2 text-center px-4 backdrop-blur-md shadow-sm">
+          <p className="text-[0.65rem] uppercase tracking-[0.15em] text-text-secondary font-medium">
+            Demo Mode: Editorial Portfolio Preview (Update in Settings)
           </p>
         </div>
       )}
@@ -94,8 +95,14 @@ export function AboutClient({ profile }: AboutClientProps) {
               /* eslint-disable-next-line @next/next/no-img-element */
               <img src={profile.cover_image_url} alt="" className="about-hero-img h-full w-full object-cover" loading="eager" />
             ) : (
-              <div className="about-hero-img h-full w-full bg-surface-secondary/30 flex items-center justify-center border-l border-border/10">
-                <span className="text-[0.65rem] uppercase tracking-[0.25em] text-text-secondary/30 -rotate-90">Editorial Cover Box</span>
+              <div className="about-hero-img h-full w-full bg-gradient-to-br from-surface-secondary/80 to-surface-secondary/20 flex items-center justify-center border-l border-border/10 relative overflow-hidden">
+                <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-transparent to-black/5" />
+                <div className="absolute inset-0 opacity-[0.03] mix-blend-overlay" style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E\")" }} />
+                <div className="flex flex-col items-center gap-4 text-text-secondary/30 -rotate-90">
+                  <div className="h-px w-16 bg-text-secondary/20" />
+                  <span className="text-[0.65rem] uppercase tracking-[0.3em] font-medium">Editorial Cover Frame</span>
+                  <div className="h-px w-16 bg-text-secondary/20" />
+                </div>
               </div>
             )}
           </div>
@@ -163,9 +170,12 @@ export function AboutClient({ profile }: AboutClientProps) {
                   /* eslint-disable-next-line @next/next/no-img-element */
                   <img src={profile.profile_image_url} alt={profile.display_name ?? "Portrait"} className="h-full w-full object-cover" loading="eager" />
                 ) : (
-                  <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center">
-                    <div className="h-20 w-20 mb-6 border border-border/20 rounded-full" />
-                    <span className="text-[0.65rem] uppercase tracking-[0.25em] text-text-secondary/40">Portrait Frame</span>
+                  <div className="absolute inset-0 bg-gradient-to-tr from-surface-secondary/40 to-surface-secondary/10 flex flex-col items-center justify-center p-6 text-center border border-border/5">
+                    <div className="absolute inset-0 opacity-[0.04] mix-blend-overlay" style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E\")" }} />
+                    <div className="h-24 w-24 mb-6 border-[0.5px] border-border/30 rounded-full flex items-center justify-center relative">
+                      <div className="absolute inset-2 border-[0.5px] border-border/10 rounded-full" />
+                    </div>
+                    <span className="text-[0.6rem] uppercase tracking-[0.25em] text-text-secondary/40 font-medium">Portrait Frame</span>
                   </div>
                 )}
               </div>
@@ -213,7 +223,7 @@ export function AboutClient({ profile }: AboutClientProps) {
       {/* ═══════════════════════════════════════════
           SECTION 3: PULL QUOTE
       ═══════════════════════════════════════════ */}
-      {profile.quote && (
+      {hasQuote && (
         <section className="w-full px-6 sm:px-10 mt-24 md:mt-40 py-20 md:py-32">
           <div className="max-w-[1000px] mx-auto text-center">
             <span className="about-reveal block font-serif text-5xl md:text-7xl text-text-secondary/20 mb-4" aria-hidden="true">&ldquo;</span>

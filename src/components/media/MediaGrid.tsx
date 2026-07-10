@@ -93,77 +93,65 @@ export function MediaGrid({
 
   if (!media.length) {
     return (
-      <section className="mx-auto flex w-full max-w-[1440px] flex-col items-center px-4 py-20 text-center sm:px-8 lg:px-12">
-        <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-surface/80">
-          <Camera className="h-7 w-7 text-text-secondary" aria-hidden="true" />
+      <section className="mx-auto flex w-full max-w-[1200px] flex-col items-center px-6 py-32 text-center">
+        <div className="mb-8 flex h-20 w-20 items-center justify-center rounded-full bg-surface/30 border border-border/40">
+          <Camera className="h-8 w-8 text-text-secondary/30" aria-hidden="true" />
         </div>
-        <h2 className="text-2xl font-semibold text-text-primary">
-          No media yet
+        <h2 className="font-serif text-3xl font-normal text-text-primary mb-4">
+          Empty Archive
         </h2>
-        <p className="mt-3 max-w-md text-text-secondary">
-          Photos and videos will appear here once the owner uploads them.
+        <p className="max-w-[400px] text-[0.95rem] leading-[1.8] text-text-secondary font-light">
+          Visual works will be curated and published here once available.
         </p>
       </section>
     );
   }
 
   return (
-    <section className="mx-auto w-full max-w-[1440px] px-4 pb-20 sm:px-8 lg:px-12">
-      <div className="mb-5 rounded-[1.4rem] border border-border bg-surface/82 p-3 shadow-xl shadow-text-primary/5 sm:p-4">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex min-w-0 items-center gap-3">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-accent text-accent-foreground">
-              <SlidersHorizontal className="h-4 w-4" aria-hidden="true" />
-            </span>
-            <div className="min-w-0">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-text-secondary">Sort by</p>
-              <p className="truncate text-sm font-semibold text-text-primary" aria-live="polite">
-                {mediaSortLabels[sortMode]}{isPending ? "..." : ""}
-              </p>
-            </div>
-          </div>
+    <section className="mx-auto w-full max-w-[1200px] px-6 pb-32">
+      <div className="mb-10 flex flex-col md:flex-row md:items-center justify-between gap-6 pb-6 border-b border-border/40">
+        <div className="flex items-center gap-3">
+          <span className="text-[0.65rem] font-semibold uppercase tracking-[0.25em] text-text-secondary">
+            Sort Layout
+          </span>
+          {isPending && <span className="text-[0.65rem] italic text-text-secondary/50">Curating...</span>}
+        </div>
 
-          <div className="hidden flex-wrap justify-end gap-2 lg:flex">
-            {(["smart", "manual", "taken_desc", "uploaded_desc", "filename_asc", "portrait_first", "landscape_first", "liked_desc", "commented_desc", "shuffle"] as MediaSortMode[]).map((mode) => (
-              <button
-                key={mode}
-                type="button"
-                onClick={() => chooseSortMode(mode)}
-                className={`h-10 rounded-full border px-4 text-xs font-semibold uppercase tracking-[0.12em] transition ${
-                  sortMode === mode
-                    ? "border-accent bg-accent text-accent-foreground shadow-lg shadow-text-primary/10"
-                    : "border-border bg-background/60 text-text-primary hover:border-accent/60 hover:bg-surface"
-                }`}
-                aria-pressed={sortMode === mode}
-              >
-                {mediaSortLabels[mode]}
-              </button>
-            ))}
-            <Button variant="secondary" className="h-10 px-4" onClick={resetSortMode}>
-              <RotateCcw className="h-4 w-4" />
-              Reset
-            </Button>
-          </div>
-
-          <div className="grid gap-2 lg:hidden">
-            <label className="sr-only" htmlFor={`album-sort-${albumId}`}>Sort album media</label>
-            <select
-              id={`album-sort-${albumId}`}
-              value={sortMode}
-              onChange={(event) => chooseSortMode(parseMediaSortMode(event.target.value))}
-              className="h-12 w-full rounded-full border border-border bg-background/80 px-4 text-sm font-semibold text-text-primary outline-none focus:ring-2 focus:ring-ring"
+        <div className="hidden flex-wrap items-center gap-2 lg:flex">
+          {(["smart", "manual", "taken_desc", "portrait_first", "liked_desc", "shuffle"] as MediaSortMode[]).map((mode) => (
+            <button
+              key={mode}
+              type="button"
+              onClick={() => chooseSortMode(mode)}
+              className={`h-9 rounded-full px-4 text-[0.65rem] font-semibold uppercase tracking-widest transition-colors ${
+                sortMode === mode
+                  ? "bg-text-primary text-background"
+                  : "bg-surface/30 text-text-secondary hover:text-text-primary hover:bg-surface"
+              }`}
+              aria-pressed={sortMode === mode}
             >
-              {mediaSortModes.map((mode) => (
-                <option key={mode} value={mode}>
-                  {mediaSortLabels[mode]}
-                </option>
-              ))}
-            </select>
-            <Button variant="secondary" className="w-full" onClick={resetSortMode}>
-              <RotateCcw className="h-4 w-4" />
-              Reset to default
-            </Button>
-          </div>
+              {mediaSortLabels[mode]}
+            </button>
+          ))}
+          <Button variant="icon" className="h-9 w-9 rounded-full text-text-secondary hover:text-text-primary" onClick={resetSortMode} aria-label="Reset sort">
+            <RotateCcw className="h-3.5 w-3.5" />
+          </Button>
+        </div>
+
+        <div className="grid gap-2 lg:hidden w-full max-w-xs">
+          <label className="sr-only" htmlFor={`album-sort-${albumId}`}>Sort media</label>
+          <select
+            id={`album-sort-${albumId}`}
+            value={sortMode}
+            onChange={(event) => chooseSortMode(parseMediaSortMode(event.target.value))}
+            className="h-10 w-full rounded-full border border-border/40 bg-surface/30 px-4 text-[0.8rem] font-medium text-text-primary outline-none focus:border-text-primary/30 appearance-none"
+          >
+            {mediaSortModes.map((mode) => (
+              <option key={mode} value={mode}>
+                {mediaSortLabels[mode]}
+              </option>
+            ))}
+          </select>
         </div>
       </div>
 

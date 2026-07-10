@@ -42,16 +42,18 @@ export default async function AlbumsPage({ searchParams }: AlbumsPageProps) {
     <main className="relative z-10 min-h-screen bg-transparent">
       <NatureAnimatedBackground config={landing.background_settings} />
       <AppHeader />
-      <section className="page-shell-1440 py-10 sm:py-14">
-        <p className="text-xs font-semibold uppercase tracking-[0.24em] text-text-secondary">
-          {dict.albums.archive_subtitle}
-        </p>
-        <h1 className="mt-3 max-w-4xl break-words text-4xl font-semibold leading-none text-text-primary sm:text-6xl">
-          {dict.albums.archive_title}
-        </h1>
-        <p className="mt-5 max-w-2xl text-base leading-8 text-text-secondary">
-          {dict.albums.archive_desc}
-        </p>
+      <section className="mx-auto max-w-[1200px] px-6 py-20 sm:py-32">
+        <div className="max-w-4xl">
+          <p className="text-[0.68rem] font-semibold uppercase tracking-[0.25em] text-text-secondary mb-4">
+            {dict.albums.archive_subtitle}
+          </p>
+          <h1 className="font-serif text-[3.2rem] md:text-7xl font-light leading-[0.95] text-text-primary mb-8">
+            {dict.albums.archive_title}
+          </h1>
+          <p className="max-w-2xl text-[1.1rem] leading-[1.8] font-light text-text-secondary">
+            {dict.albums.archive_desc}
+          </p>
+        </div>
       </section>
       <AlbumList albums={albums} dict={dict} locale={locale} />
       <AccessRequestModal />

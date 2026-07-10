@@ -20,8 +20,7 @@ export async function PATCH(request: NextRequest) {
   try {
     const body = await request.json().catch(() => ({}));
     const profile = await saveAboutProfile(body);
-    revalidatePath("/about");
-    revalidatePath("/studio");
+    revalidatePath("/", "layout");
     return apiSuccess({ profile });
   } catch (error) {
     if (error instanceof ZodError) {

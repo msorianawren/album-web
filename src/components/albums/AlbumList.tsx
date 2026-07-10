@@ -13,14 +13,14 @@ interface AlbumListProps {
 export function AlbumList({ albums, dict, locale = "en" }: AlbumListProps) {
   if (!albums.length) {
     return (
-      <section className="mx-auto flex w-full max-w-[1440px] flex-col items-center px-4 py-20 text-center sm:px-8 lg:px-12">
-        <div className="mb-8 flex h-20 w-20 items-center justify-center rounded-full bg-surface-secondary border border-border/50">
-          <Camera className="h-8 w-8 text-text-secondary/50" aria-hidden="true" />
+      <section className="mx-auto flex w-full max-w-[1200px] flex-col items-center px-6 py-32 text-center">
+        <div className="mb-10 flex h-24 w-24 items-center justify-center rounded-full bg-surface/30 border border-border/40 text-text-secondary/30">
+          <Camera className="h-10 w-10" aria-hidden="true" />
         </div>
-        <h2 className="font-serif text-3xl sm:text-4xl font-normal text-text-primary mb-4">
-          {dict?.albums?.no_albums || "No albums available"}
+        <h2 className="font-serif text-3xl md:text-4xl font-normal text-text-primary mb-6">
+          {dict?.albums?.no_albums || "No Archives Available"}
         </h2>
-        <p className="max-w-md text-[0.95rem] text-text-secondary font-light">
+        <p className="max-w-[400px] text-[0.95rem] leading-[1.8] text-text-secondary font-light">
           {dict?.albums?.no_albums_desc || "Public collections will appear here when the owner publishes them."}
         </p>
       </section>
@@ -30,44 +30,43 @@ export function AlbumList({ albums, dict, locale = "en" }: AlbumListProps) {
   return (
     <section
       id="albums"
-      className="mx-auto w-full max-w-[1440px] px-4 pb-20 sm:px-8 lg:px-12"
+      className="mx-auto w-full max-w-[1200px] px-6 pb-32"
     >
-      <ScrollReveal className="mb-7 flex items-end justify-between gap-4">
-        <div className="min-w-0">
-          <p className="text-[0.68rem] font-medium uppercase tracking-[0.2em] text-text-secondary mb-3">
-            Selected books
+      <ScrollReveal className="mb-12 flex flex-col md:flex-row md:items-end justify-between gap-10">
+        <div className="min-w-0 max-w-xl">
+          <p className="text-[0.65rem] font-semibold uppercase tracking-[0.25em] text-text-secondary mb-4 block">
+            Selected Books
           </p>
-          <h2 className="font-serif text-3xl font-normal text-text-primary sm:text-4xl mb-4">
-            {dict?.albums?.public_albums || "Public Albums"}
+          <h2 className="font-serif text-[2.2rem] md:text-5xl font-light text-text-primary mb-6 leading-none">
+            {dict?.albums?.public_albums || "Public Archives"}
           </h2>
-          <p className="text-[0.95rem] font-light text-text-secondary">
-            {dict?.albums?.public_albums_desc || "Browse public editorials, updating shoots, and featured works."}
+          <p className="text-[1rem] leading-[1.6] font-light text-text-secondary max-w-[420px]">
+            {dict?.albums?.public_albums_desc || "Browse public editorials, updating diaries, and featured visual works."}
           </p>
         </div>
-      </ScrollReveal>
-      <ScrollReveal delay={0.1}>
-        <form action="/albums" className="mb-8 grid gap-3 rounded-[1.3rem] border border-[var(--glass-border)] bg-[var(--glass-bg)] p-3 shadow-[0_8px_30px_rgb(0,0,0,0.04)] backdrop-blur-md sm:rounded-[1.6rem] sm:p-4 md:grid-cols-[1fr_180px_auto]">
-        <input
-          name="q"
-          placeholder={dict?.albums?.search_placeholder || "Search editorial, studio, campaign..."}
-          className="h-12 rounded-full border border-border bg-background/70 px-5 text-sm outline-none transition focus:ring-2 focus:ring-ring"
-        />
-        <select
-          name="status"
-          className="h-12 rounded-full border border-border bg-background/70 px-5 text-sm outline-none transition focus:ring-2 focus:ring-ring"
-          defaultValue=""
-        >
-          <option value="">{dict?.albums?.all_statuses || "All statuses"}</option>
-          <option value="public">{dict?.albums?.status_public || "Public"}</option>
-          <option value="updating">{dict?.albums?.status_updating || "Updating"}</option>
-          <option value="private">{dict?.albums?.status_private || "Private"}</option>
-        </select>
-        <Button type="submit" className="w-full md:w-auto">{dict?.common?.search || "Search"}</Button>
-      </form>
+
+        <form action="/albums" className="flex items-center gap-3 w-full md:w-auto max-w-[500px]">
+          <input
+            name="q"
+            placeholder={dict?.albums?.search_placeholder || "Search archives..."}
+            className="w-full h-11 rounded-full border border-border/40 bg-surface/20 px-5 text-[0.8rem] text-text-primary placeholder:text-text-secondary/50 outline-none transition focus:border-text-primary/30"
+          />
+          <select
+            name="status"
+            className="shrink-0 h-11 rounded-full border border-border/40 bg-surface/20 px-4 text-[0.8rem] text-text-secondary outline-none transition focus:border-text-primary/30 appearance-none"
+            defaultValue=""
+          >
+            <option value="">{dict?.albums?.all_statuses || "All"}</option>
+            <option value="public">{dict?.albums?.status_public || "Public"}</option>
+            <option value="updating">{dict?.albums?.status_updating || "Updating"}</option>
+            <option value="private">{dict?.albums?.status_private || "Private"}</option>
+          </select>
+          <Button type="submit" variant="secondary" className="h-11 rounded-full px-5 text-[0.7rem] uppercase tracking-widest">{dict?.common?.search || "Find"}</Button>
+        </form>
       </ScrollReveal>
       
       {albums.filter((a) => a.status !== "private").length > 0 && (
-        <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 mb-20">
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 mb-24 border-t border-border/40 pt-16">
           {albums
             .filter((a) => a.status !== "private")
             .map((album) => (
@@ -77,19 +76,19 @@ export function AlbumList({ albums, dict, locale = "en" }: AlbumListProps) {
       )}
 
       {albums.filter((a) => a.status === "private").length > 0 && (
-        <div className="mt-16 border-t border-border pt-16">
-          <div className="mb-14 max-w-2xl">
-            <p className="text-[0.68rem] font-medium uppercase tracking-[0.2em] text-text-secondary mb-3">
+        <div className="mt-20 border-t border-border/40 pt-20">
+          <div className="mb-16 max-w-2xl">
+            <p className="text-[0.65rem] font-semibold uppercase tracking-[0.25em] text-text-secondary mb-4 block">
               Restricted Access
             </p>
-            <h2 className="font-serif text-3xl font-normal text-text-primary sm:text-4xl mb-4">
-              {dict?.albums?.private_albums || "Private Albums"}
+            <h2 className="font-serif text-[2.2rem] md:text-5xl font-light text-text-primary mb-6 leading-none">
+              {dict?.albums?.private_albums || "Private Archives"}
             </h2>
-            <p className="text-[0.95rem] font-light leading-[1.6] text-text-secondary">
+            <p className="text-[1rem] leading-[1.6] font-light text-text-secondary max-w-[420px]">
               {dict?.albums?.private_albums_desc || "These collections are reserved for authorized guests. You must request private access to view them."}
             </p>
           </div>
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {albums
               .filter((a) => a.status === "private")
               .map((album) => (
