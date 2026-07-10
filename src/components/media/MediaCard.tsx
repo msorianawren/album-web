@@ -32,6 +32,7 @@ export function MediaCard({
       <button
         className="absolute inset-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         onClick={() => onOpen(index)}
+        data-media-index={index}
         aria-label={`Open ${media.title ?? media.original_filename ?? "media"}`}
       >
         {media.media_type === "image" ? (

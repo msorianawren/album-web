@@ -9,6 +9,8 @@ import { Textarea } from "@/components/ui/Textarea";
 import type { AlbumStatus, LandingPageContent, SiteSettings, AboutProfile } from "@/lib/types";
 import { AboutSettingsTab } from "@/components/studio/settings/AboutSettingsTab";
 import { LOCALES } from "@/lib/i18n";
+import { motion, AnimatePresence } from "framer-motion";
+import { AlertCircle } from "lucide-react";
 
 type TabKey =
   | "general"
@@ -83,8 +85,22 @@ export function SettingsCenter({
 
   const envRows = useMemo(() => Object.entries(systemHealth.env), [systemHealth.env]);
 
+  // Dirty state detection
+  const isSettingsDirty = useMemo(() => JSON.stringify(settings) !== JSON.stringify(initialSettings), [settings, initialSettings]);
+  const isLandingDirty = useMemo(() => JSON.stringify(landing) !== JSON.stringify(initialLanding), [landing, initialLanding]);
+
   function update<K extends keyof SiteSettings>(key: K, value: SiteSettings[K]) {
     setSettings((current) => ({ ...current, [key]: value }));
+  }
+
+  function updateAdvanced(key: string, value: any) {
+    setSettings((current) => ({
+      ...current,
+      advanced_settings: {
+        ...(current.advanced_settings || {}),
+        [key]: value
+      }
+    }));
   }
 
   function updateLanding<K extends keyof LandingPageContent>(key: K, value: LandingPageContent[K]) {
@@ -366,13 +382,6 @@ export function SettingsCenter({
                 {tab.label}
               </button>
             ))}
-          </div>
-          <div className="flex items-center gap-3">
-            <p className="text-sm text-text-secondary" aria-live="polite">{message}</p>
-            <Button onClick={save} disabled={saving}>
-              <Save className="h-4 w-4" />
-              {saving ? "Saving" : "Save settings"}
-            </Button>
           </div>
         </div>
       </div>
@@ -680,14 +689,6 @@ export function SettingsCenter({
                   <Toggle label="Personal Letter" checked={landing.section_toggles?.personal_letter !== false} onChange={(v) => updateLanding("section_toggles", { ...landing.section_toggles, personal_letter: v })} />
                 </div>
               </div>
-
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mt-8 border-t border-border pt-6">
-                <p className="text-sm text-text-secondary" aria-live="polite">{landingMessage}</p>
-                <Button onClick={saveLanding} disabled={savingLanding}>
-                  <Save className="h-4 w-4" />
-                  {savingLanding ? "Saving" : "Save landing"}
-                </Button>
-              </div>
             </div>
             <LandingPreview landing={landing} activeLandingLocale={activeLandingLocale} />
           </div>
@@ -732,6 +733,16 @@ export function SettingsCenter({
             <Toggle label="Show counts on cards" checked={settings.show_counts_on_cards} onChange={(value) => update("show_counts_on_cards", value)} />
             <Toggle label="Show updated date" checked={settings.show_updated_date} onChange={(value) => update("show_updated_date", value)} />
             <Toggle label="Show status badges" checked={settings.show_status_badges} onChange={(value) => update("show_status_badges", value)} />
+          </div>
+          <div className="mt-4 grid gap-4 border-t border-border pt-4">
+            <h3 className="font-serif text-xl text-text-primary">Visitor Experience</h3>
+            <Toggle label="Enable Album Memory (Remember where visitors left off)" checked={settings.advanced_settings?.enable_album_memory ?? false} onChange={(value) => updateAdvanced("enable_album_memory", value)} />
+            <div className="grid gap-4 md:grid-cols-2">
+              <Toggle label="Show 'Recently viewed' badge" checked={settings.advanced_settings?.show_recently_viewed_badge ?? false} onChange={(value) => updateAdvanced("show_recently_viewed_badge", value)} />
+              <Toggle label="Show 'Viewed' badge" checked={settings.advanced_settings?.show_already_viewed_badge ?? false} onChange={(value) => updateAdvanced("show_already_viewed_badge", value)} />
+              <Toggle label="Show 'Continue viewing' hint inside albums" checked={settings.advanced_settings?.show_continue_viewing_hint ?? false} onChange={(value) => updateAdvanced("show_continue_viewing_hint", value)} />
+              <NumberField label="Memory retention (days)" value={settings.advanced_settings?.album_memory_retention_days ?? 180} min={1} max={365} onChange={(value) => updateAdvanced("album_memory_retention_days", value)} />
+            </div>
           </div>
           <div className="mt-4 grid gap-4 border-t border-border pt-4">
             <Field label="Footer description">
@@ -900,6 +911,35 @@ export function SettingsCenter({
           ))}
         </div>
       </section>
+
+      {/* Sticky Save Bar for Settings and Landing (About handles its own) */}
+      {activeTab !== "about" && (isSettingsDirty || isLandingDirty || message || landingMessage) && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-6 rounded-full border border-border bg-background/80 backdrop-blur-xl px-5 py-3 shadow-2xl shadow-text-primary/10 transition-all">
+          <div className="relative flex items-center h-5 overflow-hidden">
+            <AnimatePresence mode="wait">
+              {message || landingMessage ? (
+                <motion.div key="msg" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="flex items-center gap-2 text-sm font-medium text-text-primary">
+                  <span className="truncate max-w-[200px] sm:max-w-[300px]">{activeTab === "landing" ? landingMessage : message}</span>
+                </motion.div>
+              ) : (
+                <motion.div key="idle" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex items-center gap-2 text-sm font-medium text-text-secondary hidden sm:flex">
+                  <AlertCircle className="h-4 w-4" /> Unsaved changes will be lost
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+          <Button 
+            onClick={activeTab === "landing" ? saveLanding : save} 
+            disabled={activeTab === "landing" ? savingLanding : saving} 
+            className="rounded-full shrink-0"
+          >
+            <Save className="h-4 w-4 mr-2" />
+            {activeTab === "landing" 
+              ? (savingLanding ? "Saving..." : "Save Landing") 
+              : (saving ? "Saving..." : "Save Settings")}
+          </Button>
+        </div>
+      )}
     </section>
   );
 }

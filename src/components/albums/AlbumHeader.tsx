@@ -3,6 +3,7 @@ import { Image as ImageIcon } from "lucide-react";
 import { DownloadButton } from "@/components/media/DownloadButton";
 import { AlbumStatusBadge } from "@/components/ui/Badge";
 import { ShareButton } from "@/components/ui/ShareButton";
+import { AlbumMemoryHint } from "@/components/albums/AlbumMemoryHint";
 import type { AlbumDetail } from "@/lib/types";
 import { formatMediaCount } from "@/lib/utils";
 
@@ -59,6 +60,7 @@ export function AlbumHeader({ album, dict }: AlbumHeaderProps) {
         <p className="max-w-[500px] text-[1.05rem] leading-[1.8] font-light text-text-secondary">
           {album.description}
         </p>
+        <AlbumMemoryHint albumId={album.id} />
         <div className="mt-12 flex flex-wrap gap-4 items-center">
           <ShareButton title={album.title} />
           {album.download_allowed ? (

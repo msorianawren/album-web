@@ -8,6 +8,7 @@ import { DownloadButton } from "@/components/media/DownloadButton";
 import { MediaLikeButton } from "@/components/media/MediaLikeButton";
 import { Button } from "@/components/ui/Button";
 import type { Media } from "@/lib/types";
+import { useAlbumViewMemory } from "@/hooks/useAlbumViewMemory";
 
 interface MediaViewerProps {
   media: Media[];
@@ -41,6 +42,8 @@ export function MediaViewer({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const dragStartPos = useRef({ x: 0, y: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
+  
+  const { markAlbumViewed } = useAlbumViewMemory();
 
   const isImageLoading = item?.media_type === "image" && !loadedImages[item.id];
   const imageWidth = item?.width ?? 1600;
@@ -62,7 +65,16 @@ export function MediaViewer({
 
   useEffect(() => {
     resetZoom();
-  }, [currentIndex]);
+    if (item) {
+      markAlbumViewed({
+        albumId: item.album_id,
+        // Slug is unknown here but we can pass it as empty since we only update lastMedia
+        slug: "", 
+        mediaId: item.id,
+        mediaIndex: currentIndex!,
+      });
+    }
+  }, [currentIndex, item, markAlbumViewed]);
 
   useEffect(() => {
     const handleFullscreenChange = () => setIsFullscreen(!!document.fullscreenElement);

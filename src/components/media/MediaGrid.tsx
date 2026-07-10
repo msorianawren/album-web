@@ -155,7 +155,7 @@ export function MediaGrid({
         </div>
       </div>
 
-      <div className="columns-1 gap-4 sm:columns-2 md:columns-3 lg:columns-4">
+      <div id="media-grid" className="columns-1 gap-4 sm:columns-2 md:columns-3 lg:columns-4">
         {sortedMedia.map((item, index) => (
           <MediaCard
             key={item.id}

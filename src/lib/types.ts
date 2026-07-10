@@ -337,6 +337,7 @@ export interface SiteSettings {
   twitter_card: "summary" | "summary_large_image";
   footer_description: string;
   footer_note: string;
+  advanced_settings?: Record<string, any>;
   updated_at?: string;
 }
 

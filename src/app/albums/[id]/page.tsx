@@ -15,6 +15,7 @@ import { getPublicSession } from "@/lib/auth";
 import { cookies } from "next/headers";
 import { getDictionary } from "@/lib/getDictionary";
 import { NatureAnimatedBackground } from "@/components/landing/NatureAnimatedBackground";
+import { AlbumViewTracker } from "@/components/albums/AlbumViewTracker";
 
 interface AlbumPageProps {
   params: Promise<{
@@ -105,6 +106,7 @@ export default async function AlbumPage({ params }: AlbumPageProps) {
     <main className="relative z-10 min-h-screen bg-transparent">
       <NatureAnimatedBackground config={landing.background_settings} />
       <AppHeader />
+      <AlbumViewTracker albumId={album.id} slug={album.slug} locked={album.locked} />
       <AlbumHeader album={localizedAlbum} dict={dict} />
       {album.locked ? (
         <LockedAlbumState album={album} />

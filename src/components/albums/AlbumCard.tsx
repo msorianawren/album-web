@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/Badge";
 import type { Album } from "@/lib/types";
 import { formatMediaCount } from "@/lib/utils";
 import { ScrollReveal } from "@/components/ui/ScrollReveal";
+import { useAlbumViewMemory } from "@/hooks/useAlbumViewMemory";
 
 interface AlbumCardProps {
   album: Album;
@@ -26,6 +27,9 @@ export function AlbumCard({ album, dict, locale = "en" }: AlbumCardProps) {
         album.cover_url,
       ].filter((value, index, values): value is string => Boolean(value) && values.indexOf(value) === index).slice(0, 4);
   const videoPreview = album.status !== "private" && previewItems.find((item) => item.media_type === "video");
+
+  const { getAlbumViewState } = useAlbumViewMemory();
+  const viewState = getAlbumViewState(album.id);
 
   return (
     <ScrollReveal>
@@ -67,6 +71,20 @@ export function AlbumCard({ album, dict, locale = "en" }: AlbumCardProps) {
                 : (dict?.albums?.status_private || "Private")}
             </Badge>
           </div>
+          {viewState.isRecentlyViewed && (
+            <div className="absolute left-4 top-12 mt-2">
+              <Badge className="bg-white/90 text-black backdrop-blur-md font-medium tracking-widest text-[0.6rem] uppercase border-none shadow-sm">
+                Recently viewed
+              </Badge>
+            </div>
+          )}
+          {!viewState.isRecentlyViewed && viewState.isViewed && (
+            <div className="absolute left-4 top-12 mt-2">
+              <Badge className="bg-black/40 text-white/90 backdrop-blur-md font-medium tracking-widest text-[0.6rem] uppercase border border-white/20 shadow-sm">
+                Viewed
+              </Badge>
+            </div>
+          )}
           {videoPreview ? (
             <div className="absolute bottom-4 left-4 rounded-full border border-white/20 bg-black/40 px-3 py-1.5 text-[0.6rem] font-medium uppercase tracking-[0.2em] text-white backdrop-blur-md">
               Motion
