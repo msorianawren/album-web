@@ -146,7 +146,7 @@ export function MediaViewer({
       {item ? (
         <motion.div
           ref={containerRef}
-          className="fixed inset-0 z-50 bg-[#0a0a0a]/95 text-accent-foreground backdrop-blur-xl"
+          className="fixed inset-0 z-50 bg-[#0a0a0a]/95 text-accent-foreground backdrop-blur-xl flex flex-col"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -155,14 +155,93 @@ export function MediaViewer({
           aria-modal="true"
           aria-label="Media viewer"
         >
-          {/* Main Image Area with Wheel Zoom */}
+          {/* Top Controls - Hide most in fullscreen */}
+          <div className="flex-none z-20 flex items-center justify-between p-4 sm:p-6 min-h-[80px]" onClick={(event) => event.stopPropagation()}>
+            <div className="flex items-center gap-2">
+              {!isFullscreen && (
+                <>
+                  <Button
+                    variant="secondary"
+                    className="h-10 rounded-full border-lightbox-border bg-white/10 px-3 text-white backdrop-blur-md hover:bg-white hover:text-black transition-colors"
+                    onClick={() => setAutoPlay((current) => !current)}
+                    aria-label={autoPlay ? "Pause slideshow" : "Start slideshow"}
+                  >
+                    {autoPlay ? <Pause className="h-4 w-4" aria-hidden="true" /> : <Play className="h-4 w-4" aria-hidden="true" />}
+                  </Button>
+                  {scale > 1 && (
+                    <Button
+                      variant="secondary"
+                      className="h-10 rounded-full border-lightbox-border bg-white/10 px-3 text-white backdrop-blur-md hover:bg-white hover:text-black transition-colors"
+                      onClick={resetZoom}
+                      aria-label="Reset Zoom"
+                    >
+                      <ZoomIn className="h-4 w-4 mr-2" />
+                      <span className="text-xs font-semibold">Reset Zoom</span>
+                    </Button>
+                  )}
+                </>
+              )}
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Button
+                variant="secondary"
+                className="h-10 rounded-full border-lightbox-border bg-white/10 px-3 text-white backdrop-blur-md hover:bg-white hover:text-black transition-colors"
+                onClick={toggleFullscreen}
+                aria-label="Toggle Fullscreen"
+              >
+                {isFullscreen ? (
+                  <>
+                    <Minimize className="h-4 w-4 mr-2" aria-hidden="true" />
+                    <span className="text-xs font-semibold">Exit Fullscreen</span>
+                  </>
+                ) : (
+                  <Maximize className="h-4 w-4" aria-hidden="true" />
+                )}
+              </Button>
+              {!isFullscreen && (
+                <Button
+                  variant="secondary"
+                  className="h-10 rounded-full border-lightbox-border bg-white/10 px-3 text-white backdrop-blur-md hover:bg-white hover:text-black transition-colors"
+                  onClick={onClose}
+                  aria-label="Close media viewer"
+                >
+                  <X className="h-4 w-4" aria-hidden="true" />
+                </Button>
+              )}
+            </div>
+          </div>
+
+          {/* Main Image Stage */}
           <div 
-            className="absolute inset-0 flex items-center justify-center overflow-hidden" 
+            className="flex-1 relative flex items-center justify-center overflow-hidden w-full px-12 md:px-24" 
             onClick={onClose}
             onWheel={handleWheel}
           >
+            {/* Navigation Arrows - Center Stage */}
+            {!isFullscreen && (
+              <>
+                <Button
+                  variant="secondary"
+                  className="absolute left-2 md:left-6 z-10 h-12 w-12 rounded-full border-lightbox-border bg-white/10 p-0 text-white backdrop-blur-md hover:bg-white hover:text-black transition-colors"
+                  onClick={(event) => { event.stopPropagation(); onPrevious(); }}
+                  aria-label="Previous media"
+                >
+                  <ChevronLeft className="h-6 w-6" aria-hidden="true" />
+                </Button>
+                <Button
+                  variant="secondary"
+                  className="absolute right-2 md:right-6 z-10 h-12 w-12 rounded-full border-lightbox-border bg-white/10 p-0 text-white backdrop-blur-md hover:bg-white hover:text-black transition-colors"
+                  onClick={(event) => { event.stopPropagation(); onNext(); }}
+                  aria-label="Next media"
+                >
+                  <ChevronRight className="h-6 w-6" aria-hidden="true" />
+                </Button>
+              </>
+            )}
+
             <motion.div
-              className={`relative flex h-full max-h-screen w-full max-w-screen items-center justify-center transition-transform ${scale > 1 ? isDragging ? "cursor-grabbing" : "cursor-grab" : "cursor-default"}`}
+              className={`relative flex h-full w-full items-center justify-center transition-transform ${scale > 1 ? isDragging ? "cursor-grabbing" : "cursor-grab" : "cursor-default"}`}
               key={item.id}
               onClick={(event) => event.stopPropagation()}
               onContextMenu={protectAssets ? (event) => event.preventDefault() : undefined}
@@ -189,7 +268,7 @@ export function MediaViewer({
                   width={imageWidth}
                   height={imageHeight}
                   sizes="100vw"
-                  className="max-h-screen max-w-screen object-contain pointer-events-none"
+                  className="max-h-full max-w-full object-contain pointer-events-none"
                   unoptimized
                   priority
                   draggable={false}
@@ -202,128 +281,66 @@ export function MediaViewer({
                   controls
                   preload="metadata"
                   controlsList={protectAssets ? "nodownload" : undefined}
-                  className="max-h-screen max-w-screen object-contain shadow-2xl shadow-black/40 sm:rounded-[18px]"
+                  className="max-h-full max-w-full object-contain shadow-2xl shadow-black/40 sm:rounded-[18px]"
                 />
               )}
             </motion.div>
           </div>
 
-          {/* Top Controls */}
-          <div className="pointer-events-none absolute left-0 right-0 top-0 z-20 flex items-center justify-between p-4 sm:p-6" onClick={(event) => event.stopPropagation()}>
-            <div className="pointer-events-auto flex items-center gap-2">
-              <Button
-                variant="secondary"
-                className="h-10 rounded-full border-lightbox-border bg-white/10 px-3 text-white backdrop-blur-md hover:bg-white hover:text-black transition-colors"
-                onClick={() => setAutoPlay((current) => !current)}
-                aria-label={autoPlay ? "Pause slideshow" : "Start slideshow"}
-              >
-                {autoPlay ? <Pause className="h-4 w-4" aria-hidden="true" /> : <Play className="h-4 w-4" aria-hidden="true" />}
-              </Button>
-              {scale > 1 && (
-                <Button
-                  variant="secondary"
-                  className="h-10 rounded-full border-lightbox-border bg-white/10 px-3 text-white backdrop-blur-md hover:bg-white hover:text-black transition-colors"
-                  onClick={resetZoom}
-                  aria-label="Reset Zoom"
-                >
-                  <ZoomIn className="h-4 w-4 mr-2" />
-                  <span className="text-xs font-semibold">Reset Zoom</span>
-                </Button>
-              )}
-            </div>
-
-            <div className="pointer-events-auto flex items-center gap-2">
-              <Button
-                variant="secondary"
-                className="h-10 rounded-full border-lightbox-border bg-white/10 px-3 text-white backdrop-blur-md hover:bg-white hover:text-black transition-colors"
-                onClick={toggleFullscreen}
-                aria-label="Toggle Fullscreen"
-              >
-                {isFullscreen ? <Minimize className="h-4 w-4" aria-hidden="true" /> : <Maximize className="h-4 w-4" aria-hidden="true" />}
-              </Button>
-              <Button
-                variant="secondary"
-                className="h-10 rounded-full border-lightbox-border bg-white/10 px-3 text-white backdrop-blur-md hover:bg-white hover:text-black transition-colors"
-                onClick={onClose}
-                aria-label="Close media viewer"
-              >
-                <X className="h-4 w-4" aria-hidden="true" />
-              </Button>
-            </div>
-          </div>
-
-          {/* Navigation Arrows */}
-          <div className="pointer-events-none absolute inset-y-0 left-2 right-2 z-10 flex items-center justify-between md:left-6 md:right-6">
-            <Button
-              variant="secondary"
-              className="pointer-events-auto h-12 w-12 rounded-full border-lightbox-border bg-white/10 p-0 text-white backdrop-blur-md hover:bg-white hover:text-black transition-colors"
-              onClick={(event) => { event.stopPropagation(); onPrevious(); }}
-              aria-label="Previous media"
-            >
-              <ChevronLeft className="h-6 w-6" aria-hidden="true" />
-            </Button>
-            <Button
-              variant="secondary"
-              className="pointer-events-auto h-12 w-12 rounded-full border-lightbox-border bg-white/10 p-0 text-white backdrop-blur-md hover:bg-white hover:text-black transition-colors"
-              onClick={(event) => { event.stopPropagation(); onNext(); }}
-              aria-label="Next media"
-            >
-              <ChevronRight className="h-6 w-6" aria-hidden="true" />
-            </Button>
-          </div>
-
-          {/* Bottom Controls */}
-          <div className="pointer-events-none absolute bottom-0 left-0 right-0 z-20 flex flex-col items-center p-4 sm:p-6" onClick={(event) => event.stopPropagation()}>
-            {/* Title / Counter */}
-            <div className="mb-4 text-center text-xs text-white/70 shadow-black drop-shadow-md">
-              <span className="font-semibold text-white">
-                {currentIndex! + 1} / {media.length}
-              </span>
-              <span className="mx-2 opacity-50">|</span>
-              <span className="inline-block max-w-[60vw] truncate align-bottom">
-                {item.title ?? item.original_filename ?? (item.media_type === "image" ? "Image" : "Video")}
-              </span>
-            </div>
-
-            <div className="pointer-events-auto flex w-full max-w-[min(56rem,calc(100vw-2rem))] flex-col gap-3 rounded-[1.2rem] border border-lightbox-border bg-white/5 p-3 backdrop-blur-md sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex shrink-0 items-center justify-center gap-2">
-                <MediaLikeButton mediaId={item.id} />
-                {downloadAllowed && <DownloadButton href={`/api/media/${item.id}/download`} />}
+          {/* Bottom Controls - Hide in fullscreen */}
+          {!isFullscreen && (
+            <div className="flex-none z-20 flex flex-col items-center p-4 sm:p-6 min-h-[140px]" onClick={(event) => event.stopPropagation()}>
+              {/* Title / Counter */}
+              <div className="mb-4 text-center text-xs text-white/70 shadow-black drop-shadow-md">
+                <span className="font-semibold text-white">
+                  {currentIndex! + 1} / {media.length}
+                </span>
+                <span className="mx-2 opacity-50">|</span>
+                <span className="inline-block max-w-[60vw] truncate align-bottom">
+                  {item.title ?? item.original_filename ?? (item.media_type === "image" ? "Image" : "Video")}
+                </span>
               </div>
-              
-              {media.length > 1 && (
-                <div className="hidden min-w-0 flex-1 gap-2 overflow-x-auto sm:flex sm:justify-end">
-                  {media.map((thumb, index) => (
-                    <button
-                      key={thumb.id}
-                      type="button"
-                      onClick={() => onSelect(index)}
-                      className={`relative h-12 w-16 shrink-0 overflow-hidden rounded-lg border transition ${
-                        index === currentIndex ? "border-white" : "border-transparent opacity-50 hover:opacity-100"
-                      }`}
-                    >
-                      {thumb.media_type === "image" ? (
-                        <Image
-                          src={thumb.thumbnail_url ?? thumb.url}
-                          alt=""
-                          fill
-                          sizes="64px"
-                          className="object-cover"
-                          unoptimized
-                        />
-                      ) : (
-                        <video
-                          src={thumb.url}
-                          className="h-full w-full object-cover"
-                          preload="metadata"
-                        />
-                      )}
-                    </button>
-                  ))}
+
+              <div className="flex w-full max-w-[min(56rem,calc(100vw-2rem))] flex-col gap-3 rounded-[1.2rem] border border-lightbox-border bg-white/5 p-3 backdrop-blur-md sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex shrink-0 items-center justify-center gap-2">
+                  <MediaLikeButton mediaId={item.id} />
+                  {downloadAllowed && <DownloadButton href={`/api/media/${item.id}/download`} />}
                 </div>
-              )}
+                
+                {media.length > 1 && (
+                  <div className="hidden min-w-0 flex-1 gap-2 overflow-x-auto sm:flex sm:justify-end">
+                    {media.map((thumb, index) => (
+                      <button
+                        key={thumb.id}
+                        type="button"
+                        onClick={() => onSelect(index)}
+                        className={`relative h-12 w-16 shrink-0 overflow-hidden rounded-lg border transition ${
+                          index === currentIndex ? "border-white" : "border-transparent opacity-50 hover:opacity-100"
+                        }`}
+                      >
+                        {thumb.media_type === "image" ? (
+                          <Image
+                            src={thumb.thumbnail_url ?? thumb.url}
+                            alt=""
+                            fill
+                            sizes="64px"
+                            className="object-cover"
+                            unoptimized
+                          />
+                        ) : (
+                          <video
+                            src={thumb.url}
+                            className="h-full w-full object-cover"
+                            preload="metadata"
+                          />
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
+          )}
         </motion.div>
       ) : null}
     </AnimatePresence>

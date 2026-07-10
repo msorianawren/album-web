@@ -10,15 +10,14 @@ export function NatureSettlingEffect({ preset }: SettlingEffectProps) {
   const [active, setActive] = useState(false);
 
   useEffect(() => {
-    // Reset effect when preset changes
-    setActive(false);
-    
-    // Accumulation delay (10 seconds)
     const timer = setTimeout(() => {
       setActive(true);
     }, 10000);
 
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(timer);
+      setActive(false);
+    };
   }, [preset]);
 
   if (!active) return null;

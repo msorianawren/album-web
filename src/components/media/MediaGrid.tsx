@@ -1,8 +1,8 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useCallback, useMemo, useState, useTransition, useEffect } from "react";
-import { Camera, RotateCcw, SlidersHorizontal, Edit3, X, Save } from "lucide-react";
+import { useCallback, useMemo, useState, useTransition } from "react";
+import { Camera, RotateCcw, SlidersHorizontal } from "lucide-react";
 import { MediaCard } from "@/components/media/MediaCard";
 import { Button } from "@/components/ui/Button";
 import {
@@ -35,8 +35,6 @@ export function MediaGrid({
   defaultSortMode = "smart",
 }: MediaGridProps) {
   const storageKey = `album:${albumId}:sort`;
-  const layoutStorageKey = `journal-layout-${albumId}`;
-  
   const defaultMode = parseMediaSortMode(defaultSortMode, "smart");
   const [currentIndex, setCurrentIndex] = useState<number | null>(null);
   const [sortMode, setSortMode] = useState<MediaSortMode>(() => {
@@ -51,35 +49,10 @@ export function MediaGrid({
   const [shuffleSeed, setShuffleSeed] = useState(() => `${albumId}:${Date.now()}`);
   const [isPending, startTransition] = useTransition();
 
-  // Journal Layout State
-  const [isEditMode, setIsEditMode] = useState(false);
-  const [customOrder, setCustomOrder] = useState<string[]>([]);
-  const [draggedId, setDraggedId] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    try {
-      const saved = window.localStorage.getItem(layoutStorageKey);
-      if (saved) setCustomOrder(JSON.parse(saved));
-    } catch {}
-  }, [layoutStorageKey]);
-
   const sortedMedia = useMemo(
     () => sortMedia(media, sortMode, shuffleSeed),
     [media, shuffleSeed, sortMode],
   );
-
-  const finalMedia = useMemo(() => {
-    if (customOrder.length > 0) {
-      const orderMap = new Map(customOrder.map((id, index) => [id, index]));
-      return [...sortedMedia].sort((a, b) => {
-        const aIndex = orderMap.has(a.id) ? orderMap.get(a.id)! : Infinity;
-        const bIndex = orderMap.has(b.id) ? orderMap.get(b.id)! : Infinity;
-        return aIndex - bIndex;
-      });
-    }
-    return sortedMedia;
-  }, [sortedMedia, customOrder]);
 
   const chooseSortMode = useCallback((value: MediaSortMode) => {
     startTransition(() => {
@@ -108,59 +81,15 @@ export function MediaGrid({
 
   const handleNext = useCallback(() => {
     setCurrentIndex((index) =>
-      index === null ? null : (index + 1) % finalMedia.length,
+      index === null ? null : (index + 1) % sortedMedia.length,
     );
-  }, [finalMedia.length]);
+  }, [sortedMedia.length]);
 
   const handlePrevious = useCallback(() => {
     setCurrentIndex((index) =>
-      index === null ? null : (index - 1 + finalMedia.length) % finalMedia.length,
+      index === null ? null : (index - 1 + sortedMedia.length) % sortedMedia.length,
     );
-  }, [finalMedia.length]);
-
-  // Drag and drop handlers
-  const handleDragStart = (e: React.DragEvent, id: string) => {
-    setDraggedId(id);
-    e.dataTransfer.effectAllowed = "move";
-    const el = e.currentTarget as HTMLElement;
-    setTimeout(() => el.classList.add('opacity-40', 'scale-95'), 0);
-  };
-
-  const handleDragEnd = (e: React.DragEvent) => {
-    setDraggedId(null);
-    const el = e.currentTarget as HTMLElement;
-    el.classList.remove('opacity-40', 'scale-95');
-  };
-
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = "move";
-  };
-
-  const handleDrop = (e: React.DragEvent, targetId: string) => {
-    e.preventDefault();
-    if (!draggedId || draggedId === targetId) return;
-
-    const currentOrder = customOrder.length > 0 ? customOrder : finalMedia.map(m => m.id);
-    const draggedIndex = currentOrder.indexOf(draggedId);
-    const targetIndex = currentOrder.indexOf(targetId);
-
-    const newOrder = [...currentOrder];
-    newOrder.splice(draggedIndex, 1);
-    newOrder.splice(targetIndex, 0, draggedId);
-
-    setCustomOrder(newOrder);
-    try {
-      window.localStorage.setItem(layoutStorageKey, JSON.stringify(newOrder));
-    } catch {}
-  };
-
-  const resetCustomLayout = () => {
-    setCustomOrder([]);
-    try {
-      window.localStorage.removeItem(layoutStorageKey);
-    } catch {}
-  };
+  }, [sortedMedia.length]);
 
   if (!media.length) {
     return (
@@ -195,50 +124,25 @@ export function MediaGrid({
           </div>
 
           <div className="hidden flex-wrap justify-end gap-2 lg:flex">
-            {!isEditMode && (
-              <>
-                {(["smart", "manual", "taken_desc", "uploaded_desc", "filename_asc", "portrait_first", "landscape_first", "liked_desc", "commented_desc", "shuffle"] as MediaSortMode[]).map((mode) => (
-                  <button
-                    key={mode}
-                    type="button"
-                    onClick={() => chooseSortMode(mode)}
-                    className={`h-10 rounded-full border px-4 text-xs font-semibold uppercase tracking-[0.12em] transition ${
-                      sortMode === mode
-                        ? "border-accent bg-accent text-accent-foreground shadow-lg shadow-text-primary/10"
-                        : "border-border bg-background/60 text-text-primary hover:border-accent/60 hover:bg-surface"
-                    }`}
-                    aria-pressed={sortMode === mode}
-                  >
-                    {mediaSortLabels[mode]}
-                  </button>
-                ))}
-                <Button variant="secondary" className="h-10 px-4" onClick={resetSortMode}>
-                  <RotateCcw className="h-4 w-4" />
-                  Reset
-                </Button>
-              </>
-            )}
-            
-            {/* Journal Edit Mode Toggle (Desktop Only) */}
-            <div className="ml-4 border-l border-border pl-4 flex items-center gap-2">
-              {isEditMode ? (
-                <>
-                  <Button variant="secondary" className="h-10 px-4" onClick={resetCustomLayout}>
-                    <RotateCcw className="h-4 w-4" />
-                    Reset Layout
-                  </Button>
-                  <Button variant="primary" className="h-10 px-4" onClick={() => setIsEditMode(false)}>
-                    <Save className="h-4 w-4 mr-2" />
-                    Done Editing
-                  </Button>
-                </>
-              ) : (
-                <Button variant="secondary" className="h-10 px-4" onClick={() => setIsEditMode(true)}>
-                  <Edit3 className="h-4 w-4 mr-2" />
-                  Edit Journal Layout
-                </Button>
-              )}
-            </div>
+            {(["smart", "manual", "taken_desc", "uploaded_desc", "filename_asc", "portrait_first", "landscape_first", "liked_desc", "commented_desc", "shuffle"] as MediaSortMode[]).map((mode) => (
+              <button
+                key={mode}
+                type="button"
+                onClick={() => chooseSortMode(mode)}
+                className={`h-10 rounded-full border px-4 text-xs font-semibold uppercase tracking-[0.12em] transition ${
+                  sortMode === mode
+                    ? "border-accent bg-accent text-accent-foreground shadow-lg shadow-text-primary/10"
+                    : "border-border bg-background/60 text-text-primary hover:border-accent/60 hover:bg-surface"
+                }`}
+                aria-pressed={sortMode === mode}
+              >
+                {mediaSortLabels[mode]}
+              </button>
+            ))}
+            <Button variant="secondary" className="h-10 px-4" onClick={resetSortMode}>
+              <RotateCcw className="h-4 w-4" />
+              Reset
+            </Button>
           </div>
 
           <div className="grid gap-2 lg:hidden">
@@ -259,37 +163,24 @@ export function MediaGrid({
               <RotateCcw className="h-4 w-4" />
               Reset to default
             </Button>
-            {/* Edit mode note for mobile */}
-            <p className="text-center text-xs text-text-secondary mt-2">Journal layout editing is available on desktop.</p>
           </div>
         </div>
       </div>
 
-      <div className={`columns-1 gap-4 sm:columns-2 md:columns-3 lg:columns-4 ${isEditMode ? "p-2 rounded-xl border-2 border-dashed border-accent/40 bg-accent/5" : ""}`}>
-        {finalMedia.map((item, index) => (
-          <div 
+      <div className="columns-1 gap-4 sm:columns-2 md:columns-3 lg:columns-4">
+        {sortedMedia.map((item, index) => (
+          <MediaCard
             key={item.id}
-            draggable={isEditMode}
-            onDragStart={(e) => handleDragStart(e, item.id)}
-            onDragEnd={handleDragEnd}
-            onDragOver={handleDragOver}
-            onDrop={(e) => handleDrop(e, item.id)}
-            className={`transition-all duration-300 ${isEditMode ? "cursor-move hover:ring-2 hover:ring-accent hover:ring-offset-4 rounded-[2px]" : ""}`}
-          >
-            <div className={isEditMode ? "pointer-events-none" : ""}>
-              <MediaCard
-                media={item}
-                index={index}
-                downloadAllowed={downloadAllowed}
-                protectAssets={protectAssets}
-                onOpen={setCurrentIndex}
-              />
-            </div>
-          </div>
+            media={item}
+            index={index}
+            downloadAllowed={downloadAllowed}
+            protectAssets={protectAssets}
+            onOpen={setCurrentIndex}
+          />
         ))}
       </div>
       <MediaViewer
-        media={finalMedia}
+        media={sortedMedia}
         currentIndex={currentIndex}
         downloadAllowed={downloadAllowed}
         protectAssets={protectAssets}

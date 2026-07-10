@@ -2,9 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import type { LandingBackgroundSettings } from "@/lib/types";
-import { useEffect, useState, useRef } from "react";
-import gsap from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { useEffect, useState } from "react";
 
 const generateParticles = (count: number) => {
   return Array.from({ length: count }).map((_, i) => ({
@@ -23,12 +21,11 @@ export function NatureAnimatedBackground({ config }: { config: LandingBackground
   const pathname = usePathname();
   const [mounted, setMounted] = useState(false);
   const [particles, setParticles] = useState<any[]>([]);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const layerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setMounted(true);
-    const count = Math.floor((config.density / 100) * 80) + 5;
+    // Cap particles aggressively for performance
+    const count = Math.floor((config.density / 100) * 20) + 2;
     setParticles(generateParticles(config.preset === "rain" ? count * 1.5 : count));
 
     // Inject global CSS variables for UI integration
@@ -60,26 +57,6 @@ export function NatureAnimatedBackground({ config }: { config: LandingBackground
     }
   }, [config.density, config.preset]);
 
-  useEffect(() => {
-    if (!mounted || !layerRef.current) return;
-    
-    gsap.registerPlugin(ScrollTrigger);
-    const ctx = gsap.context(() => {
-      gsap.to(layerRef.current, {
-        yPercent: 15,
-        ease: "none",
-        scrollTrigger: {
-          trigger: document.body,
-          start: "top top",
-          end: "bottom top",
-          scrub: true,
-        },
-      });
-    }, containerRef);
-    
-    return () => ctx.revert();
-  }, [mounted, pathname]);
-
   if (!mounted) return null;
   if (config.enabled === false || (config.enabled as unknown) === "false") return null;
   if (pathname?.startsWith("/studio") || pathname?.startsWith("/login")) return null;
@@ -98,10 +75,10 @@ export function NatureAnimatedBackground({ config }: { config: LandingBackground
   return (
     <>
       <NatureSettlingEffect preset={config.preset as string} />
-      <div ref={containerRef} className="pointer-events-none fixed inset-0 z-0 overflow-hidden" aria-hidden="true" style={cssVars}>
+      <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden" aria-hidden="true" style={cssVars}>
       <style>{`
         .nature-container { opacity: var(--nature-opacity); transition: opacity 1s; }
-        .nature-layer { position: absolute; inset: -20%; filter: blur(var(--nature-blur)); will-change: transform; }
+        .nature-layer { position: absolute; inset: -20%; will-change: transform; }
         
         @keyframes fall-sakura {
           0% { transform: translate3d(0, -20vh, 0) rotate(0deg); }
@@ -131,11 +108,11 @@ export function NatureAnimatedBackground({ config }: { config: LandingBackground
           100% { transform: translate3d(10vw, 120vh, 0); }
         }
         .snow-flake {
-          position: absolute; width: 7px; height: 7px;
+          position: absolute; width: 5px; height: 5px;
           background: rgba(0,0,0,0.2); border-radius: 50%;
           opacity: calc(0.7 * var(--nature-intensity));
         }
-        .theme-night .snow-flake { background: white; box-shadow: 0 0 6px 1px white; }
+        .theme-night .snow-flake { background: white; }
 
         @keyframes fall-autumn {
           0% { transform: translate3d(0, -20vh, 0) rotate3d(1, 1, 0, 0deg); }
@@ -200,7 +177,7 @@ export function NatureAnimatedBackground({ config }: { config: LandingBackground
           </div>
         )}
 
-        <div ref={layerRef} className="nature-layer">
+        <div className="nature-layer pointer-events-none">
           {config.preset === "mist" && <div className="mist-layer" style={{ animationDuration: `${60 * speedMultiplier}s` }} />}
           
           {config.preset !== "mist" && particles.map(p => {
