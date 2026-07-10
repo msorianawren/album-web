@@ -1,11 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { ImageUp, Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
 import { Button } from "@/components/ui/Button";
-import type { AboutProfile, EducationItem, CareerItem, HobbyItem, LanguageItem, AchievementItem, SocialLinkItem } from "@/lib/types";
+import type { AboutProfile } from "@/lib/types";
 
 interface AboutSettingsTabProps {
   initialProfile: AboutProfile;
@@ -32,6 +32,56 @@ function Field({ label, description, children }: { label: string; description?: 
       <label className="text-sm font-medium text-text-primary">{label}</label>
       {description ? <p className="text-xs text-text-secondary">{description}</p> : null}
       {children}
+    </div>
+  );
+}
+
+function ArrayRepeater<T extends { id: string }>({
+  items,
+  onChange,
+  renderItem,
+  emptyItem,
+  title,
+  addLabel
+}: {
+  items: T[];
+  onChange: (items: T[]) => void;
+  renderItem: (item: T, index: number, update: (data: Partial<T>) => void) => React.ReactNode;
+  emptyItem: Omit<T, 'id'>;
+  title: string;
+  addLabel: string;
+}) {
+  return (
+    <div className="grid gap-4">
+      <div className="flex items-center justify-between">
+        <label className="text-sm font-medium text-text-primary">{title}</label>
+        <Button variant="secondary" onClick={() => onChange([...items, { ...emptyItem, id: crypto.randomUUID() } as T])} className="h-8 px-3 text-[0.65rem]">
+          <Plus className="h-3 w-3 mr-1" /> {addLabel}
+        </Button>
+      </div>
+      <div className="grid gap-3">
+        {items.length === 0 && (
+          <p className="text-xs text-text-secondary italic">No items added.</p>
+        )}
+        {items.map((item, index) => (
+          <div key={item.id} className="relative rounded-xl border border-border bg-surface/50 p-4">
+            <Button
+              variant="icon"
+              className="absolute right-2 top-2 h-7 w-7 text-red-500 hover:text-red-600 hover:bg-red-500/10 hover:border-red-500/20"
+              onClick={() => onChange(items.filter(i => i.id !== item.id))}
+            >
+              <Trash2 className="h-3 w-3" />
+            </Button>
+            <div className="grid gap-3 pr-8">
+              {renderItem(item, index, (data) => {
+                const newItems = [...items];
+                newItems[index] = { ...item, ...data };
+                onChange(newItems);
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -158,52 +208,91 @@ export function AboutSettingsTab({ initialProfile, uploadAsset, onUpdate }: Abou
         </Field>
       </Section>
 
-      <Section title="Complex Data (JSON)" description="Edit complex arrays like Career, Education, Achievements, Languages, Social Links as JSON for now.">
-        <Field label="Career (JSON)">
-          <Textarea 
-            className="min-h-[150px] font-mono text-xs" 
-            value={JSON.stringify(profile.career ?? [], null, 2)} 
-            onChange={(e) => {
-              try { update("career", JSON.parse(e.target.value)); } catch {}
-            }} 
-          />
-        </Field>
-        <Field label="Education (JSON)">
-          <Textarea 
-            className="min-h-[150px] font-mono text-xs" 
-            value={JSON.stringify(profile.education ?? [], null, 2)} 
-            onChange={(e) => {
-              try { update("education", JSON.parse(e.target.value)); } catch {}
-            }} 
-          />
-        </Field>
-        <Field label="Achievements (JSON)">
-          <Textarea 
-            className="min-h-[150px] font-mono text-xs" 
-            value={JSON.stringify(profile.achievements ?? [], null, 2)} 
-            onChange={(e) => {
-              try { update("achievements", JSON.parse(e.target.value)); } catch {}
-            }} 
-          />
-        </Field>
-        <Field label="Languages (JSON)">
-          <Textarea 
-            className="min-h-[150px] font-mono text-xs" 
-            value={JSON.stringify(profile.languages ?? [], null, 2)} 
-            onChange={(e) => {
-              try { update("languages", JSON.parse(e.target.value)); } catch {}
-            }} 
-          />
-        </Field>
-        <Field label="Social Links (JSON)">
-          <Textarea 
-            className="min-h-[150px] font-mono text-xs" 
-            value={JSON.stringify(profile.social_links ?? [], null, 2)} 
-            onChange={(e) => {
-              try { update("social_links", JSON.parse(e.target.value)); } catch {}
-            }} 
-          />
-        </Field>
+      <Section title="Career & Education" description="Your professional and academic journey.">
+        <ArrayRepeater
+          title="Career"
+          addLabel="Add Role"
+          items={profile.career ?? []}
+          onChange={(items) => update("career", items)}
+          emptyItem={{ role: "", company: "", period: "", description: "" }}
+          renderItem={(item, index, updateItem) => (
+            <>
+              <div className="grid gap-4 md:grid-cols-2">
+                <Field label="Role"><Input value={item.role} onChange={e => updateItem({ role: e.target.value })} /></Field>
+                <Field label="Company"><Input value={item.company} onChange={e => updateItem({ company: e.target.value })} /></Field>
+              </div>
+              <Field label="Period"><Input value={item.period} onChange={e => updateItem({ period: e.target.value })} placeholder="e.g., 2020 - Present" /></Field>
+              <Field label="Description"><Textarea value={item.description} onChange={e => updateItem({ description: e.target.value })} /></Field>
+            </>
+          )}
+        />
+        <div className="my-8 border-t border-border" />
+        <ArrayRepeater
+          title="Education"
+          addLabel="Add Education"
+          items={profile.education ?? []}
+          onChange={(items) => update("education", items)}
+          emptyItem={{ school: "", program: "", period: "", description: "" }}
+          renderItem={(item, index, updateItem) => (
+            <>
+              <div className="grid gap-4 md:grid-cols-2">
+                <Field label="Program"><Input value={item.program} onChange={e => updateItem({ program: e.target.value })} /></Field>
+                <Field label="School"><Input value={item.school} onChange={e => updateItem({ school: e.target.value })} /></Field>
+              </div>
+              <Field label="Period"><Input value={item.period} onChange={e => updateItem({ period: e.target.value })} placeholder="e.g., 2016 - 2020" /></Field>
+              <Field label="Description"><Textarea value={item.description} onChange={e => updateItem({ description: e.target.value })} /></Field>
+            </>
+          )}
+        />
+      </Section>
+
+      <Section title="Achievements" description="Awards and recognitions.">
+        <ArrayRepeater
+          title="Awards & Recognitions"
+          addLabel="Add Award"
+          items={profile.achievements ?? []}
+          onChange={(items) => update("achievements", items)}
+          emptyItem={{ title: "", year: "", description: "" }}
+          renderItem={(item, index, updateItem) => (
+            <>
+              <div className="grid gap-4 md:grid-cols-2">
+                <Field label="Title"><Input value={item.title} onChange={e => updateItem({ title: e.target.value })} /></Field>
+                <Field label="Year"><Input value={item.year} onChange={e => updateItem({ year: e.target.value })} /></Field>
+              </div>
+              <Field label="Description"><Textarea value={item.description} onChange={e => updateItem({ description: e.target.value })} /></Field>
+            </>
+          )}
+        />
+      </Section>
+
+      <Section title="Languages & Social" description="Languages spoken and social media presence.">
+        <ArrayRepeater
+          title="Languages"
+          addLabel="Add Language"
+          items={profile.languages ?? []}
+          onChange={(items) => update("languages", items)}
+          emptyItem={{ language: "", proficiency: "" }}
+          renderItem={(item, index, updateItem) => (
+            <div className="grid gap-4 md:grid-cols-2">
+              <Field label="Language"><Input value={item.language} onChange={e => updateItem({ language: e.target.value })} /></Field>
+              <Field label="Proficiency"><Input value={item.proficiency} onChange={e => updateItem({ proficiency: e.target.value })} placeholder="e.g., Native, Fluent, Beginner" /></Field>
+            </div>
+          )}
+        />
+        <div className="my-8 border-t border-border" />
+        <ArrayRepeater
+          title="Social Links"
+          addLabel="Add Link"
+          items={profile.social_links ?? []}
+          onChange={(items) => update("social_links", items)}
+          emptyItem={{ platform: "", url: "" }}
+          renderItem={(item, index, updateItem) => (
+            <div className="grid gap-4 md:grid-cols-2">
+              <Field label="Platform"><Input value={item.platform} onChange={e => updateItem({ platform: e.target.value })} placeholder="e.g., Instagram" /></Field>
+              <Field label="URL"><Input value={item.url} onChange={e => updateItem({ url: e.target.value })} /></Field>
+            </div>
+          )}
+        />
       </Section>
       
       <div className="flex justify-end">
