@@ -421,6 +421,78 @@ export function SettingsCenter({
           <Field label="Maintenance message">
             <Textarea value={settings.maintenance_message ?? ""} onChange={(event) => update("maintenance_message", event.target.value)} maxLength={500} />
           </Field>
+          
+          <div className="mt-8 border-t border-border pt-8">
+            <h3 className="mb-4 font-serif text-xl text-text-primary">Tracking & Vanity URLs</h3>
+            <p className="mb-4 text-sm text-text-secondary">
+              Map short URLs (e.g. <code>ig</code>) to registration sources (e.g. <code>instagram</code>). Visitors accessing <code>/ig</code> will be tracked and redirected to the home page.
+            </p>
+            <div className="grid gap-4">
+              {Object.entries(settings.advanced_settings?.vanity_urls || {
+                  ig: 'instagram',
+                  tt: 'tiktok',
+                  fb: 'facebook',
+                  zl: 'zalo',
+                  x: 'x',
+                  tele: 'telegram',
+                  wa: 'whatsapp'
+              }).map(([code, source]) => (
+                <div key={code} className="flex items-center gap-3">
+                  <div className="flex-1">
+                    <Input 
+                      placeholder="Shortcode (e.g. ig)" 
+                      value={code} 
+                      readOnly 
+                      className="bg-surface opacity-70"
+                    />
+                  </div>
+                  <span className="text-text-secondary">→</span>
+                  <div className="flex-1">
+                    <Input 
+                      placeholder="Source (e.g. instagram)" 
+                      value={source} 
+                      onChange={(e) => {
+                        const current = settings.advanced_settings?.vanity_urls || {
+                          ig: 'instagram', tt: 'tiktok', fb: 'facebook', zl: 'zalo', x: 'x', tele: 'telegram', wa: 'whatsapp'
+                        };
+                        updateAdvanced("vanity_urls", { ...current, [code]: e.target.value });
+                      }} 
+                    />
+                  </div>
+                  <button 
+                    onClick={() => {
+                      const current = settings.advanced_settings?.vanity_urls || {
+                        ig: 'instagram', tt: 'tiktok', fb: 'facebook', zl: 'zalo', x: 'x', tele: 'telegram', wa: 'whatsapp'
+                      };
+                      const next = { ...current };
+                      delete next[code];
+                      updateAdvanced("vanity_urls", next);
+                    }}
+                    className="text-red-500 hover:text-red-600 p-2"
+                  >
+                    Remove
+                  </button>
+                </div>
+              ))}
+              <div className="mt-2 flex">
+                <Button 
+                  onClick={() => {
+                    const newCode = window.prompt("Enter new shortcode (e.g. yt):");
+                    if (!newCode || !newCode.trim()) return;
+                    const cleanCode = newCode.trim().toLowerCase();
+                    const current = settings.advanced_settings?.vanity_urls || {
+                      ig: 'instagram', tt: 'tiktok', fb: 'facebook', zl: 'zalo', x: 'x', tele: 'telegram', wa: 'whatsapp'
+                    };
+                    updateAdvanced("vanity_urls", { ...current, [cleanCode]: cleanCode });
+                  }}
+                  variant="secondary"
+                  className="text-xs"
+                >
+                  Add Vanity URL
+                </Button>
+              </div>
+            </div>
+          </div>
         </Panel>
       ) : null}
 

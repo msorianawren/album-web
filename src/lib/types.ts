@@ -155,6 +155,7 @@ export interface UserProfile {
   last_seen_at: string;
   created_at: string;
   updated_at?: string;
+  registration_source?: string | null;
 }
 
 export interface AuditLog {
@@ -337,7 +338,9 @@ export interface SiteSettings {
   twitter_card: "summary" | "summary_large_image";
   footer_description: string;
   footer_note: string;
-  advanced_settings?: Record<string, any>;
+  advanced_settings?: Record<string, any> & {
+    vanity_urls?: Record<string, string>;
+  };
   updated_at?: string;
 }
 

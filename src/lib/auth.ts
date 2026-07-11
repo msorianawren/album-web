@@ -94,6 +94,20 @@ export async function upsertUserProfile(user: User): Promise<UserProfile | null>
   const email = user.email?.toLowerCase();
   if (!email) return null;
 
+  // Check if profile exists already
+  const { data: existingProfile } = await supabase
+    .from("user_profiles")
+    .select("registration_source")
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  // If no registration_source is set, attempt to get it from cookie
+  let source = existingProfile?.registration_source;
+  if (!source) {
+    const cookieStore = await cookies();
+    source = cookieStore.get("signup_source")?.value || null;
+  }
+
   const { data, error } = await supabase
     .from("user_profiles")
     .upsert(
@@ -104,6 +118,7 @@ export async function upsertUserProfile(user: User): Promise<UserProfile | null>
         avatar_url: getUserAvatarUrl(user),
         provider: getUserProvider(user),
         last_seen_at: new Date().toISOString(),
+        ...(source ? { registration_source: source } : {}),
       },
       { onConflict: "user_id" },
     )

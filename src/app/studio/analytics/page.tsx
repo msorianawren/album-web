@@ -58,9 +58,15 @@ export default async function StudioAnalyticsPage() {
       </section>
 
       <section className="grid gap-5 xl:grid-cols-2">
+        <Panel title="Registration Sources">
+          <RankedBars items={data.registrationSources} empty="No registration source data yet." />
+        </Panel>
         <Panel title="Audit actions">
           <RankedBars items={data.auditActionCounts} empty="No audit events recorded yet." />
         </Panel>
+      </section>
+
+      <section className="grid gap-5 xl:grid-cols-2">
         <Panel title="Audit actors">
           <RankedBars items={data.auditActorCounts} empty="No actor data recorded yet." />
         </Panel>

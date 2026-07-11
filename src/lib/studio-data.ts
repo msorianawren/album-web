@@ -195,6 +195,7 @@ export async function getStudioAnalyticsData() {
     media,
     comments,
     auditLogsResult,
+    sourcesResult,
     commentsToday,
     commentsThisWeek,
     likesToday,
@@ -221,6 +222,10 @@ export async function getStudioAnalyticsData() {
       .select("*")
       .order("created_at", { ascending: false })
       .limit(160),
+    supabase
+      .from("user_profiles")
+      .select("registration_source")
+      .neq("registration_source", null),
     countRowsSince("comments", "created_at", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()),
     countRowsSince("comments", "created_at", new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()),
     countRowsSince("likes", "created_at", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()),
@@ -258,6 +263,18 @@ export async function getStudioAnalyticsData() {
     .sort((left, right) => right[1] - left[1])
     .slice(0, 10)
     .map(([label, value]) => ({ label, value }));
+    
+  const registrationSources = Object.entries(
+    ((sourcesResult?.data ?? []) as any[]).reduce<Record<string, number>>((acc, item) => {
+      const source = item.registration_source;
+      if (source) {
+        acc[source] = (acc[source] ?? 0) + 1;
+      }
+      return acc;
+    }, {})
+  )
+    .sort((left, right) => right[1] - left[1])
+    .map(([label, value]) => ({ label, value }));
 
   return {
     dashboard,
@@ -270,6 +287,7 @@ export async function getStudioAnalyticsData() {
     auditLogs,
     auditActionCounts,
     auditActorCounts,
+    registrationSources,
     auditToday,
     auditThisWeek,
     commentsToday,
