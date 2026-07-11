@@ -320,6 +320,7 @@ export function SecurityConsole({
                   <th className="py-3 pr-4">User</th>
                   <th className="py-3 pr-4">Role</th>
                   <th className="py-3 pr-4">Status</th>
+                  <th className="py-3 pr-4">Nguồn</th>
                   <th className="py-3 pr-4">Last seen</th>
                   <th className="py-3 pr-4 text-right">Action</th>
                 </tr>
@@ -355,6 +356,7 @@ export function SecurityConsole({
                           </p>
                         )}
                       </td>
+                      <td className="py-3 pr-4 text-text-secondary capitalize">{user.registration_source || "-"}</td>
                       <td className="py-3 pr-4 text-text-secondary">{formatDate(user.last_seen_at)}</td>
                       <td className="py-3 pr-4">
                         <div className="flex justify-end gap-2">
