@@ -160,6 +160,8 @@ class AudioUXSystem {
     osc.stop(now + 0.35);
   }
 
+  private audioCache = new Map<string, AudioBuffer>();
+
   public stopAmbient() {
     if (typeof window !== "undefined" && (window as any).__albumBgAudio) {
       const audio = (window as any).__albumBgAudio as HTMLAudioElement;
@@ -182,8 +184,8 @@ class AudioUXSystem {
     }, 1100);
   }
 
-  public playAmbient(type: AmbientSoundType) {
-    if (type === "auto" || type === "silence") {
+  public async playAmbient(type: AmbientSoundType) {
+    if (type === "auto" || type === "silence" || !this.context) {
       this.stopAmbient();
       return;
     }
@@ -200,15 +202,38 @@ class AudioUXSystem {
       "drone": "https://archive.org/download/minecraft-volume-alpha/09%20-%20C418%20-%20Oxyg%C3%A8ne.mp3"
     };
 
-    if (minecraftUrls[type]) {
-      const audio = new Audio(minecraftUrls[type]);
-      audio.crossOrigin = "anonymous";
-      audio.loop = true;
-      audio.volume = 0.5;
-      audio.play().catch(e => console.warn("Background audio play blocked", e));
-      
-      if (typeof window !== "undefined") {
-        (window as any).__albumBgAudio = audio;
+    const url = minecraftUrls[type];
+    if (url) {
+      const now = this.context.currentTime;
+      const gain = this.context.createGain();
+      gain.gain.setValueAtTime(0, now);
+      gain.gain.linearRampToValueAtTime(0.5, now + 2); // 50% volume fade in
+      gain.connect(this.context.destination);
+
+      this.ambientNodes = { oscillators: [], noiseBuffers: [], gain };
+      const currentGain = gain;
+
+      try {
+        let buffer = this.audioCache.get(url);
+        if (!buffer) {
+          const response = await fetch(url);
+          const arrayBuffer = await response.arrayBuffer();
+          buffer = await this.context.decodeAudioData(arrayBuffer);
+          this.audioCache.set(url, buffer);
+        }
+
+        // If the user changed the theme while fetching, don't play
+        if (!this.ambientNodes || this.ambientNodes.gain !== currentGain) return;
+
+        const source = this.context.createBufferSource();
+        source.buffer = buffer;
+        source.loop = true;
+        source.connect(currentGain);
+        source.start(this.context.currentTime);
+
+        this.ambientNodes.noiseBuffers.push(source);
+      } catch (e) {
+        console.warn("Failed to decode/play background audio", e);
       }
     }
   }

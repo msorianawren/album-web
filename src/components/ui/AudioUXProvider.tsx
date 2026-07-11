@@ -92,9 +92,10 @@ export function AudioUXProvider() {
         snow: "rain",
         autumn: "pad",
         mist: "drone",
-        rain: "cave"
+        rain: "cave",
+        default: "drone" // map default to mist's sound
       };
-      targetSound = themeMap[bgThemeOverride] || "silence";
+      targetSound = themeMap[bgThemeOverride] || "drone";
     }
 
     audioUX.playAmbient(targetSound);
