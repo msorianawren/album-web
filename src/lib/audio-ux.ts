@@ -160,7 +160,7 @@ class AudioUXSystem {
     osc.stop(now + 0.35);
   }
 
-  private audioCache = new Map<string, AudioBuffer>();
+  private audioCache = new Map<string, Promise<AudioBuffer>>();
   private currentPlayingType: string | null = null;
   private ambientVolume = 0.5;
 
@@ -185,11 +185,15 @@ class AudioUXSystem {
     // Preload them in background so switching is instant
     Object.values(minecraftUrls).forEach(url => {
       if (!this.audioCache.has(url)) {
-        fetch(url)
+        const promise = fetch(url)
           .then(res => res.arrayBuffer())
           .then(buf => this.context!.decodeAudioData(buf))
-          .then(decoded => this.audioCache.set(url, decoded))
-          .catch(() => {});
+          .catch(e => {
+            console.warn("Failed to preload", url, e);
+            this.audioCache.delete(url);
+            throw e;
+          });
+        this.audioCache.set(url, promise);
       }
     });
   }
@@ -240,6 +244,16 @@ class AudioUXSystem {
       "rain": "/audio/rain.mp3",
       "drone": "/audio/drone.mp3"
     };
+    
+    // Minecraft tracks have long empty intros/outros. Trim them.
+    const trackOffsets: Record<string, { start: number, end: number }> = {
+      "piano": { start: 2, end: 4 }, // Key
+      "pad": { start: 1, end: 4 }, // Subwoofer Lullaby
+      "cave": { start: 2, end: 4 }, // Living Mice
+      "harp": { start: 1, end: 4 }, // Haggstrom
+      "rain": { start: 2, end: 4 }, // Minecraft Theme
+      "drone": { start: 6, end: 4 } // Oxygene (takes very long to start)
+    };
 
     const url = minecraftUrls[type];
     if (url) {
@@ -257,25 +271,35 @@ class AudioUXSystem {
       const currentGain = gain;
 
       try {
-        let buffer = this.audioCache.get(url);
-        if (!buffer) {
-          const response = await fetch(url);
-          const arrayBuffer = await response.arrayBuffer();
-          buffer = await this.context.decodeAudioData(arrayBuffer);
-          this.audioCache.set(url, buffer);
+        let bufferPromise = this.audioCache.get(url);
+        if (!bufferPromise) {
+          bufferPromise = fetch(url)
+            .then(res => res.arrayBuffer())
+            .then(buf => this.context!.decodeAudioData(buf))
+            .catch(e => {
+              this.audioCache.delete(url);
+              throw e;
+            });
+          this.audioCache.set(url, bufferPromise);
         }
+        
+        const buffer = await bufferPromise;
 
         if (!this.ambientNodes || this.ambientNodes.gain !== currentGain) return;
 
         const source = this.context.createBufferSource();
         source.buffer = buffer;
         source.loop = true;
-        // Trim the last 4 seconds of silence from Minecraft tracks to make loops feel continuous
+        
+        const offsets = trackOffsets[type] || { start: 0, end: 0 };
+        source.loopStart = offsets.start;
+        
         if (buffer.duration > 10) {
-          source.loopEnd = buffer.duration - 4;
+          source.loopEnd = buffer.duration - offsets.end;
         }
+        
         source.connect(currentGain);
-        source.start(this.context.currentTime);
+        source.start(this.context.currentTime, offsets.start);
 
         this.ambientNodes.noiseBuffers.push(source);
       } catch (e) {
