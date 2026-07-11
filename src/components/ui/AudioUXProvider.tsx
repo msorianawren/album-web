@@ -79,14 +79,11 @@ export function AudioUXProvider() {
 
     // 1-to-1 Mapping logic
     if (targetSound === "auto") {
-      // In a real scenario, we'd also check if the server config is used (when bgThemeOverride === 'default')
-      // but for simplicity, we map based on the user's override. If it's 'default', we assume it's sakura or mist depending on the site.
-      // Wait, we can fetch the actual active theme from a data attribute or global variable, but for now we map directly:
       const themeMap: Record<string, any> = {
         sakura: "harp",
-        fireflies: "crickets",
+        fireflies: "piano",
         snow: "silence",
-        autumn: "leaves",
+        autumn: "pad",
         mist: "drone",
         rain: "rain"
       };

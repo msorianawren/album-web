@@ -217,29 +217,78 @@ class AudioUXSystem {
         this.ambientNodes!.oscillators.push(osc);
       });
     }
-    else if (type === "leaves" || type === "crickets") {
-      // High pitch noise proxy
-      const noise = createNoise();
-      const filter = this.context.createBiquadFilter();
-      filter.type = "highpass";
-      filter.frequency.value = type === "crickets" ? 4000 : 2000;
+    else if (type === "piano") {
+      // Minecraft style sparse piano
+      const notes = [130.81, 146.83, 164.81, 196.00, 220.00]; // C3, D3, E3, G3, A3
       
-      // Add LFO for volume pulsing
+      const playNote = () => {
+        if (!this.ambientNodes) return;
+        const noteGain = this.context!.createGain();
+        noteGain.connect(gain);
+        
+        const osc = this.context!.createOscillator();
+        osc.type = "triangle";
+        // occasionally double octave for brightness
+        osc.frequency.value = notes[Math.floor(Math.random() * notes.length)] * (Math.random() > 0.8 ? 2 : 1);
+        
+        const t = this.context!.currentTime;
+        noteGain.gain.setValueAtTime(0, t);
+        noteGain.gain.linearRampToValueAtTime(0.08, t + 0.05); // sharp attack
+        noteGain.gain.exponentialRampToValueAtTime(0.001, t + 4); // long decay
+        
+        // Lowpass filter to make it sound muffled/warm like old alpha
+        const filter = this.context!.createBiquadFilter();
+        filter.type = "lowpass";
+        filter.frequency.setValueAtTime(800, t);
+        filter.frequency.exponentialRampToValueAtTime(300, t + 2);
+        
+        osc.connect(filter);
+        filter.connect(noteGain);
+        
+        osc.start(t);
+        osc.stop(t + 4.5);
+        
+        // Play next note between 3 and 10 seconds
+        setTimeout(playNote, Math.random() * 7000 + 3000);
+      };
+      playNote();
+    }
+    else if (type === "pad") {
+      // Warm synth pad (Amin9 chord proxy)
+      const freqs = [110.00, 164.81, 196.00, 246.94]; // A2, E3, G3, B3
+      
+      const filter = this.context.createBiquadFilter();
+      filter.type = "lowpass";
+      filter.frequency.value = 400; // very muffled
+      filter.connect(gain);
+      
+      // Slow LFO for filter cutoff
       const lfo = this.context.createOscillator();
       lfo.type = "sine";
-      lfo.frequency.value = type === "crickets" ? 4 : 0.5; // Fast for crickets, slow for leaves
-      
-      const pulseGain = this.context.createGain();
-      lfo.connect(pulseGain.gain);
-      
-      noise.connect(filter);
-      filter.connect(pulseGain);
-      pulseGain.connect(gain);
-      
-      noise.start(now);
+      lfo.frequency.value = 0.05; // 20s cycle
+      const lfoGain = this.context.createGain();
+      lfoGain.gain.value = 150;
+      lfo.connect(lfoGain);
+      lfoGain.connect(filter.frequency);
       lfo.start(now);
-      this.ambientNodes.noiseBuffers.push(noise);
       this.ambientNodes.oscillators.push(lfo);
+
+      freqs.forEach(f => {
+        const osc = this.context!.createOscillator();
+        osc.type = "sine"; // sine is warmest
+        osc.frequency.value = f;
+        osc.connect(filter);
+        osc.start(now);
+        this.ambientNodes!.oscillators.push(osc);
+        
+        // Add a detuned layer for thickness
+        const detuned = this.context!.createOscillator();
+        detuned.type = "sine";
+        detuned.frequency.value = f * 1.005;
+        detuned.connect(filter);
+        detuned.start(now);
+        this.ambientNodes!.oscillators.push(detuned);
+      });
     }
     else if (type === "rain") {
       const noise = createNoise();

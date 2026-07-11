@@ -144,22 +144,23 @@ export function NatureAnimatedBackground({ config }: { config: LandingBackground
         }
 
         @keyframes pan-mist {
-          0% { background-position: 0% 50%; }
-          100% { background-position: 200% 50%; }
+          0% { transform: translate3d(0, 0, 0); }
+          100% { transform: translate3d(-25%, 0, 0); }
         }
         .mist-layer {
-          position: absolute; inset: -50%;
+          position: absolute; 
+          top: -20%; left: 0; right: -100%; bottom: -20%; /* wider than viewport to allow panning */
           background: 
-            radial-gradient(circle at 50% 50%, rgba(0,0,0,0.03) 0%, transparent 60%),
-            radial-gradient(circle at 20% 80%, rgba(0,0,0,0.02) 0%, transparent 60%);
-          background-size: 200% 200%;
+            radial-gradient(circle at 30% 50%, rgba(0,0,0,0.03) 0%, transparent 40%),
+            radial-gradient(circle at 70% 80%, rgba(0,0,0,0.02) 0%, transparent 40%);
           animation: pan-mist 60s linear infinite;
           opacity: var(--nature-intensity);
+          will-change: transform;
         }
         .theme-night .mist-layer {
           background: 
-            radial-gradient(circle at 50% 50%, rgba(200,220,255,0.03) 0%, transparent 60%),
-            radial-gradient(circle at 20% 80%, rgba(200,220,255,0.05) 0%, transparent 60%);
+            radial-gradient(circle at 30% 50%, rgba(200,220,255,0.03) 0%, transparent 40%),
+            radial-gradient(circle at 70% 80%, rgba(200,220,255,0.05) 0%, transparent 40%);
           mix-blend-mode: screen;
         }
 
