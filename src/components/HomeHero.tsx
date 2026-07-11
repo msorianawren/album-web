@@ -40,7 +40,7 @@ export function HomeHero({ landing, settings, locale = "en", dict }: HomeHeroPro
             <p className="mb-8 text-xs font-semibold uppercase tracking-[0.3em] text-text-secondary">
               {eyebrow}
             </p>
-            <h1 className="max-w-4xl break-words font-serif text-[4rem] sm:text-7xl lg:text-[7.5rem] leading-[0.85] text-text-primary mb-8">
+            <h1 className="max-w-4xl break-words font-serif text-[3.5rem] sm:text-7xl lg:text-[7.5rem] leading-[0.85] text-text-primary mb-8">
               {headline}
             </h1>
             <p className="max-w-2xl break-words font-serif italic text-2xl sm:text-3xl lg:text-4xl leading-tight text-text-secondary/80 mb-10">
@@ -93,7 +93,7 @@ export function HomeHero({ landing, settings, locale = "en", dict }: HomeHeroPro
       <section className="relative isolate overflow-hidden min-h-[70vh] flex flex-col justify-center py-32 text-center">
         <div className="page-shell-1440 flex flex-col items-center">
           <ScrollReveal className="relative z-10 flex min-w-0 flex-col items-center max-w-4xl mx-auto">
-            <h1 className="max-w-4xl break-words text-[3.5rem] font-light leading-[1.05] text-text-primary sm:text-6xl lg:text-[6.5rem]">
+            <h1 className="max-w-4xl break-words text-[3rem] font-light leading-[1.05] text-text-primary sm:text-6xl lg:text-[6.5rem]">
               {headline}
             </h1>
             <p className="mt-8 max-w-2xl break-words text-[1.1rem] leading-8 text-text-secondary/90 font-light">
@@ -127,7 +127,7 @@ export function HomeHero({ landing, settings, locale = "en", dict }: HomeHeroPro
                 <p className="mb-6 text-[0.65rem] font-medium uppercase tracking-[0.2em] text-text-secondary">
                   {eyebrow}
                 </p>
-                <h1 className="text-[3rem] font-medium leading-[1.1] text-text-primary sm:text-5xl lg:text-6xl mb-6">
+                <h1 className="text-[2.8rem] font-medium leading-[1.1] text-text-primary sm:text-5xl lg:text-6xl mb-6">
                   {headline}
                 </h1>
                 <p className="text-lg leading-relaxed text-text-secondary/90 mb-10">
@@ -157,13 +157,13 @@ export function HomeHero({ landing, settings, locale = "en", dict }: HomeHeroPro
   // Default Cinematic (or anything else)
   return (
     <section className="relative isolate overflow-hidden">
-      <div className="page-shell-1440 grid min-w-0 gap-8 pb-10 pt-8 md:pb-16 md:pt-16 lg:min-h-[760px] lg:grid-cols-[0.86fr_1.14fr]">
+      <div className="page-shell-1440 grid min-w-0 gap-8 pb-8 pt-6 sm:pb-16 sm:pt-16 lg:min-h-[760px] lg:grid-cols-[0.86fr_1.14fr]">
         <ScrollReveal className="relative z-10 flex min-w-0 flex-col justify-center">
           <p className="mb-5 inline-flex w-fit max-w-full items-center gap-2 rounded-full border border-[var(--glass-border)] bg-[var(--glass-bg)] px-4 py-2 text-[0.68rem] font-semibold uppercase text-text-secondary shadow-sm backdrop-blur-md sm:text-xs">
             <Sparkles className="h-3.5 w-3.5 text-muted-accent" aria-hidden="true" />
             <span className="truncate">{dict?.landing?.premium_portfolio || "Premium model portfolio"}</span>
           </p>
-          <h1 className="max-w-3xl break-words text-[3.2rem] font-semibold leading-[0.92] text-text-primary sm:text-7xl lg:text-8xl">
+          <h1 className="max-w-3xl break-words text-[2.8rem] font-semibold leading-[0.92] text-text-primary sm:text-7xl lg:text-8xl">
             {headline}
           </h1>
           <p className="mt-4 text-sm font-semibold uppercase tracking-[0.28em] text-text-secondary">

@@ -36,7 +36,7 @@ export function PublicMobileNav({ session, navItems }: PublicMobileNavProps) {
           onClick={close}
         />
         <div
-          className={`absolute bottom-0 right-0 top-0 flex w-[min(23rem,100vw)] flex-col overflow-y-auto border-l border-border bg-surface p-4 shadow-2xl shadow-text-primary/20 transition-transform duration-300 ${
+          className={`absolute bottom-0 right-0 top-0 flex w-[min(23rem,100vw)] flex-col overflow-y-auto border-l border-border bg-surface p-4 pb-[max(1rem,env(safe-area-inset-bottom))] shadow-2xl shadow-text-primary/20 transition-transform duration-300 ${
             open ? "translate-x-0" : "translate-x-full"
           }`}
         >
@@ -51,7 +51,7 @@ export function PublicMobileNav({ session, navItems }: PublicMobileNavProps) {
             </div>
             <button
               type="button"
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-border bg-background text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-border bg-background text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               onClick={close}
               aria-label="Close navigation menu"
             >

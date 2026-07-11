@@ -12,7 +12,7 @@ export default async function StudioNewAlbumPage() {
         title="New album"
         description="Create an album with a clean slug, visibility status, and optional cover URL."
       />
-      <AlbumForm defaultStatus={settings.default_album_status} />
+      <AlbumForm defaultStatus={settings.default_album_status} settings={settings} />
     </div>
   );
 }

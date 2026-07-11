@@ -93,8 +93,8 @@ export function MediaGrid({
 
   if (!media.length) {
     return (
-      <section className="mx-auto flex w-full max-w-[1200px] flex-col items-center px-6 py-32 text-center">
-        <div className="mb-8 flex h-20 w-20 items-center justify-center rounded-full bg-surface/30 border border-border/40">
+      <section className="mx-auto flex w-full max-w-[1200px] flex-col items-center px-4 sm:px-6 py-20 sm:py-32 text-center">
+        <div className="mb-6 sm:mb-8 flex h-20 w-20 items-center justify-center rounded-full bg-surface/30 border border-border/40">
           <Camera className="h-8 w-8 text-text-secondary/30" aria-hidden="true" />
         </div>
         <h2 className="font-serif text-3xl font-normal text-text-primary mb-4">
@@ -108,8 +108,8 @@ export function MediaGrid({
   }
 
   return (
-    <section className="mx-auto w-full max-w-[1200px] px-6 pb-32">
-      <div className="mb-10 flex flex-col md:flex-row md:items-center justify-between gap-6 pb-6 border-b border-border/40">
+    <section className="mx-auto w-full max-w-[1200px] px-4 pb-20 sm:px-6 sm:pb-32">
+      <div className="mb-8 sm:mb-10 flex flex-col md:flex-row md:items-center justify-between gap-6 pb-6 border-b border-border/40">
         <div className="flex items-center gap-3">
           <span className="text-[0.65rem] font-semibold uppercase tracking-[0.25em] text-text-secondary">
             Sort Layout
@@ -155,7 +155,7 @@ export function MediaGrid({
         </div>
       </div>
 
-      <div id="media-grid" className="columns-1 gap-4 sm:columns-2 md:columns-3 lg:columns-4">
+      <div id="media-grid" className="columns-1 gap-3 sm:columns-2 sm:gap-4 md:columns-3 lg:columns-4">
         {sortedMedia.map((item, index) => (
           <MediaCard
             key={item.id}

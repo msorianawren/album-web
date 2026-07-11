@@ -6,10 +6,12 @@ import { Save } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
-import type { AlbumStatus } from "@/lib/types";
+import type { AlbumStatus, SiteSettings } from "@/lib/types";
 import { slugify } from "@/lib/utils";
+import { useUploadQueue } from "@/hooks/useUploadQueue";
+import { UnifiedUploadPanel } from "./uploads/UnifiedUploadPanel";
 
-export function AlbumForm({ defaultStatus = "private" }: { defaultStatus?: AlbumStatus }) {
+export function AlbumForm({ defaultStatus = "private", settings }: { defaultStatus?: AlbumStatus; settings: SiteSettings }) {
   const router = useRouter();
   const [title, setTitle] = useState("");
   const [slug, setSlug] = useState("");
@@ -19,6 +21,19 @@ export function AlbumForm({ defaultStatus = "private" }: { defaultStatus?: Album
   const [slugTouched, setSlugTouched] = useState(false);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
+
+  const {
+    queue,
+    isUploading,
+    addFiles,
+    removeFile,
+    clearCompleted,
+    clearQueue,
+    cancelFile,
+    retryFile,
+    uploadAll,
+    cancelRemaining,
+  } = useUploadQueue(settings);
 
   function updateTitle(value: string) {
     setTitle(value);
@@ -40,14 +55,25 @@ export function AlbumForm({ defaultStatus = "private" }: { defaultStatus?: Album
         cover_url: coverUrl || null,
       }),
     });
+    
     const payload = await response.json();
-    setSaving(false);
     if (!payload.success) {
+      setSaving(false);
       setMessage(payload.message ?? "Create failed.");
       return;
     }
-    setMessage("Album created.");
-    router.push(`/studio/albums/${payload.data.album.id}`);
+    
+    const newAlbumId = payload.data.album.id;
+    
+    const hasFilesToUpload = queue.some(q => q.status === "queued" || q.status === "failed");
+    if (hasFilesToUpload) {
+      setMessage("Album created. Uploading media...");
+      await uploadAll(newAlbumId);
+    }
+    
+    setSaving(false);
+    setMessage("Redirecting...");
+    router.push(`/studio/albums/${newAlbumId}`);
     router.refresh();
   }
 
@@ -107,11 +133,28 @@ export function AlbumForm({ defaultStatus = "private" }: { defaultStatus?: Album
           Downloads only when public
         </label>
       </div>
+      <div className="mt-2 border-t border-border pt-6">
+        <UnifiedUploadPanel
+          queue={queue}
+          isUploading={isUploading}
+          addFiles={addFiles}
+          removeFile={removeFile}
+          clearCompleted={clearCompleted}
+          clearQueue={clearQueue}
+          cancelFile={cancelFile}
+          retryFile={retryFile}
+          cancelRemaining={cancelRemaining}
+          settings={settings}
+          title="Upload media immediately"
+          description="Drop files here to upload them as soon as the album is created."
+        />
+      </div>
+
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-text-secondary" aria-live="polite">{message}</p>
-        <Button type="submit" disabled={saving}>
+        <Button type="submit" disabled={saving || isUploading}>
           <Save className="h-4 w-4" />
-          {saving ? "Saving" : "Create album"}
+          {saving || isUploading ? "Processing..." : queue.some(q => q.status === "queued") ? "Create album & Upload" : "Create album"}
         </Button>
       </div>
     </form>

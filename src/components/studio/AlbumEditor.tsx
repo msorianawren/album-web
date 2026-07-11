@@ -20,25 +20,17 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
 import { mediaSortLabels, mediaSortModes, parseMediaSortMode } from "@/lib/media-sort";
-import type { AlbumDetail, AlbumStatus, Media } from "@/lib/types";
+import type { AlbumDetail, AlbumStatus, Media, SiteSettings } from "@/lib/types";
 import { formatBytes, slugify } from "@/lib/utils";
 import { LOCALES } from "@/lib/i18n";
-
-interface QueuedFile {
-  id: string;
-  file: File;
-  url: string;
-}
+import { useUploadQueue } from "@/hooks/useUploadQueue";
+import { UnifiedUploadPanel } from "./uploads/UnifiedUploadPanel";
 
 function mediaPreviewUrl(item: Media) {
   return item.thumbnail_url ?? item.poster_url ?? item.medium_url ?? item.url;
 }
 
-function queuedId(file: File) {
-  return `${file.name}-${file.size}-${file.lastModified}-${crypto.randomUUID()}`;
-}
-
-export function AlbumEditor({ album }: { album: AlbumDetail }) {
+export function AlbumEditor({ album, settings }: { album: AlbumDetail; settings: SiteSettings }) {
   const [title, setTitle] = useState(album.title);
   const [slug, setSlug] = useState(album.slug);
   const [description, setDescription] = useState(album.description ?? "");
@@ -71,12 +63,21 @@ export function AlbumEditor({ album }: { album: AlbumDetail }) {
     }
   }
 
-  const [queuedFiles, setQueuedFiles] = useState<QueuedFile[]>([]);
-  const [dragOver, setDragOver] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [uploading, setUploading] = useState(false);
   const [message, setMessage] = useState("");
-  const queuedFilesRef = useRef<QueuedFile[]>([]);
+
+  const {
+    queue,
+    isUploading,
+    addFiles,
+    removeFile,
+    clearCompleted,
+    clearQueue,
+    cancelFile,
+    retryFile,
+    uploadAll,
+    cancelRemaining,
+  } = useUploadQueue(settings);
 
   const publicUrl = useMemo(
     () => (typeof window === "undefined" ? `/albums/${slug}` : `${window.location.origin}/albums/${slug}`),
@@ -95,36 +96,7 @@ export function AlbumEditor({ album }: { album: AlbumDetail }) {
     [coverUrl, media],
   );
 
-  useEffect(() => {
-    queuedFilesRef.current = queuedFiles;
-  }, [queuedFiles]);
-
-  useEffect(() => {
-    return () => queuedFilesRef.current.forEach((item) => URL.revokeObjectURL(item.url));
-  }, []);
-
-  function addFiles(files: FileList | File[]) {
-    const next = Array.from(files).map((file) => ({
-      id: queuedId(file),
-      file,
-      url: URL.createObjectURL(file),
-    }));
-    setQueuedFiles((current) => [...next, ...current]);
-    setMessage(`${next.length} file${next.length === 1 ? "" : "s"} added to upload queue.`);
-  }
-
-  function removeQueuedFile(id: string) {
-    setQueuedFiles((current) => {
-      const target = current.find((item) => item.id === id);
-      if (target) URL.revokeObjectURL(target.url);
-      return current.filter((item) => item.id !== id);
-    });
-  }
-
-  function clearQueue() {
-    queuedFiles.forEach((item) => URL.revokeObjectURL(item.url));
-    setQueuedFiles([]);
-  }
+  // Unified upload hook handles lifecycle and cleanup
 
   async function saveAlbum() {
     setSaving(true);
@@ -264,101 +236,10 @@ export function AlbumEditor({ album }: { album: AlbumDetail }) {
     window.location.href = "/studio/albums";
   }
 
-  async function uploadMore() {
-    if (!queuedFiles.length) {
-      setMessage("Choose files first.");
-      return;
-    }
-    setUploading(true);
-    setMessage("Uploading media...");
-
-    const uploaded: Media[] = [];
-    const failed: { name: string; error: string }[] = [];
-
-    for (const item of queuedFiles) {
-      try {
-        setMessage(`Uploading ${item.file.name}...`);
-        const mediaType = item.file.type.startsWith("video/") ? "video" : "image";
-        
-        // 1. Get presigned URL
-        const presignRes = await fetch("/api/upload/presign", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            albumId: album.id,
-            filename: item.file.name,
-            size: item.file.size,
-            mimeType: item.file.type,
-            mediaType,
-          }),
-        });
-
-        const presignPayload = await presignRes.json();
-        if (!presignPayload.success) {
-          throw new Error(presignPayload.message ?? "Failed to request upload URL.");
-        }
-
-        const { mediaId, uploadUrl, r2Key, publicUrl } = presignPayload.data;
-
-        // 2. PUT file directly to storage
-        await new Promise<void>((resolve, reject) => {
-          const xhr = new XMLHttpRequest();
-          xhr.open("PUT", uploadUrl);
-          xhr.setRequestHeader("Content-Type", item.file.type);
-          xhr.onload = () => {
-            if (xhr.status >= 200 && xhr.status < 300) {
-              resolve();
-            } else {
-              reject(new Error(`Storage server returned status ${xhr.status}. R2 CORS configuration might be blocking PUT requests.`));
-            }
-          };
-          xhr.onerror = () => reject(new Error("Storage upload network error."));
-          xhr.send(item.file);
-        });
-
-        // 3. Complete upload metadata
-        const completeRes = await fetch("/api/upload/complete", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            albumId: album.id,
-            mediaId,
-            r2Key,
-            publicUrl,
-            filename: item.file.name,
-            size: item.file.size,
-            mimeType: item.file.type,
-            mediaType,
-          }),
-        });
-
-        const completePayload = await completeRes.json();
-        if (!completePayload.success) {
-          throw new Error(completePayload.message ?? "Failed to finalize upload.");
-        }
-
-        uploaded.push(completePayload.data.media);
-      } catch (err) {
-        failed.push({
-          name: item.file.name,
-          error: err instanceof Error ? err.message : "Upload failed.",
-        });
-      }
-    }
-
-    setUploading(false);
-    if (uploaded.length > 0) {
-      setMedia((current) => [...uploaded, ...current]);
-      const failedIds = failed.map((f) => queuedFiles.find((q) => q.file.name === f.name)?.id).filter(Boolean);
-      setQueuedFiles((current) => current.filter((q) => failedIds.includes(q.id)));
-    }
-
-    if (failed.length > 0) {
-      setMessage(`Uploaded ${uploaded.length}; ${failed.length} failed. First error: ${failed[0].error}`);
-    } else {
-      clearQueue();
-      setMessage(`Uploaded ${uploaded.length} file${uploaded.length === 1 ? "" : "s"} successfully.`);
-    }
+  function handleUploadAll() {
+    uploadAll(album.id, (media) => {
+      setMedia((current) => [media as unknown as Media, ...current]);
+    });
   }
 
   return (
@@ -498,75 +379,25 @@ export function AlbumEditor({ album }: { album: AlbumDetail }) {
       </section>
 
       <section className="rounded-[1.4rem] border border-border bg-surface/82 p-5 shadow-xl shadow-text-primary/5">
-        <div className="grid gap-5 lg:grid-cols-[320px_1fr]">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-text-secondary">Upload queue</p>
-            <h2 className="mt-2 text-2xl font-semibold text-text-primary">Add multiple images or videos</h2>
-            <p className="mt-2 text-sm leading-6 text-text-secondary">
-              Preview files before uploading, remove mistakes, then publish them into this album.
-            </p>
-          </div>
-          <div
-            className={`rounded-[1.4rem] border border-dashed p-6 text-center transition ${
-              dragOver ? "border-accent bg-background" : "border-border bg-background/55"
-            }`}
-            onDragOver={(event) => {
-              event.preventDefault();
-              setDragOver(true);
-            }}
-            onDragLeave={() => setDragOver(false)}
-            onDrop={(event) => {
-              event.preventDefault();
-              setDragOver(false);
-              addFiles(event.dataTransfer.files);
-            }}
-          >
-            <UploadCloud className="mx-auto h-8 w-8 text-text-secondary" aria-hidden="true" />
-            <p className="mt-3 font-semibold text-text-primary">Drop files here</p>
-            <p className="mt-1 text-sm text-text-secondary">JPEG, PNG, WebP, AVIF, MP4, WebM, MOV.</p>
-            <label className="mt-4 inline-flex h-11 cursor-pointer items-center justify-center rounded-full border border-border bg-surface px-5 text-xs font-semibold uppercase tracking-[0.14em] text-text-primary">
-              Select files
-              <input
-                type="file"
-                multiple
-                accept="image/jpeg,image/png,image/webp,image/avif,video/mp4,video/webm,video/quicktime"
-                onChange={(event) => event.target.files && addFiles(event.target.files)}
-                className="sr-only"
-              />
-            </label>
-          </div>
-        </div>
-        {queuedFiles.length ? (
-          <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            {queuedFiles.map((item) => (
-              <article key={item.id} className="overflow-hidden rounded-[1.1rem] border border-border bg-background/60">
-                <div className="aspect-[4/3] bg-surface-secondary">
-                  {item.file.type.startsWith("image/") ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={item.url} alt={item.file.name} className="h-full w-full object-cover" />
-                  ) : (
-                    <video src={item.url} className="h-full w-full object-cover" controls preload="metadata" />
-                  )}
-                </div>
-                <div className="p-3">
-                  <p className="truncate text-sm font-semibold text-text-primary">{item.file.name}</p>
-                  <p className="mt-1 text-xs text-text-secondary">{formatBytes(item.file.size)}</p>
-                  <Button variant="secondary" className="mt-3 w-full" onClick={() => removeQueuedFile(item.id)}>
-                    <X className="h-4 w-4" />
-                    Remove
-                  </Button>
-                </div>
-              </article>
-            ))}
-          </div>
-        ) : null}
+        <UnifiedUploadPanel
+          queue={queue}
+          isUploading={isUploading}
+          addFiles={addFiles}
+          removeFile={removeFile}
+          clearCompleted={clearCompleted}
+          clearQueue={clearQueue}
+          cancelFile={cancelFile}
+          retryFile={retryFile}
+          cancelRemaining={cancelRemaining}
+          settings={settings}
+          title="Upload to this album"
+          description="Preview files before uploading, remove mistakes, then publish them into this album."
+        />
+        
         <div className="mt-5 flex flex-wrap justify-end gap-2">
-          <Button variant="secondary" onClick={clearQueue} disabled={!queuedFiles.length || uploading}>
-            Clear queue
-          </Button>
-          <Button onClick={uploadMore} disabled={!queuedFiles.length || uploading}>
+          <Button onClick={handleUploadAll} disabled={isUploading || !queue.some(q => q.status === "queued" || q.status === "failed")}>
             <UploadCloud className="h-4 w-4" />
-            {uploading ? "Uploading" : "Upload queue"}
+            {isUploading ? "Uploading..." : "Upload queue"}
           </Button>
         </div>
       </section>

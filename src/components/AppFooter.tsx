@@ -19,7 +19,7 @@ export async function AppFooter() {
   ];
 
   return (
-    <footer className="relative z-10 border-t border-[var(--glass-border)] bg-[var(--glass-bg)] backdrop-blur-xl px-6 py-16 sm:py-24">
+    <footer className="relative z-10 border-t border-[var(--glass-border)] bg-[var(--glass-bg)] backdrop-blur-xl px-5 py-12 sm:px-6 sm:py-24">
       <div className="mx-auto grid max-w-[1200px] gap-12 lg:grid-cols-[1fr_2fr]">
         <div className="flex flex-col gap-6">
           <Link href="/" className="inline-block">

@@ -10,8 +10,8 @@ export function HomeMediaGallery({ items, settings }: { items: LandingMediaItem[
   const style = settings?.homepage_gallery_mode || "grid";
 
   return (
-    <section className={`mx-auto w-full ${style === "carousel" ? "max-w-full pl-6 md:pl-16 py-24 sm:py-32" : "max-w-[1200px] px-6 py-24 sm:py-32"}`}>
-      <div className="mb-16 flex flex-col items-start justify-center">
+    <section className={`mx-auto w-full ${style === "carousel" ? "max-w-full pl-4 py-16 sm:pl-6 sm:py-24 md:pl-16 lg:py-32" : "max-w-[1200px] px-4 py-16 sm:px-6 sm:py-24 lg:py-32"}`}>
+      <div className="mb-12 sm:mb-16 flex flex-col items-start justify-center">
         <h2 className="font-serif text-3xl font-light text-text-primary sm:text-4xl">
           Selected Works
         </h2>
@@ -21,8 +21,8 @@ export function HomeMediaGallery({ items, settings }: { items: LandingMediaItem[
         style === "masonry" 
           ? "columns-1 sm:columns-2 lg:columns-3 gap-6 space-y-6" 
           : style === "carousel"
-            ? "flex overflow-x-auto gap-6 pb-8 snap-x snap-mandatory pr-6"
-            : "grid gap-8 sm:grid-cols-2 md:grid-cols-3"
+            ? "flex overflow-x-auto gap-4 sm:gap-6 pb-8 snap-x snap-mandatory pr-4 sm:pr-6"
+            : "grid gap-6 sm:gap-8 sm:grid-cols-2 md:grid-cols-3"
       }>
         {displayItems.map((item, idx) => (
           <div 

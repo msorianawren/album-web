@@ -96,14 +96,14 @@ export async function AppHeader() {
         </div>
       </div>
       <nav
-        className="mx-auto flex w-full max-w-[1440px] gap-2 overflow-x-auto border-t border-border/70 px-3 py-2 sm:px-8 lg:hidden"
+        className="mx-auto flex w-full max-w-[1440px] gap-2 overflow-x-auto border-t border-border/70 px-3 py-2 sm:px-8 lg:hidden snap-x snap-mandatory [&::-webkit-scrollbar]:hidden [scrollbar-width:none]"
         aria-label="Mobile quick navigation"
       >
         {mobileItems.map((item) => (
           <Link
             key={`mobile-${item.href}-${item.label}`}
             href={item.href}
-            className="flex h-10 shrink-0 items-center justify-center rounded-full border border-border bg-surface/82 px-4 text-xs font-semibold uppercase tracking-[0.12em] text-text-primary shadow-sm shadow-text-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="snap-start flex h-10 shrink-0 items-center justify-center rounded-full border border-border bg-surface/82 px-4 text-xs font-semibold uppercase tracking-[0.12em] text-text-primary shadow-sm shadow-text-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             {item.label}
           </Link>
@@ -111,7 +111,7 @@ export async function AppHeader() {
         {session.isAdmin ? (
           <Link
             href="/studio"
-            className="flex h-10 shrink-0 items-center justify-center rounded-full bg-accent px-4 text-xs font-semibold uppercase tracking-[0.12em] text-accent-foreground shadow-sm shadow-text-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="snap-start flex h-10 shrink-0 items-center justify-center rounded-full bg-accent px-4 text-xs font-semibold uppercase tracking-[0.12em] text-accent-foreground shadow-sm shadow-text-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             {dict.nav.studio}
           </Link>
