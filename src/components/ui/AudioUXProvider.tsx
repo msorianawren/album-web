@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useCallback } from "react";
+import { useEffect, useCallback, useState } from "react";
 import { usePathname } from "next/navigation";
 import { audioUX } from "@/lib/audio-ux";
 import { useUIPreferences } from "@/hooks/useUIPreferences";
@@ -8,17 +8,24 @@ import { useUIPreferences } from "@/hooks/useUIPreferences";
 export function AudioUXProvider() {
   const { soundEnabled, clickSound, ambientSound, bgThemeOverride } = useUIPreferences();
   const pathname = usePathname();
+  const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
     const initAudio = () => {
       audioUX.init();
       audioUX.resume();
+      setIsReady(true);
       document.removeEventListener("pointerdown", initAudio);
       document.removeEventListener("keydown", initAudio);
     };
 
     document.addEventListener("pointerdown", initAudio, { once: true });
     document.addEventListener("keydown", initAudio, { once: true });
+
+    // Also check if it's already ready (e.g. fast refresh)
+    if (audioUX.isReady) {
+      setIsReady(true);
+    }
 
     return () => {
       document.removeEventListener("pointerdown", initAudio);
@@ -70,7 +77,7 @@ export function AudioUXProvider() {
 
   // Handle ambient sound playback based on 'auto' mapped to Theme, or explicit manual choice
   useEffect(() => {
-    if (!soundEnabled || !audioUX.isReady) {
+    if (!soundEnabled || !isReady) {
       audioUX.stopAmbient();
       return;
     }
@@ -95,7 +102,7 @@ export function AudioUXProvider() {
     return () => {
       // audioUX.stopAmbient(); // We don't want to stop it on unmount unless it changes
     };
-  }, [soundEnabled, ambientSound, bgThemeOverride, pathname]);
+  }, [soundEnabled, ambientSound, bgThemeOverride, pathname, isReady]);
 
   return null;
 }
