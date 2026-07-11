@@ -172,6 +172,28 @@ class AudioUXSystem {
     }
   }
 
+  public preloadAmbient() {
+    if (!this.context) return;
+    const minecraftUrls: Record<string, string> = {
+      "piano": "/audio/piano.mp3",
+      "pad": "/audio/pad.mp3",
+      "cave": "/audio/cave.mp3",
+      "harp": "/audio/harp.mp3",
+      "rain": "/audio/rain.mp3",
+      "drone": "/audio/drone.mp3"
+    };
+    // Preload them in background so switching is instant
+    Object.values(minecraftUrls).forEach(url => {
+      if (!this.audioCache.has(url)) {
+        fetch(url)
+          .then(res => res.arrayBuffer())
+          .then(buf => this.context!.decodeAudioData(buf))
+          .then(decoded => this.audioCache.set(url, decoded))
+          .catch(() => {});
+      }
+    });
+  }
+
   public stopAmbient() {
     if (typeof window !== "undefined" && (window as any).__albumBgAudio) {
       const audio = (window as any).__albumBgAudio as HTMLAudioElement;
@@ -185,15 +207,15 @@ class AudioUXSystem {
     if (!this.ambientNodes) return;
     const now = this.context?.currentTime || 0;
     
-    // Fade out smoothly
-    this.ambientNodes.gain.gain.linearRampToValueAtTime(0, now + 1);
+    // Fade out much faster (0.5s instead of 1s)
+    this.ambientNodes.gain.gain.linearRampToValueAtTime(0, now + 0.5);
     
     setTimeout(() => {
       this.ambientNodes?.oscillators.forEach(o => o.stop());
       this.ambientNodes?.noiseBuffers.forEach(n => n.stop());
       this.ambientNodes?.gain.disconnect();
       this.ambientNodes = null;
-    }, 1100);
+    }, 600);
   }
 
   public async playAmbient(type: AmbientSoundType) {
@@ -221,10 +243,14 @@ class AudioUXSystem {
 
     const url = minecraftUrls[type];
     if (url) {
+      // Pre-fetch the rest in background since they are clearly interacting with audio
+      this.preloadAmbient();
+
       const now = this.context.currentTime;
       const gain = this.context.createGain();
       gain.gain.setValueAtTime(0, now);
-      gain.gain.linearRampToValueAtTime(this.ambientVolume, now + 2); // fade in to target volume
+      // Fade in fast (0.5s instead of 2s) so user hears it immediately
+      gain.gain.linearRampToValueAtTime(this.ambientVolume, now + 0.5); 
       gain.connect(this.context.destination);
 
       this.ambientNodes = { oscillators: [], noiseBuffers: [], gain };
