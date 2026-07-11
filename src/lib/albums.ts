@@ -183,15 +183,8 @@ function filterSampleAlbums({ q, status, session }: AlbumQuery) {
     if (album.status === "private" && !isAdmin) {
       return {
         ...album,
-        preview_items: album.media.slice(0, 4).map((item) => ({
-          id: item.id,
-          media_type: item.media_type,
-          title: item.title,
-          url: item.url,
-          thumbnail_url: item.thumbnail_url,
-          medium_url: item.medium_url,
-          poster_url: item.poster_url,
-        })),
+        preview_items: [],
+        cover_url: null,
       };
     }
     return {
@@ -236,7 +229,9 @@ async function attachAlbumPreviews(albums: Album[], session?: PublicSession | nu
     }
   }
 
-  const eligibleAlbumIds = albums.map(a => a.id);
+  const eligibleAlbumIds = albums
+    .filter(a => isAdmin || a.status !== "private")
+    .map(a => a.id);
 
   if (!eligibleAlbumIds.length) {
     return albums.map(a => ({
@@ -270,6 +265,9 @@ async function attachAlbumPreviews(albums: Album[], session?: PublicSession | nu
   }
 
   return albums.map((album) => {
+    if (album.status === "private" && !isAdmin) {
+      album.cover_url = null;
+    }
     return {
       ...album,
       access_request_status: requestMap.get(album.id) as Album["access_request_status"] ?? null,

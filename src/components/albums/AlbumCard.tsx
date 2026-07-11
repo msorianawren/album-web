@@ -17,13 +17,15 @@ interface AlbumCardProps {
 
 export function AlbumCard({ album, dict, locale = "en" }: AlbumCardProps) {
   const previewItems = album.preview_items ?? [];
-  const previewImages = [
-    ...previewItems
-      .filter((item) => item.media_type === "image")
-      .map((item) => item.thumbnail_url ?? item.medium_url ?? item.url)
-      .filter(Boolean),
-    album.cover_url,
-  ].filter((value, index, values): value is string => Boolean(value) && values.indexOf(value) === index).slice(0, 4);
+  const previewImages = album.status === "private" 
+    ? [album.safe_preview_url].filter(Boolean) as string[]
+    : [
+        ...previewItems
+          .filter((item) => item.media_type === "image")
+          .map((item) => item.thumbnail_url ?? item.medium_url ?? item.url)
+          .filter(Boolean),
+        album.cover_url,
+      ].filter((value, index, values): value is string => Boolean(value) && values.indexOf(value) === index).slice(0, 4);
   const videoPreview = album.status !== "private" && previewItems.find((item) => item.media_type === "video");
 
   const { getAlbumViewState } = useAlbumViewMemory();
@@ -45,10 +47,10 @@ export function AlbumCard({ album, dict, locale = "en" }: AlbumCardProps) {
                 alt={index === 0 ? `${album.title} animated album preview` : ""}
                 fill
                 sizes="(min-width: 1280px) 25vw, (min-width: 768px) 50vw, 100vw"
-                className={`living-preview-image object-cover transition-all duration-700 ${album.status === "private" ? "blur-[12px] opacity-70 group-hover:opacity-90" : "grayscale-[15%] group-hover:grayscale-0"}`}
+                className="living-preview-image object-cover grayscale-[15%] group-hover:grayscale-0 transition-all duration-700"
                 style={{
                   animationDelay: `${index * 3.2}s`,
-                  opacity: index === 0 ? (album.status === "private" ? 0.7 : 1) : undefined,
+                  opacity: index === 0 ? 1 : undefined,
                 }}
               />
             ))
