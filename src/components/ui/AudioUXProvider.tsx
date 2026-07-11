@@ -6,7 +6,7 @@ import { audioUX } from "@/lib/audio-ux";
 import { useUIPreferences } from "@/hooks/useUIPreferences";
 
 export function AudioUXProvider() {
-  const { soundEnabled, clickSound, ambientSound, bgThemeOverride } = useUIPreferences();
+  const { soundEnabled, clickSound, ambientSound, ambientVolume, bgThemeOverride } = useUIPreferences();
   const pathname = usePathname();
   const [isReady, setIsReady] = useState(false);
 
@@ -98,12 +98,13 @@ export function AudioUXProvider() {
       targetSound = themeMap[bgThemeOverride] || "drone";
     }
 
+    audioUX.setAmbientVolume(ambientVolume);
     audioUX.playAmbient(targetSound);
     
     return () => {
       // audioUX.stopAmbient(); // We don't want to stop it on unmount unless it changes
     };
-  }, [soundEnabled, ambientSound, bgThemeOverride, pathname, isReady]);
+  }, [soundEnabled, ambientSound, ambientVolume, bgThemeOverride, pathname, isReady]);
 
   return null;
 }

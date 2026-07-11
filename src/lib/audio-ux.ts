@@ -161,6 +161,16 @@ class AudioUXSystem {
   }
 
   private audioCache = new Map<string, AudioBuffer>();
+  private currentPlayingType: string | null = null;
+  private ambientVolume = 0.5;
+
+  public setAmbientVolume(vol: number) {
+    this.ambientVolume = vol;
+    if (this.ambientNodes && this.ambientNodes.gain && this.context) {
+      const now = this.context.currentTime;
+      this.ambientNodes.gain.gain.linearRampToValueAtTime(vol, now + 0.1);
+    }
+  }
 
   public stopAmbient() {
     if (typeof window !== "undefined" && (window as any).__albumBgAudio) {
@@ -169,6 +179,8 @@ class AudioUXSystem {
       audio.src = "";
       (window as any).__albumBgAudio = null;
     }
+
+    this.currentPlayingType = null;
 
     if (!this.ambientNodes) return;
     const now = this.context?.currentTime || 0;
@@ -190,8 +202,13 @@ class AudioUXSystem {
       return;
     }
     
+    if (this.currentPlayingType === type && this.ambientNodes) {
+      return; // Already playing this track, don't interrupt
+    }
+
     // Always stop existing before starting new
     this.stopAmbient();
+    this.currentPlayingType = type;
 
     const minecraftUrls: Record<string, string> = {
       "piano": "/audio/piano.mp3",
@@ -207,7 +224,7 @@ class AudioUXSystem {
       const now = this.context.currentTime;
       const gain = this.context.createGain();
       gain.gain.setValueAtTime(0, now);
-      gain.gain.linearRampToValueAtTime(0.5, now + 2); // 50% volume fade in
+      gain.gain.linearRampToValueAtTime(this.ambientVolume, now + 2); // fade in to target volume
       gain.connect(this.context.destination);
 
       this.ambientNodes = { oscillators: [], noiseBuffers: [], gain };
@@ -234,6 +251,7 @@ class AudioUXSystem {
         this.ambientNodes.noiseBuffers.push(source);
       } catch (e) {
         console.warn("Failed to decode/play background audio", e);
+        this.currentPlayingType = null;
       }
     }
   }
