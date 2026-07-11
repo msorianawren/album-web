@@ -265,12 +265,15 @@ class AudioUXSystem {
           this.audioCache.set(url, buffer);
         }
 
-        // If the user changed the theme while fetching, don't play
         if (!this.ambientNodes || this.ambientNodes.gain !== currentGain) return;
 
         const source = this.context.createBufferSource();
         source.buffer = buffer;
         source.loop = true;
+        // Trim the last 4 seconds of silence from Minecraft tracks to make loops feel continuous
+        if (buffer.duration > 10) {
+          source.loopEnd = buffer.duration - 4;
+        }
         source.connect(currentGain);
         source.start(this.context.currentTime);
 
