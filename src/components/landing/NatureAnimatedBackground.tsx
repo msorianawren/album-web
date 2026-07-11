@@ -3,6 +3,8 @@
 import { usePathname } from "next/navigation";
 import type { LandingBackgroundSettings } from "@/lib/types";
 import { useEffect, useState } from "react";
+import { useUIPreferences } from "@/hooks/useUIPreferences";
+import { imageStore } from "@/lib/idb";
 
 const generateParticles = (count: number) => {
   return Array.from({ length: count }).map((_, i) => ({
@@ -21,32 +23,49 @@ export function NatureAnimatedBackground({ config }: { config: LandingBackground
   const pathname = usePathname();
   const [mounted, setMounted] = useState(false);
   const [particles, setParticles] = useState<any[]>([]);
+  
+  const { bgThemeOverride, bgCustomUrlOverride } = useUIPreferences();
+  const [customImageUrl, setCustomImageUrl] = useState<string | null>(null);
+
+  // Determine final effective settings
+  const effectivePreset = bgThemeOverride !== "default" ? bgThemeOverride : config.preset;
+  const effectiveCustomUrl = bgCustomUrlOverride && customImageUrl ? customImageUrl : (!bgCustomUrlOverride ? config.custom_url : null);
+  // Enhance default preset intensity slightly
+  const effectiveIntensity = Math.min(100, (config.intensity || 50) * 1.5);
+
+  useEffect(() => {
+    if (bgCustomUrlOverride) {
+      imageStore.get("custom_background").then(val => {
+        if (val) setCustomImageUrl(val);
+      });
+    }
+  }, [bgCustomUrlOverride]);
 
   useEffect(() => {
     setMounted(true);
     // Cap particles aggressively for performance
     const count = Math.floor((config.density / 100) * 20) + 2;
-    setParticles(generateParticles(config.preset === "rain" ? count * 1.5 : count));
+    setParticles(generateParticles(effectivePreset === "rain" ? count * 1.5 : count));
 
     // Inject global CSS variables for UI integration
     const root = document.documentElement;
-    if (config.preset === "sakura") {
+    if (effectivePreset === "sakura") {
       root.style.setProperty("--preset-accent", "rgba(255, 183, 197, 0.4)");
       root.style.setProperty("--preset-glow", "0 0 20px rgba(255, 183, 197, 0.15)");
       root.style.setProperty("--preset-hover-bg", "rgba(255, 183, 197, 0.05)");
-    } else if (config.preset === "autumn") {
+    } else if (effectivePreset === "autumn") {
       root.style.setProperty("--preset-accent", "rgba(194, 107, 66, 0.4)");
       root.style.setProperty("--preset-glow", "0 0 20px rgba(194, 107, 66, 0.15)");
       root.style.setProperty("--preset-hover-bg", "rgba(194, 107, 66, 0.05)");
-    } else if (config.preset === "rain") {
+    } else if (effectivePreset === "rain") {
       root.style.setProperty("--preset-accent", "rgba(150, 180, 200, 0.4)");
       root.style.setProperty("--preset-glow", "0 0 20px rgba(150, 180, 200, 0.15)");
       root.style.setProperty("--preset-hover-bg", "rgba(150, 180, 200, 0.05)");
-    } else if (config.preset === "snow") {
+    } else if (effectivePreset === "snow") {
       root.style.setProperty("--preset-accent", "rgba(255, 255, 255, 0.5)");
       root.style.setProperty("--preset-glow", "0 0 20px rgba(255, 255, 255, 0.2)");
       root.style.setProperty("--preset-hover-bg", "rgba(255, 255, 255, 0.05)");
-    } else if (config.preset === "fireflies") {
+    } else if (effectivePreset === "fireflies") {
       root.style.setProperty("--preset-accent", "rgba(227, 211, 143, 0.4)");
       root.style.setProperty("--preset-glow", "0 0 20px rgba(227, 211, 143, 0.15)");
       root.style.setProperty("--preset-hover-bg", "rgba(227, 211, 143, 0.05)");
@@ -55,26 +74,26 @@ export function NatureAnimatedBackground({ config }: { config: LandingBackground
       root.style.setProperty("--preset-glow", "0 0 20px rgba(200, 200, 200, 0.1)");
       root.style.setProperty("--preset-hover-bg", "rgba(200, 200, 200, 0.05)");
     }
-  }, [config.density, config.preset]);
+  }, [config.density, effectivePreset]);
 
   if (!mounted) return null;
   if (config.enabled === false || (config.enabled as unknown) === "false") return null;
   if (pathname?.startsWith("/studio") || pathname?.startsWith("/login")) return null;
   if (!config.apply_to_all_public_pages && pathname !== "/") return null;
 
-  const blurVal = config.preset === "mist" ? 6 : 2;
+  const blurVal = effectivePreset === "mist" ? 6 : 2;
   const isDark = true; 
   const speedMultiplier = config.speed > 0 ? 50 / config.speed : 999;
 
   const cssVars = {
     "--nature-opacity": (config.opacity / 100).toString(),
-    "--nature-intensity": (config.intensity / 100).toString(),
+    "--nature-intensity": (effectiveIntensity / 100).toString(),
     "--nature-blur": `${blurVal}px`,
   } as React.CSSProperties;
 
   return (
     <>
-      <NatureSettlingEffect preset={config.preset as string} />
+      <NatureSettlingEffect preset={effectivePreset as string} />
       <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden" aria-hidden="true" style={cssVars}>
       <style>{`
         .nature-container { opacity: var(--nature-opacity); transition: opacity 1s; }
@@ -167,32 +186,32 @@ export function NatureAnimatedBackground({ config }: { config: LandingBackground
 
       <div className="nature-container absolute inset-0">
         
-        {config.custom_url && (
+        {effectiveCustomUrl && (
           <div className="absolute inset-0 opacity-20 dark:opacity-30">
-            {config.custom_url.match(/\.(mp4|webm)$/i) ? (
-              <video src={config.custom_url} autoPlay loop muted playsInline className="h-full w-full object-cover" />
+            {effectiveCustomUrl.match(/\.(mp4|webm)$/i) || effectiveCustomUrl.startsWith("data:video") ? (
+              <video src={effectiveCustomUrl} autoPlay loop muted playsInline className="h-full w-full object-cover" />
             ) : (
-              <img src={config.custom_url} alt="" className="h-full w-full object-cover" />
+              <img src={effectiveCustomUrl} alt="" className="h-full w-full object-cover" />
             )}
           </div>
         )}
 
         <div className="nature-layer pointer-events-none">
-          {config.preset === "mist" && <div className="mist-layer" style={{ animationDuration: `${60 * speedMultiplier}s` }} />}
+          {effectivePreset === "mist" && <div className="mist-layer" style={{ animationDuration: `${60 * speedMultiplier}s` }} />}
           
-          {config.preset !== "mist" && particles.map(p => {
+          {effectivePreset !== "mist" && particles.map(p => {
             const animationName = 
-              config.preset === "sakura" ? "fall-sakura" :
-              config.preset === "fireflies" ? "float-firefly" :
-              config.preset === "snow" ? "fall-snow" :
-              config.preset === "rain" ? "fall-rain" :
+              effectivePreset === "sakura" ? "fall-sakura" :
+              effectivePreset === "fireflies" ? "float-firefly" :
+              effectivePreset === "snow" ? "fall-snow" :
+              effectivePreset === "rain" ? "fall-rain" :
               "fall-autumn";
             
             const className = 
-              config.preset === "sakura" ? "sakura-petal" :
-              config.preset === "fireflies" ? "firefly" :
-              config.preset === "snow" ? "snow-flake" :
-              config.preset === "rain" ? "rain-drop" :
+              effectivePreset === "sakura" ? "sakura-petal" :
+              effectivePreset === "fireflies" ? "firefly" :
+              effectivePreset === "snow" ? "snow-flake" :
+              effectivePreset === "rain" ? "rain-drop" :
               "autumn-leaf";
 
             return (
@@ -205,8 +224,8 @@ export function NatureAnimatedBackground({ config }: { config: LandingBackground
                   transform: `scale(${p.scale})`,
                   animationName,
                   animationDelay: `-${p.delay}s`,
-                  animationDuration: config.preset === "rain" ? `${(p.durationBase * 0.2) * speedMultiplier}s` : `${p.durationBase * speedMultiplier}s`,
-                  animationTimingFunction: config.preset === "fireflies" ? "ease-in-out" : "linear",
+                  animationDuration: effectivePreset === "rain" ? `${(p.durationBase * 0.2) * speedMultiplier}s` : `${p.durationBase * speedMultiplier}s`,
+                  animationTimingFunction: effectivePreset === "fireflies" ? "ease-in-out" : "linear",
                   animationIterationCount: "infinite",
                 }}
               />

@@ -6,15 +6,13 @@ import { audioUX } from "@/lib/audio-ux";
 import { useUIPreferences } from "@/hooks/useUIPreferences";
 
 export function AudioUXProvider() {
-  const { soundEnabled } = useUIPreferences();
+  const { soundEnabled, clickSound, ambientSound, bgThemeOverride } = useUIPreferences();
   const pathname = usePathname();
 
-  // Initialize context on first user interaction
   useEffect(() => {
     const initAudio = () => {
       audioUX.init();
       audioUX.resume();
-      // Remove listeners once initialized
       document.removeEventListener("pointerdown", initAudio);
       document.removeEventListener("keydown", initAudio);
     };
@@ -32,7 +30,6 @@ export function AudioUXProvider() {
     (e: MouseEvent) => {
       if (!soundEnabled || !audioUX.isReady) return;
 
-      // Ensure the click targets an interactive element
       let target = e.target as HTMLElement | null;
       let shouldPlayClick = false;
       let shouldPlayMenu = false;
@@ -42,13 +39,11 @@ export function AudioUXProvider() {
         const role = target.getAttribute("role");
         const type = target.getAttribute("type");
 
-        // Menu triggers (modals, dropdowns)
         if (target.getAttribute("aria-haspopup") || role === "menuitem") {
           shouldPlayMenu = true;
           break;
         }
 
-        // Standard interactive elements
         if (tagName === "button" || tagName === "a" || role === "button" || type === "button") {
           shouldPlayClick = true;
           break;
@@ -60,10 +55,10 @@ export function AudioUXProvider() {
       if (shouldPlayMenu) {
         audioUX.playMenuSound();
       } else if (shouldPlayClick) {
-        audioUX.playClickSound();
+        audioUX.playClickSound(clickSound);
       }
     },
-    [soundEnabled]
+    [soundEnabled, clickSound]
   );
 
   useEffect(() => {
@@ -73,12 +68,37 @@ export function AudioUXProvider() {
     };
   }, [handleClick]);
 
-  // Subtle sweep sound on page navigation
+  // Handle ambient sound playback based on 'auto' mapped to Theme, or explicit manual choice
   useEffect(() => {
-    if (soundEnabled && audioUX.isReady) {
-      audioUX.playMenuSound();
+    if (!soundEnabled || !audioUX.isReady) {
+      audioUX.stopAmbient();
+      return;
     }
-  }, [pathname, soundEnabled]);
 
-  return null; // This is a utility component, no UI.
+    let targetSound = ambientSound;
+
+    // 1-to-1 Mapping logic
+    if (targetSound === "auto") {
+      // In a real scenario, we'd also check if the server config is used (when bgThemeOverride === 'default')
+      // but for simplicity, we map based on the user's override. If it's 'default', we assume it's sakura or mist depending on the site.
+      // Wait, we can fetch the actual active theme from a data attribute or global variable, but for now we map directly:
+      const themeMap: Record<string, any> = {
+        sakura: "harp",
+        fireflies: "crickets",
+        snow: "silence",
+        autumn: "leaves",
+        mist: "drone",
+        rain: "rain"
+      };
+      targetSound = themeMap[bgThemeOverride] || "silence";
+    }
+
+    audioUX.playAmbient(targetSound);
+    
+    return () => {
+      // audioUX.stopAmbient(); // We don't want to stop it on unmount unless it changes
+    };
+  }, [soundEnabled, ambientSound, bgThemeOverride, pathname]);
+
+  return null;
 }
