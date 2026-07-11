@@ -1,13 +1,11 @@
 "use client";
 
 import { useEffect, useCallback, useState } from "react";
-import { usePathname } from "next/navigation";
 import { audioUX } from "@/lib/audio-ux";
 import { useUIPreferences } from "@/hooks/useUIPreferences";
 
 export function AudioUXProvider() {
   const { soundEnabled, clickSound, ambientSound, ambientVolume, bgThemeOverride } = useUIPreferences();
-  const pathname = usePathname();
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
@@ -104,7 +102,7 @@ export function AudioUXProvider() {
     return () => {
       // audioUX.stopAmbient(); // We don't want to stop it on unmount unless it changes
     };
-  }, [soundEnabled, ambientSound, ambientVolume, bgThemeOverride, pathname, isReady]);
+  }, [soundEnabled, ambientSound, ambientVolume, bgThemeOverride, isReady]);
 
   return null;
 }
