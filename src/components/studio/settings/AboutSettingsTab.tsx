@@ -5,9 +5,9 @@ import { Plus, Trash2 } from "lucide-react";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
 import { Button } from "@/components/ui/Button";
-import { motion, AnimatePresence } from "framer-motion";
 import { CheckCircle2, AlertCircle, Save } from "lucide-react";
 import type { AboutProfile } from "@/lib/types";
+import { useToast } from "@/hooks/useToast";
 
 function Toggle({ label, checked, onChange }: { label: string; checked: boolean; onChange: (value: boolean) => void }) {
   return (
@@ -104,20 +104,15 @@ function ArrayRepeater<T>({
 export function AboutSettingsTab({ initialProfile, uploadAsset, onUpdate }: AboutSettingsTabProps) {
   const [profile, setProfile] = useState<AboutProfile>(initialProfile);
   const [saving, setSaving] = useState(false);
-  const [errorMsg, setErrorMsg] = useState("");
-  const [successMsg, setSuccessMsg] = useState("");
+  const { toast } = useToast();
 
   async function handleSave() {
     setSaving(true);
-    setErrorMsg("");
-    setSuccessMsg("");
     try {
       await onUpdate(profile);
-      setSuccessMsg("Profile saved successfully.");
-      setTimeout(() => setSuccessMsg(""), 4000);
+      toast.success("Profile saved successfully.");
     } catch (err) {
-      setErrorMsg(err instanceof Error ? err.message : "Failed to save profile.");
-      setTimeout(() => setErrorMsg(""), 6000);
+      toast.error(err instanceof Error ? err.message : "Failed to save profile.");
     } finally {
       setSaving(false);
     }
@@ -360,22 +355,8 @@ export function AboutSettingsTab({ initialProfile, uploadAsset, onUpdate }: Abou
       
       {/* Sticky Save Bar */}
       <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-6 rounded-full border border-border bg-background/80 backdrop-blur-xl px-5 py-3 shadow-2xl shadow-text-primary/10">
-        <div className="relative flex items-center h-5 overflow-hidden">
-          <AnimatePresence mode="wait">
-            {errorMsg ? (
-              <motion.div key="error" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="flex items-center gap-2 text-sm font-medium text-red-500">
-                <AlertCircle className="h-4 w-4 shrink-0" /> <span className="truncate max-w-[200px] sm:max-w-[300px]">{errorMsg}</span>
-              </motion.div>
-            ) : successMsg ? (
-              <motion.div key="success" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="flex items-center gap-2 text-sm font-medium text-green-500">
-                <CheckCircle2 className="h-4 w-4 shrink-0" /> <span>{successMsg}</span>
-              </motion.div>
-            ) : (
-              <motion.div key="idle" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-sm font-medium text-text-secondary hidden sm:block">
-                Unsaved changes will be lost
-              </motion.div>
-            )}
-          </AnimatePresence>
+        <div className="text-sm font-medium text-text-secondary hidden sm:block">
+          Unsaved changes will be lost
         </div>
         <Button onClick={handleSave} disabled={saving} className="rounded-full shrink-0">
           <Save className="h-4 w-4 mr-2" />

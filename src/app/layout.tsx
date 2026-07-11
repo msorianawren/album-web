@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { OAuthHashHandler } from "@/components/auth/OAuthHashHandler";
 import { AudioUXProvider } from "@/components/ui/AudioUXProvider";
+import { ToastProvider } from "@/components/ui/ToastProvider";
 import "./globals.css";
 
 import { getSiteSettings } from "@/lib/site-settings";
@@ -52,8 +53,10 @@ export default async function RootLayout({
           defaultAmbient={settings.advanced_settings?.default_ambient_sound || "drone"}
           defaultClick={settings.advanced_settings?.default_click_sound || "water"}
         />
-        <OAuthHashHandler />
-        {children}
+        <ToastProvider>
+          <OAuthHashHandler />
+          {children}
+        </ToastProvider>
       </body>
     </html>
   );

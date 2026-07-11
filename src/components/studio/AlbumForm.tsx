@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Save } from "lucide-react";
 import { Button } from "@/components/ui/Button";
@@ -10,6 +10,8 @@ import type { AlbumStatus, SiteSettings } from "@/lib/types";
 import { slugify } from "@/lib/utils";
 import { useUploadQueue } from "@/hooks/useUploadQueue";
 import { UnifiedUploadPanel } from "./uploads/UnifiedUploadPanel";
+import { useDebounce } from "@/hooks/useDebounce";
+import { useToast } from "@/hooks/useToast";
 
 export function AlbumForm({ defaultStatus = "private", settings }: { defaultStatus?: AlbumStatus; settings: SiteSettings }) {
   const router = useRouter();
@@ -21,6 +23,39 @@ export function AlbumForm({ defaultStatus = "private", settings }: { defaultStat
   const [slugTouched, setSlugTouched] = useState(false);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
+  const { toast } = useToast();
+  
+  const [isCheckingSlug, setIsCheckingSlug] = useState(false);
+  const [slugError, setSlugError] = useState("");
+  const debouncedSlug = useDebounce(slug, 500);
+
+  useEffect(() => {
+    if (!debouncedSlug) {
+      setSlugError("");
+      return;
+    }
+    
+    let active = true;
+    setIsCheckingSlug(true);
+    setSlugError("");
+
+    fetch(`/api/albums/check-slug?slug=${encodeURIComponent(debouncedSlug)}`)
+      .then((res) => res.json())
+      .then((payload) => {
+        if (!active) return;
+        if (payload.success && payload.data.exists) {
+          setSlugError("This album name already exists.");
+        }
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (active) setIsCheckingSlug(false);
+      });
+      
+    return () => {
+      active = false;
+    };
+  }, [debouncedSlug]);
 
   const {
     queue,
@@ -59,16 +94,19 @@ export function AlbumForm({ defaultStatus = "private", settings }: { defaultStat
     const payload = await response.json();
     if (!payload.success) {
       setSaving(false);
-      setMessage(payload.message ?? "Create failed.");
+      toast.error(payload.message ?? "Create failed.");
+      setMessage("");
       return;
     }
     
+    toast.success("Album created successfully!");
     const newAlbumId = payload.data.album.id;
     
     const hasFilesToUpload = queue.some(q => q.status === "queued" || q.status === "failed");
     if (hasFilesToUpload) {
-      setMessage("Album created. Uploading media...");
+      setMessage("Uploading media...");
       await uploadAll(newAlbumId);
+      toast.success("Media uploaded successfully!");
     }
     
     setSaving(false);
@@ -94,7 +132,10 @@ export function AlbumForm({ defaultStatus = "private", settings }: { defaultStat
             }}
             required
             maxLength={120}
+            className={slugError ? "border-red-500 focus:ring-red-500" : ""}
           />
+          {isCheckingSlug && <p className="text-xs text-text-secondary">Checking availability...</p>}
+          {slugError && <p className="text-xs text-red-500">{slugError}</p>}
         </label>
       </div>
       <label className="grid gap-2">
@@ -152,7 +193,7 @@ export function AlbumForm({ defaultStatus = "private", settings }: { defaultStat
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-text-secondary" aria-live="polite">{message}</p>
-        <Button type="submit" disabled={saving || isUploading}>
+        <Button type="submit" disabled={saving || isUploading || !!slugError || isCheckingSlug}>
           <Save className="h-4 w-4" />
           {saving || isUploading ? "Processing..." : queue.some(q => q.status === "queued") ? "Create album & Upload" : "Create album"}
         </Button>

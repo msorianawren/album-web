@@ -25,6 +25,8 @@ import { formatBytes, slugify } from "@/lib/utils";
 import { LOCALES } from "@/lib/i18n";
 import { useUploadQueue } from "@/hooks/useUploadQueue";
 import { UnifiedUploadPanel } from "./uploads/UnifiedUploadPanel";
+import { useDebounce } from "@/hooks/useDebounce";
+import { useToast } from "@/hooks/useToast";
 
 function mediaPreviewUrl(item: Media) {
   return item.thumbnail_url ?? item.poster_url ?? item.medium_url ?? item.url;
@@ -65,6 +67,39 @@ export function AlbumEditor({ album, settings }: { album: AlbumDetail; settings:
 
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
+  const { toast } = useToast();
+
+  const [isCheckingSlug, setIsCheckingSlug] = useState(false);
+  const [slugError, setSlugError] = useState("");
+  const debouncedSlug = useDebounce(slug, 500);
+
+  useEffect(() => {
+    if (!debouncedSlug || debouncedSlug === album.slug) {
+      setSlugError("");
+      return;
+    }
+    
+    let active = true;
+    setIsCheckingSlug(true);
+    setSlugError("");
+
+    fetch(`/api/albums/check-slug?slug=${encodeURIComponent(debouncedSlug)}&excludeId=${album.id}`)
+      .then((res) => res.json())
+      .then((payload) => {
+        if (!active) return;
+        if (payload.success && payload.data.exists) {
+          setSlugError("This album name already exists.");
+        }
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (active) setIsCheckingSlug(false);
+      });
+      
+    return () => {
+      active = false;
+    };
+  }, [debouncedSlug, album.slug, album.id]);
 
   const {
     queue,
@@ -116,11 +151,16 @@ export function AlbumEditor({ album, settings }: { album: AlbumDetail; settings:
     });
     const payload = await response.json();
     setSaving(false);
-    setMessage(payload.success ? "Album saved." : payload.message ?? "Save failed.");
+    if (payload.success) {
+      toast.success("Album saved successfully.");
+      setMessage("");
+    } else {
+      toast.error(payload.message ?? "Save failed.");
+    }
   }
 
   async function setCover(item: Media) {
-    setMessage("Updating animated preview fallback...");
+    toast.info("Updating preview fallback...");
     const response = await fetch(`/api/media/${item.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -128,12 +168,12 @@ export function AlbumEditor({ album, settings }: { album: AlbumDetail; settings:
     });
     const payload = await response.json();
     if (!payload.success) {
-      setMessage(payload.message ?? "Preview update failed.");
+      toast.error(payload.message ?? "Preview update failed.");
       return;
     }
     setCoverUrl(payload.data.media.thumbnail_url ?? payload.data.media.poster_url ?? payload.data.media.url);
     setMedia((current) => current.map((mediaItem) => ({ ...mediaItem, is_cover: mediaItem.id === item.id })));
-    setMessage("Animated preview fallback updated.");
+    toast.success("Animated preview fallback updated.");
   }
 
   async function editMedia(item: Media) {
@@ -151,7 +191,7 @@ export function AlbumEditor({ album, settings }: { album: AlbumDetail; settings:
     });
     const payload = await response.json();
     if (!payload.success) {
-      setMessage(payload.message ?? "Media update failed.");
+      toast.error(payload.message ?? "Media update failed.");
       return;
     }
     setMedia((current) =>
@@ -161,7 +201,7 @@ export function AlbumEditor({ album, settings }: { album: AlbumDetail; settings:
           : mediaItem,
       ),
     );
-    setMessage("Media metadata saved.");
+    toast.success("Media metadata saved.");
   }
 
   async function toggleFeatured(item: Media) {
@@ -173,7 +213,7 @@ export function AlbumEditor({ album, settings }: { album: AlbumDetail; settings:
     });
     const payload = await response.json();
     if (!payload.success) {
-      setMessage(payload.message ?? "Featured update failed.");
+      toast.error(payload.message ?? "Featured update failed.");
       return;
     }
     setMedia((current) =>
@@ -181,7 +221,7 @@ export function AlbumEditor({ album, settings }: { album: AlbumDetail; settings:
         mediaItem.id === item.id ? { ...mediaItem, featured_rank: nextRank } : mediaItem,
       ),
     );
-    setMessage(nextRank ? "Media marked as featured." : "Media removed from featured order.");
+    toast.success(nextRank ? "Media marked as featured." : "Media removed from featured order.");
   }
 
   async function deleteMedia(item: Media) {
@@ -189,15 +229,15 @@ export function AlbumEditor({ album, settings }: { album: AlbumDetail; settings:
     const response = await fetch(`/api/media/${item.id}`, { method: "DELETE" });
     const payload = await response.json();
     if (!payload.success) {
-      setMessage(payload.message ?? "Media delete failed.");
+      toast.error(payload.message ?? "Media delete failed.");
       return;
     }
     setMedia((current) => current.filter((mediaItem) => mediaItem.id !== item.id));
-    setMessage("Media removed.");
+    toast.success("Media removed.");
   }
 
   async function persistOrder(nextMedia: Media[]) {
-    setMessage("Saving media order...");
+    toast.info("Saving media order...");
     await Promise.all(
       nextMedia.map((item, index) =>
         fetch(`/api/media/${item.id}`, {
@@ -207,7 +247,7 @@ export function AlbumEditor({ album, settings }: { album: AlbumDetail; settings:
         }),
       ),
     );
-    setMessage("Media order saved.");
+    toast.success("Media order saved.");
   }
 
   function moveMedia(index: number, direction: -1 | 1) {
@@ -224,15 +264,16 @@ export function AlbumEditor({ album, settings }: { album: AlbumDetail; settings:
   async function deleteAlbum() {
     const typed = window.prompt(`Type "${album.title}" to delete this album.`);
     if (typed !== album.title) {
-      setMessage("Delete cancelled.");
+      toast.info("Delete cancelled.");
       return;
     }
     const response = await fetch(`/api/albums/${album.id}`, { method: "DELETE" });
     const payload = await response.json();
     if (!payload.success) {
-      setMessage(payload.message ?? "Delete failed.");
+      toast.error(payload.message ?? "Delete failed.");
       return;
     }
+    toast.success("Album deleted successfully.");
     window.location.href = "/studio/albums";
   }
 
@@ -276,7 +317,14 @@ export function AlbumEditor({ album, settings }: { album: AlbumDetail; settings:
             </label>
             <label className="grid gap-2">
               <span className="text-sm font-medium text-text-primary">Slug (URL - Not translated)</span>
-              <Input value={slug} onChange={(event) => setSlug(slugify(event.target.value))} maxLength={120} />
+              <Input 
+                value={slug} 
+                onChange={(event) => setSlug(slugify(event.target.value))} 
+                maxLength={120} 
+                className={slugError ? "border-red-500 focus:ring-red-500" : ""}
+              />
+              {isCheckingSlug && <p className="text-xs text-text-secondary">Checking availability...</p>}
+              {slugError && <p className="text-xs text-red-500">{slugError}</p>}
             </label>
           </div>
           <label className="grid gap-2">
@@ -336,7 +384,7 @@ export function AlbumEditor({ album, settings }: { album: AlbumDetail; settings:
             >
               Back
             </Link>
-            <Button onClick={saveAlbum} disabled={saving}>
+            <Button onClick={saveAlbum} disabled={saving || !!slugError || isCheckingSlug}>
               <Save className="h-4 w-4" />
               {saving ? "Saving" : "Save album"}
             </Button>

@@ -3,6 +3,7 @@
 import { Leaf, Volume2, VolumeX, BookOpen, Clock, ShieldCheck, HeartHandshake, EyeOff, ArrowLeft, Palette, ImageIcon, RotateCcw, UploadCloud } from "lucide-react";
 import { useAlbumViewMemory } from "@/hooks/useAlbumViewMemory";
 import { useUIPreferences, ClickSoundType, AmbientSoundType, BgThemeType } from "@/hooks/useUIPreferences";
+import { useToast } from "@/hooks/useToast";
 import { useRouter } from "next/navigation";
 import { useRef } from "react";
 import { imageStore } from "@/lib/idb";
@@ -11,6 +12,7 @@ import { NatureAnimatedBackground } from "@/components/landing/NatureAnimatedBac
 
 export default function ProfileClient({ config }: { config: any }) {
   const router = useRouter();
+  const { toast } = useToast();
   const { memory, isClient } = useAlbumViewMemory();
   const { 
     soundEnabled, setSoundEnabled,
@@ -34,6 +36,7 @@ export default function ProfileClient({ config }: { config: any }) {
       if (dataUrl) {
         await imageStore.set("custom_background", dataUrl);
         setBgCustomUrlOverride(true);
+        toast.success("Custom background uploaded and active.");
       }
     };
     reader.readAsDataURL(file);
@@ -42,6 +45,7 @@ export default function ProfileClient({ config }: { config: any }) {
   const handleResetImage = async () => {
     await imageStore.remove("custom_background");
     setBgCustomUrlOverride(false);
+    toast.info("Custom background removed.");
   };
 
   return (
@@ -102,7 +106,10 @@ export default function ProfileClient({ config }: { config: any }) {
                 Sensory
               </h2>
               <button
-                onClick={() => setSoundEnabled(!soundEnabled)}
+                onClick={() => {
+                  setSoundEnabled(!soundEnabled);
+                  toast.info(soundEnabled ? "Sensory sounds disabled." : "Sensory sounds enabled.");
+                }}
                 className="relative h-7 w-12 rounded-full border border-border bg-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 aria-label="Toggle sound effects"
               >
@@ -120,7 +127,10 @@ export default function ProfileClient({ config }: { config: any }) {
                   <label className="block text-xs font-medium text-text-secondary mb-1">Click Sound</label>
                   <select 
                     value={clickSound}
-                    onChange={(e) => setClickSound(e.target.value as ClickSoundType)}
+                    onChange={(e) => {
+                      setClickSound(e.target.value as ClickSoundType);
+                      toast.success("Click sound updated.");
+                    }}
                     className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-muted-accent"
                   >
                     <option value="water">Water Drop (Default)</option>
@@ -134,7 +144,10 @@ export default function ProfileClient({ config }: { config: any }) {
                   <label className="block text-xs font-medium text-text-secondary mb-1">Ambient Background</label>
                   <select 
                     value={ambientSound}
-                    onChange={(e) => setAmbientSound(e.target.value as AmbientSoundType)}
+                    onChange={(e) => {
+                      setAmbientSound(e.target.value as AmbientSoundType);
+                      toast.success("Ambient background updated.");
+                    }}
                     className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-muted-accent"
                   >
                     <option value="auto">Auto (Matches Theme)</option>
@@ -186,7 +199,10 @@ export default function ProfileClient({ config }: { config: any }) {
               <p className="text-xs text-text-secondary mb-3">Overrides the global theme chosen by the artist.</p>
               <select 
                 value={bgThemeOverride}
-                onChange={(e) => setBgThemeOverride(e.target.value as BgThemeType)}
+                onChange={(e) => {
+                  setBgThemeOverride(e.target.value as BgThemeType);
+                  toast.success("Preset theme updated.");
+                }}
                 className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-muted-accent"
               >
                 <option value="default">Default (Artist's Choice)</option>
