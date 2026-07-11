@@ -19,7 +19,7 @@ const generateParticles = (count: number) => {
 
 import { NatureSettlingEffect } from "./NatureSettlingEffect";
 
-export function NatureAnimatedBackground({ config }: { config: LandingBackgroundSettings }) {
+export function NatureAnimatedBackground({ config = {} as any }: { config?: any }) {
   const pathname = usePathname();
   const [mounted, setMounted] = useState(false);
   const [particles, setParticles] = useState<any[]>([]);
@@ -28,10 +28,10 @@ export function NatureAnimatedBackground({ config }: { config: LandingBackground
   const [customImageUrl, setCustomImageUrl] = useState<string | null>(null);
 
   // Determine final effective settings
-  const effectivePreset = bgThemeOverride !== "default" ? bgThemeOverride : config.preset;
-  const effectiveCustomUrl = bgCustomUrlOverride && customImageUrl ? customImageUrl : (!bgCustomUrlOverride ? config.custom_url : null);
+  const effectivePreset = bgThemeOverride !== "default" ? bgThemeOverride : (config?.preset || "mist");
+  const effectiveCustomUrl = bgCustomUrlOverride && customImageUrl ? customImageUrl : (!bgCustomUrlOverride ? config?.custom_url : null);
   // Enhance default preset intensity slightly
-  const effectiveIntensity = Math.min(100, (config.intensity || 50) * 1.5);
+  const effectiveIntensity = Math.min(100, (config?.intensity || 50) * 1.5);
 
   useEffect(() => {
     if (bgCustomUrlOverride) {

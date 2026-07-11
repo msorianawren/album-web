@@ -7,6 +7,8 @@ import { useRouter } from "next/navigation";
 import { useRef } from "react";
 import { imageStore } from "@/lib/idb";
 
+import { NatureAnimatedBackground } from "@/components/landing/NatureAnimatedBackground";
+
 export default function ProfileAndGuidelinesPage() {
   const router = useRouter();
   const { memory, isClient } = useAlbumViewMemory();
@@ -42,8 +44,9 @@ export default function ProfileAndGuidelinesPage() {
   };
 
   return (
-    <main className="min-h-screen bg-background text-text-primary px-5 py-24 pb-32">
-      <div className="mx-auto max-w-3xl grid gap-16">
+    <main className="min-h-screen relative text-text-primary px-5 py-24 pb-32">
+      <NatureAnimatedBackground />
+      <div className="mx-auto max-w-3xl grid gap-16 relative z-10">
         
         {/* Header */}
         <section className="relative text-center">
