@@ -187,7 +187,7 @@ class AudioUXSystem {
     const now = this.context.currentTime;
     const gain = this.context.createGain();
     gain.gain.setValueAtTime(0, now);
-    gain.gain.linearRampToValueAtTime(0.05, now + 2); // 2 second fade in
+    gain.gain.linearRampToValueAtTime(0.4, now + 2); // Increased master gain heavily
     gain.connect(this.context.destination);
 
     this.ambientNodes = { oscillators: [], noiseBuffers: [], gain };
@@ -233,23 +233,23 @@ class AudioUXSystem {
         
         const t = this.context!.currentTime;
         noteGain.gain.setValueAtTime(0, t);
-        noteGain.gain.linearRampToValueAtTime(0.08, t + 0.05); // sharp attack
-        noteGain.gain.exponentialRampToValueAtTime(0.001, t + 4); // long decay
+        noteGain.gain.linearRampToValueAtTime(0.5, t + 0.05); // sharp attack, increased volume
+        noteGain.gain.exponentialRampToValueAtTime(0.001, t + 5); // long decay
         
         // Lowpass filter to make it sound muffled/warm like old alpha
         const filter = this.context!.createBiquadFilter();
         filter.type = "lowpass";
-        filter.frequency.setValueAtTime(800, t);
-        filter.frequency.exponentialRampToValueAtTime(300, t + 2);
+        filter.frequency.setValueAtTime(1000, t);
+        filter.frequency.exponentialRampToValueAtTime(400, t + 3);
         
         osc.connect(filter);
         filter.connect(noteGain);
         
         osc.start(t);
-        osc.stop(t + 4.5);
+        osc.stop(t + 5.5);
         
-        // Play next note between 3 and 10 seconds
-        setTimeout(playNote, Math.random() * 7000 + 3000);
+        // Play next note between 2 and 6 seconds
+        setTimeout(playNote, Math.random() * 4000 + 2000);
       };
       playNote();
     }
@@ -259,7 +259,7 @@ class AudioUXSystem {
       
       const filter = this.context.createBiquadFilter();
       filter.type = "lowpass";
-      filter.frequency.value = 400; // very muffled
+      filter.frequency.value = 600; // brighter
       filter.connect(gain);
       
       // Slow LFO for filter cutoff
@@ -267,7 +267,7 @@ class AudioUXSystem {
       lfo.type = "sine";
       lfo.frequency.value = 0.05; // 20s cycle
       const lfoGain = this.context.createGain();
-      lfoGain.gain.value = 150;
+      lfoGain.gain.value = 250;
       lfo.connect(lfoGain);
       lfoGain.connect(filter.frequency);
       lfo.start(now);
@@ -277,18 +277,99 @@ class AudioUXSystem {
         const osc = this.context!.createOscillator();
         osc.type = "sine"; // sine is warmest
         osc.frequency.value = f;
-        osc.connect(filter);
+        
+        const subGain = this.context!.createGain();
+        subGain.gain.value = 0.5; // lower individual oscillator gain slightly to avoid clipping
+        osc.connect(subGain);
+        subGain.connect(filter);
+        
         osc.start(now);
         this.ambientNodes!.oscillators.push(osc);
         
         // Add a detuned layer for thickness
         const detuned = this.context!.createOscillator();
-        detuned.type = "sine";
+        detuned.type = "triangle"; // mix with triangle for harmonics
         detuned.frequency.value = f * 1.005;
-        detuned.connect(filter);
+        
+        const detuneGain = this.context!.createGain();
+        detuneGain.gain.value = 0.2;
+        detuned.connect(detuneGain);
+        detuneGain.connect(filter);
+
         detuned.start(now);
         this.ambientNodes!.oscillators.push(detuned);
       });
+    }
+    else if (type === "cave") {
+      // Eerie, extremely low frequency rumble with occasional high pitched "drip"
+      const osc = this.context.createOscillator();
+      osc.type = "sine";
+      osc.frequency.value = 45; // Sub-bass
+      
+      const subGain = this.context.createGain();
+      subGain.gain.value = 0.8;
+      
+      osc.connect(subGain);
+      subGain.connect(gain);
+      osc.start(now);
+      this.ambientNodes.oscillators.push(osc);
+
+      const playDrip = () => {
+        if (!this.ambientNodes) return;
+        const dripGain = this.context!.createGain();
+        dripGain.connect(gain);
+        
+        const dripOsc = this.context!.createOscillator();
+        dripOsc.type = "sine";
+        dripOsc.frequency.setValueAtTime(800 + Math.random() * 400, this.context!.currentTime);
+        dripOsc.frequency.exponentialRampToValueAtTime(200, this.context!.currentTime + 0.1); // steep drop
+        
+        dripGain.gain.setValueAtTime(0, this.context!.currentTime);
+        dripGain.gain.linearRampToValueAtTime(0.1, this.context!.currentTime + 0.01);
+        dripGain.gain.exponentialRampToValueAtTime(0.001, this.context!.currentTime + 0.2);
+        
+        // Add reverb proxy using lowpass
+        const filter = this.context!.createBiquadFilter();
+        filter.type = "bandpass";
+        filter.frequency.value = 600;
+        dripOsc.connect(filter);
+        filter.connect(dripGain);
+
+        dripOsc.start(this.context!.currentTime);
+        dripOsc.stop(this.context!.currentTime + 0.25);
+        
+        setTimeout(playDrip, Math.random() * 8000 + 4000);
+      };
+      playDrip();
+    }
+    else if (type === "breeze") {
+      // Soft mountain wind
+      const noise = createNoise();
+      const filter = this.context.createBiquadFilter();
+      filter.type = "lowpass";
+      filter.frequency.value = 400; // very low pass
+      
+      // Add LFO for volume pulsing
+      const lfo = this.context.createOscillator();
+      lfo.type = "sine";
+      lfo.frequency.value = 0.03; // ~33 seconds cycle
+      
+      const pulseGain = this.context.createGain();
+      pulseGain.gain.value = 0.5; // base volume
+      
+      const lfoGain = this.context.createGain();
+      lfoGain.gain.value = 0.4; // fluctuation amount
+      lfo.connect(lfoGain);
+      lfoGain.connect(pulseGain.gain);
+      
+      noise.connect(filter);
+      filter.connect(pulseGain);
+      pulseGain.connect(gain);
+      
+      noise.start(now);
+      lfo.start(now);
+      this.ambientNodes.noiseBuffers.push(noise);
+      this.ambientNodes.oscillators.push(lfo);
     }
     else if (type === "rain") {
       const noise = createNoise();

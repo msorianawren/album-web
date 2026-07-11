@@ -82,7 +82,7 @@ export function AudioUXProvider() {
       const themeMap: Record<string, any> = {
         sakura: "harp",
         fireflies: "piano",
-        snow: "silence",
+        snow: "breeze",
         autumn: "pad",
         mist: "drone",
         rain: "rain"
