@@ -492,16 +492,32 @@ export function SettingsCenter({
                 <StatFields label="Stat 3" value={getLandingLocalized("stat_three_value")} caption={getLandingLocalized("stat_three_label")} onValue={(value) => updateLandingLocalized("stat_three_value", value)} onCaption={(value) => updateLandingLocalized("stat_three_label", value)} />
               </div>
               <div className="mt-8 border-t border-border pt-8">
-                <h3 className="mb-4 font-serif text-xl text-text-primary">Nature Animated Background</h3>
-                <div className="grid gap-4 md:grid-cols-2">
-                  <Toggle label="Enable Background" checked={landing.background_settings.enabled} onChange={(val) => updateLanding("background_settings", { ...landing.background_settings, enabled: val })} />
-                  <Toggle label="Apply to All Public Pages" checked={landing.background_settings.apply_to_all_public_pages ?? true} onChange={(val) => updateLanding("background_settings", { ...landing.background_settings, apply_to_all_public_pages: val })} />
+                <h3 className="mb-4 font-serif text-xl text-text-primary">Global UX Defaults</h3>
+                <div className="grid gap-4 md:grid-cols-3 mb-6">
                   <Select 
-                    label="Preset Theme" 
+                    label="Default Preset Theme" 
                     value={landing.background_settings.preset} 
                     onChange={(val) => updateLanding("background_settings", { ...landing.background_settings, preset: val as any })} 
                     options={["sakura", "fireflies", "snow", "autumn", "mist", "rain"]} 
                   />
+                  <Select 
+                    label="Default Ambient Sound" 
+                    value={settings.advanced_settings?.default_ambient_sound || "drone"} 
+                    onChange={(val) => updateAdvanced("default_ambient_sound", val)} 
+                    options={["harp", "piano", "silence", "pad", "drone", "rain", "cave"]} 
+                  />
+                  <Select 
+                    label="Default Click Sound" 
+                    value={settings.advanced_settings?.default_click_sound || "water"} 
+                    onChange={(val) => updateAdvanced("default_click_sound", val)} 
+                    options={["water", "crystal", "wood", "chime", "thud"]} 
+                  />
+                </div>
+                
+                <h4 className="mb-3 font-serif text-lg text-text-secondary">Background Details</h4>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <Toggle label="Enable Background" checked={landing.background_settings.enabled} onChange={(val) => updateLanding("background_settings", { ...landing.background_settings, enabled: val })} />
+                  <Toggle label="Apply to All Public Pages" checked={landing.background_settings.apply_to_all_public_pages ?? true} onChange={(val) => updateLanding("background_settings", { ...landing.background_settings, apply_to_all_public_pages: val })} />
                   <Field label="Opacity (0-100)">
                     <Input type="number" min={0} max={100} value={landing.background_settings.opacity ?? 100} onChange={(e) => updateLanding("background_settings", { ...landing.background_settings, opacity: parseInt(e.target.value) || 0 })} />
                   </Field>

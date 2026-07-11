@@ -29,11 +29,12 @@ export const viewport: Viewport = {
   viewportFit: "cover",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const settings = await getSiteSettings();
   return (
     <html lang="en" className="h-full antialiased" suppressHydrationWarning>
       <head>
@@ -47,7 +48,10 @@ export default function RootLayout({
         />
       </head>
       <body className="flex min-h-full flex-col">
-        <AudioUXProvider />
+        <AudioUXProvider 
+          defaultAmbient={settings.advanced_settings?.default_ambient_sound || "drone"}
+          defaultClick={settings.advanced_settings?.default_click_sound || "water"}
+        />
         <OAuthHashHandler />
         {children}
       </body>

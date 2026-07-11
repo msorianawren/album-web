@@ -4,8 +4,16 @@ import { useEffect, useCallback, useState } from "react";
 import { audioUX } from "@/lib/audio-ux";
 import { useUIPreferences } from "@/hooks/useUIPreferences";
 
-export function AudioUXProvider() {
-  const { soundEnabled, clickSound, ambientSound, ambientVolume, bgThemeOverride } = useUIPreferences();
+import { AmbientSoundType, ClickSoundType } from "@/hooks/useUIPreferences";
+
+export function AudioUXProvider({
+  defaultAmbient = "drone",
+  defaultClick = "water",
+}: {
+  defaultAmbient?: string;
+  defaultClick?: string;
+}) {
+  const { soundEnabled, clickSound, ambientSound, ambientVolume } = useUIPreferences();
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
@@ -20,7 +28,6 @@ export function AudioUXProvider() {
     document.addEventListener("pointerdown", initAudio, { once: true });
     document.addEventListener("keydown", initAudio, { once: true });
 
-    // Also check if it's already ready (e.g. fast refresh)
     if (audioUX.isReady) {
       setIsReady(true);
     }
@@ -60,10 +67,10 @@ export function AudioUXProvider() {
       if (shouldPlayMenu) {
         audioUX.playMenuSound();
       } else if (shouldPlayClick) {
-        audioUX.playClickSound(clickSound);
+        audioUX.playClickSound(clickSound === "auto" ? (defaultClick as ClickSoundType) : clickSound);
       }
     },
-    [soundEnabled, clickSound]
+    [soundEnabled, clickSound, defaultClick]
   );
 
   useEffect(() => {
@@ -73,7 +80,6 @@ export function AudioUXProvider() {
     };
   }, [handleClick]);
 
-  // Handle ambient sound playback based on 'auto' mapped to Theme, or explicit manual choice
   useEffect(() => {
     if (!soundEnabled || !isReady) {
       audioUX.stopAmbient();
@@ -82,27 +88,15 @@ export function AudioUXProvider() {
 
     let targetSound = ambientSound;
 
-    // 1-to-1 Mapping logic
     if (targetSound === "auto") {
-      const themeMap: Record<string, any> = {
-        sakura: "harp",
-        fireflies: "piano",
-        snow: "rain",
-        autumn: "pad",
-        mist: "drone",
-        rain: "cave",
-        default: "drone" // map default to mist's sound
-      };
-      targetSound = themeMap[bgThemeOverride] || "drone";
+      targetSound = defaultAmbient as AmbientSoundType;
     }
 
     audioUX.setAmbientVolume(ambientVolume);
     audioUX.playAmbient(targetSound);
     
-    return () => {
-      // audioUX.stopAmbient(); // We don't want to stop it on unmount unless it changes
-    };
-  }, [soundEnabled, ambientSound, ambientVolume, bgThemeOverride, isReady]);
+    return () => {};
+  }, [soundEnabled, ambientSound, ambientVolume, defaultAmbient, isReady]);
 
   return null;
 }

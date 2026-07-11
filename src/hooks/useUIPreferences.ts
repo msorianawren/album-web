@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { imageStore } from "@/lib/idb";
 
-export type ClickSoundType = "water" | "crystal" | "wood" | "chime" | "thud";
+export type ClickSoundType = "auto" | "water" | "crystal" | "wood" | "chime" | "thud";
 export type BgThemeType = "default" | "sakura" | "fireflies" | "snow" | "autumn" | "mist" | "rain";
 export type AmbientSoundType = "auto" | "harp" | "piano" | "silence" | "pad" | "drone" | "rain" | "cave";
 
@@ -24,7 +24,7 @@ interface UIPreferences {
 
 export function useUIPreferences(): UIPreferences {
   const [soundEnabled, setSoundEnabledState] = useState(true);
-  const [clickSound, setClickSoundState] = useState<ClickSoundType>("water");
+  const [clickSound, setClickSoundState] = useState<ClickSoundType>("auto");
   const [ambientSound, setAmbientSoundState] = useState<AmbientSoundType>("auto");
   const [ambientVolume, setAmbientVolumeState] = useState<number>(0.5);
   const [bgThemeOverride, setBgThemeOverrideState] = useState<BgThemeType>("default");
