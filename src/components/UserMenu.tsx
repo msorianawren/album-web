@@ -7,7 +7,7 @@ import { Avatar } from "@/components/ui/Avatar";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import type { PublicSession } from "@/lib/types";
 
-type ThemeMode = "day" | "night";
+type ThemeMode = "day" | "night" | "auto";
 
 interface UserMenuProps {
   session: PublicSession;
@@ -17,26 +17,43 @@ interface UserMenuProps {
 const themeEvent = "album-theme-change";
 
 function getStoredTheme(): ThemeMode {
-  if (typeof window === "undefined") return "day";
-  return localStorage.getItem("album-theme") === "night" ? "night" : "day";
+  if (typeof window === "undefined") return "auto";
+  const stored = localStorage.getItem("album-theme");
+  if (stored === "day" || stored === "night") return stored;
+  return "auto";
+}
+
+function computeAutoTheme(): "day" | "night" {
+  const hour = new Date().getHours();
+  return (hour >= 6 && hour < 18) ? "day" : "night";
 }
 
 function subscribeTheme(callback: () => void) {
   window.addEventListener("storage", callback);
   window.addEventListener(themeEvent, callback);
+  
+  // Re-check auto theme every minute
+  const interval = setInterval(() => {
+    if (getStoredTheme() === "auto") {
+      syncThemeClass("auto");
+    }
+  }, 60000);
+  
   return () => {
     window.removeEventListener("storage", callback);
     window.removeEventListener(themeEvent, callback);
+    clearInterval(interval);
   };
 }
 
 function syncThemeClass(mode: ThemeMode) {
-  document.documentElement.classList.toggle("theme-night", mode === "night");
+  const isNight = mode === "night" || (mode === "auto" && computeAutoTheme() === "night");
+  document.documentElement.classList.toggle("theme-night", isNight);
 }
 
 export function UserMenu({ session, dict }: UserMenuProps) {
   const [open, setOpen] = useState(false);
-  const theme = useSyncExternalStore(subscribeTheme, getStoredTheme, () => "day" as ThemeMode);
+  const theme = useSyncExternalStore(subscribeTheme, getStoredTheme, () => "auto" as ThemeMode);
   const menuRef = useRef<HTMLDivElement>(null);
 
   const name = session.displayName ?? session.email ?? (dict?.common?.guest || "Guest");
@@ -77,7 +94,10 @@ export function UserMenu({ session, dict }: UserMenuProps) {
   }
 
   function toggleTheme() {
-    const next = theme === "night" ? "day" : "night";
+    let next: ThemeMode = "auto";
+    if (theme === "auto") next = "day";
+    else if (theme === "day") next = "night";
+    
     localStorage.setItem("album-theme", next);
     syncThemeClass(next);
     window.dispatchEvent(new Event(themeEvent));
@@ -125,13 +145,14 @@ export function UserMenu({ session, dict }: UserMenuProps) {
         >
           <span className="inline-flex items-center gap-3">
             <span className="relative h-4 w-4 text-muted-accent" aria-hidden="true">
-              <Sun className="absolute inset-0 h-4 w-4 theme-sun-icon" />
-              <Moon className="absolute inset-0 h-4 w-4 theme-moon-icon" />
+              {theme === "night" && <Moon className="h-4 w-4" />}
+              {theme === "day" && <Sun className="h-4 w-4" />}
+              {theme === "auto" && <span className="h-4 w-4 flex items-center justify-center font-serif text-[10px] uppercase font-bold border border-muted-accent rounded-full">A</span>}
             </span>
             {dict?.common?.theme_mode || "Theme mode"}
           </span>
-          <span className="relative h-6 w-11 rounded-full border border-border bg-background">
-            <span className="theme-toggle-knob absolute left-1 top-1 h-4 w-4 rounded-full bg-accent transition" />
+          <span className="text-[10px] font-bold uppercase tracking-wider text-text-secondary bg-background border border-border px-2 py-0.5 rounded-full">
+            {theme}
           </span>
         </button>
 

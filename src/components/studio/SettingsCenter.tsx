@@ -718,7 +718,6 @@ export function SettingsCenter({
       {activeTab === "appearance" ? (
         <Panel title="Appearance" description="Default presentation choices for the public album experience.">
           <div className="grid gap-4 md:grid-cols-3">
-            <Select label="Default theme" value={settings.default_theme} onChange={(value) => update("default_theme", value as SiteSettings["default_theme"])} options={["dark", "light", "system"]} />
             <Select label="Homepage layout" value={settings.homepage_layout} onChange={(value) => update("homepage_layout", value as SiteSettings["homepage_layout"])} options={["featured", "grid", "minimal"]} />
             <Select label="Album card density" value={settings.album_card_density} onChange={(value) => update("album_card_density", value as SiteSettings["album_card_density"])} options={["comfortable", "compact"]} />
             

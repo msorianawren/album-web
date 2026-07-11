@@ -42,7 +42,7 @@ export default function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&display=swap" rel="stylesheet" />
         <script
           dangerouslySetInnerHTML={{
-            __html: `try{var t=localStorage.getItem("album-theme");if(t==="night"){document.documentElement.classList.add("theme-night")}else{document.documentElement.classList.remove("theme-night")}}catch(e){}`,
+            __html: `try{var t=localStorage.getItem("album-theme");var n=t==="night"||(t!=="day"&&(new Date().getHours()<6||new Date().getHours()>=18));if(n){document.documentElement.classList.add("theme-night")}else{document.documentElement.classList.remove("theme-night")}}catch(e){}`,
           }}
         />
       </head>
