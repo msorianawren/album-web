@@ -82,10 +82,10 @@ export function AudioUXProvider() {
       const themeMap: Record<string, any> = {
         sakura: "harp",
         fireflies: "piano",
-        snow: "breeze",
+        snow: "rain",
         autumn: "pad",
         mist: "drone",
-        rain: "rain"
+        rain: "cave"
       };
       targetSound = themeMap[bgThemeOverride] || "silence";
     }

@@ -161,6 +161,13 @@ class AudioUXSystem {
   }
 
   public stopAmbient() {
+    if (typeof window !== "undefined" && (window as any).__albumBgAudio) {
+      const audio = (window as any).__albumBgAudio as HTMLAudioElement;
+      audio.pause();
+      audio.src = "";
+      (window as any).__albumBgAudio = null;
+    }
+
     if (!this.ambientNodes) return;
     const now = this.context?.currentTime || 0;
     
@@ -176,7 +183,7 @@ class AudioUXSystem {
   }
 
   public playAmbient(type: AmbientSoundType) {
-    if (!this.context || type === "auto" || type === "silence") {
+    if (type === "auto" || type === "silence") {
       this.stopAmbient();
       return;
     }
@@ -184,230 +191,25 @@ class AudioUXSystem {
     // Always stop existing before starting new
     this.stopAmbient();
 
-    const now = this.context.currentTime;
-    const gain = this.context.createGain();
-    gain.gain.setValueAtTime(0, now);
-    gain.gain.linearRampToValueAtTime(0.4, now + 2); // Increased master gain heavily
-    gain.connect(this.context.destination);
-
-    this.ambientNodes = { oscillators: [], noiseBuffers: [], gain };
-
-    // Helper to create white noise
-    const createNoise = () => {
-      const bufferSize = this.context!.sampleRate * 2; 
-      const buffer = this.context!.createBuffer(1, bufferSize, this.context!.sampleRate);
-      const data = buffer.getChannelData(0);
-      for (let i = 0; i < bufferSize; i++) {
-        data[i] = Math.random() * 2 - 1;
-      }
-      const noise = this.context!.createBufferSource();
-      noise.buffer = buffer;
-      noise.loop = true;
-      return noise;
+    const minecraftUrls: Record<string, string> = {
+      "piano": "https://archive.org/download/minecraft-volume-alpha/01%20-%20C418%20-%20Key.mp3",
+      "pad": "https://archive.org/download/minecraft-volume-alpha/03%20-%20C418%20-%20Subwoofer%20Lullaby.mp3",
+      "cave": "https://archive.org/download/minecraft-volume-alpha/05%20-%20C418%20-%20Living%20Mice.mp3",
+      "harp": "https://archive.org/download/minecraft-volume-alpha/07%20-%20C418%20-%20Haggstrom.mp3",
+      "rain": "https://archive.org/download/minecraft-volume-alpha/08%20-%20C418%20-%20Minecraft.mp3",
+      "drone": "https://archive.org/download/minecraft-volume-alpha/09%20-%20C418%20-%20Oxyg%C3%A8ne.mp3"
     };
 
-    if (type === "drone") {
-      // Space/Drone: Deep beating sine waves
-      [65.41, 66].forEach(freq => { // Slightly detuned C2
-        const osc = this.context!.createOscillator();
-        osc.type = "sine";
-        osc.frequency.value = freq;
-        osc.connect(gain);
-        osc.start(now);
-        this.ambientNodes!.oscillators.push(osc);
-      });
-    }
-    else if (type === "piano") {
-      // Minecraft style sparse piano
-      const notes = [130.81, 146.83, 164.81, 196.00, 220.00]; // C3, D3, E3, G3, A3
+    if (minecraftUrls[type]) {
+      const audio = new Audio(minecraftUrls[type]);
+      audio.crossOrigin = "anonymous";
+      audio.loop = true;
+      audio.volume = 0.5;
+      audio.play().catch(e => console.warn("Background audio play blocked", e));
       
-      const playNote = () => {
-        if (!this.ambientNodes) return;
-        const noteGain = this.context!.createGain();
-        noteGain.connect(gain);
-        
-        const osc = this.context!.createOscillator();
-        osc.type = "triangle";
-        // occasionally double octave for brightness
-        osc.frequency.value = notes[Math.floor(Math.random() * notes.length)] * (Math.random() > 0.8 ? 2 : 1);
-        
-        const t = this.context!.currentTime;
-        noteGain.gain.setValueAtTime(0, t);
-        noteGain.gain.linearRampToValueAtTime(0.5, t + 0.05); // sharp attack, increased volume
-        noteGain.gain.exponentialRampToValueAtTime(0.001, t + 5); // long decay
-        
-        // Lowpass filter to make it sound muffled/warm like old alpha
-        const filter = this.context!.createBiquadFilter();
-        filter.type = "lowpass";
-        filter.frequency.setValueAtTime(1000, t);
-        filter.frequency.exponentialRampToValueAtTime(400, t + 3);
-        
-        osc.connect(filter);
-        filter.connect(noteGain);
-        
-        osc.start(t);
-        osc.stop(t + 5.5);
-        
-        // Play next note between 2 and 6 seconds
-        setTimeout(playNote, Math.random() * 4000 + 2000);
-      };
-      playNote();
-    }
-    else if (type === "pad") {
-      // Warm synth pad (Amin9 chord proxy)
-      const freqs = [110.00, 164.81, 196.00, 246.94]; // A2, E3, G3, B3
-      
-      const filter = this.context.createBiquadFilter();
-      filter.type = "lowpass";
-      filter.frequency.value = 600; // brighter
-      filter.connect(gain);
-      
-      // Slow LFO for filter cutoff
-      const lfo = this.context.createOscillator();
-      lfo.type = "sine";
-      lfo.frequency.value = 0.05; // 20s cycle
-      const lfoGain = this.context.createGain();
-      lfoGain.gain.value = 250;
-      lfo.connect(lfoGain);
-      lfoGain.connect(filter.frequency);
-      lfo.start(now);
-      this.ambientNodes.oscillators.push(lfo);
-
-      freqs.forEach(f => {
-        const osc = this.context!.createOscillator();
-        osc.type = "sine"; // sine is warmest
-        osc.frequency.value = f;
-        
-        const subGain = this.context!.createGain();
-        subGain.gain.value = 0.5; // lower individual oscillator gain slightly to avoid clipping
-        osc.connect(subGain);
-        subGain.connect(filter);
-        
-        osc.start(now);
-        this.ambientNodes!.oscillators.push(osc);
-        
-        // Add a detuned layer for thickness
-        const detuned = this.context!.createOscillator();
-        detuned.type = "triangle"; // mix with triangle for harmonics
-        detuned.frequency.value = f * 1.005;
-        
-        const detuneGain = this.context!.createGain();
-        detuneGain.gain.value = 0.2;
-        detuned.connect(detuneGain);
-        detuneGain.connect(filter);
-
-        detuned.start(now);
-        this.ambientNodes!.oscillators.push(detuned);
-      });
-    }
-    else if (type === "cave") {
-      // Eerie, extremely low frequency rumble with occasional high pitched "drip"
-      const osc = this.context.createOscillator();
-      osc.type = "sine";
-      osc.frequency.value = 45; // Sub-bass
-      
-      const subGain = this.context.createGain();
-      subGain.gain.value = 0.8;
-      
-      osc.connect(subGain);
-      subGain.connect(gain);
-      osc.start(now);
-      this.ambientNodes.oscillators.push(osc);
-
-      const playDrip = () => {
-        if (!this.ambientNodes) return;
-        const dripGain = this.context!.createGain();
-        dripGain.connect(gain);
-        
-        const dripOsc = this.context!.createOscillator();
-        dripOsc.type = "sine";
-        dripOsc.frequency.setValueAtTime(800 + Math.random() * 400, this.context!.currentTime);
-        dripOsc.frequency.exponentialRampToValueAtTime(200, this.context!.currentTime + 0.1); // steep drop
-        
-        dripGain.gain.setValueAtTime(0, this.context!.currentTime);
-        dripGain.gain.linearRampToValueAtTime(0.1, this.context!.currentTime + 0.01);
-        dripGain.gain.exponentialRampToValueAtTime(0.001, this.context!.currentTime + 0.2);
-        
-        // Add reverb proxy using lowpass
-        const filter = this.context!.createBiquadFilter();
-        filter.type = "bandpass";
-        filter.frequency.value = 600;
-        dripOsc.connect(filter);
-        filter.connect(dripGain);
-
-        dripOsc.start(this.context!.currentTime);
-        dripOsc.stop(this.context!.currentTime + 0.25);
-        
-        setTimeout(playDrip, Math.random() * 8000 + 4000);
-      };
-      playDrip();
-    }
-    else if (type === "breeze") {
-      // Soft mountain wind
-      const noise = createNoise();
-      const filter = this.context.createBiquadFilter();
-      filter.type = "lowpass";
-      filter.frequency.value = 400; // very low pass
-      
-      // Add LFO for volume pulsing
-      const lfo = this.context.createOscillator();
-      lfo.type = "sine";
-      lfo.frequency.value = 0.03; // ~33 seconds cycle
-      
-      const pulseGain = this.context.createGain();
-      pulseGain.gain.value = 0.5; // base volume
-      
-      const lfoGain = this.context.createGain();
-      lfoGain.gain.value = 0.4; // fluctuation amount
-      lfo.connect(lfoGain);
-      lfoGain.connect(pulseGain.gain);
-      
-      noise.connect(filter);
-      filter.connect(pulseGain);
-      pulseGain.connect(gain);
-      
-      noise.start(now);
-      lfo.start(now);
-      this.ambientNodes.noiseBuffers.push(noise);
-      this.ambientNodes.oscillators.push(lfo);
-    }
-    else if (type === "rain") {
-      const noise = createNoise();
-      const filter = this.context.createBiquadFilter();
-      filter.type = "lowpass";
-      filter.frequency.value = 1000;
-      
-      noise.connect(filter);
-      filter.connect(gain);
-      noise.start(now);
-      this.ambientNodes.noiseBuffers.push(noise);
-    }
-    else if (type === "harp") {
-      // Random pentatonic notes every few seconds
-      // Instead of an infinite loop node, we set up an interval
-      const notes = [261.63, 293.66, 329.63, 392.00, 440.00]; // C4, D4, E4, G4, A4
-      
-      const playNote = () => {
-        if (!this.ambientNodes) return;
-        const noteGain = this.context!.createGain();
-        noteGain.connect(gain);
-        
-        const osc = this.context!.createOscillator();
-        osc.type = "sine";
-        osc.frequency.value = notes[Math.floor(Math.random() * notes.length)] * (Math.random() > 0.5 ? 2 : 1);
-        
-        const t = this.context!.currentTime;
-        noteGain.gain.setValueAtTime(0, t);
-        noteGain.gain.linearRampToValueAtTime(0.1, t + 0.1);
-        noteGain.gain.exponentialRampToValueAtTime(0.001, t + 3);
-        
-        osc.connect(noteGain);
-        osc.start(t);
-        osc.stop(t + 3);
-        
-        setTimeout(playNote, Math.random() * 4000 + 2000);
-      };
-      playNote();
+      if (typeof window !== "undefined") {
+        (window as any).__albumBgAudio = audio;
+      }
     }
   }
 }

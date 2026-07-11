@@ -135,13 +135,12 @@ export default function ProfileAndGuidelinesPage() {
                   >
                     <option value="auto">Auto (Matches Theme)</option>
                     <option value="silence">Silence</option>
-                    <option value="piano">Sparse Piano (Minecraft Alpha)</option>
-                    <option value="pad">Warm Pad (Minecraft Creative)</option>
-                    <option value="cave">Deep Cave (Minecraft Underground)</option>
-                    <option value="breeze">Mountain Breeze (Minecraft Peaks)</option>
-                    <option value="drone">Deep Space Drone</option>
-                    <option value="rain">Soft Rain</option>
-                    <option value="harp">Pentatonic Harp</option>
+                    <option value="piano">Key (C418)</option>
+                    <option value="pad">Subwoofer Lullaby (C418)</option>
+                    <option value="cave">Living Mice (C418)</option>
+                    <option value="drone">Oxygène (C418)</option>
+                    <option value="rain">Minecraft Theme (C418)</option>
+                    <option value="harp">Haggstrom (C418)</option>
                   </select>
                 </div>
               </div>

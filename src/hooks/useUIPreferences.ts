@@ -5,7 +5,7 @@ import { imageStore } from "@/lib/idb";
 
 export type ClickSoundType = "water" | "crystal" | "wood" | "chime" | "thud";
 export type BgThemeType = "default" | "sakura" | "fireflies" | "snow" | "autumn" | "mist" | "rain";
-export type AmbientSoundType = "auto" | "harp" | "piano" | "silence" | "pad" | "drone" | "rain" | "cave" | "breeze";
+export type AmbientSoundType = "auto" | "harp" | "piano" | "silence" | "pad" | "drone" | "rain" | "cave";
 
 interface UIPreferences {
   soundEnabled: boolean;
