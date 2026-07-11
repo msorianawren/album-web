@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { AlbumEditor } from "@/components/studio/AlbumEditor";
 import { StudioPageHeader } from "@/components/studio/StudioPageHeader";
 import { getAlbum } from "@/lib/albums";
-import { getSiteSettings } from "@/lib/settings";
+import { getSiteSettings } from "@/lib/site-settings";
 
 export default async function StudioAlbumDetailPage({
   params,
