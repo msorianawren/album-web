@@ -129,6 +129,9 @@ export async function getStudioDashboardData(session: PublicSession) {
     hiddenComments,
     totalLikes,
     auditEventsToday,
+    totalRegisteredUsers,
+    viewEventsToday,
+    downloadsToday,
   ] = await Promise.all([
     getStudioAlbums(6),
     getStudioMedia(8),
@@ -149,6 +152,23 @@ export async function getStudioDashboardData(session: PublicSession) {
     countRows("comments", "is_hidden", true),
     countRows("likes"),
     countRowsSince("audit_logs", "created_at", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()),
+    countRows("user_profiles"),
+    (async () => {
+      try {
+        const res = await countRowsSince("user_album_activity", "created_at", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString());
+        return res;
+      } catch {
+        return 0;
+      }
+    })(),
+    (async () => {
+      try {
+        const res = await supabase.from("user_album_activity").select("id", { count: "exact", head: true }).in("event_type", ["album_downloaded_zip", "album_downloaded_media"]).gte("created_at", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString());
+        return res.count ?? 0;
+      } catch {
+        return 0;
+      }
+    })(),
   ]);
 
   const storageBytes = recentMedia.reduce((sum, item) => sum + (item.file_size ?? 0), 0);
@@ -177,6 +197,9 @@ export async function getStudioDashboardData(session: PublicSession) {
       storageBytes,
       recentUploads: recentMedia.length,
       auditEventsToday,
+      totalRegisteredUsers,
+      viewEventsToday,
+      downloadsToday,
       latestAlbumUpdate,
     },
     recentAlbums: albums,

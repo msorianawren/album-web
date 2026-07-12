@@ -13,6 +13,7 @@ export default async function StudioDashboardPage() {
   const metrics = data.metrics;
 
   const stats = [
+    ["Registered users", metrics.totalRegisteredUsers, "Active site accounts"],
     ["Total albums", metrics.totalAlbums, "All editorial books"],
     ["Public albums", metrics.publicAlbums, "Visible and downloadable"],
     ["Updating albums", metrics.updatingAlbums, "Visible, downloads off"],
@@ -23,6 +24,8 @@ export default async function StudioDashboardPage() {
     ["Comments", metrics.totalComments, `${metrics.hiddenComments} hidden`],
     ["Likes", metrics.totalLikes, "Album and media likes"],
     ["Audit today", metrics.auditEventsToday, "Recorded user actions"],
+    ["View events today", metrics.viewEventsToday, "Recorded album views"],
+    ["Downloads today", metrics.downloadsToday, "ZIPs and single media"],
     ["Storage estimate", formatBytes(metrics.storageBytes), "Based on indexed media"],
     ["Recent uploads", metrics.recentUploads, "Latest media loaded"],
     ["Latest update", metrics.latestAlbumUpdate ? new Intl.DateTimeFormat("en", { dateStyle: "medium" }).format(new Date(metrics.latestAlbumUpdate)) : "None", "Album updated date"],
@@ -52,7 +55,7 @@ export default async function StudioDashboardPage() {
         <Panel title="Recent albums">
           {data.recentAlbums.length ? (
             <div className="grid gap-3">
-              {data.recentAlbums.map((album) => (
+              {data.recentAlbums.map((album: any) => (
                 <Link key={album.id} href={`/studio/albums/${album.id}`} className="rounded-[1rem] border border-border bg-background/60 p-4 transition hover:bg-surface">
                   <p className="font-semibold text-text-primary">{album.title}</p>
                   <p className="mt-1 text-xs text-text-secondary">{album.status} - {album.media_count} media - {album.comment_count} comments</p>
@@ -77,7 +80,7 @@ export default async function StudioDashboardPage() {
         <Panel title="Recent media">
           {data.recentMedia.length ? (
             <div className="grid gap-3">
-              {data.recentMedia.map((item) => (
+              {data.recentMedia.map((item: any) => (
                 <div key={item.id} className="rounded-[1rem] border border-border bg-background/60 p-4">
                   <p className="truncate font-semibold text-text-primary">{item.title ?? item.original_filename ?? "Untitled media"}</p>
                   <p className="mt-1 text-xs text-text-secondary">{item.album_title ?? "No album"} - {item.media_type} - {formatBytes(item.file_size)}</p>
@@ -92,7 +95,7 @@ export default async function StudioDashboardPage() {
         <Panel title="Recent comments">
           {data.recentComments.length ? (
             <div className="grid gap-3">
-              {data.recentComments.map((comment) => (
+              {data.recentComments.map((comment: any) => (
                 <div key={comment.id} className="rounded-[1rem] border border-border bg-background/60 p-4">
                   <p className="line-clamp-2 text-sm text-text-primary">{comment.body}</p>
                   <p className="mt-2 text-xs text-text-secondary">{comment.author_name ?? "Anonymous"} - {comment.album_title ?? "Album"} - {comment.is_hidden ? "hidden" : "visible"}</p>
@@ -108,7 +111,7 @@ export default async function StudioDashboardPage() {
       <Panel title="Recent audit activity">
         {data.recentAuditLogs.length ? (
           <div className="grid gap-3">
-            {data.recentAuditLogs.map((log) => (
+            {data.recentAuditLogs.map((log: any) => (
               <div key={log.id} className="grid gap-2 rounded-[1rem] border border-border bg-background/60 p-4 sm:grid-cols-[1fr_auto] sm:items-center">
                 <div className="min-w-0">
                   <p className="truncate font-semibold text-text-primary">{log.action}</p>
@@ -126,7 +129,7 @@ export default async function StudioDashboardPage() {
       <Panel title="System warnings">
         {data.warnings.length ? (
           <div className="grid gap-2">
-            {data.warnings.map((warning) => (
+            {data.warnings.map((warning: string) => (
               <div key={warning} className="flex items-start gap-3 rounded-[1rem] border border-border bg-background/60 p-4 text-sm text-text-secondary">
                 <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-text-primary" />
                 {warning}

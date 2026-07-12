@@ -994,6 +994,20 @@ export function SettingsCenter({
             <NumberField label="Uploads per window" value={settings.upload_rate_limit_count} min={1} max={500} onChange={(value) => update("upload_rate_limit_count", value)} />
             <NumberField label="Upload window seconds" value={settings.upload_rate_limit_window_seconds} min={10} max={86400} onChange={(value) => update("upload_rate_limit_window_seconds", value)} />
           </div>
+
+          <div className="mt-4 grid gap-4 border-t border-border pt-4">
+            <h3 className="font-serif text-xl text-text-primary">User Activity Tracking</h3>
+            <div className="grid gap-4 md:grid-cols-2">
+              <Toggle label="Track authenticated album views" checked={settings.advanced_settings?.track_album_views ?? true} onChange={(value) => updateAdvanced("track_album_views", value)} />
+              <Toggle label="Track authenticated downloads" checked={settings.advanced_settings?.track_album_downloads ?? true} onChange={(value) => updateAdvanced("track_album_downloads", value)} />
+              <Toggle label="Show user activity panel in Security Console" checked={settings.advanced_settings?.show_user_activity_in_security ?? true} onChange={(value) => updateAdvanced("show_user_activity_in_security", value)} />
+            </div>
+            <div className="grid gap-4 md:grid-cols-2">
+              <NumberField label="View event dedupe window (hours)" value={settings.advanced_settings?.view_event_dedupe_hours ?? 24} min={1} max={720} onChange={(value) => updateAdvanced("view_event_dedupe_hours", value)} />
+              <NumberField label="Activity retention (days)" value={settings.advanced_settings?.user_activity_retention_days ?? 365} min={1} max={3650} onChange={(value) => updateAdvanced("user_activity_retention_days", value)} />
+            </div>
+          </div>
+
           <ReadOnly label="Current admin ID" value={systemHealth.currentAdmin?.userId.value ?? "Not available"} />
           <ReadOnly label="Current admin email" value={systemHealth.currentAdmin?.email ?? "Not available"} />
         </Panel>

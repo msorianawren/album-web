@@ -4,6 +4,7 @@ import sharp from "sharp";
 import { getAlbum } from "@/lib/albums";
 import { getPublicSession } from "@/lib/auth";
 import { logAuditEvent } from "@/lib/audit";
+import { recordUserAlbumActivity } from "@/lib/user-activity";
 import { apiError, toServerError } from "@/lib/errors";
 import { extensionFromUrlOrMime, safeFilename, sanitizeZipPathSegment } from "@/lib/filenames";
 import { enforceRateLimit } from "@/lib/security-rate-limit";
@@ -161,6 +162,15 @@ export async function GET(request: NextRequest, { params }: AlbumDownloadProps) 
         added,
         originalDownloadsAllowed: settings.allow_original_downloads,
       },
+    });
+
+    await recordUserAlbumActivity({
+      request,
+      session,
+      albumId: album.id,
+      eventType: "album_downloaded_zip",
+      albumStatus: album.status,
+      metadata: { added },
     });
 
     return new Response(stream, {

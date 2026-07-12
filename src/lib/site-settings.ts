@@ -97,6 +97,11 @@ export const defaultSiteSettings: SiteSettings = {
     show_already_viewed_badge: true,
     show_continue_viewing_hint: true,
     show_local_privacy_note: true,
+    track_album_views: true,
+    track_album_downloads: true,
+    view_event_dedupe_hours: 24,
+    user_activity_retention_days: 365,
+    show_user_activity_in_security: true,
   },
 };
 

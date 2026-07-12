@@ -5,6 +5,7 @@ import { Ban, CheckCircle2, Crown, Search, ShieldAlert, ShieldCheck, UserCog, Ac
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
+import { UserActivityPanel } from "./UserActivityPanel";
 import { cn } from "@/lib/utils";
 import type { AuditLog, PublicSession, UserProfile, UserRole } from "@/lib/types";
 
@@ -105,6 +106,7 @@ export function SecurityConsole({
   const [roleAction, setRoleAction] = useState<RoleAction>(null);
   const [isRoleUpdating, setIsRoleUpdating] = useState(false);
   const [reasons, setReasons] = useState<Record<string, string>>({});
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
 
   const usersById = useMemo(() => {
     return users.reduce<Record<string, UserProfile>>((acc, user) => {
@@ -331,7 +333,12 @@ export function SecurityConsole({
                   return (
                     <tr key={user.user_id} className="border-b border-border/70 align-top">
                       <td className="py-3 pr-4">
-                        <p className="font-semibold text-text-primary">{user.display_name ?? user.email}</p>
+                        <button 
+                          onClick={() => setSelectedUserId(user.user_id)}
+                          className="font-semibold text-text-primary hover:text-accent text-left transition-colors cursor-pointer"
+                        >
+                          {user.display_name ?? user.email}
+                        </button>
                         <p className="mt-1 text-xs text-text-secondary">{user.email}</p>
                         <p className="mt-1 font-mono text-[0.68rem] text-text-secondary">{user.user_id}</p>
                       </td>
@@ -524,6 +531,13 @@ export function SecurityConsole({
           </div>
         ) : null}
       </Modal>
+
+      {selectedUserId && (
+        <UserActivityPanel 
+          userId={selectedUserId} 
+          onClose={() => setSelectedUserId(null)} 
+        />
+      )}
     </div>
   );
 }

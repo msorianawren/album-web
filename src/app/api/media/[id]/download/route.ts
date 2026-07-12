@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { getPublicSession } from "@/lib/auth";
 import { logAuditEvent } from "@/lib/audit";
+import { recordUserAlbumActivity } from "@/lib/user-activity";
 import { apiError, toServerError } from "@/lib/errors";
 import { extensionFromUrlOrMime, safeFilename } from "@/lib/filenames";
 import { enforceRateLimit } from "@/lib/security-rate-limit";
@@ -84,6 +85,16 @@ export async function GET(request: NextRequest, { params }: MediaDownloadProps) 
         albumId: album.id,
         variant: sourceUrl === media.url ? "source" : "public-processed",
       },
+    });
+
+    await recordUserAlbumActivity({
+      request,
+      session,
+      albumId: album.id,
+      mediaId: media.id,
+      eventType: "album_downloaded_media",
+      albumStatus: album.status,
+      metadata: { variant: sourceUrl === media.url ? "source" : "public-processed" },
     });
 
     return new Response(upstream.body, {

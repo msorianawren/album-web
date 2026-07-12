@@ -17,11 +17,23 @@ export function AlbumViewTracker({ albumId, slug, locked }: AlbumViewTrackerProp
     if (locked) return;
 
     // Track immediately on mount but debounce for a few seconds to avoid bounces
-    const timer = setTimeout(() => {
+    const localTimer = setTimeout(() => {
       markAlbumViewed({ albumId, slug });
     }, 5000); // 5 seconds
 
-    return () => clearTimeout(timer);
+    // Track to server after 8 seconds of engagement
+    const serverTimer = setTimeout(() => {
+      fetch(`/api/albums/${albumId}/view-event`, { 
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ source: "album_page" })
+      }).catch(console.error); // Silently fail for guests or network errors
+    }, 8000);
+
+    return () => {
+      clearTimeout(localTimer);
+      clearTimeout(serverTimer);
+    };
   }, [albumId, slug, locked, markAlbumViewed]);
 
   return null;
