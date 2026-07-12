@@ -56,14 +56,34 @@ export async function PATCH(request: NextRequest, { params }: AlbumRouteProps) {
       );
     }
 
-    const { data, error } = await supabase
-      .from("albums")
-      .update(parsed.data)
-      .eq("id", id)
-      .select("*")
-      .single();
+    const { status, ...otherFields } = parsed.data;
 
-    if (error) return apiError("SERVER_ERROR", error.message, 500);
+    let data;
+    if (Object.keys(otherFields).length > 0) {
+      const { data: updatedData, error } = await supabase
+        .from("albums")
+        .update(otherFields)
+        .eq("id", id)
+        .select("*")
+        .single();
+      
+      if (error) return apiError("SERVER_ERROR", error.message, 500);
+      data = updatedData;
+    }
+
+    if (status) {
+      const { error } = await supabase.rpc("change_album_status", {
+        p_album_id: id,
+        p_new_status: status,
+      });
+      if (error) return apiError("SERVER_ERROR", "Failed to update album status and ordering", 500);
+      
+      // Refetch to get the latest row with new order
+      const { data: finalData } = await supabase.from("albums").select("*").eq("id", id).single();
+      data = finalData;
+    }
+
+    if (!data) return apiError("SERVER_ERROR", "Failed to update album", 500);
     await logAuditEvent({
       request,
       session,

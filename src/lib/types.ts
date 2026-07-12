@@ -29,6 +29,11 @@ export interface Album {
   like_count: number;
   comment_count: number;
   default_media_sort?: string | null;
+  public_sort_order?: number | null;
+  private_sort_order?: number | null;
+  updating_sort_order?: number | null;
+  order_updated_at?: string | null;
+  order_updated_by?: string | null;
   created_at: string;
   updated_at?: string;
   translations?: Record<string, any>;

@@ -127,6 +127,12 @@ export function AlbumsManager({
             <option value="media">Media count</option>
           </select>
           <Link
+            href="/studio/albums/order"
+            className="inline-flex h-12 items-center justify-center gap-2 rounded-full border border-border bg-background px-5 text-xs font-semibold uppercase tracking-[0.14em] text-text-primary transition hover:-translate-y-0.5"
+          >
+            Display Order
+          </Link>
+          <Link
             href="/studio/albums/new"
             className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-accent px-5 text-xs font-semibold uppercase tracking-[0.14em] text-accent-foreground transition hover:-translate-y-0.5"
           >

@@ -67,6 +67,11 @@ export function normalizeAlbum(row: UnknownRow): Album {
     comment_count: Number(row.comment_count ?? 0),
     default_media_sort:
       typeof row.default_media_sort === "string" ? row.default_media_sort : null,
+    public_sort_order: toNullableInteger(row.public_sort_order),
+    private_sort_order: toNullableInteger(row.private_sort_order),
+    updating_sort_order: toNullableInteger(row.updating_sort_order),
+    order_updated_at: typeof row.order_updated_at === "string" ? row.order_updated_at : null,
+    order_updated_by: typeof row.order_updated_by === "string" ? row.order_updated_by : null,
     created_at: String(row.created_at ?? new Date().toISOString()),
     updated_at:
       typeof row.updated_at === "string" ? row.updated_at : undefined,
@@ -284,10 +289,17 @@ export async function getAlbums(query: AlbumQuery = {}): Promise<Album[]> {
     let builder = supabase
       .from("albums")
       .select("*")
-      .is("deleted_at", null)
-      .order("created_at", { ascending: false });
+      .is("deleted_at", null);
 
-    if (query.status) builder = builder.eq("status", query.status);
+    if (query.status) {
+      builder = builder.eq("status", query.status);
+      if (query.status === "public") builder = builder.order("public_sort_order", { ascending: true, nullsFirst: false });
+      else if (query.status === "private") builder = builder.order("private_sort_order", { ascending: true, nullsFirst: false });
+      else if (query.status === "updating") builder = builder.order("updating_sort_order", { ascending: true, nullsFirst: false });
+    }
+    
+    builder = builder.order("created_at", { ascending: false });
+
     if (query.q) {
       const q = `%${query.q}%`;
       builder = builder.or(`title.ilike.${q},description.ilike.${q}`);
@@ -297,7 +309,32 @@ export async function getAlbums(query: AlbumQuery = {}): Promise<Album[]> {
     if (error) throw error;
     if (!data?.length) return filterSampleAlbums({ ...query, session });
 
-    return attachAlbumPreviews(data.map((row) => normalizeAlbum(row)), session);
+    let parsedAlbums = data.map((row) => normalizeAlbum(row));
+    
+    if (!query.status) {
+      const getFallbackTime = (a: Album) => new Date(a.created_at).getTime();
+      const publicAlbums = parsedAlbums.filter(a => a.status === "public").sort((a, b) => {
+        if (a.public_sort_order != null && b.public_sort_order != null) return a.public_sort_order - b.public_sort_order;
+        if (a.public_sort_order != null) return -1;
+        if (b.public_sort_order != null) return 1;
+        return getFallbackTime(b) - getFallbackTime(a);
+      });
+      const updatingAlbums = parsedAlbums.filter(a => a.status === "updating").sort((a, b) => {
+        if (a.updating_sort_order != null && b.updating_sort_order != null) return a.updating_sort_order - b.updating_sort_order;
+        if (a.updating_sort_order != null) return -1;
+        if (b.updating_sort_order != null) return 1;
+        return getFallbackTime(b) - getFallbackTime(a);
+      });
+      const privateAlbums = parsedAlbums.filter(a => a.status === "private").sort((a, b) => {
+        if (a.private_sort_order != null && b.private_sort_order != null) return a.private_sort_order - b.private_sort_order;
+        if (a.private_sort_order != null) return -1;
+        if (b.private_sort_order != null) return 1;
+        return getFallbackTime(b) - getFallbackTime(a);
+      });
+      parsedAlbums = [...publicAlbums, ...updatingAlbums, ...privateAlbums];
+    }
+
+    return attachAlbumPreviews(parsedAlbums, session);
   } catch {
     return filterSampleAlbums(query);
   }
