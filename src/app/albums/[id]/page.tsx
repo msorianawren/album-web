@@ -12,6 +12,7 @@ import { getAlbum } from "@/lib/albums";
 import { getSiteSettings } from "@/lib/site-settings";
 import { getLandingPage } from "@/lib/landing";
 import { getPublicSession } from "@/lib/auth";
+import { buildLoginHref } from "@/lib/auth-redirect";
 import { cookies } from "next/headers";
 import { getDictionary } from "@/lib/getDictionary";
 import { NatureAnimatedBackground } from "@/components/landing/NatureAnimatedBackground";
@@ -87,7 +88,7 @@ export default async function AlbumPage({ params }: AlbumPageProps) {
 
   const session = await getPublicSession();
   if (!session?.userId) {
-    redirect(`/login?redirect=/albums/${album.slug}`);
+    redirect(buildLoginHref(`/albums/${album.slug}`));
   }
 
   const cookieStore = await cookies();

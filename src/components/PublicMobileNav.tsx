@@ -2,8 +2,10 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { usePathname, useSearchParams } from "next/navigation";
 import { LogIn, Menu, Search, Shield, X } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { buildLoginHref } from "@/lib/auth-redirect";
 import type { PublicSession } from "@/lib/types";
 
 interface PublicMobileNavProps {
@@ -13,6 +15,8 @@ interface PublicMobileNavProps {
 
 export function PublicMobileNav({ session, navItems }: PublicMobileNavProps) {
   const [open, setOpen] = useState(false);
+  const pathname = usePathname() ?? "";
+  const searchParams = useSearchParams();
 
   function close() {
     setOpen(false);
@@ -94,7 +98,7 @@ export function PublicMobileNav({ session, navItems }: PublicMobileNavProps) {
                 Signed in as <span className="font-semibold text-text-primary">{session.email}</span>
               </div>
             ) : (
-              <Link href="/login" onClick={close}>
+              <Link href={buildLoginHref(pathname, searchParams)} onClick={close}>
                 <Button variant="secondary" className="w-full">
                   <LogIn className="h-4 w-4" aria-hidden="true" />
                   Login

@@ -4,12 +4,7 @@ import { clearAuthFlowCookies } from "@/lib/auth-flow";
 import { apiError, apiSuccess, toServerError } from "@/lib/errors";
 import { setSessionCookies } from "@/lib/session-cookies";
 import { createAnonSupabase, supabase } from "@/lib/supabase";
-
-function safeNext(value: unknown) {
-  return typeof value === "string" && value.startsWith("/") && !value.startsWith("//")
-    ? value
-    : "/";
-}
+import { safeAuthNext } from "@/lib/auth-redirect";
 
 export async function POST(request: NextRequest) {
   try {
@@ -56,7 +51,7 @@ export async function POST(request: NextRequest) {
       metadata: { mode, is_new_user: isNewUser },
     });
 
-    const next = profile?.is_blocked ? "/boycott" : safeNext(body.next);
+    const next = profile?.is_blocked ? "/boycott" : safeAuthNext(body.next);
     const response = apiSuccess({ next, isNewUser });
 
     setSessionCookies(response, {

@@ -1,9 +1,33 @@
 import { AppHeader } from "@/components/AppHeader";
 import { LoginForm } from "@/components/auth/LoginForm";
 import { getLandingPage } from "@/lib/landing";
+import { getAlbum } from "@/lib/albums";
 
-export default async function LoginPage() {
-  const landing = await getLandingPage();
+export default async function LoginPage(props: { searchParams: Promise<{ next?: string }> }) {
+  const [landing, searchParams] = await Promise.all([
+    getLandingPage(),
+    props.searchParams,
+  ]);
+
+  const next = searchParams?.next;
+  let continueMessage = "Register or sign in with a verified Google account to view albums. Admin tools remain available only to the approved owner account.";
+  let continueTitle = "Sign in with Google";
+
+  if (next && next.startsWith("/albums/")) {
+    const slug = next.split("/")[2]?.split("?")[0];
+    if (slug) {
+      const album = await getAlbum(slug);
+      if (album) {
+        if (album.locked) {
+          continueTitle = "Request private access";
+          continueMessage = "Sign in to request or view private access to this album.";
+        } else {
+          continueTitle = "Continue to album";
+          continueMessage = `Sign in to continue to ${album.title}.`;
+        }
+      }
+    }
+  }
 
   return (
     <main className="min-h-screen bg-background">
@@ -48,11 +72,10 @@ export default async function LoginPage() {
               Member access
             </p>
             <h2 className="mt-3 break-words text-2xl font-semibold text-text-primary sm:text-3xl">
-              Sign in with Google
+              {continueTitle}
             </h2>
             <p className="mt-3 break-words text-sm leading-6 text-text-secondary">
-              Register or sign in with a verified Google account to view albums.
-              Admin tools remain available only to the approved owner account.
+              {continueMessage}
             </p>
             <div className="mt-7">
               <LoginForm />

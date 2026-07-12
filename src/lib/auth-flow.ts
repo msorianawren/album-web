@@ -1,13 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
+import { safeAuthNext } from "./auth-redirect";
+
+export { safeAuthNext };
 
 const authNextCookie = "album-auth-next";
 const authModeCookie = "album-auth-mode";
-
-export function safeAuthNext(value: unknown) {
-  return typeof value === "string" && value.startsWith("/") && !value.startsWith("//")
-    ? value
-    : "/";
-}
 
 export function safeAuthMode(value: unknown) {
   return value === "signup" ? "signup" : "login";

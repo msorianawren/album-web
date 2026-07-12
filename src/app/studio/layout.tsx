@@ -4,6 +4,7 @@ import { ShieldAlert } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { StudioShell } from "@/components/studio/StudioShell";
 import { getPublicSession } from "@/lib/auth";
+import { buildLoginHref } from "@/lib/auth-redirect";
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 
@@ -24,7 +25,7 @@ export const metadata: Metadata = {
 export default async function StudioLayout({ children }: { children: ReactNode }) {
   const session = await getPublicSession();
 
-  if (!session.userId) redirect("/login?next=/studio");
+  if (!session.userId) redirect(buildLoginHref("/studio"));
   if (session.isBlocked) redirect("/boycott");
 
   if (!session.isAdmin) {

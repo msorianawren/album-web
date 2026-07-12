@@ -2,8 +2,10 @@
 
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
+import { usePathname, useSearchParams } from "next/navigation";
 import { LogIn, LogOut, Moon, Sun, UserRound, Shield } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";
+import { buildLoginHref } from "@/lib/auth-redirect";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import type { PublicSession } from "@/lib/types";
 
@@ -55,6 +57,8 @@ export function UserMenu({ session, dict }: UserMenuProps) {
   const [open, setOpen] = useState(false);
   const theme = useSyncExternalStore(subscribeTheme, getStoredTheme, () => "auto" as ThemeMode);
   const menuRef = useRef<HTMLDivElement>(null);
+  const pathname = usePathname() ?? "";
+  const searchParams = useSearchParams();
 
   const name = session.displayName ?? session.email ?? (dict?.common?.guest || "Guest");
   const roleLabel = session.isFounder
@@ -191,7 +195,7 @@ export function UserMenu({ session, dict }: UserMenuProps) {
             </button>
           ) : (
             <Link
-              href="/login"
+              href={buildLoginHref(pathname, searchParams)}
               className="flex w-full items-center gap-3 rounded-[1rem] px-3 py-3 text-sm font-medium text-text-primary transition hover:bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               <LogIn className="h-4 w-4 text-muted-accent" aria-hidden="true" />
