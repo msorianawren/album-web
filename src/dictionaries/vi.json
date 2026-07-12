@@ -69,5 +69,26 @@
     "experience": "Kinh nghiệm làm việc",
     "education": "Học vấn",
     "awards": "Giải thưởng & Công nhận"
+  },
+  "contact_form": {
+    "your_name": "Tên của bạn",
+    "your_email": "Email của bạn",
+    "inquiry_type": "Loại yêu cầu",
+    "subject": "Chủ đề",
+    "message": "Nội dung",
+    "send_message": "Gửi tin nhắn",
+    "sending": "Đang gửi...",
+    "success": "Gửi tin nhắn thành công",
+    "success_desc": "Cảm ơn bạn đã liên hệ. Tôi sẽ phản hồi trong thời gian sớm nhất.",
+    "send_another": "Gửi tin nhắn khác",
+    "email_client_fallback": "Gửi bằng ứng dụng Email",
+    "send_via_email": "Gửi bằng ứng dụng Email",
+    "disabled": "Biểu mẫu liên hệ hiện đang bị vô hiệu hóa.",
+    "protection_notice": "Được bảo vệ bằng các hệ thống chống thư rác. IP và trình duyệt của bạn có thể bị băm tạm thời để ngăn chặn trùng lặp.",
+    "leave_blank": "Để trống trường này",
+    "name_placeholder": "Nguyễn Văn A",
+    "email_placeholder": "nguyenvana@example.com",
+    "subject_placeholder": "VD: Hợp tác dự án",
+    "message_placeholder": "Hãy kể cho tôi nghe về dự án của bạn..."
   }
 }

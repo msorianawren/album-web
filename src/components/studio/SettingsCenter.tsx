@@ -20,6 +20,7 @@ type TabKey =
   | "albums"
   | "media"
   | "comments"
+  | "messages"
   | "seo"
   | "security"
   | "storage"
@@ -50,6 +51,7 @@ const tabs: Array<{ key: TabKey; label: string }> = [
   { key: "albums", label: "Albums" },
   { key: "media", label: "Media" },
   { key: "comments", label: "Comments" },
+  { key: "messages", label: "Messages" },
   { key: "seo", label: "SEO" },
   { key: "security", label: "Security" },
   { key: "storage", label: "Storage" },
@@ -901,6 +903,56 @@ export function SettingsCenter({
           </div>
         </Panel>
       ) : null}
+      {activeTab === "messages" ? (
+        <Panel title="Contact & Messages" description="Secure inbox settings for your public contact form.">
+          <div className="grid gap-4 md:grid-cols-2">
+            <Toggle label="Enable message inbox" checked={settings.enable_contact_inbox} onChange={(value) => update("enable_contact_inbox", value)} />
+            <Toggle label="Keep mailto fallback" checked={settings.enable_mailto_fallback} onChange={(value) => update("enable_mailto_fallback", value)} />
+          </div>
+
+          <Select 
+            label="Contact form mode" 
+            value={settings.contact_form_mode} 
+            onChange={(value) => update("contact_form_mode", value as any)} 
+            options={["mailto_only", "store_only", "store_and_fallback", "disabled"]} 
+          />
+
+          <div className="grid gap-4 md:grid-cols-3">
+            <NumberField label="Max message length" value={settings.contact_max_message_length} min={100} max={5000} onChange={(value) => update("contact_max_message_length", value)} />
+            <NumberField label="Max subject length" value={settings.contact_max_subject_length} min={10} max={500} onChange={(value) => update("contact_max_subject_length", value)} />
+            <NumberField label="Max name length" value={settings.contact_max_name_length} min={10} max={300} onChange={(value) => update("contact_max_name_length", value)} />
+          </div>
+
+          <Field label="Allowed inquiry types (comma separated)">
+            <Input 
+              value={settings.contact_allowed_inquiry_types.join(", ")} 
+              onChange={(e) => update("contact_allowed_inquiry_types", e.target.value.split(",").map(t => t.trim()).filter(Boolean))} 
+              placeholder="General Inquiry, Editorial Collaboration"
+            />
+          </Field>
+
+          <div className="mt-8 border-t border-border pt-8">
+            <h3 className="mb-4 font-serif text-xl text-text-primary">Anti-Spam & Limits</h3>
+            <div className="grid gap-4 md:grid-cols-2 mb-4">
+              <Toggle label="Enable honeypot protection" checked={settings.enable_honeypot} onChange={(value) => update("enable_honeypot", value)} />
+              <NumberField label="Min submit time (seconds)" value={settings.min_submit_time_seconds} min={0} max={60} onChange={(value) => update("min_submit_time_seconds", value)} />
+            </div>
+            <div className="grid gap-4 md:grid-cols-3 mb-4">
+              <NumberField label="Max requests" value={settings.contact_rate_limit_count} min={1} max={200} onChange={(value) => update("contact_rate_limit_count", value)} />
+              <NumberField label="Rate window (seconds)" value={settings.contact_rate_limit_window_seconds} min={10} max={86400} onChange={(value) => update("contact_rate_limit_window_seconds", value)} />
+              <NumberField label="Duplicate window (seconds)" value={settings.contact_duplicate_window_seconds} min={0} max={86400} onChange={(value) => update("contact_duplicate_window_seconds", value)} />
+            </div>
+            
+            <h4 className="mb-3 font-serif text-lg text-text-secondary">Retention</h4>
+            <div className="grid gap-4 md:grid-cols-3">
+              <Toggle label="Store spam metadata" checked={settings.store_spam_metadata} onChange={(value) => update("store_spam_metadata", value)} />
+              <NumberField label="Spam retention (days)" value={settings.spam_retention_days} min={1} max={365} onChange={(value) => update("spam_retention_days", value)} />
+              <NumberField label="Deleted retention (days)" value={settings.deleted_message_retention_days} min={1} max={365} onChange={(value) => update("deleted_message_retention_days", value)} />
+            </div>
+          </div>
+        </Panel>
+      ) : null}
+
 
       {activeTab === "seo" ? (
         <Panel title="SEO And Sharing" description="Metadata defaults for public pages and shared album previews.">

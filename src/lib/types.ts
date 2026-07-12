@@ -338,6 +338,21 @@ export interface SiteSettings {
   twitter_card: "summary" | "summary_large_image";
   footer_description: string;
   footer_note: string;
+  enable_contact_inbox: boolean;
+  enable_mailto_fallback: boolean;
+  contact_form_mode: "mailto_only" | "store_only" | "store_and_fallback" | "disabled";
+  contact_max_message_length: number;
+  contact_max_subject_length: number;
+  contact_max_name_length: number;
+  contact_allowed_inquiry_types: string[];
+  contact_rate_limit_count: number;
+  contact_rate_limit_window_seconds: number;
+  contact_duplicate_window_seconds: number;
+  enable_honeypot: boolean;
+  min_submit_time_seconds: number;
+  store_spam_metadata: boolean;
+  spam_retention_days: number;
+  deleted_message_retention_days: number;
   advanced_settings?: Record<string, any> & {
     vanity_urls?: Record<string, string>;
   };

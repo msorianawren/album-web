@@ -69,5 +69,26 @@
     "experience": "Experience",
     "education": "Education",
     "awards": "Awards & Recognition"
+  },
+  "contact_form": {
+    "your_name": "Your Name",
+    "your_email": "Your Email",
+    "inquiry_type": "Inquiry Type",
+    "subject": "Subject",
+    "message": "Message",
+    "send_message": "Send Message",
+    "sending": "Sending...",
+    "success": "Message Sent Successfully",
+    "success_desc": "Thank you for reaching out. I will get back to you as soon as possible.",
+    "send_another": "Send Another Message",
+    "email_client_fallback": "Email Client Fallback",
+    "send_via_email": "Send via Email Client",
+    "disabled": "The contact form is currently disabled.",
+    "protection_notice": "Protected by secure anti-spam checks. Your IP and browser data may be temporarily hashed for duplicate prevention.",
+    "leave_blank": "Leave this field blank",
+    "name_placeholder": "Jane Doe",
+    "email_placeholder": "jane@example.com",
+    "subject_placeholder": "e.g. Editorial Collaboration",
+    "message_placeholder": "Tell me about your project..."
   }
 }

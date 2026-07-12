@@ -78,8 +78,15 @@ export default async function ContactPage() {
               </div>
             </div>
             <div className="bg-surface/50 p-8 sm:p-12 border-t border-border md:border-t-0 md:border-l">
-              {hasEmail ? (
-                <ContactForm contactEmail={settings.contact_email!} />
+              {hasEmail || settings.contact_form_mode !== "mailto_only" ? (
+                <ContactForm 
+                  contactEmail={settings.contact_email!} 
+                  formMode={settings.contact_form_mode}
+                  allowedTypes={settings.contact_allowed_inquiry_types}
+                  maxMessage={settings.contact_max_message_length}
+                  maxSubject={settings.contact_max_subject_length}
+                  maxName={settings.contact_max_name_length}
+                />
               ) : (
                 <div className="h-full w-full rounded-2xl border border-dashed border-border flex flex-col items-center justify-center text-text-secondary p-8 text-center min-h-[300px]">
                   <Mail className="h-12 w-12 opacity-20 mb-4" />

@@ -1,52 +1,104 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
-import { Send, CheckCircle2, AlertCircle } from "lucide-react";
+import { Send, CheckCircle2, AlertCircle, Mail } from "lucide-react";
 
 interface ContactFormProps {
   contactEmail?: string;
+  formMode?: "mailto_only" | "store_only" | "store_and_fallback" | "disabled";
+  allowedTypes?: string[];
+  maxMessage?: number;
+  maxSubject?: number;
+  maxName?: number;
 }
 
-export function ContactForm({ contactEmail }: ContactFormProps) {
+export function ContactForm({
+  contactEmail,
+  formMode = "store_and_fallback",
+  allowedTypes = [],
+  maxMessage = 2000,
+  maxSubject = 200,
+  maxName = 100,
+}: ContactFormProps) {
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     subject: "",
+    inquiry_type: allowedTypes[0] || "General Inquiry",
     message: "",
+    honey_trap: "", // Hidden field
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSent, setIsSent] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
+  const [submitStartTime, setSubmitStartTime] = useState<string>("");
+  const formRef = useRef<HTMLFormElement>(null);
+
+  useEffect(() => {
+    // Record when the user first loaded the form to detect fast-submit bots
+    setSubmitStartTime(Date.now().toString());
+  }, []);
+
+  const getMailtoLink = () => {
+    if (!contactEmail) return "#";
+    const sub = encodeURIComponent(formData.subject || formData.inquiry_type || "Contact Inquiry");
+    const body = encodeURIComponent(`Name: ${formData.name}\n\n${formData.message}`);
+    return `mailto:${contactEmail}?subject=${sub}&body=${body}`;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (formMode === "mailto_only" || formMode === "disabled") {
+      if (formMode === "mailto_only" && contactEmail) {
+        window.location.href = getMailtoLink();
+      }
+      return;
+    }
+
     setIsSubmitting(true);
     setErrorMsg("");
-    
+
     try {
+      const payloadData = {
+        ...formData,
+        submit_start_time: submitStartTime
+      };
+
       const res = await fetch("/api/contact", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(payloadData),
       });
 
       const payload = await res.json();
 
       if (!res.ok || !payload.success) {
-        throw new Error(payload.message || "Something went wrong.");
+        throw new Error(payload.message || "Failed to submit.");
       }
 
       setIsSent(true);
-      setFormData({ name: "", email: "", subject: "", message: "" });
-    } catch (error: any) {
-      setErrorMsg(error.message || "Failed to send message.");
+      setFormData({ name: "", email: "", subject: "", inquiry_type: allowedTypes[0] || "General Inquiry", message: "", honey_trap: "" });
+    } catch (error) {
+      if (error instanceof Error) {
+        setErrorMsg(error.message);
+      } else {
+        setErrorMsg("Failed to send message.");
+      }
     } finally {
       setIsSubmitting(false);
     }
   };
+
+  if (formMode === "disabled") {
+    return (
+      <div className="rounded-xl border border-border bg-surface/50 p-6 text-center text-text-secondary">
+        The contact form is currently disabled.
+      </div>
+    );
+  }
 
   if (isSent) {
     return (
@@ -64,86 +116,101 @@ export function ContactForm({ contactEmail }: ContactFormProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col space-y-5">
+    <form ref={formRef} onSubmit={handleSubmit} className="flex flex-col space-y-5 relative">
       {errorMsg && (
-        <div className="flex items-center gap-2 rounded-xl bg-red-500/10 p-3 text-sm text-red-500">
-          <AlertCircle className="h-4 w-4" />
-          {errorMsg}
+        <div className="flex items-center justify-between gap-2 rounded-xl bg-red-500/10 p-4 text-sm text-red-500">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="h-4 w-4 shrink-0" />
+            <span>{errorMsg}</span>
+          </div>
+          {(formMode === "store_and_fallback" || formMode === "mailto_only") && contactEmail && (
+            <Button asChild variant="secondary" className="shrink-0 bg-red-500/20 hover:bg-red-500/30 text-red-500 border-none">
+              <a href={getMailtoLink()}>Use Email</a>
+            </Button>
+          )}
         </div>
       )}
-      
+
+      {/* Honeypot field - hidden from users and screen readers, visible to bots parsing HTML */}
+      <div aria-hidden="true" style={{ position: 'absolute', opacity: 0, height: 0, width: 0, zIndex: -1, overflow: 'hidden' }}>
+        <label htmlFor="honey_trap">Leave this field blank</label>
+        <Input
+          id="honey_trap"
+          name="honey_trap"
+          tabIndex={-1}
+          autoComplete="off"
+          value={formData.honey_trap}
+          onChange={(e) => setFormData(p => ({ ...p, honey_trap: e.target.value }))}
+        />
+      </div>
+
       <div className="grid gap-5 sm:grid-cols-2">
         <div className="space-y-1">
-          <label htmlFor="name" className="text-xs font-medium uppercase tracking-wider text-text-secondary">
-            Your Name
-          </label>
-          <Input
-            id="name"
-            name="name"
-            required
-            value={formData.name}
-            onChange={(e) => setFormData(p => ({ ...p, name: e.target.value }))}
-            placeholder="Jane Doe"
-            className="bg-surface/50"
-          />
+          <label htmlFor="name" className="text-xs font-medium uppercase tracking-wider text-text-secondary">Your Name</label>
+          <Input id="name" name="name" required maxLength={maxName} value={formData.name} onChange={(e) => setFormData(p => ({ ...p, name: e.target.value }))} placeholder="Jane Doe" className="bg-surface/50" />
         </div>
-        
+
         <div className="space-y-1">
-          <label htmlFor="email" className="text-xs font-medium uppercase tracking-wider text-text-secondary">
-            Your Email
-          </label>
-          <Input
-            id="email"
-            name="email"
-            type="email"
-            required
-            value={formData.email}
-            onChange={(e) => setFormData(p => ({ ...p, email: e.target.value }))}
-            placeholder="jane@example.com"
-            className="bg-surface/50"
-          />
+          <label htmlFor="email" className="text-xs font-medium uppercase tracking-wider text-text-secondary">Your Email</label>
+          <Input id="email" name="email" type="email" required maxLength={100} value={formData.email} onChange={(e) => setFormData(p => ({ ...p, email: e.target.value }))} placeholder="jane@example.com" className="bg-surface/50" />
         </div>
       </div>
-      
-      <div className="space-y-1">
-        <label htmlFor="subject" className="text-xs font-medium uppercase tracking-wider text-text-secondary">
-          Subject
-        </label>
-        <Input
-          id="subject"
-          name="subject"
-          required
-          value={formData.subject}
-          onChange={(e) => setFormData(p => ({ ...p, subject: e.target.value }))}
-          placeholder="e.g. Editorial Collaboration"
-          className="bg-surface/50"
-        />
+
+      <div className="grid gap-5 sm:grid-cols-2">
+        <div className="space-y-1">
+          <label htmlFor="inquiry_type" className="text-xs font-medium uppercase tracking-wider text-text-secondary">Inquiry Type</label>
+          <select
+            id="inquiry_type"
+            name="inquiry_type"
+            required
+            value={formData.inquiry_type}
+            onChange={(e) => setFormData(p => ({ ...p, inquiry_type: e.target.value }))}
+            className="flex h-10 w-full rounded-xl border border-border bg-surface/50 px-3 py-2 text-sm ring-offset-background placeholder:text-text-tertiary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 text-text-primary"
+          >
+            {allowedTypes.length > 0 ? allowedTypes.map(type => (
+              <option key={type} value={type} className="bg-background">{type}</option>
+            )) : (
+              <option value="General Inquiry" className="bg-background">General Inquiry</option>
+            )}
+          </select>
+        </div>
+
+        <div className="space-y-1">
+          <label htmlFor="subject" className="text-xs font-medium uppercase tracking-wider text-text-secondary">Subject</label>
+          <Input id="subject" name="subject" required maxLength={maxSubject} value={formData.subject} onChange={(e) => setFormData(p => ({ ...p, subject: e.target.value }))} placeholder="e.g. Editorial Collaboration" className="bg-surface/50" />
+        </div>
       </div>
 
       <div className="space-y-1">
-        <label htmlFor="message" className="text-xs font-medium uppercase tracking-wider text-text-secondary">
-          Message
-        </label>
-        <Textarea
-          id="message"
-          name="message"
-          required
-          value={formData.message}
-          onChange={(e) => setFormData(p => ({ ...p, message: e.target.value }))}
-          placeholder="Tell me about your project..."
-          rows={5}
-          className="resize-none bg-surface/50"
-        />
+        <label htmlFor="message" className="text-xs font-medium uppercase tracking-wider text-text-secondary">Message</label>
+        <Textarea id="message" name="message" required maxLength={maxMessage} value={formData.message} onChange={(e) => setFormData(p => ({ ...p, message: e.target.value }))} placeholder="Tell me about your project..." rows={6} className="resize-none bg-surface/50" />
       </div>
 
-      <Button
-        type="submit"
-        disabled={isSubmitting}
-        className="w-full sm:w-auto self-start"
-      >
-        <Send className="mr-2 h-4 w-4" />
-        {isSubmitting ? "Sending..." : "Send Message"}
-      </Button>
+      <div className="flex flex-col sm:flex-row gap-3">
+        {formMode !== "mailto_only" && (
+          <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto">
+            <Send className="mr-2 h-4 w-4" />
+            {isSubmitting ? "Sending..." : "Send Message"}
+          </Button>
+        )}
+
+        {(formMode === "mailto_only" || formMode === "store_and_fallback") && contactEmail && (
+          <Button type={formMode === "mailto_only" ? "submit" : "button"} asChild={formMode !== "mailto_only"} variant={formMode === "mailto_only" ? "primary" : "secondary"} className="w-full sm:w-auto">
+            {formMode === "mailto_only" ? (
+              <>
+                <Mail className="mr-2 h-4 w-4" /> Send via Email Client
+              </>
+            ) : (
+              <a href={getMailtoLink()}>
+                <Mail className="mr-2 h-4 w-4" /> Email Client Fallback
+              </a>
+            )}
+          </Button>
+        )}
+      </div>
+      <p className="text-xs text-text-tertiary mt-4">
+        Protected by secure anti-spam checks. Your IP and browser data may be temporarily hashed for duplicate prevention.
+      </p>
     </form>
   );
 }
