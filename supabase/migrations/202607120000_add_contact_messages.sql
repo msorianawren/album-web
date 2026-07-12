@@ -16,4 +16,4 @@ with check (true);
 
 create policy "Admins can view and manage contact messages" 
 on contact_messages for all to authenticated 
-using (auth.jwt() ->> 'role' = 'service_role' or auth.uid() in (select id from profiles where role = 'admin'));
+using (auth.jwt() ->> 'role' = 'service_role' or auth.uid() in (select user_id from user_profiles where role = 'admin' or role = 'founder'));
