@@ -48,7 +48,8 @@ $$;
 -- Create RPC for atomic reordering
 create or replace function public.reorder_albums(
   p_status text,
-  p_album_ids uuid[]
+  p_album_ids uuid[],
+  p_user_id uuid
 )
 returns void
 language plpgsql
@@ -58,13 +59,15 @@ as $$
 declare
   v_id uuid;
   v_index integer := 10;
-  v_user_id uuid;
 begin
-  -- Must be an admin
-  v_user_id := auth.uid();
+  -- The API route using service_role should pass the authenticated user id
+  if p_user_id is null then
+    raise exception 'User ID is required';
+  end if;
+
   if not exists (
     select 1 from public.user_profiles
-    where user_id = v_user_id and role in ('admin', 'founder')
+    where user_id = p_user_id and role in ('admin', 'founder')
   ) then
     raise exception 'Unauthorized';
   end if;
@@ -79,19 +82,19 @@ begin
       update public.albums
       set public_sort_order = v_index,
           order_updated_at = now(),
-          order_updated_by = v_user_id
+          order_updated_by = p_user_id
       where id = v_id and status = 'public';
     elsif p_status = 'private' then
       update public.albums
       set private_sort_order = v_index,
           order_updated_at = now(),
-          order_updated_by = v_user_id
+          order_updated_by = p_user_id
       where id = v_id and status = 'private';
     elsif p_status = 'updating' then
       update public.albums
       set updating_sort_order = v_index,
           order_updated_at = now(),
-          order_updated_by = v_user_id
+          order_updated_by = p_user_id
       where id = v_id and status = 'updating';
     end if;
     
@@ -103,7 +106,8 @@ $$;
 -- Create RPC for changing album status safely
 create or replace function public.change_album_status(
   p_album_id uuid,
-  p_new_status text
+  p_new_status text,
+  p_user_id uuid
 )
 returns void
 language plpgsql
@@ -111,10 +115,18 @@ security definer
 set search_path = public
 as $$
 declare
-  v_user_id uuid;
   v_max_order integer;
 begin
-  v_user_id := auth.uid();
+  if p_user_id is null then
+    raise exception 'User ID is required';
+  end if;
+  
+  if not exists (
+    select 1 from public.user_profiles
+    where user_id = p_user_id and role in ('admin', 'founder')
+  ) then
+    raise exception 'Unauthorized';
+  end if;
   
   if p_new_status not in ('public', 'private', 'updating') then
     raise exception 'Invalid status';

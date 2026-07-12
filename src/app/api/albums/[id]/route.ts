@@ -75,6 +75,7 @@ export async function PATCH(request: NextRequest, { params }: AlbumRouteProps) {
       const { error } = await supabase.rpc("change_album_status", {
         p_album_id: id,
         p_new_status: status,
+        p_user_id: session.userId,
       });
       if (error) return apiError("SERVER_ERROR", "Failed to update album status and ordering", 500);
       

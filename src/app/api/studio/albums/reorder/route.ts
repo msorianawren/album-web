@@ -11,7 +11,7 @@ const ReorderSchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
-    await requireAdminUser(request);
+    const session = await requireAdminUser(request);
 
     const body = await request.json();
     const parsed = ReorderSchema.safeParse(body);
@@ -26,6 +26,7 @@ export async function POST(request: NextRequest) {
     const { error } = await supabase.rpc("reorder_albums", {
       p_status: status,
       p_album_ids: albumIds,
+      p_user_id: session.userId,
     });
 
     if (error) {
