@@ -52,7 +52,7 @@ export function ContactForm({ contactEmail }: ContactFormProps) {
             {contactEmail}
           </a>
         </p>
-        <Button onClick={() => setIsSent(false)} variant="outline" className="mt-4">
+        <Button onClick={() => setIsSent(false)} variant="secondary" className="mt-4">
           Send Another Message
         </Button>
       </div>
