@@ -1,4 +1,4 @@
-import { ArrowRight, Camera, Play, Sparkles } from "lucide-react";
+import { ArrowRight, Camera, Sparkles } from "lucide-react";
 import type { LandingPageContent, SiteSettings } from "@/lib/types";
 import { ScrollReveal } from "@/components/ui/ScrollReveal";
 
@@ -77,9 +77,6 @@ export function HomeHero({ landing, settings, locale = "en", dict }: HomeHeroPro
                    <p className="text-[0.65rem] uppercase tracking-[0.2em] text-white/70 mb-1">{dict?.landing?.featured_story || "Featured story"}</p>
                    <p className="font-serif italic text-white text-xl">{featureTitle}</p>
                  </div>
-                 <span className="flex h-12 w-12 items-center justify-center rounded-full border border-white/30 backdrop-blur-md">
-                   <Play className="h-4 w-4 fill-white text-white" aria-hidden="true" />
-                 </span>
               </div>
             </div>
           </ScrollReveal>
@@ -218,9 +215,6 @@ export function HomeHero({ landing, settings, locale = "en", dict }: HomeHeroPro
                 <p className="text-xs font-semibold uppercase opacity-80">{dict?.landing?.featured_story || "Featured story"}</p>
                 <p className="mt-1 line-clamp-2 text-base font-semibold sm:text-lg">{featureTitle}</p>
               </div>
-              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/25 bg-white/15 backdrop-blur sm:h-12 sm:w-12">
-                <Play className="h-4 w-4 fill-current" aria-hidden="true" />
-              </span>
             </div>
           </div>
 
