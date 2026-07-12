@@ -562,10 +562,16 @@ export function SettingsCenter({
                   <Textarea value={getLandingLocalized("feature_body")} onChange={(event) => updateLandingLocalized("feature_body", event.target.value)} maxLength={420} />
                 </Field>
               </div>
-              <div className="grid gap-4 md:grid-cols-3">
-                <StatFields label="Stat 1" value={getLandingLocalized("stat_one_value")} caption={getLandingLocalized("stat_one_label")} onValue={(value) => updateLandingLocalized("stat_one_value", value)} onCaption={(value) => updateLandingLocalized("stat_one_label", value)} />
-                <StatFields label="Stat 2" value={getLandingLocalized("stat_two_value")} caption={getLandingLocalized("stat_two_label")} onValue={(value) => updateLandingLocalized("stat_two_value", value)} onCaption={(value) => updateLandingLocalized("stat_two_label", value)} />
-                <StatFields label="Stat 3" value={getLandingLocalized("stat_three_value")} caption={getLandingLocalized("stat_three_label")} onValue={(value) => updateLandingLocalized("stat_three_value", value)} onCaption={(value) => updateLandingLocalized("stat_three_label", value)} />
+              <div className="mt-6 border-t border-border pt-6">
+                <h3 className="mb-2 font-serif text-lg text-text-primary">Hero Statistics</h3>
+                <p className="mb-4 text-xs text-text-secondary/80 bg-accent/10 border border-accent/20 p-2 rounded-lg">
+                  <strong>Warning:</strong> These stats appear in the Cinematic preset and the Login page source code. Use user-benefit wording (e.g. &quot;Fast photo browsing&quot;), not infrastructure wording (e.g. &quot;R2 delivery&quot;).
+                </p>
+                <div className="grid gap-4 md:grid-cols-3">
+                  <StatFields label="Stat 1" value={getLandingLocalized("stat_one_value")} caption={getLandingLocalized("stat_one_label")} onValue={(value) => updateLandingLocalized("stat_one_value", value)} onCaption={(value) => updateLandingLocalized("stat_one_label", value)} />
+                  <StatFields label="Stat 2" value={getLandingLocalized("stat_two_value")} caption={getLandingLocalized("stat_two_label")} onValue={(value) => updateLandingLocalized("stat_two_value", value)} onCaption={(value) => updateLandingLocalized("stat_two_label", value)} />
+                  <StatFields label="Stat 3" value={getLandingLocalized("stat_three_value")} caption={getLandingLocalized("stat_three_label")} onValue={(value) => updateLandingLocalized("stat_three_value", value)} onCaption={(value) => updateLandingLocalized("stat_three_label", value)} />
+                </div>
               </div>
               <div className="mt-8 border-t border-border pt-8">
                 <h3 className="mb-4 font-serif text-xl text-text-primary">Global UX Defaults</h3>

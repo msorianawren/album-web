@@ -23,12 +23,12 @@ export const defaultLandingPage: LandingPageContent = {
   feature_title: "A private archive with a public face.",
   feature_body:
     "Albums can be public, updating, or privately held while the landing page stays polished for visitors.",
-  stat_one_label: "Selected",
-  stat_one_value: "Editorials",
-  stat_two_label: "Private",
-  stat_two_value: "Client books",
-  stat_three_label: "Global",
-  stat_three_value: "Availability",
+  stat_one_label: "Selected public albums",
+  stat_one_value: "Curated",
+  stat_two_label: "Private access by request",
+  stat_two_value: "Protected",
+  stat_three_label: "Fast photo browsing",
+  stat_three_value: "Smooth",
   social_links: [
     { id: "1", platform: "Instagram", url: "", label: "", enabled: true, order: 1 },
     { id: "2", platform: "Facebook", url: "", label: "", enabled: true, order: 2 },
