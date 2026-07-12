@@ -134,17 +134,17 @@ export function UserActivityPanel({ userId, onClose }: UserActivityPanelProps) {
                 <div className="flex items-start gap-3">
                   <div className="p-2 rounded-full bg-surface text-text-secondary"><Eye className="h-4 w-4" /></div>
                   <div>
-                    <p className="text-2xl font-semibold text-text-primary">{summary.viewed_album_count}</p>
-                    <p className="text-xs text-text-secondary mt-0.5">Albums viewed</p>
-                    <p className="text-[0.65rem] text-text-secondary mt-1">Last: {formatDate(summary.last_viewed_at)}</p>
+                    <p className="text-2xl font-semibold text-text-primary">{summary.total_view_events}</p>
+                    <p className="text-xs text-text-secondary mt-0.5">Total album views</p>
+                    <p className="text-[0.65rem] text-text-secondary mt-1">Across {summary.viewed_album_count} album(s)</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
                   <div className="p-2 rounded-full bg-surface text-text-secondary"><Download className="h-4 w-4" /></div>
                   <div>
-                    <p className="text-2xl font-semibold text-text-primary">{summary.downloaded_album_count}</p>
-                    <p className="text-xs text-text-secondary mt-0.5">Albums downloaded</p>
-                    <p className="text-[0.65rem] text-text-secondary mt-1">Last: {formatDate(summary.last_downloaded_at)}</p>
+                    <p className="text-2xl font-semibold text-text-primary">{summary.total_download_events}</p>
+                    <p className="text-xs text-text-secondary mt-0.5">Total album downloads</p>
+                    <p className="text-[0.65rem] text-text-secondary mt-1">Across {summary.downloaded_album_count} album(s)</p>
                   </div>
                 </div>
               </div>
