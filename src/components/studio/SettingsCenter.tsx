@@ -8,6 +8,8 @@ import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
 import type { AlbumStatus, LandingPageContent, SiteSettings, AboutProfile } from "@/lib/types";
 import { AboutSettingsTab } from "@/components/studio/settings/AboutSettingsTab";
+import dynamic from "next/dynamic";
+const PerformanceSettingsTab = dynamic(() => import("@/components/studio/settings/PerformanceSettingsTab"));
 import { LOCALES } from "@/lib/i18n";
 import { motion, AnimatePresence } from "framer-motion";
 import { AlertCircle } from "lucide-react";
@@ -1015,14 +1017,13 @@ export function SettingsCenter({
       ) : null}
 
       {activeTab === "performance" ? (
-        <Panel title="Performance" description="Settings and implementation notes that keep Studio responsive.">
-          <Toggle label="Use thumbnails in grid" checked={settings.use_thumbnails_in_grid} onChange={(value) => update("use_thumbnails_in_grid", value)} />
-          <NumberField label="Albums per page" value={settings.albums_per_page} min={6} max={100} onChange={(value) => update("albums_per_page", value)} />
-          <NumberField label="Media per page" value={settings.media_per_page} min={12} max={200} onChange={(value) => update("media_per_page", value)} />
-          <ReadOnly label="Viewer loading" value="Large viewer and upload UI are isolated to their Studio pages." />
-          <ReadOnly label="Vercel Speed Insights" value="Review Core Web Vitals in the Vercel project dashboard if enabled." />
-          <ReadOnly label="Cache policy" value="Admin pages use dynamic, no-store server data." />
-        </Panel>
+        <PerformanceSettingsTab
+          settings={settings}
+          landing={landing}
+          updateSettings={update}
+          updateAdvanced={updateAdvanced}
+          updateLanding={updateLanding}
+        />
       ) : null}
 
       {activeTab === "danger" ? (

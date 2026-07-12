@@ -48,7 +48,7 @@ export function useUploadQueue(settings: SiteSettings) {
     syncQueue();
   }, [syncQueue]);
 
-  function validateFile(file: File) {
+  const validateFile = useCallback((file: File) => {
     const isImage = imageTypes.includes(file.type);
     const isVideo = videoTypes.includes(file.type);
     if (!isImage && !isVideo) return "Unsupported file type.";
@@ -61,7 +61,7 @@ export function useUploadQueue(settings: SiteSettings) {
       return `Video is larger than ${settings.max_video_size_mb} MB.`;
     }
     return null;
-  }
+  }, [settings]);
 
   const addFiles = useCallback((files: FileList | File[]) => {
     const incoming = Array.from(files).slice(0, settings.max_upload_files_per_batch);
@@ -79,7 +79,7 @@ export function useUploadQueue(settings: SiteSettings) {
 
     queueRef.current = [...newItems, ...queueRef.current];
     syncQueue();
-  }, [settings, syncQueue]);
+  }, [settings, syncQueue, validateFile]);
 
   const removeFile = useCallback((id: string) => {
     const item = queueRef.current.find((q) => q.id === id);
@@ -125,7 +125,7 @@ export function useUploadQueue(settings: SiteSettings) {
     updateItem(id, { status: "queued", message: "Ready", progress: 0 });
   }, [updateItem]);
 
-  const _uploadSingle = async (item: QueueItem, targetAlbumId: string, onCompleteCallback?: (media: StudioMediaItem) => void) => {
+  const _uploadSingle = useCallback(async (item: QueueItem, targetAlbumId: string, onCompleteCallback?: (media: StudioMediaItem) => void) => {
     if (item.status === "cancelled") return;
 
     try {
@@ -236,7 +236,7 @@ export function useUploadQueue(settings: SiteSettings) {
         message: err instanceof Error ? err.message : "Upload failed.",
       });
     }
-  };
+  }, [updateItem]);
 
   const uploadAll = useCallback(async (targetAlbumId: string, onCompleteCallback?: (media: StudioMediaItem) => void) => {
     if (!targetAlbumId) return;
@@ -245,7 +245,7 @@ export function useUploadQueue(settings: SiteSettings) {
     isUploadingRef.current = true;
     setIsUploading(true);
 
-    const CONCURRENCY_LIMIT = 2;
+    const CONCURRENCY_LIMIT = settings.advanced_settings?.perf_upload_concurrency ?? 2;
     const activeTasks = new Set<Promise<void>>();
 
     // Loop until no more queued items
@@ -280,7 +280,7 @@ export function useUploadQueue(settings: SiteSettings) {
 
     isUploadingRef.current = false;
     setIsUploading(false);
-  }, [updateItem]);
+  }, [updateItem, _uploadSingle, settings.advanced_settings?.perf_upload_concurrency]);
 
   const cancelRemaining = useCallback(() => {
     isUploadingRef.current = false; // Stop picking up new tasks

@@ -221,6 +221,7 @@ export interface LandingBackgroundSettings {
   accent_color_2: string | null;
   custom_url: string | null;
   apply_to_all_public_pages: boolean;
+  reduce_animations_on_mobile?: boolean;
   enable_surface_accumulation?: boolean;
   accumulation_delay_seconds?: number;
 }

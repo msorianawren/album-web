@@ -43,9 +43,19 @@ export function NatureAnimatedBackground({ config = {} as any }: { config?: any 
 
   useEffect(() => {
     setMounted(true);
+    
+    // Check if mobile and reduction is enabled
+    const isMobile = window.innerWidth <= 768;
+    const shouldReduce = isMobile && config.reduce_animations_on_mobile;
+    
     // Cap particles aggressively for performance
-    const count = Math.floor((config.density / 100) * 20) + 2;
-    setParticles(generateParticles(effectivePreset === "rain" ? count * 1.5 : count));
+    let baseCount = Math.floor((config.density / 100) * 20) + 2;
+    if (shouldReduce) {
+      baseCount = Math.max(2, Math.floor(baseCount * 0.3));
+    }
+    
+    const count = effectivePreset === "rain" ? Math.floor(baseCount * 1.5) : baseCount;
+    setParticles(generateParticles(count));
 
     // Inject global CSS variables for UI integration
     const root = document.documentElement;
