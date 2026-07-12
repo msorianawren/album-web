@@ -124,8 +124,8 @@ export function ContactForm({
             <span>{errorMsg}</span>
           </div>
           {(formMode === "store_and_fallback" || formMode === "mailto_only") && contactEmail && (
-            <Button asChild variant="secondary" className="shrink-0 bg-red-500/20 hover:bg-red-500/30 text-red-500 border-none">
-              <a href={getMailtoLink()}>Use Email</a>
+            <Button type="button" variant="secondary" className="shrink-0 bg-red-500/20 hover:bg-red-500/30 text-red-500 border-none" onClick={() => window.location.href = getMailtoLink()}>
+              Use Email
             </Button>
           )}
         </div>
@@ -195,16 +195,14 @@ export function ContactForm({
         )}
 
         {(formMode === "mailto_only" || formMode === "store_and_fallback") && contactEmail && (
-          <Button type={formMode === "mailto_only" ? "submit" : "button"} asChild={formMode !== "mailto_only"} variant={formMode === "mailto_only" ? "primary" : "secondary"} className="w-full sm:w-auto">
-            {formMode === "mailto_only" ? (
-              <>
-                <Mail className="mr-2 h-4 w-4" /> Send via Email Client
-              </>
-            ) : (
-              <a href={getMailtoLink()}>
-                <Mail className="mr-2 h-4 w-4" /> Email Client Fallback
-              </a>
-            )}
+          <Button 
+            type={formMode === "mailto_only" ? "submit" : "button"} 
+            variant={formMode === "mailto_only" ? "primary" : "secondary"} 
+            className="w-full sm:w-auto"
+            onClick={formMode !== "mailto_only" ? () => { window.location.href = getMailtoLink() } : undefined}
+          >
+            <Mail className="mr-2 h-4 w-4" /> 
+            {formMode === "mailto_only" ? "Send via Email Client" : "Email Client Fallback"}
           </Button>
         )}
       </div>
