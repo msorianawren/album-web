@@ -1,10 +1,11 @@
 import { NextRequest } from "next/server";
 import JSZip from "jszip";
+import sharp from "sharp";
 import { getAlbum } from "@/lib/albums";
 import { getPublicSession } from "@/lib/auth";
 import { logAuditEvent } from "@/lib/audit";
 import { apiError, toServerError } from "@/lib/errors";
-import { extensionFromUrlOrMime, safeFilename } from "@/lib/filenames";
+import { extensionFromUrlOrMime, safeFilename, sanitizeZipPathSegment } from "@/lib/filenames";
 import { enforceRateLimit } from "@/lib/security-rate-limit";
 import { getSiteSettings } from "@/lib/site-settings";
 
@@ -70,6 +71,14 @@ export async function GET(request: NextRequest, { params }: AlbumDownloadProps) 
     }
 
     const zip = new JSZip();
+    
+    const folderName = sanitizeZipPathSegment(`Oriana-Wren-${album.title || album.slug}`, "album-export");
+    const topFolder = zip.folder(folderName);
+    
+    if (!topFolder) {
+      return apiError("SERVER_ERROR", "Failed to initialize ZIP folder structure.", 500);
+    }
+
     let added = 0;
 
     for (const [index, image] of images.entries()) {
@@ -90,15 +99,32 @@ export async function GET(request: NextRequest, { params }: AlbumDownloadProps) 
       if (!response.ok) continue;
       const length = Number(response.headers.get("content-length") ?? 0);
       if (length && length > maxZipSourceBytes) continue;
-      const data = await response.arrayBuffer();
-      if (data.byteLength > maxZipSourceBytes) continue;
-      const extension = extensionFromUrlOrMime(sourceUrl, "image/webp");
-      const filename = `${String(index + 1).padStart(2, "0")}-${safeFilename(
-        image.title ?? image.original_filename ?? image.id,
-      )}.${extension}`;
-      zip.file(filename, data);
+      let fileData: ArrayBuffer | Buffer = await response.arrayBuffer();
+      if (fileData.byteLength > maxZipSourceBytes) continue;
+      
+      let extension = extensionFromUrlOrMime(sourceUrl, "image/webp");
+      const baseName = `${String(index + 1).padStart(2, "0")}-${safeFilename(image.title ?? image.original_filename ?? image.id)}`;
+      let finalFilename = `${baseName}.${extension}`;
+
+      // Convert to JPG using sharp if it's an image and not a GIF
+      if (extension.toLowerCase() !== "gif") {
+        try {
+          fileData = await sharp(fileData)
+            .jpeg({ quality: 90, progressive: true })
+            .toBuffer();
+          extension = "jpg";
+          finalFilename = `${baseName}.jpg`;
+        } catch (err) {
+          console.warn(`[ZIP Export] Failed to convert image ${image.id} to JPG, falling back to ${extension}.`, err);
+        }
+      }
+
+      topFolder.file(finalFilename, fileData);
       added += 1;
     }
+
+    // Add optional manifest
+    topFolder.file("README.txt", `Album: ${album.title || album.slug}\nExported from: orianawren.com\nDate: ${new Date().toISOString()}\nFiles: ${added}\n\nNote: These files are provided for permitted personal/private use according to album permissions.`);
 
     if (!added) {
       return apiError("NOT_FOUND", "No source images could be downloaded.", 404);

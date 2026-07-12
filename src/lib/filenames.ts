@@ -9,6 +9,19 @@ export function safeFilename(value: string, fallback = "download") {
   return cleaned || fallback;
 }
 
+export function sanitizeZipPathSegment(value: string, fallback = "folder") {
+  const cleaned = value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "") // Remove accents
+    .replace(/[^a-zA-Z0-9.\-_ ]+/g, "-") // Allow spaces, replace bad chars with hyphens
+    .replace(/^\.+|\.+$/g, "") // Remove leading/trailing dots
+    .replace(/^-+|-+$/g, "") // Remove leading/trailing hyphens
+    .replace(/\s+/g, "-") // Convert spaces to hyphens
+    .slice(0, 80);
+
+  return cleaned || fallback;
+}
+
 export function extensionFromUrlOrMime(url: string, mimeType?: string | null) {
   const pathExt = url.split("?")[0]?.split(".").pop();
   if (pathExt && pathExt.length <= 5) return pathExt;
