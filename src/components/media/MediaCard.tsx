@@ -40,7 +40,7 @@ export function MediaCard({
             src={previewUrl}
             alt={media.title ?? media.original_filename ?? "Album image"}
             fill
-            sizes="(min-width: 1280px) 25vw, (min-width: 768px) 33vw, 50vw"
+            sizes="(min-width: 1024px) 25vw, (min-width: 768px) 33vw, (min-width: 640px) 50vw, 100vw"
             className="object-cover transition duration-300 ease-out group-hover:scale-[1.05]"
             draggable={!protectAssets}
           />
@@ -51,7 +51,7 @@ export function MediaCard({
                 src={previewUrl}
                 alt={media.title ?? "Video poster"}
                 fill
-                sizes="(min-width: 1280px) 25vw, (min-width: 768px) 33vw, 50vw"
+                sizes="(min-width: 1024px) 25vw, (min-width: 768px) 33vw, (min-width: 640px) 50vw, 100vw"
                 className="object-cover transition duration-300 ease-out group-hover:scale-[1.05]"
                 draggable={!protectAssets}
               />

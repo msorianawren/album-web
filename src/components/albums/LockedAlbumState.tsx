@@ -38,11 +38,11 @@ export function LockedAlbumState({ album }: { album: AlbumDetail }) {
           </div>
         ) : album.access_request_status === "pending" ? (
           <div className="mt-8 inline-flex self-start items-center gap-2 rounded-full border border-yellow-500/30 bg-yellow-500/10 px-4 py-2 text-sm font-semibold uppercase tracking-wider text-yellow-600 dark:text-yellow-400">
-            Request Pending
+            Request Under Review
           </div>
         ) : album.access_request_status === "rejected" ? (
           <div className="mt-8 inline-flex self-start items-center gap-2 rounded-full border border-red-500/30 bg-red-500/10 px-4 py-2 text-sm font-semibold uppercase tracking-wider text-red-600 dark:text-red-400">
-            Request Rejected
+            Access Not Approved
           </div>
         ) : (
           <button 
@@ -52,7 +52,7 @@ export function LockedAlbumState({ album }: { album: AlbumDetail }) {
               document.dispatchEvent(new CustomEvent("open-access-request", { detail: album }));
             }}
           >
-            Request Admin Permission
+            Request Private Access
           </button>
         )}
       </div>

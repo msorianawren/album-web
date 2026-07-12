@@ -26,7 +26,8 @@ export function AboutClient({ profile }: AboutClientProps) {
   const hasHobbies = profile.section_toggles?.skills !== false && profile.hobbies?.length > 0;
   const hasLanguages = profile.section_toggles?.languages !== false && profile.languages?.length > 0;
   const hasAchievements = profile.section_toggles?.achievements !== false && profile.achievements?.length > 0;
-  const hasSocialLinks = profile.section_toggles?.social !== false && profile.social_links?.length > 0;
+  const activeSocialLinks = (profile.social_links || []).filter(l => !!l.url);
+  const hasSocialLinks = profile.section_toggles?.social !== false && activeSocialLinks.length > 0;
   const hasBio = profile.section_toggles?.biography !== false && (profile.short_bio || profile.full_bio);
   const hasQuote = profile.section_toggles?.quote !== false && profile.quote;
 
@@ -435,7 +436,7 @@ export function AboutClient({ profile }: AboutClientProps) {
               Connect
             </h2>
             <div className="flex flex-wrap justify-center gap-x-10 gap-y-5">
-              {profile.social_links.map((link, i) => (
+              {activeSocialLinks.map((link, i) => (
                 <a
                   key={i}
                   href={link.url}

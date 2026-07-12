@@ -67,7 +67,7 @@ export function AccessRequestModal() {
       <div className="relative w-full max-w-md overflow-hidden rounded-3xl bg-surface shadow-2xl animate-in zoom-in-95 duration-200">
         <div className="flex items-center justify-between border-b border-border px-6 py-4">
           <h3 className="text-lg font-semibold text-text-primary">
-            Request Access
+            Request private access
           </h3>
           <button
             onClick={() => setAlbum(null)}
@@ -84,15 +84,18 @@ export function AccessRequestModal() {
                 <polyline points="20 6 9 17 4 12" />
               </svg>
             </div>
-            <h4 className="text-xl font-semibold text-text-primary">Request Sent</h4>
+            <h4 className="text-xl font-semibold text-text-primary">Request submitted</h4>
             <p className="mt-2 text-text-secondary">
-              Your request has been sent to the admin. You will be notified once it is approved.
+              Your request is under review. You will be notified when access is granted.
             </p>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="p-6">
-            <p className="mb-6 text-sm text-text-secondary">
-              The album <strong className="text-text-primary">{album.title}</strong> is private. Please provide your details to request access.
+            <p className="mb-2 text-sm text-text-secondary">
+              The album <strong className="text-text-primary">{album.title}</strong> is private.
+            </p>
+            <p className="mb-6 text-xs text-text-secondary/80">
+              Private albums are reviewed manually. Please include a short reason so your request can be processed properly.
             </p>
 
             <div className="space-y-4">

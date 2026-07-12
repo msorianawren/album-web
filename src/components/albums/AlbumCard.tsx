@@ -46,7 +46,7 @@ export function AlbumCard({ album, dict, locale = "en" }: AlbumCardProps) {
                 src={src}
                 alt={index === 0 ? `${album.title} animated album preview` : ""}
                 fill
-                sizes="(min-width: 1280px) 25vw, (min-width: 768px) 50vw, 100vw"
+                sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
                 className="living-preview-image object-cover grayscale-[15%] group-hover:grayscale-0 transition-all duration-700"
                 style={{
                   animationDelay: `${index * 3.2}s`,
@@ -55,8 +55,18 @@ export function AlbumCard({ album, dict, locale = "en" }: AlbumCardProps) {
               />
             ))
           ) : (
-            <div className="living-preview-placeholder flex h-full w-full items-center justify-center bg-surface">
-              <Lock className="h-8 w-8 text-text-secondary/50" aria-hidden="true" />
+            <div className="living-preview-placeholder flex h-full w-full items-center justify-center bg-surface-secondary relative overflow-hidden border border-border/10">
+              <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-transparent to-black/5" />
+              <div className="absolute inset-0 opacity-[0.03] mix-blend-overlay" style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E\")" }} />
+              {album.status === "private" ? (
+                <Lock className="h-6 w-6 text-text-secondary/30 relative z-10" aria-hidden="true" />
+              ) : (
+                <div className="flex flex-col items-center gap-3 text-text-secondary/30 -rotate-90 relative z-10">
+                  <div className="h-px w-10 bg-text-secondary/20" />
+                  <span className="text-[0.55rem] uppercase tracking-[0.3em] font-medium">Archive</span>
+                  <div className="h-px w-10 bg-text-secondary/20" />
+                </div>
+              )}
             </div>
           )}
           <div className="living-preview-light" aria-hidden="true" />
@@ -137,11 +147,11 @@ export function AlbumCard({ album, dict, locale = "en" }: AlbumCardProps) {
             </div>
           ) : album.access_request_status === "pending" ? (
             <div className="inline-flex items-center gap-2 border-b border-yellow-500/30 pb-1 text-[0.7rem] font-semibold uppercase tracking-widest text-yellow-600 dark:text-yellow-400">
-              {dict?.albums?.request_pending || "Pending"}
+              {dict?.albums?.request_pending || "Request under review"}
             </div>
           ) : album.access_request_status === "rejected" ? (
             <div className="inline-flex items-center gap-2 border-b border-red-500/30 pb-1 text-[0.7rem] font-semibold uppercase tracking-widest text-red-600 dark:text-red-400">
-              {dict?.albums?.request_rejected || "Rejected"}
+              {dict?.albums?.request_rejected || "Access not approved"}
             </div>
           ) : (
             <button 

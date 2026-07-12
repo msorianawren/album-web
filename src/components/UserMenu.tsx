@@ -127,7 +127,7 @@ export function UserMenu({ session, dict }: UserMenuProps) {
             : "pointer-events-none -translate-y-2 scale-[0.98] opacity-0"
         }`}
       >
-        <div className="flex items-center gap-3 rounded-[1rem] bg-background/75 p-3">
+        <div className="flex items-center gap-3 rounded-[1rem] bg-background/75 p-3 mb-2">
           <Avatar name={initialsName} imageUrl={session.avatarUrl ?? undefined} className="h-12 w-12" />
           <div className="min-w-0">
             <p className="truncate text-sm font-semibold text-text-primary">{name}</p>
@@ -138,66 +138,66 @@ export function UserMenu({ session, dict }: UserMenuProps) {
           </div>
         </div>
 
-        <button
-          type="button"
-          className="mt-3 flex w-full items-center justify-between gap-3 rounded-[1rem] px-3 py-3 text-left text-sm font-medium text-text-primary transition hover:bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          onClick={toggleTheme}
-        >
-          <span className="inline-flex items-center gap-3">
-            <span className="relative h-4 w-4 text-muted-accent" aria-hidden="true">
-              {theme === "night" && <Moon className="h-4 w-4" />}
-              {theme === "day" && <Sun className="h-4 w-4" />}
-              {theme === "auto" && <span className="h-4 w-4 flex items-center justify-center font-serif text-[10px] uppercase font-bold border border-muted-accent rounded-full">A</span>}
-            </span>
-            {dict?.common?.theme_mode || "Theme mode"}
-          </span>
-          <span className="text-[10px] font-bold uppercase tracking-wider text-text-secondary bg-background border border-border px-2 py-0.5 rounded-full">
-            {theme}
-          </span>
-        </button>
-
-        <LanguageSwitcher dict={dict} />
-
-        <Link
-          href="/profile"
-          className="mt-1 flex w-full items-center gap-3 rounded-[1rem] px-3 py-3 text-left text-sm font-medium text-text-primary transition hover:bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        >
-          <UserRound className="h-4 w-4 text-muted-accent" aria-hidden="true" />
-          {dict?.nav?.profile || "My Profile & Rules"}
-        </Link>
-
-        {session.isAdmin ? (
-          <Link
-            href="/studio"
-            className="mt-1 flex w-full items-center gap-3 rounded-[1rem] px-3 py-3 text-left text-sm font-medium text-text-primary transition hover:bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          >
-            <Shield className="h-4 w-4 text-muted-accent" aria-hidden="true" />
-            {dict?.nav?.studio || "Studio"}
-          </Link>
-        ) : null}
-
-        {session.userId ? (
+        <div className="mb-2">
+          <p className="px-3 py-1.5 text-[0.65rem] font-semibold uppercase tracking-wider text-text-secondary/70">Display</p>
           <button
             type="button"
-            className="mt-1 flex w-full items-center gap-3 rounded-[1rem] px-3 py-3 text-left text-sm font-medium text-text-primary transition hover:bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            onClick={logout}
+            className="flex w-full items-center justify-between gap-3 rounded-[1rem] px-3 py-3 text-left text-sm font-medium text-text-primary transition hover:bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            onClick={toggleTheme}
           >
-            <LogOut className="h-4 w-4 text-muted-accent" aria-hidden="true" />
-            {dict?.common?.logout || "Logout"}
+            <span className="inline-flex items-center gap-3">
+              <span className="relative h-4 w-4 text-muted-accent" aria-hidden="true">
+                {theme === "night" && <Moon className="h-4 w-4" />}
+                {theme === "day" && <Sun className="h-4 w-4" />}
+                {theme === "auto" && <span className="h-4 w-4 flex items-center justify-center font-serif text-[10px] uppercase font-bold border border-muted-accent rounded-full">A</span>}
+              </span>
+              {dict?.common?.theme_mode || "Theme mode"}
+            </span>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-text-secondary bg-background border border-border px-2 py-0.5 rounded-full">
+              {theme}
+            </span>
           </button>
-        ) : (
-          <Link
-            href="/login"
-            className="mt-1 flex w-full items-center gap-3 rounded-[1rem] px-3 py-3 text-sm font-medium text-text-primary transition hover:bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          >
-            <LogIn className="h-4 w-4 text-muted-accent" aria-hidden="true" />
-            {dict?.nav?.login || "Login with Google"}
-          </Link>
-        )}
+          <LanguageSwitcher dict={dict} />
+        </div>
 
-        <div className="mt-2 flex items-center gap-2 rounded-[1rem] border border-border px-3 py-2 text-xs text-text-secondary">
-          <UserRound className="h-3.5 w-3.5" aria-hidden="true" />
-          {dict?.common?.google_accounts_only || "Google accounts only"}
+        <div className="mb-2">
+          <p className="px-3 py-1.5 text-[0.65rem] font-semibold uppercase tracking-wider text-text-secondary/70">Account</p>
+          <Link
+            href="/profile"
+            className="flex w-full items-center gap-3 rounded-[1rem] px-3 py-3 text-left text-sm font-medium text-text-primary transition hover:bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <UserRound className="h-4 w-4 text-muted-accent" aria-hidden="true" />
+            {dict?.nav?.profile || "My Profile & Rules"}
+          </Link>
+
+          {session.isAdmin ? (
+            <Link
+              href="/studio"
+              className="flex w-full items-center gap-3 rounded-[1rem] px-3 py-3 text-left text-sm font-medium text-text-primary transition hover:bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <Shield className="h-4 w-4 text-muted-accent" aria-hidden="true" />
+              {dict?.nav?.studio || "Studio"}
+            </Link>
+          ) : null}
+
+          {session.userId ? (
+            <button
+              type="button"
+              className="flex w-full items-center gap-3 rounded-[1rem] px-3 py-3 text-left text-sm font-medium text-text-primary transition hover:bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring text-red-500/80 hover:text-red-500"
+              onClick={logout}
+            >
+              <LogOut className="h-4 w-4" aria-hidden="true" />
+              {dict?.common?.logout || "Logout"}
+            </button>
+          ) : (
+            <Link
+              href="/login"
+              className="flex w-full items-center gap-3 rounded-[1rem] px-3 py-3 text-sm font-medium text-text-primary transition hover:bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <LogIn className="h-4 w-4 text-muted-accent" aria-hidden="true" />
+              {dict?.nav?.login || "Login"}
+            </Link>
+          )}
         </div>
       </div>
     </div>

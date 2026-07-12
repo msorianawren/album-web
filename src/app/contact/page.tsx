@@ -4,6 +4,7 @@ import { getLandingPage } from "@/lib/landing";
 import { NatureAnimatedBackground } from "@/components/landing/NatureAnimatedBackground";
 import { Lock, Camera, Download, Mail } from "lucide-react";
 import { ContactForm } from "@/components/contact/ContactForm";
+import { CopyEmailButton } from "@/components/contact/CopyEmailButton";
 import Link from "next/link";
 export default async function ContactPage() {
   const [settings, landing] = await Promise.all([
@@ -63,19 +64,22 @@ export default async function ContactPage() {
                   : "Direct contact is currently being prepared. Check back later or request access via the album pages."}
               </p>
               
-              <div className="mt-12">
-                <div className="flex items-center space-x-4">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-surface/80 border border-border">
-                    <Mail className="h-5 w-5 text-accent" />
-                  </div>
-                  <div>
-                    <p className="text-xs font-medium uppercase tracking-wider text-text-secondary">Email Address</p>
-                    <p className="text-sm font-medium text-text-primary mt-0.5">
-                      {settings.contact_email || "Unavailable"}
-                    </p>
+                <div className="mt-12">
+                  <div className="flex items-center space-x-4">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-surface/80 border border-border">
+                      <Mail className="h-5 w-5 text-accent" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-medium uppercase tracking-wider text-text-secondary">Email Address</p>
+                      <div className="flex items-center mt-0.5">
+                        <p className="text-sm font-medium text-text-primary">
+                          {settings.contact_email || "Unavailable"}
+                        </p>
+                        {settings.contact_email && <CopyEmailButton email={settings.contact_email} />}
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
             </div>
             <div className="bg-surface/50 p-8 sm:p-12 border-t border-border md:border-t-0 md:border-l">
               {hasEmail || settings.contact_form_mode !== "mailto_only" ? (
