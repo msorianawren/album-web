@@ -15,7 +15,7 @@ import { normalizeAlbum, normalizeMedia } from "@/lib/albums";
 type UnknownRow = Record<string, unknown>;
 
 async function countRows(table: string, column?: string, value?: string | boolean) {
-  let query = supabase.from(table).select("id", { count: "exact", head: true });
+  let query = supabase.from(table).select("*", { count: "exact", head: true });
   if (column) query = query.eq(column, value);
   const { count } = await query;
   return count ?? 0;
@@ -24,7 +24,7 @@ async function countRows(table: string, column?: string, value?: string | boolea
 async function countRowsSince(table: string, column: string, since: string) {
   const { count } = await supabase
     .from(table)
-    .select("id", { count: "exact", head: true })
+    .select("*", { count: "exact", head: true })
     .gte(column, since);
   return count ?? 0;
 }
@@ -155,15 +155,15 @@ export async function getStudioDashboardData(session: PublicSession) {
     countRows("user_profiles"),
     (async () => {
       try {
-        const res = await countRowsSince("user_album_activity", "created_at", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString());
-        return res;
+        const res = await supabase.from("user_album_activity").select("*", { count: "exact", head: true }).eq("event_type", "album_viewed").gte("created_at", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString());
+        return res.count ?? 0;
       } catch {
         return 0;
       }
     })(),
     (async () => {
       try {
-        const res = await supabase.from("user_album_activity").select("id", { count: "exact", head: true }).in("event_type", ["album_downloaded_zip", "album_downloaded_media"]).gte("created_at", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString());
+        const res = await supabase.from("user_album_activity").select("*", { count: "exact", head: true }).in("event_type", ["album_downloaded_zip", "album_downloaded_media"]).gte("created_at", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString());
         return res.count ?? 0;
       } catch {
         return 0;
