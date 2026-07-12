@@ -27,8 +27,8 @@ export const defaultLandingPage: LandingPageContent = {
   stat_one_value: "Editorials",
   stat_two_label: "Private",
   stat_two_value: "Client books",
-  stat_three_label: "Fast",
-  stat_three_value: "R2 delivery",
+  stat_three_label: "Global",
+  stat_three_value: "Availability",
   social_links: [
     { id: "1", platform: "Instagram", url: "", label: "", enabled: true, order: 1 },
     { id: "2", platform: "Facebook", url: "", label: "", enabled: true, order: 2 },
