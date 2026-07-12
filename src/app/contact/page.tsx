@@ -3,8 +3,8 @@ import { getSiteSettings } from "@/lib/site-settings";
 import { getLandingPage } from "@/lib/landing";
 import { NatureAnimatedBackground } from "@/components/landing/NatureAnimatedBackground";
 import { Lock, Camera, Download, Mail } from "lucide-react";
+import { ContactForm } from "@/components/contact/ContactForm";
 import Link from "next/link";
-
 export default async function ContactPage() {
   const [settings, landing] = await Promise.all([
     getSiteSettings(),
@@ -59,29 +59,33 @@ export default async function ContactPage() {
               <h2 className="text-2xl font-semibold text-text-primary">Direct Message</h2>
               <p className="mt-4 text-sm leading-relaxed text-text-secondary">
                 {hasEmail 
-                  ? "Send an email directly to the owner. Please include relevant details about your inquiry."
+                  ? "Use the form to draft an email directly to the owner. Please include relevant details about your inquiry."
                   : "Direct contact is currently being prepared. Check back later or request access via the album pages."}
               </p>
               
-              <div className="mt-8">
-                {hasEmail ? (
-                  <a
-                    href={`mailto:${settings.contact_email}`}
-                    className="inline-flex h-12 items-center justify-center rounded-full bg-accent px-8 text-sm font-semibold uppercase tracking-wider text-accent-foreground transition hover:-translate-y-0.5 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                  >
-                    Open Email Client
-                  </a>
-                ) : (
-                  <div className="inline-flex h-12 items-center justify-center rounded-full border border-border bg-surface/50 px-8 text-sm font-semibold uppercase tracking-wider text-text-secondary opacity-70 cursor-not-allowed">
-                    Unavailable
+              <div className="mt-12">
+                <div className="flex items-center space-x-4">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-surface/80 border border-border">
+                    <Mail className="h-5 w-5 text-accent" />
                   </div>
-                )}
+                  <div>
+                    <p className="text-xs font-medium uppercase tracking-wider text-text-secondary">Email Address</p>
+                    <p className="text-sm font-medium text-text-primary mt-0.5">
+                      {settings.contact_email || "Unavailable"}
+                    </p>
+                  </div>
+                </div>
               </div>
             </div>
-            <div className="hidden bg-surface/50 p-8 sm:p-12 md:block">
-              <div className="h-full w-full rounded-2xl border border-dashed border-border flex items-center justify-center text-text-secondary">
-                <Mail className="h-12 w-12 opacity-20" />
-              </div>
+            <div className="bg-surface/50 p-8 sm:p-12 border-t border-border md:border-t-0 md:border-l">
+              {hasEmail ? (
+                <ContactForm contactEmail={settings.contact_email!} />
+              ) : (
+                <div className="h-full w-full rounded-2xl border border-dashed border-border flex flex-col items-center justify-center text-text-secondary p-8 text-center min-h-[300px]">
+                  <Mail className="h-12 w-12 opacity-20 mb-4" />
+                  <p>Contact form is currently unavailable</p>
+                </div>
+              )}
             </div>
           </div>
         </div>

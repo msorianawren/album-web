@@ -11,7 +11,7 @@ export const defaultSiteSettings: SiteSettings = {
   site_logo_url: null,
   site_logo_alt: "Website logo",
   site_favicon_url: null,
-  contact_email: null,
+  contact_email: "ms.orianawren@gmail.com",
   default_album_status: "private",
   allow_public_comments: true,
   allow_public_likes: true,
