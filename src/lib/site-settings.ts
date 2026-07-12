@@ -166,6 +166,7 @@ export function normalizeSiteSettings(value: Partial<SiteSettings> | null | unde
   return {
     ...defaultSiteSettings,
     ...(value ?? {}),
+    contact_email: value?.contact_email || defaultSiteSettings.contact_email,
     id: "default",
   };
 }
