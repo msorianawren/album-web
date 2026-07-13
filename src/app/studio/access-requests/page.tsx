@@ -65,7 +65,8 @@ export default function AccessRequestsPage() {
       ]);
       
       if (reqRes.ok) {
-        const reqData = await reqRes.json();
+        const reqJson = await reqRes.json();
+        const reqData = reqJson.data || {};
         setRequests(reqData.requests || []);
       }
       if (permRes.ok) {
