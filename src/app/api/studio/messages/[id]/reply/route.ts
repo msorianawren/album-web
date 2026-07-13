@@ -31,7 +31,7 @@ export async function POST(
     }
 
     if (!message.reply_email) {
-      return apiError("BAD_REQUEST", "No email address to reply to.", 400);
+      return apiError("INVALID_INPUT", "No email address to reply to.", 400);
     }
 
     // 2. Setup Nodemailer Transport
