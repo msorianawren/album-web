@@ -180,7 +180,10 @@ class AudioUXSystem {
       "cave": "/audio/cave.mp3",
       "harp": "/audio/harp.mp3",
       "rain": "/audio/rain.mp3",
-      "drone": "/audio/drone.mp3"
+      "drone": "/audio/drone.mp3",
+      "sweden": "/audio/sweden.mp3",
+      "wethands": "/audio/wethands.mp3",
+      "miceonvenus": "/audio/miceonvenus.mp3"
     };
     // Preload them in background so switching is instant
     Object.values(minecraftUrls).forEach(url => {
@@ -242,7 +245,10 @@ class AudioUXSystem {
       "cave": "/audio/cave.mp3",
       "harp": "/audio/harp.mp3",
       "rain": "/audio/rain.mp3",
-      "drone": "/audio/drone.mp3"
+      "drone": "/audio/drone.mp3",
+      "sweden": "/audio/sweden.mp3",
+      "wethands": "/audio/wethands.mp3",
+      "miceonvenus": "/audio/miceonvenus.mp3"
     };
     
     // Minecraft tracks have long empty intros/outros. Trim them.
@@ -252,7 +258,10 @@ class AudioUXSystem {
       "cave": { start: 2, end: 4 }, // Living Mice
       "harp": { start: 1, end: 4 }, // Haggstrom
       "rain": { start: 2, end: 4 }, // Minecraft Theme
-      "drone": { start: 6, end: 4 } // Oxygene (takes very long to start)
+      "drone": { start: 6, end: 4 }, // Oxygene (takes very long to start)
+      "sweden": { start: 2, end: 4 }, // Sweden
+      "wethands": { start: 1, end: 4 }, // Wet Hands
+      "miceonvenus": { start: 2, end: 4 } // Mice on Venus
     };
 
     const url = minecraftUrls[type];

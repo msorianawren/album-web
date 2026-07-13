@@ -158,6 +158,9 @@ export default function ProfileClient({ config }: { config: any }) {
                     <option value="drone">Oxygène (C418)</option>
                     <option value="rain">Minecraft Theme (C418)</option>
                     <option value="harp">Haggstrom (C418)</option>
+                    <option value="sweden">Sweden (C418)</option>
+                    <option value="wethands">Wet Hands (C418)</option>
+                    <option value="miceonvenus">Mice on Venus (C418)</option>
                   </select>
                 </div>
                 <div>
