@@ -13,7 +13,7 @@ export const revalidate = 0;
 export default async function MessagesPage() {
   const { data: messages, error } = await supabase
     .from("contact_messages")
-    .select("id, name, reply_email, subject, inquiry_type, message_preview, message_body, status, risk_level, created_at")
+    .select("id, name, reply_email, subject, inquiry_type, message_preview, message_body, status, risk_level, created_at, reply_text, replied_at")
     .neq("status", "deleted") // Don't fetch deleted here to save load
     .order("created_at", { ascending: false });
 
