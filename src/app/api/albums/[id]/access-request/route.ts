@@ -44,7 +44,20 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       return apiError("INVALID_INPUT", "Invalid payload.", 400, parsed.error.flatten());
     }
     
-    // Insert request (upsert or let the unique index handle duplicates)
+    // Check for existing pending request to avoid 500 crashes
+    const { data: existingRequest } = await supabase
+      .from("album_access_requests")
+      .select("id")
+      .eq("album_id", albumId)
+      .eq("requester_user_id", session?.userId || null)
+      .eq("status", "pending")
+      .maybeSingle();
+
+    if (existingRequest) {
+      return apiError("CONFLICT", "You already have a pending request for this album.", 409);
+    }
+
+    // Insert request
     const { data, error } = await supabase
       .from("album_access_requests")
       .insert({

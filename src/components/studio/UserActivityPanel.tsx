@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { Download, Eye, Clock, CalendarDays, ExternalLink, X } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { UserGrantsPanel } from "@/components/studio/UserGrantsPanel";
 import { cn } from "@/lib/utils";
 
 interface UserActivityPanelProps {
@@ -22,7 +23,7 @@ export function UserActivityPanel({ userId, onClose }: UserActivityPanelProps) {
   const [data, setData] = useState<Record<string, unknown> | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [tab, setTab] = useState<"overview" | "viewed" | "downloads" | "timeline">("overview");
+  const [tab, setTab] = useState<"overview" | "viewed" | "downloads" | "timeline" | "grants">("overview");
 
   const fetchActivity = useCallback(async () => {
     setLoading(true);
@@ -89,7 +90,7 @@ export function UserActivityPanel({ userId, onClose }: UserActivityPanelProps) {
       </div>
 
       <div className="flex items-center gap-6 px-6 pt-4 border-b border-border text-sm overflow-x-auto">
-        {(["overview", "viewed", "downloads", "timeline"] as const).map(t => (
+        {(["overview", "grants", "viewed", "downloads", "timeline"] as const).map(t => (
           <button
             key={t}
             onClick={() => setTab(t)}
@@ -99,7 +100,8 @@ export function UserActivityPanel({ userId, onClose }: UserActivityPanelProps) {
             )}
           >
             {t === "viewed" ? `Viewed Albums (${viewed_albums.length})` : 
-             t === "downloads" ? `Downloads (${downloaded_albums.length})` : t}
+             t === "downloads" ? `Downloads (${downloaded_albums.length})` : 
+             t === "grants" ? "Album Access" : t}
           </button>
         ))}
       </div>
@@ -155,6 +157,10 @@ export function UserActivityPanel({ userId, onClose }: UserActivityPanelProps) {
               Activity is recorded for security and account management. Sensitive URLs, tokens, and storage keys are never stored in the database.
             </div>
           </div>
+        )}
+
+        {tab === "grants" && (
+          <UserGrantsPanel userId={user.id} email={user.email} />
         )}
 
         {tab === "viewed" && (

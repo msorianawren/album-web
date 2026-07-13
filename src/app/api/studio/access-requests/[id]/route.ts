@@ -24,6 +24,16 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
     const session = await getPublicSession();
 
+    const { data: requestRecord, error: fetchError } = await supabase
+      .from("album_access_requests")
+      .select("*")
+      .eq("id", p.id)
+      .single();
+
+    if (fetchError || !requestRecord) {
+      return apiError("NOT_FOUND", "Request not found", 404);
+    }
+
     const { data, error } = await supabase
       .from("album_access_requests")
       .update({
@@ -39,6 +49,18 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
     if (error) {
       return apiError("SERVER_ERROR", error.message, 500);
+    }
+
+    if (parsed.data.status === "approved") {
+      // Create explicit grant
+      await supabase.from("album_access_grants").insert({
+        user_id: requestRecord.requester_user_id || null,
+        email_normalized: requestRecord.requester_email || null,
+        scope: "selected_albums",
+        album_id: requestRecord.album_id,
+        status: "active",
+        granted_by: session!.userId,
+      });
     }
 
     return apiSuccess({ request: data });

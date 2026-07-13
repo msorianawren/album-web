@@ -175,9 +175,32 @@ export async function checkAlbumAccess(albumId: string, session: PublicSession):
       .limit(1);
     
     if (inviteData && inviteData.length > 0) return true;
+
+    // Check grants by email
+    const { data: emailGrant } = await supabase
+      .from("album_access_grants")
+      .select("id")
+      .eq("email_normalized", session.email)
+      .eq("status", "active")
+      .or(`album_id.eq.${albumId},scope.eq.all_private`)
+      .limit(1);
+      
+    if (emailGrant && emailGrant.length > 0) return true;
   }
 
   if (session.userId) {
+    // Check direct user grants
+    const { data: userGrant } = await supabase
+      .from("album_access_grants")
+      .select("id")
+      .eq("user_id", session.userId)
+      .eq("status", "active")
+      .or(`album_id.eq.${albumId},scope.eq.all_private`)
+      .limit(1);
+      
+    if (userGrant && userGrant.length > 0) return true;
+
+    // Fallback: check legacy approved requests just in case
     const { data } = await supabase
       .from("album_access_requests")
       .select("status")
@@ -229,30 +252,69 @@ async function attachAlbumPreviews(albums: Album[], session?: PublicSession | nu
   
   // Attach access request status if logged in
   const requestMap = new Map<string, string>();
+  
   if (session?.userId && !isAdmin) {
     const albumIds = albums.filter(a => a.status === "private").map(a => a.id);
+    
+    // 1. Check pending requests
     if (albumIds.length > 0) {
-      const { data } = await supabase
+      const { data: pendingRequests } = await supabase
         .from("album_access_requests")
         .select("album_id, status")
         .in("album_id", albumIds)
         .eq("requester_user_id", session.userId);
         
-      if (data) {
-        // Use the most recent or highest privilege status if duplicates exist, 
-        // but unique index guarantees 1 pending. If approved, user has access.
-        for (const req of data) {
-          const current = requestMap.get(req.album_id);
-          if (current !== "approved") {
+      if (pendingRequests) {
+        for (const req of pendingRequests) {
+          if (requestMap.get(req.album_id) !== "approved") {
             requestMap.set(req.album_id, req.status);
           }
+        }
+      }
+
+      // 2. Check active user grants
+      const { data: userGrants } = await supabase
+        .from("album_access_grants")
+        .select("album_id, scope")
+        .eq("user_id", session.userId)
+        .eq("status", "active")
+        .or(`album_id.in.(${albumIds.join(",")}),scope.eq.all_private`);
+        
+      if (userGrants) {
+        const hasGlobal = userGrants.some(g => g.scope === "all_private");
+        if (hasGlobal) {
+          albumIds.forEach(id => requestMap.set(id, "approved"));
+        } else {
+          userGrants.forEach(g => {
+            if (g.album_id) requestMap.set(g.album_id, "approved");
+          });
         }
       }
     }
   }
 
-  // Also check email-based invites
+  // 3. Check active email grants
   if (session?.email && !isAdmin) {
+    const { data: emailGrants } = await supabase
+      .from("album_access_grants")
+      .select("album_id, scope")
+      .eq("email_normalized", session.email)
+      .eq("status", "active");
+
+    if (emailGrants && emailGrants.length > 0) {
+      const isGlobal = emailGrants.some(g => g.scope === "all_private");
+      if (isGlobal) {
+        albums.filter(a => a.status === "private").forEach(a => {
+          requestMap.set(a.id, "approved");
+        });
+      } else {
+        emailGrants.forEach(g => {
+          if (g.album_id) requestMap.set(g.album_id, "approved");
+        });
+      }
+    }
+
+    // 4. Also check legacy email invites
     const { data: invites } = await supabase
       .from("album_invites")
       .select("album_id, is_global")
@@ -261,7 +323,6 @@ async function attachAlbumPreviews(albums: Album[], session?: PublicSession | nu
     if (invites && invites.length > 0) {
       const isGlobal = invites.some(inv => inv.is_global);
       if (isGlobal) {
-        // Grant all private albums
         albums.filter(a => a.status === "private").forEach(a => {
           requestMap.set(a.id, "approved");
         });
