@@ -13,9 +13,10 @@ const requestSchema = z.object({
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await getPublicSession();
   
-  if (!session?.userId) {
-    return apiError("UNAUTHENTICATED", "You must be signed in to request access.", 401);
-  }
+  // Allow anonymous requests. Admin can contact them via phone.
+  // if (!session?.userId) {
+  //   return apiError("UNAUTHENTICATED", "You must be signed in to request access.", 401);
+  // }
 
   try {
     const p = await params;
@@ -48,8 +49,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       .from("album_access_requests")
       .insert({
         album_id: albumId,
-        requester_user_id: session.userId,
-        requester_email: session.email ?? null,
+        requester_user_id: session?.userId || null,
+        requester_email: session?.email || null,
         requester_name: parsed.data.requester_name,
         requester_phone: parsed.data.requester_phone,
         reason: parsed.data.reason,

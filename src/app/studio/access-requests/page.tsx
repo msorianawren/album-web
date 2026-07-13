@@ -69,7 +69,8 @@ export default function AccessRequestsPage() {
         setRequests(reqData.requests || []);
       }
       if (permRes.ok) {
-        const permData = await permRes.json();
+        const permJson = await permRes.json();
+        const permData = permJson.data || {};
         setUsers(permData.users || []);
         setInvites(permData.invites || []);
         setPrivateAlbums(permData.privateAlbums || []);
@@ -150,8 +151,10 @@ export default function AccessRequestsPage() {
       if (res.ok) {
         const permRes = await fetch("/api/studio/permissions");
         if (permRes.ok) {
-          const permData = await permRes.json();
+          const permJson = await permRes.json();
+          const permData = permJson.data || {};
           setInvites(permData.invites || []);
+          setUsers(permData.users || []); // Might as well update users too
         }
         setEditingEmail(null);
         setIsAddingNew(false);
@@ -179,7 +182,8 @@ export default function AccessRequestsPage() {
       userProfile,
       userInvites,
       hasGlobal: userInvites.some(i => i.is_global),
-      albumsCount: userInvites.filter(i => !i.is_global && i.album_id).length
+      albumsCount: userInvites.filter(i => !i.is_global && i.album_id).length,
+      albumTitles: userInvites.filter(i => !i.is_global && i.album_id).map(i => i.albums?.title || "Unknown Album")
     };
   });
 
@@ -287,6 +291,10 @@ export default function AccessRequestsPage() {
                 </div>
               )}
 
+              {!editIsGlobal && privateAlbums.length === 0 && (
+                <p className="text-sm text-text-secondary mb-4">No private albums found in the system.</p>
+              )}
+
               <div className="flex gap-3 justify-end mt-4">
                 <Button variant="ghost" onClick={() => setIsAddingNew(false)} disabled={saving}>
                   Cancel
@@ -333,17 +341,22 @@ export default function AccessRequestsPage() {
                     </div>
 
                     {!isEditing && (
-                      <div className="flex items-center justify-between sm:justify-end gap-4">
+                      <div className="flex items-start sm:items-center justify-between sm:justify-end gap-4">
                         <div className="text-sm">
                           {item.hasGlobal ? (
                             <span className="rounded bg-accent/10 px-2.5 py-1 font-medium text-accent">All Private Albums</span>
                           ) : item.albumsCount > 0 ? (
-                            <span className="rounded bg-background px-2.5 py-1 font-medium text-text-primary">{item.albumsCount} Albums</span>
+                            <div className="flex flex-col items-start sm:items-end gap-1">
+                              <span className="rounded bg-background px-2.5 py-1 font-medium text-text-primary self-start sm:self-end">{item.albumsCount} Albums</span>
+                              <span className="text-xs text-text-tertiary max-w-[200px] sm:max-w-[300px] text-left sm:text-right truncate" title={item.albumTitles.join(", ")}>
+                                {item.albumTitles.join(", ")}
+                              </span>
+                            </div>
                           ) : (
                             <span className="rounded bg-background px-2.5 py-1 font-medium text-text-tertiary">No Access</span>
                           )}
                         </div>
-                        <Button variant="ghost" onClick={() => handleEditClick(item.email)} className="h-8 px-3 text-xs">
+                        <Button variant="ghost" onClick={() => handleEditClick(item.email)} className="h-8 px-3 text-xs mt-1 sm:mt-0">
                           <Edit2 className="w-3 h-3 mr-2" />
                           Edit
                         </Button>

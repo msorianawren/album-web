@@ -45,7 +45,7 @@ export function AccessRequestModal() {
 
       const data = await res.json();
       if (!res.ok) {
-        throw new Error(data.error?.message || "Failed to submit request.");
+        throw new Error(data.message || data.error?.message || "Failed to submit request.");
       }
 
       setSuccess(true);
