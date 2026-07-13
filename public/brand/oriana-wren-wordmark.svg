@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="420" viewBox="0 0 1600 420" role="img" aria-labelledby="title desc">
+  <title id="title">Oriana Wren Horizontal Wordmark</title>
+  <desc id="desc">Horizontal Oriana Wren wordmark with compact OW emblem.</desc>
+
+  <defs>
+    <linearGradient id="gold" x1="70" y1="70" x2="410" y2="350">
+      <stop offset="0%" stop-color="#f6e5c8"/>
+      <stop offset="48%" stop-color="#c39b67"/>
+      <stop offset="100%" stop-color="#f2d2a0"/>
+    </linearGradient>
+
+    <linearGradient id="ink" x1="500" y1="110" x2="1320" y2="290">
+      <stop offset="0%" stop-color="#f7e8d0"/>
+      <stop offset="100%" stop-color="#c6a77c"/>
+    </linearGradient>
+
+    <linearGradient id="rose" x1="315" y1="46" x2="405" y2="145">
+      <stop offset="0%" stop-color="#ffbdcd"/>
+      <stop offset="100%" stop-color="#e8799a"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1600" height="420" rx="0" fill="none"/>
+
+  <g transform="translate(84 40)">
+    <circle cx="170" cy="170" r="145" fill="none" stroke="url(#gold)" stroke-width="28"/>
+
+    <path d="M57 176 C86 238 114 282 140 282 C167 282 181 221 196 166 C212 223 228 282 255 282 C282 282 310 237 338 173"
+          fill="none" stroke="url(#gold)" stroke-width="26" stroke-linecap="round" stroke-linejoin="round"/>
+
+    <path d="M200 147 C232 104 269 76 314 61"
+          fill="none" stroke="#f7e6ca" stroke-width="7" stroke-linecap="round" opacity="0.75"/>
+
+    <path d="M319 46 C361 34 391 55 386 93 C381 128 348 145 317 126 C291 109 292 56 319 46 Z"
+          fill="url(#rose)" opacity="0.96"/>
+  </g>
+
+  <text x="520" y="182"
+        font-family="Georgia, 'Times New Roman', serif"
+        font-size="112" letter-spacing="20" fill="url(#ink)">
+    ORIANA WREN
+  </text>
+
+  <text x="526" y="265"
+        font-family="Inter, Arial, sans-serif"
+        font-size="28" letter-spacing="9" fill="#b69b7b">
+    EDITORIAL PRESENCE · PRIVATE VISUAL ARCHIVE
+  </text>
+
+  <line x1="526" y1="306" x2="1248" y2="306" stroke="#c6a77c" stroke-width="2" opacity="0.34"/>
+</svg>

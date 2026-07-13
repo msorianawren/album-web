@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">Oriana Wren Favicon Mark</title>
+  <desc id="desc">Simplified OW monogram mark optimized for small favicon display.</desc>
+
+  <defs>
+    <radialGradient id="bg" cx="35%" cy="25%" r="80%">
+      <stop offset="0%" stop-color="#40342c"/>
+      <stop offset="58%" stop-color="#1f1a16"/>
+      <stop offset="100%" stop-color="#0f1110"/>
+    </radialGradient>
+
+    <linearGradient id="gold" x1="90" y1="80" x2="420" y2="430">
+      <stop offset="0%" stop-color="#f6e5c8"/>
+      <stop offset="48%" stop-color="#c59d69"/>
+      <stop offset="100%" stop-color="#f0d1a2"/>
+    </linearGradient>
+
+    <linearGradient id="rose" x1="340" y1="55" x2="450" y2="170">
+      <stop offset="0%" stop-color="#ffbdcd"/>
+      <stop offset="100%" stop-color="#e8799a"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="512" height="512" rx="116" fill="url(#bg)"/>
+
+  <path d="M365 70 C407 57 441 79 435 119 C429 156 392 172 360 151 C334 134 335 80 365 70 Z"
+        fill="url(#rose)"/>
+
+  <circle cx="256" cy="262" r="145"
+          fill="none" stroke="url(#gold)" stroke-width="34"/>
+
+  <path d="M139 266 C169 331 196 373 222 373 C248 373 262 315 276 260 C292 316 306 373 333 373 C360 373 388 330 418 264"
+        fill="none" stroke="url(#gold)" stroke-width="30" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <path d="M278 241 C309 199 345 172 389 157"
+        fill="none" stroke="#f9e7ca" stroke-width="8" stroke-linecap="round" opacity="0.72"/>
+</svg>

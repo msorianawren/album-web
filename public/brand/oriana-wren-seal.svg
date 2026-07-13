@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024" role="img" aria-labelledby="title desc">
+  <title id="title">Oriana Wren Editorial Seal</title>
+  <desc id="desc">Circular editorial seal logo for profile, watermark, and album branding.</desc>
+
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="42%" r="72%">
+      <stop offset="0%" stop-color="#312820"/>
+      <stop offset="58%" stop-color="#171513"/>
+      <stop offset="100%" stop-color="#0c0d0c"/>
+    </radialGradient>
+
+    <linearGradient id="gold" x1="190" y1="120" x2="820" y2="900">
+      <stop offset="0%" stop-color="#f7e6c8"/>
+      <stop offset="42%" stop-color="#c09a66"/>
+      <stop offset="100%" stop-color="#f2d5a5"/>
+    </linearGradient>
+
+    <linearGradient id="rose" x1="660" y1="170" x2="850" y2="360">
+      <stop offset="0%" stop-color="#ffbdcd"/>
+      <stop offset="100%" stop-color="#e8799a"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1024" height="1024" rx="512" fill="url(#bg)"/>
+
+  <circle cx="512" cy="512" r="404"
+          fill="none" stroke="#f1d5aa" stroke-width="4" opacity="0.42"/>
+
+  <circle cx="512" cy="512" r="354"
+          fill="none" stroke="url(#gold)" stroke-width="26"/>
+
+  <circle cx="512" cy="512" r="252"
+          fill="none" stroke="url(#gold)" stroke-width="50"/>
+
+  <path d="M303 526 C354 632 401 710 448 710 C494 710 520 606 548 512 C577 608 606 710 654 710 C702 710 750 632 802 520"
+        fill="none" stroke="url(#gold)" stroke-width="43" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <path d="M552 476 C606 402 676 350 758 326"
+        fill="none" stroke="#f8e8cb" stroke-width="12" stroke-linecap="round" opacity="0.72"/>
+
+  <path d="M707 184 C789 162 846 198 835 269 C825 334 762 362 706 324 C660 292 662 201 707 184 Z"
+        fill="url(#rose)" opacity="0.96"/>
+
+  <text x="512" y="168" text-anchor="middle"
+        font-family="Georgia, 'Times New Roman', serif"
+        font-size="44" letter-spacing="13" fill="#f4dab1">
+    ORIANA
+  </text>
+
+  <text x="512" y="890" text-anchor="middle"
+        font-family="Georgia, 'Times New Roman', serif"
+        font-size="44" letter-spacing="13" fill="#f4dab1">
+    WREN
+  </text>
+
+  <circle cx="218" cy="512" r="8" fill="#f4dab1" opacity="0.75"/>
+  <circle cx="806" cy="512" r="8" fill="#f4dab1" opacity="0.75"/>
+</svg>

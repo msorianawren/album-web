@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024" role="img" aria-labelledby="title desc">
+  <title id="title">Oriana Wren Master Logo</title>
+  <desc id="desc">Quiet luxury Oriana Wren logo with OW monogram, wren feather, and blush petal accent.</desc>
+
+  <defs>
+    <radialGradient id="ow-bg" cx="34%" cy="26%" r="82%">
+      <stop offset="0%" stop-color="#3a3028"/>
+      <stop offset="54%" stop-color="#211a16"/>
+      <stop offset="100%" stop-color="#101211"/>
+    </radialGradient>
+
+    <linearGradient id="ow-gold" x1="190" y1="160" x2="840" y2="850">
+      <stop offset="0%" stop-color="#f6e6c8"/>
+      <stop offset="42%" stop-color="#c9a16d"/>
+      <stop offset="100%" stop-color="#f2d4a4"/>
+    </linearGradient>
+
+    <linearGradient id="ow-petal" x1="680" y1="120" x2="900" y2="340">
+      <stop offset="0%" stop-color="#ffb7c9"/>
+      <stop offset="100%" stop-color="#e8789a"/>
+    </linearGradient>
+
+    <filter id="ow-shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="20" stdDeviation="28" flood-color="#000000" flood-opacity="0.38"/>
+    </filter>
+  </defs>
+
+  <rect width="1024" height="1024" rx="238" fill="url(#ow-bg)"/>
+
+  <path d="M728 158 C820 132 886 176 872 259 C860 335 786 367 722 322 C668 284 668 184 728 158 Z"
+        fill="url(#ow-petal)" opacity="0.96"/>
+
+  <path d="M762 185 C813 207 842 243 834 294"
+        fill="none" stroke="#fff0f4" stroke-width="8" stroke-linecap="round" opacity="0.55"/>
+
+  <circle cx="512" cy="514" r="282"
+          fill="none" stroke="url(#ow-gold)" stroke-width="58" filter="url(#ow-shadow)"/>
+
+  <circle cx="512" cy="514" r="218"
+          fill="none" stroke="#fff7ea" stroke-width="3" opacity="0.16"/>
+
+  <path d="M282 530 C337 650 387 733 440 733 C493 733 520 620 548 520 C578 622 608 733 661 733 C714 733 766 648 823 528"
+        fill="none" stroke="url(#ow-gold)" stroke-width="48" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <path d="M552 478 C612 397 683 343 769 319"
+        fill="none" stroke="#f7e6ca" stroke-width="12" stroke-linecap="round" opacity="0.72"/>
+
+  <path d="M607 412 C636 442 656 471 668 507"
+        fill="none" stroke="#f7e6ca" stroke-width="8" stroke-linecap="round" opacity="0.46"/>
+
+  <path d="M657 372 C692 402 714 435 729 476"
+        fill="none" stroke="#f7e6ca" stroke-width="8" stroke-linecap="round" opacity="0.4"/>
+
+  <circle cx="318" cy="263" r="11" fill="#f5d7a7" opacity="0.9"/>
+  <circle cx="350" cy="301" r="6" fill="#f5d7a7" opacity="0.55"/>
+
+  <text x="512" y="894" text-anchor="middle"
+        font-family="Georgia, 'Times New Roman', serif"
+        font-size="66" letter-spacing="18" fill="#f7e8d0">
+    ORIANA WREN
+  </text>
+</svg>
