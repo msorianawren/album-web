@@ -56,7 +56,7 @@ export function MessageList({ initialMessages }: { initialMessages: Message[] })
       const data = await res.json();
       
       if (!res.ok) {
-        alert(data.error?.message || "Failed to send email. Check your SMTP configuration in .env.local.");
+        alert(data.error?.message || "Failed to send reply.");
         return;
       }
       
@@ -220,7 +220,7 @@ export function MessageList({ initialMessages }: { initialMessages: Message[] })
                           onClick={() => handleSendReply(msg.id)}
                           disabled={sendingReply || !replyText.trim()}
                         >
-                          {sendingReply ? "Sending..." : <><Send className="w-3 h-3 mr-2" /> Send Email</>}
+                          {sendingReply ? "Sending..." : <><Send className="w-3 h-3 mr-2" /> Send Reply</>}
                         </Button>
                       </div>
                     </div>
