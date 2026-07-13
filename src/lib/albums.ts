@@ -163,16 +163,33 @@ function isUuid(value: string) {
   );
 }
 
-export async function checkAlbumAccess(albumId: string, userId: string): Promise<boolean> {
-  const { data } = await supabase
-    .from("album_access_requests")
-    .select("status")
-    .eq("album_id", albumId)
-    .eq("requester_user_id", userId)
-    .eq("status", "approved")
-    .maybeSingle();
-  
-  return data?.status === "approved";
+export async function checkAlbumAccess(albumId: string, session: PublicSession): Promise<boolean> {
+  if (session.isAdmin) return true;
+
+  if (session.email) {
+    const { data: inviteData } = await supabase
+      .from("album_invites")
+      .select("id")
+      .eq("email", session.email)
+      .or(`album_id.eq.${albumId},is_global.eq.true`)
+      .limit(1);
+    
+    if (inviteData && inviteData.length > 0) return true;
+  }
+
+  if (session.userId) {
+    const { data } = await supabase
+      .from("album_access_requests")
+      .select("status")
+      .eq("album_id", albumId)
+      .eq("requester_user_id", session.userId)
+      .eq("status", "approved")
+      .maybeSingle();
+    
+    return data?.status === "approved";
+  }
+
+  return false;
 }
 
 function filterSampleAlbums({ q, status, session }: AlbumQuery) {
@@ -230,6 +247,28 @@ async function attachAlbumPreviews(albums: Album[], session?: PublicSession | nu
             requestMap.set(req.album_id, req.status);
           }
         }
+      }
+    }
+  }
+
+  // Also check email-based invites
+  if (session?.email && !isAdmin) {
+    const { data: invites } = await supabase
+      .from("album_invites")
+      .select("album_id, is_global")
+      .eq("email", session.email);
+    
+    if (invites && invites.length > 0) {
+      const isGlobal = invites.some(inv => inv.is_global);
+      if (isGlobal) {
+        // Grant all private albums
+        albums.filter(a => a.status === "private").forEach(a => {
+          requestMap.set(a.id, "approved");
+        });
+      } else {
+        invites.forEach(inv => {
+          if (inv.album_id) requestMap.set(inv.album_id, "approved");
+        });
       }
     }
   }
@@ -375,8 +414,8 @@ export async function getAlbum(
 
     if (album.status === "private" && !isAdmin) {
       let isApproved = false;
-      if (session?.userId) {
-        isApproved = await checkAlbumAccess(album.id, session.userId);
+      if (session) {
+        isApproved = await checkAlbumAccess(album.id, session);
       }
       
       if (!isApproved) {
