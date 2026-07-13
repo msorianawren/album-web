@@ -8,7 +8,11 @@ import { getSiteSettings } from "@/lib/site-settings";
 
 export async function generateMetadata(): Promise<Metadata> {
   const settings = await getSiteSettings();
-  
+  const faviconUrl = settings.site_favicon_url || "/favicon.ico";
+  const appIconUrl = settings.advanced_settings?.app_icon_url || "/icon.png";
+  const appleIconUrl = settings.advanced_settings?.apple_touch_icon_url || "/apple-icon.png";
+  const v = settings.advanced_settings?.brand_updated_at ? `?v=${settings.advanced_settings.brand_updated_at}` : "";
+
   return {
     metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://www.orianawren.com"),
     title: {
@@ -16,11 +20,17 @@ export async function generateMetadata(): Promise<Metadata> {
       template: `%s | ${settings.site_name || "Album Web"}`,
     },
     description: settings.seo_description || settings.site_description || "A premium minimal photo gallery.",
-    icons: settings.site_favicon_url ? {
-      icon: settings.site_favicon_url,
-      shortcut: settings.site_favicon_url,
-      apple: settings.site_favicon_url,
-    } : undefined,
+    icons: {
+      icon: `${faviconUrl}${v}`,
+      shortcut: `${faviconUrl}${v}`,
+      apple: `${appleIconUrl}${v}`,
+      other: {
+        rel: "icon",
+        url: `${appIconUrl}${v}`,
+        type: "image/png",
+        sizes: "512x512",
+      },
+    },
   };
 }
 

@@ -27,6 +27,7 @@ type TabKey =
   | "security"
   | "storage"
   | "performance"
+  | "branding"
   | "danger";
 
 interface MaskedValue {
@@ -58,6 +59,7 @@ const tabs: Array<{ key: TabKey; label: string }> = [
   { key: "security", label: "Security" },
   { key: "storage", label: "Storage" },
   { key: "performance", label: "Performance" },
+  { key: "branding", label: "Branding" },
   { key: "danger", label: "Danger" },
 ];
 
@@ -399,23 +401,6 @@ export function SettingsCenter({
             <Textarea value={settings.site_description} onChange={(event) => update("site_description", event.target.value)} maxLength={500} />
           </Field>
           <div className="grid gap-4 lg:grid-cols-2">
-            <ImageField
-              label="Website Logo URL"
-              value={settings.site_logo_url ?? ""}
-              onValue={(value) => update("site_logo_url", value)}
-              onUpload={(file) => uploadSettingsAsset("logo", file)}
-            />
-            <ImageField
-              label="Favicon URL (Optional)"
-              value={settings.site_favicon_url ?? ""}
-              onValue={(value) => update("site_favicon_url", value)}
-              onUpload={(file) => uploadSettingsAsset("favicon", file)}
-            />
-          </div>
-          <div className="grid gap-4 lg:grid-cols-2">
-            <Field label="Logo alt text">
-              <Input value={settings.site_logo_alt ?? ""} onChange={(event) => update("site_logo_alt", event.target.value)} />
-            </Field>
             <Field label="Contact email">
               <Input value={settings.contact_email ?? ""} onChange={(event) => update("contact_email", event.target.value)} type="email" />
             </Field>
@@ -1044,6 +1029,149 @@ export function SettingsCenter({
           updateAdvanced={updateAdvanced}
           updateLanding={updateLanding}
         />
+      ) : null}
+
+      {activeTab === "branding" ? (
+        <Panel title="Branding" description="Manage site logos, browser icons, and social preview images.">
+          <div className="mb-4 text-sm text-text-secondary">
+            Note: Browsers cache favicons aggressively. After changing, you may need to force refresh (Cmd+Shift+R) or use Incognito mode to see the new icon.
+          </div>
+
+          <div className="mt-6 border-t border-border pt-6">
+            <h3 className="mb-4 font-serif text-xl text-text-primary">1. Logo</h3>
+            <div className="grid gap-4 lg:grid-cols-2">
+              <ImageField
+                label="Main Logo (SVG/PNG)"
+                value={settings.site_logo_url ?? ""}
+                onValue={(value) => {
+                  update("site_logo_url", value);
+                  updateAdvanced("brand_updated_at", Date.now());
+                }}
+                onUpload={async (file) => {
+                  await uploadSettingsAsset("logo", file);
+                  updateAdvanced("brand_updated_at", Date.now());
+                }}
+              />
+              <Field label="Logo alt text">
+                <Input 
+                  value={settings.site_logo_alt ?? ""} 
+                  onChange={(event) => update("site_logo_alt", event.target.value)} 
+                  placeholder="Oriana Wren" 
+                />
+              </Field>
+            </div>
+            <div className="mt-2">
+              <Button 
+                variant="secondary" 
+                onClick={() => {
+                  update("site_logo_url", null);
+                  updateAdvanced("brand_updated_at", Date.now());
+                }}
+              >
+                Reset to Default
+              </Button>
+            </div>
+          </div>
+
+          <div className="mt-8 border-t border-border pt-8">
+            <h3 className="mb-4 font-serif text-xl text-text-primary">2. Favicon / Browser Icon</h3>
+            <div className="grid gap-4 lg:grid-cols-2">
+              <ImageField
+                label="Favicon URL (ICO/PNG)"
+                value={settings.site_favicon_url ?? ""}
+                onValue={(value) => {
+                  update("site_favicon_url", value);
+                  updateAdvanced("brand_updated_at", Date.now());
+                }}
+                onUpload={async (file) => {
+                  await uploadSettingsAsset("favicon", file);
+                  updateAdvanced("brand_updated_at", Date.now());
+                }}
+              />
+            </div>
+            <div className="mt-4 flex gap-4">
+              <div className="flex flex-col items-center gap-2">
+                <span className="text-xs text-text-secondary">16px</span>
+                {settings.site_favicon_url ? (
+                  <img src={settings.site_favicon_url} alt="16" className="w-4 h-4 object-contain bg-surface" />
+                ) : (
+                  <div className="w-4 h-4 bg-surface border border-border" />
+                )}
+              </div>
+              <div className="flex flex-col items-center gap-2">
+                <span className="text-xs text-text-secondary">32px</span>
+                {settings.site_favicon_url ? (
+                  <img src={settings.site_favicon_url} alt="32" className="w-8 h-8 object-contain bg-surface" />
+                ) : (
+                  <div className="w-8 h-8 bg-surface border border-border" />
+                )}
+              </div>
+              <div className="flex flex-col items-center gap-2">
+                <span className="text-xs text-text-secondary">64px</span>
+                {settings.site_favicon_url ? (
+                  <img src={settings.site_favicon_url} alt="64" className="w-16 h-16 object-contain bg-surface" />
+                ) : (
+                  <div className="w-16 h-16 bg-surface border border-border" />
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-8 border-t border-border pt-8">
+            <h3 className="mb-4 font-serif text-xl text-text-primary">3. App / Social Preview</h3>
+            <div className="grid gap-4 lg:grid-cols-2">
+              <ImageField
+                label="App Icon (512x512 PNG)"
+                value={settings.advanced_settings?.app_icon_url ?? ""}
+                onValue={(value) => {
+                  updateAdvanced("app_icon_url", value);
+                  updateAdvanced("brand_updated_at", Date.now());
+                }}
+                onUpload={async (file) => {
+                  const url = await uploadLandingAsset("media", file); // Re-use generic uploader for custom URL
+                  if (url) {
+                    updateAdvanced("app_icon_url", url);
+                    updateAdvanced("brand_updated_at", Date.now());
+                  }
+                }}
+              />
+              <ImageField
+                label="Apple Touch Icon (180x180 PNG)"
+                value={settings.advanced_settings?.apple_touch_icon_url ?? ""}
+                onValue={(value) => {
+                  updateAdvanced("apple_touch_icon_url", value);
+                  updateAdvanced("brand_updated_at", Date.now());
+                }}
+                onUpload={async (file) => {
+                  const url = await uploadLandingAsset("media", file); // Re-use generic uploader
+                  if (url) {
+                    updateAdvanced("apple_touch_icon_url", url);
+                    updateAdvanced("brand_updated_at", Date.now());
+                  }
+                }}
+              />
+              <ImageField
+                label="Open Graph Image (1200x630)"
+                value={settings.og_image_url ?? ""}
+                onValue={(value) => {
+                  update("og_image_url", value);
+                  updateAdvanced("brand_updated_at", Date.now());
+                }}
+                onUpload={async (file) => {
+                  const url = await uploadLandingAsset("media", file); // Re-use generic uploader
+                  if (url) {
+                    update("og_image_url", url);
+                    updateAdvanced("brand_updated_at", Date.now());
+                  }
+                }}
+              />
+            </div>
+            <div className="mt-4">
+              <span className="text-sm font-semibold text-text-primary">Preview Title: </span>
+              <span className="text-sm text-text-secondary">{settings.site_name || "Oriana Wren"}</span>
+            </div>
+          </div>
+        </Panel>
       ) : null}
 
       {activeTab === "danger" ? (
