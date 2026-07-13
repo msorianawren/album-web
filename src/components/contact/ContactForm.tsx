@@ -13,6 +13,8 @@ interface ContactFormProps {
   maxMessage?: number;
   maxSubject?: number;
   maxName?: number;
+  initialEmail?: string;
+  initialName?: string;
 }
 
 export function ContactForm({
@@ -22,10 +24,12 @@ export function ContactForm({
   maxMessage = 2000,
   maxSubject = 200,
   maxName = 100,
+  initialEmail = "",
+  initialName = "",
 }: ContactFormProps) {
   const [formData, setFormData] = useState({
-    name: "",
-    email: "",
+    name: initialName,
+    email: initialEmail,
     subject: "",
     inquiry_type: allowedTypes[0] || "General Inquiry",
     message: "",

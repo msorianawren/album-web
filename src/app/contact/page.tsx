@@ -2,16 +2,30 @@ import { AppHeader } from "@/components/AppHeader";
 import { getSiteSettings } from "@/lib/site-settings";
 import { getLandingPage } from "@/lib/landing";
 import { NatureAnimatedBackground } from "@/components/landing/NatureAnimatedBackground";
-import { Lock, Camera, Download, Mail } from "lucide-react";
+import { Lock, Camera, Download, Mail, MessageSquare, Clock, CheckCircle } from "lucide-react";
 import { ContactForm } from "@/components/contact/ContactForm";
 import { CopyEmailButton } from "@/components/contact/CopyEmailButton";
 import Link from "next/link";
+import { getPublicSession } from "@/lib/auth";
+import { supabase } from "@/lib/supabase";
+
 export default async function ContactPage() {
-  const [settings, landing] = await Promise.all([
+  const [settings, landing, session] = await Promise.all([
     getSiteSettings(),
-    getLandingPage()
+    getLandingPage(),
+    getPublicSession()
   ]);
   const hasEmail = Boolean(settings.contact_email);
+
+  let userMessages: any[] = [];
+  if (session?.email) {
+    const { data } = await supabase
+      .from("contact_messages")
+      .select("id, subject, message_body, reply_text, replied_at, created_at, status")
+      .eq("reply_email", session.email)
+      .order("created_at", { ascending: false });
+    if (data) userMessages = data;
+  }
 
   return (
     <main className="relative z-10 min-h-screen bg-transparent pb-20">
@@ -90,6 +104,8 @@ export default async function ContactPage() {
                   maxMessage={settings.contact_max_message_length}
                   maxSubject={settings.contact_max_subject_length}
                   maxName={settings.contact_max_name_length}
+                  initialEmail={session?.email || ""}
+                  initialName={session?.displayName || ""}
                 />
               ) : (
                 <div className="h-full w-full rounded-2xl border border-dashed border-border flex flex-col items-center justify-center text-text-secondary p-8 text-center min-h-[300px]">
@@ -100,6 +116,58 @@ export default async function ContactPage() {
             </div>
           </div>
         </div>
+
+        {/* User Inquiries Section */}
+        {session?.email && userMessages.length > 0 && (
+          <div className="mt-16">
+            <h2 className="text-2xl font-semibold text-text-primary mb-8">Your Inquiries</h2>
+            <div className="grid gap-6">
+              {userMessages.map((msg) => (
+                <div key={msg.id} className="rounded-[1.5rem] border border-border bg-surface p-6 sm:p-8 shadow-sm">
+                  <div className="flex items-center justify-between mb-4 border-b border-border pb-4">
+                    <div>
+                      <h3 className="font-medium text-text-primary">{msg.subject || "No Subject"}</h3>
+                      <p className="text-xs text-text-secondary mt-1">Sent on {new Date(msg.created_at).toLocaleDateString()}</p>
+                    </div>
+                    <div>
+                      {msg.reply_text ? (
+                        <span className="flex items-center gap-1.5 rounded-full bg-green-500/10 px-3 py-1 text-xs font-medium text-green-600">
+                          <CheckCircle className="h-3.5 w-3.5" /> Replied
+                        </span>
+                      ) : (
+                        <span className="flex items-center gap-1.5 rounded-full bg-yellow-500/10 px-3 py-1 text-xs font-medium text-yellow-600">
+                          <Clock className="h-3.5 w-3.5" /> Pending
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <div className="bg-background/50 p-4 rounded-xl border border-border">
+                      <p className="text-xs font-semibold uppercase tracking-wider text-text-secondary mb-2">You wrote:</p>
+                      <p className="text-sm text-text-primary whitespace-pre-wrap">{msg.message_body}</p>
+                    </div>
+
+                    {msg.reply_text && (
+                      <div className="bg-accent/5 p-4 rounded-xl border border-accent/20 ml-4 sm:ml-8">
+                        <div className="flex items-center gap-3 mb-2">
+                          <div className="h-8 w-8 rounded-full bg-accent/20 flex items-center justify-center flex-shrink-0">
+                            <span className="text-accent font-bold text-xs">OW</span>
+                          </div>
+                          <div>
+                            <p className="text-xs font-bold text-accent">Oriana Wren <span className="text-text-tertiary font-normal">replied:</span></p>
+                            <p className="text-[10px] text-text-secondary">{new Date(msg.replied_at).toLocaleDateString()}</p>
+                          </div>
+                        </div>
+                        <p className="text-sm text-text-primary whitespace-pre-wrap mt-2">{msg.reply_text}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </section>
     </main>
   );
