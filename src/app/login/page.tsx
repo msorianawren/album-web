@@ -68,6 +68,21 @@ export default async function LoginPage(props: { searchParams: Promise<{ next?: 
 
         <div className="flex min-w-0 flex-col justify-center animate-editorial-in [animation-delay:120ms]">
           <div className="min-w-0 rounded-[1.5rem] border border-border bg-surface/90 p-5 shadow-2xl shadow-text-primary/10 backdrop-blur sm:rounded-[2rem] sm:p-8">
+            <div className="mb-6 flex items-center gap-3">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/brand/oriana-wren-favicon-mark.svg"
+                alt=""
+                aria-hidden="true"
+                className="h-10 w-10 shrink-0 rounded-xl object-contain"
+              />
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/brand/oriana-wren-wordmark.svg"
+                alt="Oriana Wren"
+                className="h-8 w-auto max-w-[13rem] object-contain"
+              />
+            </div>
             <p className="break-words text-xs font-medium uppercase tracking-[0.18em] text-text-secondary sm:text-sm sm:tracking-[0.2em]">
               Member access
             </p>

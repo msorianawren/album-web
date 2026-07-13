@@ -7,13 +7,13 @@ import { apiError, toServerError } from "@/lib/errors";
 export const runtime = "nodejs";
 
 interface ActivityParams {
-  params: Promise<{ userId: string }>;
+  params: Promise<{ id: string }>;
 }
 
 export async function GET(request: NextRequest, { params }: ActivityParams) {
   try {
     await requireAdminUser(request);
-    const { userId } = await params;
+    const { id: userId } = await params;
 
     const userProfile = await getAdminProfile(userId);
     if (!userProfile) return apiError("NOT_FOUND", "User not found", 404);

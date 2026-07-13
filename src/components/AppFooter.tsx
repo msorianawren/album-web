@@ -27,9 +27,12 @@ export async function AppFooter() {
               // eslint-disable-next-line @next/next/no-img-element
               <img src={settings.site_logo_url} alt={settings.site_logo_alt ?? settings.site_name} className="h-8 w-auto object-contain" />
             ) : (
-              <span className="text-lg font-semibold uppercase tracking-[0.22em] text-text-primary">
-                {settings.site_name || "Oriana Wren"}
-              </span>
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src="/brand/oriana-wren-seal.svg"
+                alt={settings.site_name || "Oriana Wren"}
+                className="h-16 w-16 object-contain opacity-90 transition hover:opacity-100"
+              />
             )}
           </Link>
           <p className="max-w-sm text-sm leading-relaxed text-text-secondary">

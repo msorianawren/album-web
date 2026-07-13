@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024" role="img" aria-labelledby="title desc">
+  <title id="title">Oriana Wren Square Icon</title>
+  <desc id="desc">Square OW monogram icon for app icons and profile branding.</desc>
+
+  <defs>
+    <radialGradient id="bg" cx="34%" cy="24%" r="82%">
+      <stop offset="0%" stop-color="#40342b"/>
+      <stop offset="55%" stop-color="#211a16"/>
+      <stop offset="100%" stop-color="#0f1110"/>
+    </radialGradient>
+
+    <linearGradient id="gold" x1="185" y1="170" x2="835" y2="850">
+      <stop offset="0%" stop-color="#f7e8cc"/>
+      <stop offset="45%" stop-color="#c49c67"/>
+      <stop offset="100%" stop-color="#f0d0a0"/>
+    </linearGradient>
+
+    <linearGradient id="rose" x1="690" y1="100" x2="895" y2="320">
+      <stop offset="0%" stop-color="#ffc0cf"/>
+      <stop offset="100%" stop-color="#e97698"/>
+    </linearGradient>
+
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="18" stdDeviation="26" flood-color="#000000" flood-opacity="0.38"/>
+    </filter>
+  </defs>
+
+  <rect width="1024" height="1024" rx="236" fill="url(#bg)"/>
+
+  <path d="M731 142 C815 119 876 158 866 235 C856 306 788 337 728 297 C675 262 676 161 731 142 Z"
+        fill="url(#rose)" opacity="0.98"/>
+
+  <circle cx="512" cy="512" r="292"
+          fill="none" stroke="url(#gold)" stroke-width="60" filter="url(#shadow)"/>
+
+  <path d="M278 522 C337 650 389 740 444 740 C497 740 522 618 550 508 C581 620 611 740 665 740 C720 740 772 649 831 520"
+        fill="none" stroke="url(#gold)" stroke-width="54" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <path d="M555 470 C616 391 688 335 780 306"
+        fill="none" stroke="#f8e7ca" stroke-width="13" stroke-linecap="round" opacity="0.78"/>
+
+  <path d="M613 405 C646 438 665 474 676 512"
+        fill="none" stroke="#f8e7ca" stroke-width="8" stroke-linecap="round" opacity="0.48"/>
+
+  <path d="M665 362 C701 395 724 432 738 478"
+        fill="none" stroke="#f8e7ca" stroke-width="8" stroke-linecap="round" opacity="0.42"/>
+</svg>

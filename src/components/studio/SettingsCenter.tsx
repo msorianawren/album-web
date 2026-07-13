@@ -1095,7 +1095,7 @@ export function SettingsCenter({
                 {settings.site_favicon_url ? (
                   <img src={settings.site_favicon_url} alt="16" className="w-4 h-4 object-contain bg-surface" />
                 ) : (
-                  <div className="w-4 h-4 bg-surface border border-border" />
+                  <img src="/brand/oriana-wren-favicon-mark.svg" alt="Default favicon at 16 pixels" className="w-4 h-4 object-contain bg-surface" />
                 )}
               </div>
               <div className="flex flex-col items-center gap-2">
@@ -1103,7 +1103,7 @@ export function SettingsCenter({
                 {settings.site_favicon_url ? (
                   <img src={settings.site_favicon_url} alt="32" className="w-8 h-8 object-contain bg-surface" />
                 ) : (
-                  <div className="w-8 h-8 bg-surface border border-border" />
+                  <img src="/brand/oriana-wren-favicon-mark.svg" alt="Default favicon at 32 pixels" className="w-8 h-8 object-contain bg-surface" />
                 )}
               </div>
               <div className="flex flex-col items-center gap-2">
@@ -1111,7 +1111,7 @@ export function SettingsCenter({
                 {settings.site_favicon_url ? (
                   <img src={settings.site_favicon_url} alt="64" className="w-16 h-16 object-contain bg-surface" />
                 ) : (
-                  <div className="w-16 h-16 bg-surface border border-border" />
+                  <img src="/brand/oriana-wren-favicon-mark.svg" alt="Default favicon at 64 pixels" className="w-16 h-16 object-contain bg-surface" />
                 )}
               </div>
             </div>
@@ -1169,6 +1169,20 @@ export function SettingsCenter({
             <div className="mt-4">
               <span className="text-sm font-semibold text-text-primary">Preview Title: </span>
               <span className="text-sm text-text-secondary">{settings.site_name || "Oriana Wren"}</span>
+            </div>
+            <div className="mt-5 grid gap-4 rounded-[1.1rem] border border-border bg-background/55 p-4 sm:grid-cols-[auto_1fr] sm:items-center">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={settings.advanced_settings?.app_icon_url || "/brand/oriana-wren-icon-square.svg"}
+                alt="Default Oriana Wren app icon"
+                className="h-16 w-16 rounded-2xl object-contain"
+              />
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-text-primary">Default production branding</p>
+                <p className="mt-1 text-sm leading-6 text-text-secondary">
+                  The site falls back to the Oriana Wren icon, wordmark, favicon mark, and seal when no custom upload is set.
+                </p>
+              </div>
             </div>
           </div>
         </Panel>

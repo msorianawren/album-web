@@ -21,15 +21,13 @@ export async function generateMetadata(): Promise<Metadata> {
     },
     description: settings.seo_description || settings.site_description || "A premium minimal photo gallery.",
     icons: {
-      icon: `${faviconUrl}${v}`,
-      shortcut: `${faviconUrl}${v}`,
-      apple: `${appleIconUrl}${v}`,
-      other: {
-        rel: "icon",
-        url: `${appIconUrl}${v}`,
-        type: "image/png",
-        sizes: "512x512",
-      },
+      icon: [
+        { url: `${faviconUrl}${v}`, type: "image/x-icon" },
+        { url: `/icon.svg${v}`, type: "image/svg+xml" },
+        { url: `${appIconUrl}${v}`, type: "image/png", sizes: "512x512" },
+      ],
+      shortcut: [{ url: `${faviconUrl}${v}`, type: "image/x-icon" }],
+      apple: [{ url: `${appleIconUrl}${v}`, sizes: "180x180", type: "image/png" }],
     },
   };
 }

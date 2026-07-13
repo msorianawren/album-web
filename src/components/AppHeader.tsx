@@ -34,7 +34,7 @@ export async function AppHeader() {
       <div className="mx-auto flex min-h-16 w-full max-w-[1440px] items-center gap-2 px-3 sm:min-h-20 sm:gap-4 sm:px-8 lg:px-12">
         <Link
           href="/"
-          className="flex min-w-0 shrink flex-col justify-center rounded-xl text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:shrink-0"
+          className="flex min-w-0 shrink items-center gap-2.5 rounded-xl text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:shrink-0"
         >
           {settings.site_logo_url ? (
             /* eslint-disable-next-line @next/next/no-img-element */
@@ -45,11 +45,14 @@ export async function AppHeader() {
             />
           ) : (
             <>
-              <span className="truncate text-sm font-semibold uppercase tracking-[0.18em] sm:text-lg sm:tracking-[0.22em]">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/brand/oriana-wren-favicon-mark.svg"
+                alt="Oriana Wren"
+                className="h-9 w-9 shrink-0 rounded-lg object-contain sm:h-11 sm:w-11"
+              />
+              <span className="hidden truncate text-sm font-semibold uppercase tracking-[0.2em] text-text-primary sm:block">
                 {settings.site_name || "Oriana Wren"}
-              </span>
-              <span className="truncate text-[0.56rem] uppercase tracking-[0.22em] text-text-secondary sm:text-[0.64rem] sm:tracking-[0.3em]">
-                {settings.site_description || "Professional Model"}
               </span>
             </>
           )}
