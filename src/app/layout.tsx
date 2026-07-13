@@ -11,7 +11,8 @@ export async function generateMetadata(): Promise<Metadata> {
   const faviconUrl = settings.site_favicon_url || "/favicon.ico";
   const appIconUrl = settings.advanced_settings?.app_icon_url || "/icon.png";
   const appleIconUrl = settings.advanced_settings?.apple_touch_icon_url || "/apple-icon.png";
-  const v = settings.advanced_settings?.brand_updated_at ? `?v=${settings.advanced_settings.brand_updated_at}` : "";
+  const brandVersion = settings.advanced_settings?.brand_updated_at || "oriana-wren-v1";
+  const v = `?v=${brandVersion}`;
 
   return {
     metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://www.orianawren.com"),
