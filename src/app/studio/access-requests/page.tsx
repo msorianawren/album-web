@@ -225,7 +225,7 @@ export default function AccessRequestsPage() {
           </button>
         </div>
         {activeTab === "permissions" && (
-          <Button onClick={handleAddNewClick} size="sm" className="mb-2">
+          <Button onClick={handleAddNewClick} className="mb-2">
             <Plus className="w-4 h-4 mr-1" /> Grant New Access
           </Button>
         )}
