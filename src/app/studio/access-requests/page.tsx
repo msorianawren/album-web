@@ -325,7 +325,6 @@ export default function AccessRequestsPage() {
                   </div>
                   <Button
                     variant="ghost"
-                    size="sm"
                     onClick={() => handleRevokeInvite(inv.id)}
                     className="text-red-500 hover:text-red-600 hover:bg-red-500/10"
                   >
