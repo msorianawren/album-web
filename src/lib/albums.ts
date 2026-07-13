@@ -398,14 +398,19 @@ async function attachAlbumPreviews(albums: Album[], session?: PublicSession | nu
   }
 
   const eligibleAlbumIds = albums
-    .filter(a => isAdmin || a.status !== "private")
+    .filter(a => isAdmin || a.status !== "private" || requestMap.get(a.id) === "approved")
     .map(a => a.id);
 
   if (!eligibleAlbumIds.length) {
-    return albums.map(a => ({
-      ...a,
-      access_request_status: requestMap.get(a.id) as Album["access_request_status"] ?? null,
-    }));
+    return albums.map(a => {
+      if (a.status === "private" && !isAdmin && requestMap.get(a.id) !== "approved") {
+        a.cover_url = null;
+      }
+      return {
+        ...a,
+        access_request_status: requestMap.get(a.id) as Album["access_request_status"] ?? null,
+      };
+    });
   }
 
   const { data, error } = await supabase
@@ -417,10 +422,15 @@ async function attachAlbumPreviews(albums: Album[], session?: PublicSession | nu
     .order("created_at", { ascending: true });
 
   if (error || !data) {
-    return albums.map(a => ({
-      ...a,
-      access_request_status: requestMap.get(a.id) as Album["access_request_status"] ?? null,
-    }));
+    return albums.map(a => {
+      if (a.status === "private" && !isAdmin && requestMap.get(a.id) !== "approved") {
+        a.cover_url = null;
+      }
+      return {
+        ...a,
+        access_request_status: requestMap.get(a.id) as Album["access_request_status"] ?? null,
+      };
+    });
   }
 
   const previewMap = new Map<string, AlbumPreviewItem[]>();
@@ -433,13 +443,14 @@ async function attachAlbumPreviews(albums: Album[], session?: PublicSession | nu
   }
 
   return albums.map((album) => {
-    if (album.status === "private" && !isAdmin) {
+    const isApproved = requestMap.get(album.id) === "approved";
+    if (album.status === "private" && !isAdmin && !isApproved) {
       album.cover_url = null;
     }
     return {
       ...album,
       access_request_status: requestMap.get(album.id) as Album["access_request_status"] ?? null,
-      preview_items: previewMap.get(album.id) ?? [],
+      preview_items: (isAdmin || album.status !== "private" || isApproved) ? (previewMap.get(album.id) ?? []) : [],
     };
   });
 }

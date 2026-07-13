@@ -4,6 +4,7 @@ import { supabase } from "@/lib/supabase";
 import { getSiteSettings } from "@/lib/site-settings";
 import { enforceRateLimit } from "@/lib/security-rate-limit";
 import { hashIpAddress } from "@/lib/request-info";
+import { getPublicSession } from "@/lib/auth";
 
 export async function POST(request: NextRequest) {
   try {
@@ -99,7 +100,10 @@ export async function POST(request: NextRequest) {
     // Safe to insert
     const message_preview = message.substring(0, 200);
 
+    const session = await getPublicSession();
+
     const { error } = await supabase.from("contact_messages").insert({
+      user_id: session.userId || null,
       name,
       reply_email: email,
       inquiry_type,

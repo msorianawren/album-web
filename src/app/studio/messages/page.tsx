@@ -13,9 +13,24 @@ export const revalidate = 0;
 export default async function MessagesPage() {
   const { data: messages, error } = await supabase
     .from("contact_messages")
-    .select("id, name, reply_email, subject, inquiry_type, message_preview, message_body, status, risk_level, created_at, reply_text, replied_at")
+    .select("id, name, reply_email, subject, inquiry_type, message_preview, message_body, status, risk_level, created_at")
     .neq("status", "deleted") // Don't fetch deleted here to save load
     .order("created_at", { ascending: false });
+
+  let fullMessages: any[] = messages || [];
+  if (fullMessages.length > 0) {
+    const messageIds = fullMessages.map((m: any) => m.id);
+    const { data: replies } = await supabase
+      .from("contact_message_replies")
+      .select("*")
+      .in("message_id", messageIds)
+      .order("created_at", { ascending: true });
+
+    fullMessages = fullMessages.map((m: any) => ({
+      ...m,
+      replies: replies?.filter((r: any) => r.message_id === m.id) || []
+    }));
+  }
 
   return (
     <div className="grid gap-5">
@@ -31,7 +46,7 @@ export default async function MessagesPage() {
             Failed to load messages. Make sure the database migration has been applied.
           </div>
         ) : (
-          <MessageList initialMessages={messages || []} />
+          <MessageList initialMessages={fullMessages} />
         )}
       </div>
     </div>

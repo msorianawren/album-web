@@ -12,7 +12,7 @@ export async function POST(
   if (!adminCheck) return apiError("FORBIDDEN", "Requires admin privileges.", 403);
 
   try {
-    const { replyText } = await request.json();
+    const { replyText, isInternal } = await request.json();
 
     if (!replyText || typeof replyText !== "string" || replyText.trim() === "") {
       return apiError("INVALID_INPUT", "Reply text cannot be empty.", 400);
@@ -21,7 +21,7 @@ export async function POST(
     // 1. Fetch the original message
     const { data: message, error: fetchError } = await supabase
       .from("contact_messages")
-      .select("id, name, reply_email, subject, message_body")
+      .select("id, user_id, name, reply_email, subject, message_body")
       .eq("id", resolvedParams.id)
       .single();
 
@@ -29,22 +29,45 @@ export async function POST(
       return apiError("NOT_FOUND", "Message not found.", 404);
     }
 
-    // 2. Update the database to mark as replied
-    const { error: updateError } = await supabase
-      .from("contact_messages")
-      .update({
-        reply_text: replyText,
-        replied_at: new Date().toISOString(),
-        replied_by: adminCheck.userId,
-        status: "read", // Also mark as read
-      })
-      .eq("id", resolvedParams.id);
+    // 2. Insert into contact_message_replies
+    const { error: insertError } = await supabase
+      .from("contact_message_replies")
+      .insert({
+        message_id: message.id,
+        author_type: "admin",
+        author_user_id: adminCheck.userId,
+        body: replyText,
+        public_display_name: "Oriana Wren",
+        is_internal_note: !!isInternal,
+      });
 
-    if (updateError) {
-      console.error("Failed to update message reply status in DB", updateError);
+    if (insertError) {
+      console.error("Failed to insert reply", insertError);
       return apiError("SERVER_ERROR", "Failed to save reply.", 500);
     }
 
+    // 3. Update the thread status
+    await supabase
+      .from("contact_messages")
+      .update({
+        status: "read", // Or "replied"
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", message.id);
+
+    // 4. Send notification if the user is registered and it's not an internal note
+    if (!isInternal && message.user_id) {
+      await supabase.from("notifications").insert({
+        recipient_user_id: message.user_id,
+        type: "message_reply",
+        title: "Reply from Oriana Wren",
+        body: `You have a new reply in Contact.`,
+        target_url: `/contact`, // Or specific message URL if you have one
+      });
+    }
+
+    // Note: We don't send emails here anymore as per the prompt instructions.
+    
     return apiSuccess({ success: true });
   } catch (error: any) {
     console.error("Reply API Error:", error);

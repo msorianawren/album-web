@@ -71,9 +71,29 @@ export async function POST(
         granted_by: session.userId,
         status: "active",
       }));
-      
       const { error } = await supabase.from("album_access_grants").insert(grants);
       if (error) throw error;
+    }
+    if (targetUserId) {
+      if (scope === "selected_albums" && (!albumIds || albumIds.length === 0)) {
+        await supabase.from("notifications").insert({
+          recipient_user_id: targetUserId,
+          type: "access_revoked",
+          title: "Album Access Revoked",
+          body: "Your access to private albums has been revoked.",
+          target_url: "/albums",
+        });
+      } else {
+        await supabase.from("notifications").insert({
+          recipient_user_id: targetUserId,
+          type: "access_granted",
+          title: "Album Access Granted",
+          body: scope === "all_private" 
+            ? "You have been granted access to all private albums." 
+            : `You have been granted access to ${albumIds?.length} private album(s).`,
+          target_url: "/albums",
+        });
+      }
     }
 
     // 3. Log audit event
