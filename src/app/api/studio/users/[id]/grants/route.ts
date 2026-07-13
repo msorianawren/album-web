@@ -29,22 +29,34 @@ export async function POST(
 
     const { scope, albumIds, email } = parsed.data;
 
-    // 1. Revoke existing active grants for this user
-    await supabase
+    const isIdUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(userId);
+    const targetUserId = isIdUuid ? userId : null;
+    const targetEmail = email || (!isIdUuid ? userId : null);
+
+    // 1. Revoke existing active grants for this user/email
+    let revokeQuery = supabase
       .from("album_access_grants")
       .update({
         status: "revoked",
         revoked_by: session.userId,
         revoked_at: new Date().toISOString(),
+        revoke_reason: "Superseded by new grant",
       })
-      .eq("user_id", userId)
       .eq("status", "active");
+
+    if (targetUserId) {
+      revokeQuery = revokeQuery.eq("user_id", targetUserId);
+    } else if (targetEmail) {
+      revokeQuery = revokeQuery.eq("email_normalized", targetEmail);
+    }
+
+    await revokeQuery;
 
     // 2. Insert new grants
     if (scope === "all_private") {
       const { error } = await supabase.from("album_access_grants").insert({
-        user_id: userId,
-        email_normalized: email || null,
+        user_id: targetUserId,
+        email_normalized: targetEmail,
         scope: "all_private",
         granted_by: session.userId,
         status: "active",
@@ -52,8 +64,8 @@ export async function POST(
       if (error) throw error;
     } else if (scope === "selected_albums" && albumIds && albumIds.length > 0) {
       const grants = albumIds.map((albumId) => ({
-        user_id: userId,
-        email_normalized: email || null,
+        user_id: targetUserId,
+        email_normalized: targetEmail,
         scope: "selected_albums",
         album_id: albumId,
         granted_by: session.userId,
@@ -63,6 +75,17 @@ export async function POST(
       const { error } = await supabase.from("album_access_grants").insert(grants);
       if (error) throw error;
     }
+
+    // 3. Log audit event
+    const { logAuditEvent } = await import("@/lib/audit");
+    await logAuditEvent({
+      request,
+      session: session as any,
+      action: "album_access_granted",
+      targetType: "user",
+      targetId: targetUserId || targetEmail || "unknown",
+      metadata: { scope, albumCount: albumIds?.length || 0 },
+    });
 
     return apiSuccess({ message: "Grants updated successfully" });
   } catch (error) {

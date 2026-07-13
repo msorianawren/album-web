@@ -163,56 +163,94 @@ function isUuid(value: string) {
   );
 }
 
-export async function checkAlbumAccess(albumId: string, session: PublicSession): Promise<boolean> {
-  if (session.isAdmin) return true;
-
-  if (session.email) {
-    const { data: inviteData } = await supabase
-      .from("album_invites")
-      .select("id")
-      .eq("email", session.email)
-      .or(`album_id.eq.${albumId},is_global.eq.true`)
-      .limit(1);
-    
-    if (inviteData && inviteData.length > 0) return true;
-
-    // Check grants by email
-    const { data: emailGrant } = await supabase
-      .from("album_access_grants")
-      .select("id")
-      .eq("email_normalized", session.email)
-      .eq("status", "active")
-      .or(`album_id.eq.${albumId},scope.eq.all_private`)
-      .limit(1);
-      
-    if (emailGrant && emailGrant.length > 0) return true;
+export async function checkPrivateAlbumAccess(
+  albumId: string, 
+  session: PublicSession
+): Promise<{ allowed: boolean; reason: "admin" | "all_private_grant" | "selected_album_grant" | "approved_request" | "pending" | "revoked" | "rejected" | "none" }> {
+  if (!session.userId && !session.email) {
+    return { allowed: false, reason: "none" };
   }
 
-  if (session.userId) {
-    // Check direct user grants
-    const { data: userGrant } = await supabase
-      .from("album_access_grants")
-      .select("id")
-      .eq("user_id", session.userId)
-      .eq("status", "active")
-      .or(`album_id.eq.${albumId},scope.eq.all_private`)
-      .limit(1);
-      
-    if (userGrant && userGrant.length > 0) return true;
+  // 1. Admins bypass all checks
+  if (session.isAdmin) return { allowed: true, reason: "admin" };
 
-    // Fallback: check legacy approved requests just in case
-    const { data } = await supabase
+  const userId = session.userId || null;
+  const email = session.email || null;
+
+  // Query all grants for this user/email
+  let grantQuery = supabase.from("album_access_grants").select("*");
+  if (userId && email) {
+    grantQuery = grantQuery.or(`user_id.eq.${userId},email_normalized.eq.${email}`);
+  } else if (userId) {
+    grantQuery = grantQuery.eq("user_id", userId);
+  } else if (email) {
+    grantQuery = grantQuery.eq("email_normalized", email);
+  }
+
+  const { data: grants } = await grantQuery;
+
+  if (grants && grants.length > 0) {
+    // Check for explicit revoke overrides
+    const isGlobalRevoked = grants.some(g => g.scope === "all_private" && g.status === "revoked");
+    const isAlbumRevoked = grants.some(g => g.scope === "selected_albums" && g.album_id === albumId && g.status === "revoked");
+
+    if (isAlbumRevoked) {
+      return { allowed: false, reason: "revoked" };
+    }
+
+    // If global is revoked, we can't use an old global grant. BUT a specific selected album grant COULD override a global revoke if granted *after* or *specifically*.
+    // The prompt says: "if all_private grant was revoked, user cannot rely on that all-private grant".
+    
+    // Check for active grants
+    const activeSelected = grants.find(g => g.scope === "selected_albums" && g.album_id === albumId && g.status === "active");
+    if (activeSelected) {
+      return { allowed: true, reason: "selected_album_grant" };
+    }
+
+    const activeGlobal = grants.find(g => g.scope === "all_private" && g.status === "active");
+    if (activeGlobal) {
+      return { allowed: true, reason: "all_private_grant" };
+    }
+  }
+
+  // Fallback 1: Legacy invites (only if not explicitly revoked via grants)
+  if (email) {
+    const { data: invites } = await supabase
+      .from("album_invites")
+      .select("id, is_global")
+      .eq("email", email)
+      .or(`album_id.eq.${albumId},is_global.eq.true`)
+      .limit(1);
+
+    if (invites && invites.length > 0) {
+      return { allowed: true, reason: invites[0].is_global ? "all_private_grant" : "selected_album_grant" };
+    }
+  }
+
+  // Fallback 2: Access requests
+  if (userId) {
+    const { data: req } = await supabase
       .from("album_access_requests")
       .select("status")
       .eq("album_id", albumId)
-      .eq("requester_user_id", session.userId)
-      .eq("status", "approved")
+      .eq("requester_user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(1)
       .maybeSingle();
-    
-    return data?.status === "approved";
+
+    if (req) {
+      if (req.status === "approved") return { allowed: true, reason: "approved_request" };
+      if (req.status === "rejected") return { allowed: false, reason: "rejected" };
+      if (req.status === "pending") return { allowed: false, reason: "pending" };
+    }
   }
 
-  return false;
+  return { allowed: false, reason: "none" };
+}
+
+export async function checkAlbumAccess(albumId: string, session: PublicSession): Promise<boolean> {
+  const result = await checkPrivateAlbumAccess(albumId, session);
+  return result.allowed;
 }
 
 function filterSampleAlbums({ q, status, session }: AlbumQuery) {
@@ -272,46 +310,71 @@ async function attachAlbumPreviews(albums: Album[], session?: PublicSession | nu
         }
       }
 
-      // 2. Check active user grants
+      // 2. Check active AND revoked user grants
       const { data: userGrants } = await supabase
         .from("album_access_grants")
-        .select("album_id, scope")
+        .select("album_id, scope, status")
         .eq("user_id", session.userId)
-        .eq("status", "active")
         .or(`album_id.in.(${albumIds.join(",")}),scope.eq.all_private`);
         
       if (userGrants) {
-        const hasGlobal = userGrants.some(g => g.scope === "all_private");
-        if (hasGlobal) {
-          albumIds.forEach(id => requestMap.set(id, "approved"));
-        } else {
-          userGrants.forEach(g => {
-            if (g.album_id) requestMap.set(g.album_id, "approved");
-          });
-        }
+        // Evaluate revoked first
+        const globalRevoked = userGrants.some(g => g.scope === "all_private" && g.status === "revoked");
+        const revokedMap = new Map<string, boolean>();
+        userGrants.forEach(g => {
+          if (g.scope === "selected_albums" && g.status === "revoked" && g.album_id) {
+            revokedMap.set(g.album_id, true);
+          }
+        });
+
+        // Evaluate active
+        const hasGlobalActive = userGrants.some(g => g.scope === "all_private" && g.status === "active");
+        
+        albumIds.forEach(id => {
+          if (revokedMap.has(id)) {
+            requestMap.set(id, "revoked"); // Explicitly revoked
+            return;
+          }
+          if (hasGlobalActive) {
+            requestMap.set(id, "approved");
+            return;
+          }
+          const hasSelected = userGrants.some(g => g.scope === "selected_albums" && g.album_id === id && g.status === "active");
+          if (hasSelected) {
+            requestMap.set(id, "approved");
+          }
+        });
       }
     }
   }
 
-  // 3. Check active email grants
+  // 3. Check email grants (active and revoked)
   if (session?.email && !isAdmin) {
     const { data: emailGrants } = await supabase
       .from("album_access_grants")
-      .select("album_id, scope")
-      .eq("email_normalized", session.email)
-      .eq("status", "active");
+      .select("album_id, scope, status")
+      .eq("email_normalized", session.email);
 
     if (emailGrants && emailGrants.length > 0) {
-      const isGlobal = emailGrants.some(g => g.scope === "all_private");
-      if (isGlobal) {
-        albums.filter(a => a.status === "private").forEach(a => {
+      const globalRevoked = emailGrants.some(g => g.scope === "all_private" && g.status === "revoked");
+      const revokedMap = new Map<string, boolean>();
+      emailGrants.forEach(g => {
+        if (g.scope === "selected_albums" && g.status === "revoked" && g.album_id) {
+          revokedMap.set(g.album_id, true);
+        }
+      });
+
+      const isGlobal = emailGrants.some(g => g.scope === "all_private" && g.status === "active");
+      
+      albums.filter(a => a.status === "private").forEach(a => {
+        if (revokedMap.has(a.id) || requestMap.get(a.id) === "revoked") {
+          requestMap.set(a.id, "revoked");
+          return;
+        }
+        if (isGlobal || emailGrants.some(g => g.scope === "selected_albums" && g.album_id === a.id && g.status === "active")) {
           requestMap.set(a.id, "approved");
-        });
-      } else {
-        emailGrants.forEach(g => {
-          if (g.album_id) requestMap.set(g.album_id, "approved");
-        });
-      }
+        }
+      });
     }
 
     // 4. Also check legacy email invites

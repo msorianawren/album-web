@@ -1,488 +1,345 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Check, X, Clock, Edit2, Save, XCircle, Plus, Mail } from "lucide-react";
+import { useEffect, useState, useCallback } from "react";
+import { Check, X, Clock, Edit2, Shield, Search, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { UserAccessDrawer } from "@/components/studio/UserAccessDrawer";
+import { cn } from "@/lib/utils";
 
-interface AccessRequest {
-  id: string;
-  album_id: string;
-  requester_name: string;
-  requester_email: string | null;
-  requester_phone: string;
-  reason: string;
-  status: "pending" | "approved" | "rejected";
-  created_at: string;
-  albums?: { title: string };
-}
-
-interface UserProfile {
-  user_id: string;
-  email: string;
-  display_name: string | null;
-  avatar_url: string | null;
-  last_seen_at: string | null;
-}
-
-interface AlbumInvite {
-  id: string;
-  email: string;
-  album_id: string | null;
-  is_global: boolean;
-  created_at: string;
-  albums?: { title: string };
-}
-
-interface Album {
-  id: string;
-  title: string;
+interface PaginationData {
+  page: number;
+  pageSize: number;
+  totalRows: number;
+  totalPages: number;
+  hasNext: boolean;
+  hasPrevious: boolean;
 }
 
 export default function AccessRequestsPage() {
-  const [activeTab, setActiveTab] = useState<"permissions" | "requests">("permissions");
+  const [activeTab, setActiveTab] = useState<"permissions" | "requests" | "history">("permissions");
   
-  const [requests, setRequests] = useState<AccessRequest[]>([]);
-  const [users, setUsers] = useState<UserProfile[]>([]);
-  const [invites, setInvites] = useState<AlbumInvite[]>([]);
-  const [privateAlbums, setPrivateAlbums] = useState<Album[]>([]);
+  // Data State
+  const [users, setUsers] = useState<any[]>([]);
+  const [history, setHistory] = useState<any[]>([]);
+  const [requests, setRequests] = useState<any[]>([]);
   
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
+  const [pagination, setPagination] = useState<PaginationData | null>(null);
 
-  // Edit State
-  const [editingEmail, setEditingEmail] = useState<string | null>(null);
-  const [editIsGlobal, setEditIsGlobal] = useState(false);
-  const [editAlbumIds, setEditAlbumIds] = useState<Set<string>>(new Set());
-  const [isAddingNew, setIsAddingNew] = useState(false);
-  const [newEmail, setNewEmail] = useState("");
+  // Filters
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [grantFilter, setGrantFilter] = useState("all");
 
-  async function fetchData() {
+  // Drawer state
+  const [drawerUser, setDrawerUser] = useState<any | null>(null);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search), 300);
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const [reqRes, permRes] = await Promise.all([
-        fetch("/api/studio/access-requests"),
-        fetch("/api/studio/permissions")
-      ]);
-      
-      if (reqRes.ok) {
-        const reqJson = await reqRes.json();
-        const reqData = reqJson.data || {};
-        setRequests(reqData.requests || []);
-      }
-      if (permRes.ok) {
-        const permJson = await permRes.json();
-        const permData = permJson.data || {};
-        setUsers(permData.users || []);
-        setInvites(permData.invites || []);
-        setPrivateAlbums(permData.privateAlbums || []);
+      if (activeTab === "permissions") {
+        const query = new URLSearchParams({
+          page: page.toString(),
+          pageSize: pageSize.toString(),
+          search: debouncedSearch,
+        });
+        if (grantFilter !== "all") query.set("grantFilter", grantFilter);
+
+        const res = await fetch(`/api/studio/access/users?${query.toString()}`);
+        if (res.ok) {
+          const json = await res.json();
+          setUsers(json.data?.rows || []);
+          setPagination(json.data?.pagination || null);
+        }
+      } else if (activeTab === "history") {
+        const query = new URLSearchParams({
+          page: page.toString(),
+          pageSize: pageSize.toString(),
+        });
+        const res = await fetch(`/api/studio/access/history?${query.toString()}`);
+        if (res.ok) {
+          const json = await res.json();
+          setHistory(json.data?.rows || []);
+          setPagination(json.data?.pagination || null);
+        }
+      } else if (activeTab === "requests") {
+        const res = await fetch("/api/studio/access-requests");
+        if (res.ok) {
+          const json = await res.json();
+          setRequests(json.data?.requests || []);
+        }
       }
     } catch (err) {
       console.error(err);
     } finally {
       setLoading(false);
     }
-  }
+  }, [activeTab, page, pageSize, debouncedSearch, grantFilter]);
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [fetchData]);
 
-  async function updateRequest(id: string, status: "approved" | "rejected") {
+  const handlePageChange = (newPage: number) => {
+    if (newPage > 0 && newPage <= (pagination?.totalPages || 1)) {
+      setPage(newPage);
+    }
+  };
+
+  const approveRequest = async (id: string) => {
     try {
       const res = await fetch(`/api/studio/access-requests/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status }),
+        body: JSON.stringify({ status: "approved" }),
       });
-      if (res.ok) {
-        setRequests((prev) =>
-          prev.map((req) => (req.id === id ? { ...req, status } : req)),
-        );
-      }
-    } catch (err) {
-      console.error(err);
-    }
-  }
+      if (res.ok) fetchData();
+    } catch (e) { console.error(e); }
+  };
 
-  function handleEditClick(email: string) {
-    const userInvites = invites.filter(i => i.email.toLowerCase() === email.toLowerCase());
-    const isGlobal = userInvites.some(i => i.is_global);
-    const selectedIds = new Set(userInvites.filter(i => i.album_id).map(i => i.album_id as string));
-    
-    setEditingEmail(email);
-    setEditIsGlobal(isGlobal);
-    setEditAlbumIds(selectedIds);
-    setIsAddingNew(false);
-  }
-
-  function handleAddNewClick() {
-    setIsAddingNew(true);
-    setNewEmail("");
-    setEditIsGlobal(false);
-    setEditAlbumIds(new Set());
-    setEditingEmail(null);
-  }
-
-  function handleToggleAlbum(albumId: string) {
-    setEditAlbumIds(prev => {
-      const next = new Set(prev);
-      if (next.has(albumId)) next.delete(albumId);
-      else next.add(albumId);
-      return next;
-    });
-  }
-
-  async function handleSavePermissions(targetEmail: string) {
-    if (!targetEmail.trim()) return;
-    setSaving(true);
-    
+  const rejectRequest = async (id: string) => {
     try {
-      const payload = {
-        email: targetEmail.trim(),
-        is_global: editIsGlobal,
-        album_ids: Array.from(editAlbumIds)
-      };
-      
-      const res = await fetch("/api/studio/permissions", {
-        method: "POST",
+      const res = await fetch(`/api/studio/access-requests/${id}`, {
+        method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
+        body: JSON.stringify({ status: "rejected" }),
       });
-      
-      if (res.ok) {
-        const permRes = await fetch("/api/studio/permissions");
-        if (permRes.ok) {
-          const permJson = await permRes.json();
-          const permData = permJson.data || {};
-          setInvites(permData.invites || []);
-          setUsers(permData.users || []); // Might as well update users too
-        }
-        setEditingEmail(null);
-        setIsAddingNew(false);
-      } else {
-        alert("Failed to save permissions.");
-      }
-    } catch (err) {
-      alert("An error occurred.");
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  // Compute unified list of all emails (from users + from standalone invites)
-  const allEmails = Array.from(new Set([
-    ...users.map(u => u.email.toLowerCase()),
-    ...invites.map(i => i.email.toLowerCase())
-  ]));
-
-  const unifiedList = allEmails.map(email => {
-    const userProfile = users.find(u => u.email.toLowerCase() === email);
-    const userInvites = invites.filter(i => i.email.toLowerCase() === email);
-    return {
-      email,
-      userProfile,
-      userInvites,
-      hasGlobal: userInvites.some(i => i.is_global),
-      albumsCount: userInvites.filter(i => !i.is_global && i.album_id).length,
-      albumTitles: userInvites.filter(i => !i.is_global && i.album_id).map(i => i.albums?.title || "Unknown Album")
-    };
-  });
-
-  if (loading) {
-    return <div className="p-8 text-center text-text-secondary">Loading...</div>;
-  }
+      if (res.ok) fetchData();
+    } catch (e) { console.error(e); }
+  };
 
   return (
-    <div className="mx-auto max-w-5xl">
+    <div className="mx-auto max-w-7xl relative">
       <div className="mb-8">
         <h1 className="text-2xl font-semibold text-text-primary">Access Management</h1>
         <p className="mt-2 text-sm text-text-secondary">
-          Manage permissions and requests for private albums.
+          Manage private album access, view requests, and revoke permissions.
         </p>
       </div>
 
       <div className="mb-6 flex gap-4 border-b border-border justify-between items-center">
         <div className="flex gap-4">
-          <button
-            onClick={() => setActiveTab("permissions")}
-            className={`pb-3 text-sm font-medium ${
-              activeTab === "permissions"
-                ? "border-b-2 border-text-primary text-text-primary"
-                : "text-text-secondary hover:text-text-primary"
-            }`}
-          >
-            User Permissions
-          </button>
-          <button
-            onClick={() => setActiveTab("requests")}
-            className={`pb-3 text-sm font-medium flex items-center gap-2 ${
-              activeTab === "requests"
-                ? "border-b-2 border-text-primary text-text-primary"
-                : "text-text-secondary hover:text-text-primary"
-            }`}
-          >
-            Pending Requests
-            {requests.filter(r => r.status === "pending").length > 0 && (
-              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-accent text-[10px] text-accent-foreground font-bold">
-                {requests.filter(r => r.status === "pending").length}
-              </span>
-            )}
-          </button>
+          {[
+            { id: "permissions", label: "User Permissions" },
+            { id: "requests", label: "Pending Requests" },
+            { id: "history", label: "Grant/Revoke History" }
+          ].map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => { setActiveTab(tab.id as any); setPage(1); }}
+              className={cn(
+                "pb-3 text-sm font-medium transition-colors border-b-2",
+                activeTab === tab.id
+                  ? "border-text-primary text-text-primary"
+                  : "border-transparent text-text-secondary hover:text-text-primary"
+              )}
+            >
+              {tab.label}
+              {tab.id === "requests" && requests.filter(r => r.status === "pending").length > 0 && (
+                <span className="ml-2 inline-flex h-5 w-5 items-center justify-center rounded-full bg-accent text-[10px] text-accent-foreground font-bold">
+                  {requests.filter(r => r.status === "pending").length}
+                </span>
+              )}
+            </button>
+          ))}
         </div>
-        {activeTab === "permissions" && (
-          <Button onClick={handleAddNewClick} className="mb-2">
-            <Plus className="w-4 h-4 mr-1" /> Grant New Access
-          </Button>
-        )}
       </div>
 
       {activeTab === "permissions" && (
         <div className="grid gap-4">
-          {/* Add New Email Section */}
-          {isAddingNew && (
-            <div className="flex flex-col rounded-2xl border-2 border-accent/20 bg-surface p-5 shadow-lg">
-              <div className="mb-4">
-                <h3 className="text-lg font-medium text-text-primary">Grant Access to New User</h3>
-                <p className="text-xs text-text-secondary">They will have access as soon as they log in with this email.</p>
+          <div className="flex flex-wrap items-center justify-between gap-4 bg-surface p-4 rounded-t-2xl border border-border">
+            <div className="flex items-center gap-4">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text-tertiary" />
+                <input
+                  type="text"
+                  placeholder="Search users..."
+                  value={search}
+                  onChange={e => { setSearch(e.target.value); setPage(1); }}
+                  className="pl-9 pr-4 py-2 bg-background border border-border rounded-lg text-sm w-64 focus:outline-none focus:ring-1 focus:ring-accent"
+                />
               </div>
-              
-              <div className="mb-6">
-                <label className="block text-sm font-medium text-text-secondary mb-1">Email Address</label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-tertiary" />
-                  <input
-                    type="email"
-                    value={newEmail}
-                    onChange={(e) => setNewEmail(e.target.value)}
-                    placeholder="example@gmail.com"
-                    className="w-full pl-9 pr-4 py-2 bg-background border border-border rounded-lg text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent"
-                  />
-                </div>
-              </div>
-
-              <div className="mb-4 border-t border-border pt-4">
-                <label className="flex items-center gap-3 p-3 border border-border rounded-xl cursor-pointer hover:bg-background/50 transition-colors">
-                  <input 
-                    type="checkbox" 
-                    checked={editIsGlobal}
-                    onChange={(e) => setEditIsGlobal(e.target.checked)}
-                    className="w-4 h-4 rounded border-border text-accent focus:ring-accent"
-                  />
-                  <div>
-                    <p className="text-sm font-medium text-text-primary">All Private Albums</p>
-                    <p className="text-xs text-text-secondary">Grant access to every current and future private album.</p>
-                  </div>
-                </label>
-              </div>
-
-              {!editIsGlobal && privateAlbums.length > 0 && (
-                <div className="mb-4 space-y-2 pl-1">
-                  <p className="text-xs font-semibold text-text-secondary uppercase tracking-wider mb-3">Specific Albums</p>
-                  {privateAlbums.map(album => (
-                    <label key={album.id} className="flex items-center gap-3 py-1 cursor-pointer group">
-                      <input 
-                        type="checkbox"
-                        checked={editAlbumIds.has(album.id)}
-                        onChange={() => handleToggleAlbum(album.id)}
-                        className="w-4 h-4 rounded border-border text-accent focus:ring-accent"
-                      />
-                      <span className="text-sm text-text-primary group-hover:text-accent transition-colors">{album.title}</span>
-                    </label>
-                  ))}
-                </div>
-              )}
-
-              {!editIsGlobal && privateAlbums.length === 0 && (
-                <p className="text-sm text-text-secondary mb-4">No private albums found in the system.</p>
-              )}
-
-              <div className="flex gap-3 justify-end mt-4">
-                <Button variant="ghost" onClick={() => setIsAddingNew(false)} disabled={saving}>
-                  Cancel
-                </Button>
-                <Button onClick={() => handleSavePermissions(newEmail)} disabled={saving || !newEmail.trim()} className="bg-accent text-accent-foreground">
-                  {saving ? "Saving..." : "Save Access"}
-                </Button>
-              </div>
+              <select
+                value={grantFilter}
+                onChange={e => { setGrantFilter(e.target.value); setPage(1); }}
+                className="py-2 px-3 bg-background border border-border rounded-lg text-sm focus:outline-none"
+              >
+                <option value="all">All Users</option>
+                <option value="active">Currently Active</option>
+                <option value="no_access">Currently No Access</option>
+                <option value="ever_granted">Ever Granted</option>
+                <option value="ever_revoked">Ever Revoked</option>
+                <option value="revoked_only">Revoked Only</option>
+              </select>
             </div>
-          )}
-
-          {unifiedList.length === 0 && !isAddingNew ? (
-            <div className="rounded-2xl border border-border bg-surface p-8 text-center text-text-secondary">
-              No users or invites found.
+            <div className="flex items-center gap-2 text-sm text-text-secondary">
+              Rows: 
+              <select value={pageSize} onChange={e => { setPageSize(Number(e.target.value)); setPage(1); }} className="bg-transparent font-medium border-none outline-none">
+                <option value={10}>10</option>
+                <option value={25}>25</option>
+                <option value={50}>50</option>
+                <option value={100}>100</option>
+              </select>
             </div>
-          ) : (
-            unifiedList.map((item) => {
-              const isEditing = editingEmail === item.email;
-              const hasProfile = !!item.userProfile;
+          </div>
 
-              return (
-                <div
-                  key={item.email}
-                  className="flex flex-col rounded-2xl border border-border bg-surface p-5 transition-all"
-                >
-                  <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="flex items-center gap-4">
-                      {item.userProfile?.avatar_url ? (
-                        <img src={item.userProfile.avatar_url} alt="" className="h-10 w-10 rounded-full object-cover border border-border" />
-                      ) : (
-                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-background border border-border text-sm font-bold text-text-secondary">
-                          {(item.userProfile?.display_name || item.email).charAt(0).toUpperCase()}
-                        </div>
-                      )}
-                      <div>
-                        <h3 className="text-sm font-medium text-text-primary flex items-center gap-2">
-                          {item.userProfile?.display_name || "Pending Registration"}
-                          {!hasProfile && (
-                            <span className="text-[10px] uppercase font-bold bg-yellow-500/10 text-yellow-600 px-1.5 py-0.5 rounded">Not Logged In Yet</span>
-                          )}
-                        </h3>
-                        <p className="text-xs text-text-secondary">{item.email}</p>
-                      </div>
-                    </div>
-
-                    {!isEditing && (
-                      <div className="flex items-start sm:items-center justify-between sm:justify-end gap-4">
-                        <div className="text-sm">
-                          {item.hasGlobal ? (
-                            <span className="rounded bg-accent/10 px-2.5 py-1 font-medium text-accent">All Private Albums</span>
-                          ) : item.albumsCount > 0 ? (
-                            <div className="flex flex-col items-start sm:items-end gap-1">
-                              <span className="rounded bg-background px-2.5 py-1 font-medium text-text-primary self-start sm:self-end">{item.albumsCount} Albums</span>
-                              <span className="text-xs text-text-tertiary max-w-[200px] sm:max-w-[300px] text-left sm:text-right truncate" title={item.albumTitles.join(", ")}>
-                                {item.albumTitles.join(", ")}
-                              </span>
-                            </div>
-                          ) : (
-                            <span className="rounded bg-background px-2.5 py-1 font-medium text-text-tertiary">No Access</span>
-                          )}
-                        </div>
-                        <Button variant="ghost" onClick={() => handleEditClick(item.email)} className="h-8 px-3 text-xs mt-1 sm:mt-0">
-                          <Edit2 className="w-3 h-3 mr-2" />
-                          Edit
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-
-                  {isEditing && (
-                    <div className="mt-6 border-t border-border pt-5">
-                      <div className="mb-4">
-                        <label className="flex items-center gap-3 p-3 border border-border rounded-xl cursor-pointer hover:bg-background/50 transition-colors">
-                          <input 
-                            type="checkbox" 
-                            checked={editIsGlobal}
-                            onChange={(e) => setEditIsGlobal(e.target.checked)}
-                            className="w-4 h-4 rounded border-border text-accent focus:ring-accent"
-                          />
+          <div className="overflow-x-auto rounded-b-2xl border-x border-b border-border bg-surface">
+            <table className="w-full text-left text-sm">
+              <thead className="bg-background/50 text-text-secondary border-b border-border">
+                <tr>
+                  <th className="p-4 font-medium">User</th>
+                  <th className="p-4 font-medium">Current Access</th>
+                  <th className="p-4 font-medium">Pending</th>
+                  <th className="p-4 font-medium">Last Grant</th>
+                  <th className="p-4 font-medium text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {loading ? (
+                  <tr><td colSpan={5} className="p-8 text-center"><Loader2 className="w-6 h-6 animate-spin mx-auto text-accent" /></td></tr>
+                ) : users.length === 0 ? (
+                  <tr><td colSpan={5} className="p-8 text-center text-text-secondary">No users found.</td></tr>
+                ) : (
+                  users.map(u => (
+                    <tr key={u.id} className="hover:bg-background/50 transition-colors cursor-pointer group" onClick={() => setDrawerUser(u)}>
+                      <td className="p-4">
+                        <div className="flex items-center gap-3">
+                          {u.avatar_url ? <img src={u.avatar_url} className="w-8 h-8 rounded-full object-cover" alt="" /> : <div className="w-8 h-8 rounded-full bg-background border flex items-center justify-center font-bold text-xs">{(u.display_name || u.email || "?")[0].toUpperCase()}</div>}
                           <div>
-                            <p className="text-sm font-medium text-text-primary">All Private Albums</p>
-                            <p className="text-xs text-text-secondary">Grant access to every current and future private album.</p>
+                            <div className="font-medium text-text-primary">{u.display_name || "Pending Registration"}</div>
+                            <div className="text-xs text-text-tertiary">{u.email}</div>
                           </div>
-                        </label>
-                      </div>
-
-                      {!editIsGlobal && privateAlbums.length > 0 && (
-                        <div className="mb-4 space-y-2 pl-1">
-                          <p className="text-xs font-semibold text-text-secondary uppercase tracking-wider mb-3">Specific Albums</p>
-                          {privateAlbums.map(album => (
-                            <label key={album.id} className="flex items-center gap-3 py-1 cursor-pointer group">
-                              <input 
-                                type="checkbox"
-                                checked={editAlbumIds.has(album.id)}
-                                onChange={() => handleToggleAlbum(album.id)}
-                                className="w-4 h-4 rounded border-border text-accent focus:ring-accent"
-                              />
-                              <span className="text-sm text-text-primary group-hover:text-accent transition-colors">{album.title}</span>
-                            </label>
-                          ))}
                         </div>
-                      )}
-
-                      <div className="flex gap-3 justify-end mt-6">
-                        <Button variant="ghost" onClick={() => setEditingEmail(null)} disabled={saving}>
-                          Cancel
+                      </td>
+                      <td className="p-4">
+                        {u.current_access === "All Private Albums" ? (
+                          <span className="rounded bg-accent/10 px-2 py-1 text-xs font-semibold text-accent">All Private</span>
+                        ) : u.current_access.includes("Selected") ? (
+                          <div className="flex flex-col">
+                            <span className="rounded bg-background border px-2 py-1 text-xs font-semibold text-text-primary">{u.current_access}</span>
+                          </div>
+                        ) : u.current_access === "Revoked" ? (
+                          <span className="rounded bg-red-500/10 px-2 py-1 text-xs font-semibold text-red-500">Revoked</span>
+                        ) : (
+                          <span className="text-text-tertiary">No Access</span>
+                        )}
+                      </td>
+                      <td className="p-4">
+                        {u.pending_requests > 0 ? <span className="text-yellow-500 font-bold">{u.pending_requests} reqs</span> : "-"}
+                      </td>
+                      <td className="p-4 text-text-secondary">
+                        {u.last_grant > 0 ? new Date(u.last_grant).toLocaleDateString() : "-"}
+                      </td>
+                      <td className="p-4 text-right">
+                        <Button variant="ghost" className="h-8 px-2 group-hover:bg-background">
+                          <Edit2 className="w-3 h-3 mr-1" /> Edit
                         </Button>
-                        <Button onClick={() => handleSavePermissions(item.email)} disabled={saving} className="bg-accent text-accent-foreground">
-                          {saving ? "Saving..." : "Save Permissions"}
-                        </Button>
-                      </div>
-                    </div>
-                  )}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+            
+            {/* Pagination Controls */}
+            {pagination && pagination.totalPages > 1 && (
+              <div className="flex items-center justify-between p-4 border-t border-border bg-background/50">
+                <div className="text-sm text-text-secondary">
+                  Showing {(page - 1) * pageSize + 1} to Math.min(page * pageSize, pagination.totalRows) of {pagination.totalRows}
                 </div>
-              );
-            })
-          )}
+                <div className="flex items-center gap-1">
+                  <Button variant="ghost" className="w-8 h-8 p-0" disabled={!pagination.hasPrevious} onClick={() => handlePageChange(1)}><ChevronsLeft className="w-4 h-4" /></Button>
+                  <Button variant="ghost" className="w-8 h-8 p-0" disabled={!pagination.hasPrevious} onClick={() => handlePageChange(page - 1)}><ChevronLeft className="w-4 h-4" /></Button>
+                  <div className="px-3 text-sm font-medium">{page} / {pagination.totalPages}</div>
+                  <Button variant="ghost" className="w-8 h-8 p-0" disabled={!pagination.hasNext} onClick={() => handlePageChange(page + 1)}><ChevronRight className="w-4 h-4" /></Button>
+                  <Button variant="ghost" className="w-8 h-8 p-0" disabled={!pagination.hasNext} onClick={() => handlePageChange(pagination.totalPages)}><ChevronsRight className="w-4 h-4" /></Button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       )}
 
       {activeTab === "requests" && (
         <div className="grid gap-4">
-          {requests.length === 0 ? (
-            <div className="rounded-2xl border border-border bg-surface p-8 text-center text-text-secondary">
-              No access requests found.
-            </div>
-          ) : (
-            requests.map((req) => (
-              <div
-                key={req.id}
-                className="flex flex-col gap-4 rounded-2xl border border-border bg-surface p-5 sm:flex-row sm:items-start sm:justify-between"
-              >
-                <div>
-                  <div className="mb-2 flex items-center gap-2">
-                    <span className="rounded bg-background px-2 py-1 text-xs font-semibold text-text-secondary uppercase">
-                      {req.albums?.title || "Unknown Album"}
-                    </span>
-                    {req.status === "pending" && (
-                      <span className="flex items-center gap-1 text-xs font-semibold text-yellow-500 uppercase">
-                        <Clock className="h-3 w-3" /> Pending
-                      </span>
-                    )}
-                    {req.status === "approved" && (
-                      <span className="flex items-center gap-1 text-xs font-semibold text-green-500 uppercase">
-                        <Check className="h-3 w-3" /> Approved
-                      </span>
-                    )}
-                    {req.status === "rejected" && (
-                      <span className="flex items-center gap-1 text-xs font-semibold text-red-500 uppercase">
-                        <X className="h-3 w-3" /> Rejected
-                      </span>
-                    )}
-                  </div>
-                  <h3 className="text-lg font-medium text-text-primary">{req.requester_name}</h3>
-                  <div className="mt-1 flex gap-4 text-sm text-text-secondary">
-                    {req.requester_email && <span>{req.requester_email}</span>}
-                    <span>{req.requester_phone}</span>
-                  </div>
-                  <p className="mt-4 text-sm text-text-primary bg-background/50 p-3 rounded-xl border border-border">
-                    &quot;{req.reason}&quot;
-                  </p>
-                  <div className="mt-3 text-xs text-text-secondary">
-                    Requested on {new Date(req.created_at).toLocaleDateString()}
-                  </div>
+          {requests.map(req => (
+            <div key={req.id} className="flex flex-col gap-4 rounded-2xl border border-border bg-surface p-5 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <div className="mb-2 flex items-center gap-2">
+                  <span className="rounded bg-background px-2 py-1 text-xs font-semibold text-text-secondary uppercase">{req.albums?.title || "Unknown Album"}</span>
+                  {req.status === "pending" && <span className="flex items-center gap-1 text-xs font-semibold text-yellow-500 uppercase"><Clock className="h-3 w-3" /> Pending</span>}
+                  {req.status === "approved" && <span className="flex items-center gap-1 text-xs font-semibold text-green-500 uppercase"><Check className="h-3 w-3" /> Approved</span>}
+                  {req.status === "rejected" && <span className="flex items-center gap-1 text-xs font-semibold text-red-500 uppercase"><X className="h-3 w-3" /> Rejected</span>}
                 </div>
-
-                {req.status === "pending" && (
-                  <div className="flex shrink-0 gap-2 sm:flex-col">
-                    <Button
-                      onClick={() => updateRequest(req.id, "approved")}
-                      className="flex-1 sm:flex-none bg-green-500 hover:bg-green-600 text-white"
-                    >
-                      Approve
-                    </Button>
-                    <Button
-                      onClick={() => updateRequest(req.id, "rejected")}
-                      variant="ghost"
-                      className="flex-1 sm:flex-none text-red-500 hover:text-red-600 hover:bg-red-500/10"
-                    >
-                      Reject
-                    </Button>
-                  </div>
-                )}
+                <h3 className="text-lg font-medium text-text-primary">{req.requester_name}</h3>
+                <div className="mt-1 flex gap-4 text-sm text-text-secondary">
+                  {req.requester_email && <span>{req.requester_email}</span>}
+                  <span>{req.requester_phone}</span>
+                </div>
+                <p className="mt-4 text-sm text-text-primary bg-background/50 p-3 rounded-xl border border-border">&quot;{req.reason}&quot;</p>
               </div>
-            ))
+              {req.status === "pending" && (
+                <div className="flex shrink-0 gap-2 sm:flex-col">
+                  <Button onClick={() => approveRequest(req.id)} className="bg-green-500 hover:bg-green-600 text-white">Approve</Button>
+                  <Button onClick={() => rejectRequest(req.id)} variant="ghost" className="text-red-500">Reject</Button>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {activeTab === "history" && (
+        <div className="rounded-2xl border border-border bg-surface overflow-hidden">
+          <table className="w-full text-left text-sm">
+            <thead className="bg-background/50 text-text-secondary border-b border-border">
+              <tr>
+                <th className="p-4 font-medium">Date</th>
+                <th className="p-4 font-medium">User</th>
+                <th className="p-4 font-medium">Action</th>
+                <th className="p-4 font-medium">Scope</th>
+                <th className="p-4 font-medium">Admin</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border">
+              {history.map(row => (
+                <tr key={row.id}>
+                  <td className="p-4 text-text-secondary">{new Date(row.updated_at || row.granted_at || row.revoked_at || Date.now()).toLocaleString()}</td>
+                  <td className="p-4 font-medium">{row.display_name || row.email}</td>
+                  <td className="p-4">
+                    {row.status === "active" ? (
+                      <span className="text-green-500 font-semibold">Granted</span>
+                    ) : (
+                      <span className="text-red-500 font-semibold">Revoked</span>
+                    )}
+                  </td>
+                  <td className="p-4 text-text-secondary">
+                    {row.scope === "all_private" ? "All Private" : row.album?.title || "Selected Albums"}
+                  </td>
+                  <td className="p-4 text-text-tertiary">{row.status === "active" ? row.granted_by : row.revoked_by}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {pagination && pagination.totalPages > 1 && (
+            <div className="flex items-center justify-end gap-2 p-4 border-t border-border bg-background/50">
+              <Button variant="ghost" disabled={!pagination.hasPrevious} onClick={() => handlePageChange(page - 1)}><ChevronLeft className="w-4 h-4" /></Button>
+              <span className="text-sm">{page} / {pagination.totalPages}</span>
+              <Button variant="ghost" disabled={!pagination.hasNext} onClick={() => handlePageChange(page + 1)}><ChevronRight className="w-4 h-4" /></Button>
+            </div>
           )}
         </div>
+      )}
+
+      {drawerUser && (
+        <UserAccessDrawer user={drawerUser} onClose={() => setDrawerUser(null)} onUpdate={() => fetchData()} />
       )}
     </div>
   );
