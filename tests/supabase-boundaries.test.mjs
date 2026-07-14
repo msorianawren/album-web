@@ -36,6 +36,19 @@ test("album repository uses the anon client for public album and media reads", (
   assert.match(source, /getPreviewRows\(publicClient, publicAlbumIds/);
 });
 
+test("album admin mutations use a guarded trusted database instead of the broad client", () => {
+  for (const path of [
+    "src/app/api/albums/route.ts",
+    "src/app/api/albums/[id]/route.ts",
+    "src/app/api/albums/[id]/images/route.ts",
+    "src/app/api/studio/albums/reorder/route.ts",
+  ]) {
+    const source = read(path);
+    assert.equal(source.includes("@/lib/supabase"), false, path);
+    assert.equal(source.includes("getTrustedAdminDatabase"), true, path);
+  }
+});
+
 test("private album role matrix denies untrusted and revoked principals", () => {
   assert.deepEqual(decidePrivateAlbumAccess("anonymous", "all_private"), {
     allowed: false,

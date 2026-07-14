@@ -1,11 +1,12 @@
 import { NextRequest } from "next/server";
-import { getPublicSession, requireAdmin } from "@/lib/auth";
+import { getPublicSession } from "@/lib/auth";
 import { logAuditEvent } from "@/lib/audit";
+import { classifyDataFailure } from "@/lib/app-failure";
+import { getTrustedAdminDatabase } from "@/lib/db/admin";
 import { apiError, apiSuccess, toServerError } from "@/lib/errors";
 import { getAlbums } from "@/lib/albums";
 import { enforceRateLimit } from "@/lib/security-rate-limit";
 import { getSiteSettings } from "@/lib/site-settings";
-import { supabase } from "@/lib/supabase";
 import { slugify } from "@/lib/utils";
 import { albumCreateSchema, searchParamsSchema } from "@/lib/validators";
 
@@ -28,10 +29,11 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const session = await requireAdmin(request);
-  if (!session) {
+  const database = await getTrustedAdminDatabase(request);
+  if (!database) {
     return apiError("FORBIDDEN", "Only the admin can create albums.", 403);
   }
+  const { session, client } = database;
 
   try {
     const settings = await getSiteSettings();
@@ -64,7 +66,7 @@ export async function POST(request: NextRequest) {
     const slug = parsed.data.slug ?? slugify(parsed.data.title);
     const status =
       typeof body.status === "string" ? parsed.data.status : settings.default_album_status;
-    const { data, error } = await supabase
+    const { data, error } = await client
       .from("albums")
       .insert({
         owner_id: session.userId,
@@ -78,12 +80,10 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (error) {
-      const status = error.code === "23505" ? 409 : 500;
-      return apiError(
-        status === 409 ? "CONFLICT" : "SERVER_ERROR",
-        error.message,
-        status,
-      );
+      if (error.code === "23505") {
+        return apiError("CONFLICT", "An album with this slug already exists.", 409);
+      }
+      throw classifyDataFailure(error, "albums.admin_create");
     }
 
     await logAuditEvent({

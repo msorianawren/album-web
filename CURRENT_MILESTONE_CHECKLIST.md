@@ -51,9 +51,10 @@
 - [v] Add a backward-compatible private-album RLS helper plus media/comment policies.
 - [v] Add a non-destructive rollback script and policy-order/static authorization tests.
 - [b] Apply and role-test `202607141830_private_album_rls.sql` against Supabase (no local CLI/database or remote management permission).
-- [~] Commit the verified, unapplied RLS migration package.
+- [c] Commit the verified, unapplied RLS migration package (`2dda6cf`).
 - [ ] Migrate authenticated-user route families to request-scoped JWT/RLS clients.
-- [ ] Migrate admin route families behind trusted admin contexts.
+- [v] Migrate album create/update/delete/upload-entry/reorder mutations behind trusted admin contexts.
+- [~] Commit the verified album admin route family.
 - [ ] Migrate cron routes behind trusted worker contexts.
 - [ ] Add database/RLS role tests for all supported principals.
 - [ ] Create `SUPABASE_BOUNDARY_REPORT.md` and `AUTHORIZATION_ROLE_MATRIX.md`.

@@ -1,12 +1,13 @@
 import { NextRequest } from "next/server";
-import { getPublicSession, requireAdmin } from "@/lib/auth";
+import { getPublicSession } from "@/lib/auth";
 import { logAuditEvent } from "@/lib/audit";
+import { classifyDataFailure } from "@/lib/app-failure";
+import { getTrustedAdminDatabase } from "@/lib/db/admin";
 import { apiError, apiSuccess, toServerError } from "@/lib/errors";
 import { uploadMediaFile } from "@/lib/media";
 import { getAlbum } from "@/lib/albums";
 import { enforceRateLimit } from "@/lib/security-rate-limit";
 import { getSiteSettings } from "@/lib/site-settings";
-import { supabase } from "@/lib/supabase";
 import { validateUploadFile } from "@/lib/upload-validation";
 import { mediaSortModes, parseMediaSortMode } from "@/lib/media-sort";
 
@@ -40,10 +41,11 @@ export async function GET(request: NextRequest, { params }: ImagesRouteProps) {
 }
 
 export async function POST(request: NextRequest, { params }: ImagesRouteProps) {
-  const session = await requireAdmin(request);
-  if (!session) {
+  const database = await getTrustedAdminDatabase(request);
+  if (!database) {
     return apiError("FORBIDDEN", "Only the admin can upload media.", 403);
   }
+  const { session, client } = database;
 
   try {
     const { id: albumId } = await params;
@@ -77,10 +79,13 @@ export async function POST(request: NextRequest, { params }: ImagesRouteProps) {
       );
     }
 
-    const { data: existingMedia } = await supabase
+    const { data: existingMedia, error: existingMediaError } = await client
       .from("media")
       .select("file_size")
       .eq("album_id", albumId);
+    if (existingMediaError) {
+      throw classifyDataFailure(existingMediaError, "media.admin_storage_usage");
+    }
     const currentAlbumBytes = (existingMedia ?? []).reduce(
       (sum, item) => sum + Number(item.file_size ?? 0),
       0,

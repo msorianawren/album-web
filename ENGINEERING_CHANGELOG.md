@@ -106,3 +106,20 @@
 - Security impact: Anonymous execution is revoked; blocked and explicit revoked states are evaluated before legacy or approved-request fallbacks. Application cutover is intentionally deferred until remote application and role tests.
 - Performance impact: Existing grant/request/invite indexes support the predicates; no runtime query changes occur until deployment.
 - Test performed: 17 unit/static authorization tests, lint pass with 14 unchanged warnings, TypeScript pass, and production build pass with 49 routes. SQL execution is BLOCKED_EXTERNAL because no local Supabase CLI/`psql` or remote migration permission is available.
+
+## 2026-07-14 - Milestone 3 RLS package checkpoint
+
+- Milestone: 3
+- Commit: `2dda6cf security(db): add private album RLS decision`
+- Result: COMPLETE - migration, rollback, and static verification committed; remote application remains BLOCKED_EXTERNAL.
+
+## 2026-07-14 19:20:00 +07:00 - Milestone 3 album admin mutation boundary
+
+- Milestone: 3
+- Files: album create/detail/images/reorder API routes, `tests/supabase-boundaries.test.mjs`, engineering state files
+- Reason: Couple privileged album mutations to a role guard and trusted client obtained from one server-only boundary.
+- Behavior before: Routes called `requireAdmin` separately and imported the generic service-role client directly; several database failures returned raw provider messages.
+- Behavior after: Create, update, delete, upload storage accounting, and reorder obtain one guarded admin database context; touched 5xx database failures use safe classified responses with request IDs.
+- Security impact: A service client is not constructed until a non-blocked admin session is validated, broad client imports are removed from the route family, and raw Supabase failure text is no longer returned on these paths.
+- Performance impact: No query-count change; guard/session work is equivalent to the previous route-level check.
+- Test performed: Lint pass with 14 unchanged warnings, TypeScript pass, 18 unit/boundary tests, production build pass with 49 routes, and anonymous POST/PATCH/DELETE/upload/reorder denial checks (four `403`, Studio proxy `401`). Authenticated admin mutation testing is BLOCKED_EXTERNAL by missing fixture.
