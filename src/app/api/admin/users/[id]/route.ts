@@ -4,6 +4,7 @@ import { logAuditEvent } from "@/lib/audit";
 import { apiError, apiSuccess, toServerError } from "@/lib/errors";
 import { getAdminProfile } from "@/lib/role-management";
 import { supabase } from "@/lib/supabase";
+import { createAccountBlockedNotification, createAccountUnblockedNotification } from "@/lib/notifications";
 
 interface AdminUserRouteProps {
   params: Promise<{ id: string }>;
@@ -69,6 +70,21 @@ export async function PATCH(request: NextRequest, { params }: AdminUserRouteProp
       targetId: id,
       metadata: { reason: isBlocked ? reason : null },
     });
+
+    if (isBlocked) {
+      await createAccountBlockedNotification({
+        recipientUserId: id,
+        reason,
+        request,
+        actorSession: session,
+      });
+    } else {
+      await createAccountUnblockedNotification({
+        recipientUserId: id,
+        request,
+        actorSession: session,
+      });
+    }
 
     return apiSuccess({ user: data });
   } catch (error) {

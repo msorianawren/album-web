@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { supabase } from "@/lib/supabase";
 import { getPublicSession } from "@/lib/auth";
-import { getSiteSettings } from "@/lib/site-settings";
 import { enforceRateLimit } from "@/lib/security-rate-limit";
+import { createAdminNotification } from "@/lib/notifications";
 
 export async function POST(
   request: NextRequest,
@@ -33,7 +33,6 @@ export async function POST(
     const { message } = result.data;
 
     // Rate Limiting for replies
-    const settings = await getSiteSettings();
     const rateLimit = await enforceRateLimit({
       request,
       session,
@@ -95,13 +94,14 @@ export async function POST(
       return NextResponse.json({ success: false, message: "Internal server error." }, { status: 500 });
     }
 
-    // Admin notification
-    await supabase.from("notifications").insert({
-      recipient_user_id: process.env.DEFAULT_OWNER_ID, // Use the real admin id from env or query
+    await createAdminNotification({
       type: "admin_new_message",
       title: "New user reply",
       body: `New reply from ${session.displayName || "a user"}.`,
-      target_url: `/studio/messages/${messageId}`,
+      targetUrl: "/studio/messages",
+      metadata: { message_id: messageId },
+      request,
+      actorSession: session,
     });
 
     return NextResponse.json({ success: true });

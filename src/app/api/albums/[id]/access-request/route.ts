@@ -3,6 +3,7 @@ import { getPublicSession } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 import { apiError, apiSuccess, toServerError } from "@/lib/errors";
 import { z } from "zod";
+import { createAdminNotification } from "@/lib/notifications";
 
 const requestSchema = z.object({
   requester_name: z.string().min(1, "Name is required"),
@@ -78,6 +79,16 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       }
       return apiError("SERVER_ERROR", error.message, 500);
     }
+
+    await createAdminNotification({
+      type: "admin_new_request",
+      title: "New private album request",
+      body: `${parsed.data.requester_name} requested access to a private album.`,
+      targetUrl: "/studio/access-requests",
+      metadata: { album_id: albumId, request_id: data.id },
+      request,
+      actorSession: session.userId ? session : undefined,
+    });
     
     return apiSuccess({ request: data }, { status: 201 });
   } catch (error) {

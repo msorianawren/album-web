@@ -4,6 +4,7 @@ import { supabase } from "@/lib/supabase";
 import { apiError, apiSuccess, toServerError } from "@/lib/errors";
 import { logAuditEvent } from "@/lib/audit";
 import { z } from "zod";
+import { createAccessRevokedNotification, fetchAlbumsForNotifications } from "@/lib/notifications";
 
 const revokeSchema = z.object({
   userId: z.string().uuid().optional(),
@@ -59,7 +60,7 @@ export async function POST(request: NextRequest) {
       baseQuery = baseQuery.eq("scope", "selected_albums").eq("status", "active");
     }
 
-    const { data: updatedRows, error } = await baseQuery.select("id");
+    const { data: updatedRows, error } = await baseQuery.select("id, scope, album_id");
 
     if (error) {
       return apiError("SERVER_ERROR", error.message, 500);
@@ -101,12 +102,25 @@ export async function POST(request: NextRequest) {
 
     await logAuditEvent({
       request,
-      session: adminCheck as any,
+      session: adminCheck,
       action: "album_access_revoked",
       targetType: "user",
       targetId: userId || email || "unknown",
       metadata: { scope, albumCount: albumIds?.length || 0, reason },
     });
+
+    if (userId) {
+      const rowAlbumIds = (updatedRows ?? [])
+        .map((row) => row.album_id)
+        .filter(Boolean) as string[];
+      await createAccessRevokedNotification({
+        recipientUserId: userId,
+        scope,
+        albums: await fetchAlbumsForNotifications(albumIds?.length ? albumIds : rowAlbumIds),
+        request,
+        actorSession: adminCheck,
+      });
+    }
 
     return apiSuccess({ message: "Access revoked." });
   } catch (error) {

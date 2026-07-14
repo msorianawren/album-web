@@ -5,6 +5,7 @@ import { getSiteSettings } from "@/lib/site-settings";
 import { enforceRateLimit } from "@/lib/security-rate-limit";
 import { hashIpAddress } from "@/lib/request-info";
 import { getPublicSession } from "@/lib/auth";
+import { createAdminNotification } from "@/lib/notifications";
 
 export async function POST(request: NextRequest) {
   try {
@@ -102,7 +103,7 @@ export async function POST(request: NextRequest) {
 
     const session = await getPublicSession();
 
-    const { error } = await supabase.from("contact_messages").insert({
+    const { data: createdMessage, error } = await supabase.from("contact_messages").insert({
       user_id: session.userId || null,
       name,
       reply_email: email,
@@ -114,12 +115,22 @@ export async function POST(request: NextRequest) {
       user_agent_hash: userAgentHash,
       status: "new",
       risk_level: "low",
-    });
+    }).select("id").single();
 
     if (error) {
       console.error("Contact Form Insert Error:", error);
       return NextResponse.json({ success: false, message: "Internal server error." }, { status: 500 });
     }
+
+    await createAdminNotification({
+      type: "admin_new_message",
+      title: "New contact message",
+      body: `New contact message from ${name}.`,
+      targetUrl: "/studio/messages",
+      metadata: { message_id: createdMessage.id },
+      request,
+      actorSession: session.userId ? session : undefined,
+    });
 
     return NextResponse.json({ success: true });
   } catch (err: unknown) {

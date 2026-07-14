@@ -3,6 +3,10 @@ import { requireAdmin, getPublicSession } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 import { apiError, apiSuccess, toServerError } from "@/lib/errors";
 import { z } from "zod";
+import {
+  createAccessRequestApprovedNotification,
+  createAccessRequestRejectedNotification,
+} from "@/lib/notifications";
 
 const updateSchema = z.object({
   status: z.enum(["approved", "rejected"]),
@@ -26,7 +30,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
     const { data: requestRecord, error: fetchError } = await supabase
       .from("album_access_requests")
-      .select("*")
+      .select("*, albums(id, title, slug)")
       .eq("id", p.id)
       .single();
 
@@ -60,6 +64,22 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
         album_id: requestRecord.album_id,
         status: "active",
         granted_by: session!.userId,
+      });
+
+      await createAccessRequestApprovedNotification({
+        recipientUserId: requestRecord.requester_user_id,
+        album: requestRecord.albums,
+        requestId: requestRecord.id,
+        request,
+        actorSession: session!,
+      });
+    } else {
+      await createAccessRequestRejectedNotification({
+        recipientUserId: requestRecord.requester_user_id,
+        album: requestRecord.albums,
+        requestId: requestRecord.id,
+        request,
+        actorSession: session!,
       });
     }
 

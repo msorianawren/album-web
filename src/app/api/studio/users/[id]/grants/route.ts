@@ -3,6 +3,11 @@ import { requireAdmin } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 import { apiError, apiSuccess, toServerError } from "@/lib/errors";
 import { z } from "zod";
+import {
+  createAccessGrantedNotification,
+  createAccessRevokedNotification,
+  fetchAlbumsForNotifications,
+} from "@/lib/notifications";
 
 const grantSchema = z.object({
   scope: z.enum(["all_private", "selected_albums"]),
@@ -50,9 +55,10 @@ export async function POST(
       revokeQuery = revokeQuery.eq("email_normalized", targetEmail);
     }
 
-    await revokeQuery;
+    const { data: revokedRows } = await revokeQuery.select("id, scope, album_id");
 
     // 2. Insert new grants
+    const isEmptySelectedGrant = scope === "selected_albums" && (!albumIds || albumIds.length === 0);
     if (scope === "all_private") {
       const { error } = await supabase.from("album_access_grants").insert({
         user_id: targetUserId,
@@ -75,23 +81,25 @@ export async function POST(
       if (error) throw error;
     }
     if (targetUserId) {
-      if (scope === "selected_albums" && (!albumIds || albumIds.length === 0)) {
-        await supabase.from("notifications").insert({
-          recipient_user_id: targetUserId,
-          type: "access_revoked",
-          title: "Album Access Revoked",
-          body: "Your access to private albums has been revoked.",
-          target_url: "/albums",
+      if (isEmptySelectedGrant) {
+        const revokedAlbumIds = (revokedRows ?? [])
+          .map((row) => row.album_id)
+          .filter(Boolean) as string[];
+        const revokedHadGlobal = (revokedRows ?? []).some((row) => row.scope === "all_private");
+        await createAccessRevokedNotification({
+          recipientUserId: targetUserId,
+          scope: revokedHadGlobal ? "all_private" : "selected_albums",
+          albums: await fetchAlbumsForNotifications(revokedAlbumIds),
+          request,
+          actorSession: session,
         });
       } else {
-        await supabase.from("notifications").insert({
-          recipient_user_id: targetUserId,
-          type: "access_granted",
-          title: "Album Access Granted",
-          body: scope === "all_private" 
-            ? "You have been granted access to all private albums." 
-            : `You have been granted access to ${albumIds?.length} private album(s).`,
-          target_url: "/albums",
+        await createAccessGrantedNotification({
+          recipientUserId: targetUserId,
+          scope,
+          albums: await fetchAlbumsForNotifications(albumIds),
+          request,
+          actorSession: session,
         });
       }
     }
@@ -100,7 +108,7 @@ export async function POST(
     const { logAuditEvent } = await import("@/lib/audit");
     await logAuditEvent({
       request,
-      session: session as any,
+      session,
       action: "album_access_granted",
       targetType: "user",
       targetId: targetUserId || targetEmail || "unknown",

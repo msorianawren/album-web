@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { requireAdmin } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 import { apiError, apiSuccess, toServerError } from "@/lib/errors";
+import { createMessageReplyNotification } from "@/lib/notifications";
 
 export async function POST(
   request: NextRequest,
@@ -57,19 +58,18 @@ export async function POST(
 
     // 4. Send notification if the user is registered and it's not an internal note
     if (!isInternal && message.user_id) {
-      await supabase.from("notifications").insert({
-        recipient_user_id: message.user_id,
-        type: "message_reply",
-        title: "Reply from Oriana Wren",
-        body: `You have a new reply in Contact.`,
-        target_url: `/contact`, // Or specific message URL if you have one
+      await createMessageReplyNotification({
+        recipientUserId: message.user_id,
+        messageId: message.id,
+        request,
+        actorSession: adminCheck,
       });
     }
 
     // Note: We don't send emails here anymore as per the prompt instructions.
     
     return apiSuccess({ success: true });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Reply API Error:", error);
     return toServerError(error);
   }
