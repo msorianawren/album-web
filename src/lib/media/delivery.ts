@@ -62,11 +62,23 @@ export interface DeliveryMedia {
   height?: number | null;
   aspect_ratio?: number | null;
   mime_type?: string | null;
-  processing_status?: "processed" | "failed" | "pending" | null;
+  processing_status?: DeliveryProcessingStatus | null;
   security_status?: "processed" | "needs_review" | "rejected" | null;
   download_allowed?: boolean;
   original_download_allowed?: boolean;
 }
+
+export type DeliveryProcessingStatus =
+  | "uploaded"
+  | "queued"
+  | "processing"
+  | "ready"
+  | "failed"
+  | "quarantined"
+  | "deleting"
+  | "deleted"
+  | "processed"
+  | "pending";
 
 export interface MediaDeliveryContext {
   albumStatus?: AlbumStatus;
@@ -168,9 +180,19 @@ export function createMediaDeliveryTarget(
 
 function processingState(media: DeliveryMedia): MediaProcessingState {
   if (media.security_status === "rejected") return "rejected";
-  if (media.processing_status === "failed") return "failed";
-  if (media.processing_status === "pending") return "pending";
-  return "ready";
+  if (["failed", "quarantined", "deleting", "deleted"].includes(media.processing_status ?? "")) {
+    return "failed";
+  }
+  if (["uploaded", "queued", "processing", "pending"].includes(media.processing_status ?? "")) {
+    return "pending";
+  }
+  return media.processing_status === "ready" || media.processing_status === "processed" || !media.processing_status
+    ? "ready"
+    : "failed";
+}
+
+export function isMediaReadyForDelivery(media: DeliveryMedia) {
+  return processingState(media) === "ready";
 }
 
 function safeDimensions(media: DeliveryMedia) {

@@ -6,6 +6,7 @@ import { getTrustedAdminDatabase } from "@/lib/db/admin";
 import { createAuthenticatedUserClient } from "@/lib/db/user";
 import { apiError, apiSuccess, toServerError } from "@/lib/errors";
 import { uploadMediaFile } from "@/lib/media";
+import { enqueueImageBuffer } from "@/lib/media/processing-jobs";
 import { getAlbum } from "@/lib/albums";
 import { enforceRateLimit } from "@/lib/security-rate-limit";
 import { getSiteSettings } from "@/lib/site-settings";
@@ -55,7 +56,7 @@ export async function POST(request: NextRequest, { params }: ImagesRouteProps) {
 
   try {
     const { id: albumId } = await params;
-    const settings = await getSiteSettings();
+    const settings = await getSiteSettings(client);
     const rate = await enforceRateLimit({
       request,
       session,
@@ -85,17 +86,9 @@ export async function POST(request: NextRequest, { params }: ImagesRouteProps) {
       );
     }
 
-    const { data: existingMedia, error: existingMediaError } = await client
-      .from("media")
-      .select("file_size")
-      .eq("album_id", albumId);
-    if (existingMediaError) {
-      throw classifyDataFailure(existingMediaError, "media.admin_storage_usage");
-    }
-    const currentAlbumBytes = (existingMedia ?? []).reduce(
-      (sum, item) => sum + Number(item.file_size ?? 0),
-      0,
-    );
+    const storage = await client.rpc("get_album_storage_bytes", { target_album_id: albumId });
+    if (storage.error) throw classifyDataFailure(storage.error, "media.admin_storage_usage");
+    const currentAlbumBytes = Number(storage.data ?? 0);
     const incomingBytes = files.reduce((sum, file) => sum + file.size, 0);
     if (currentAlbumBytes + incomingBytes > settings.max_album_storage_mb * 1024 * 1024) {
       return apiError("PAYLOAD_TOO_LARGE", "This upload would exceed the album storage limit.", 413);
@@ -128,15 +121,25 @@ export async function POST(request: NextRequest, { params }: ImagesRouteProps) {
       }
 
       try {
-        media.push(
-          await uploadMediaFile({
+        if (validation.value.mediaType === "image") {
+          const queued = await enqueueImageBuffer({
+            client,
+            albumId,
+            fileName: validation.value.safeName,
+            mimeType: file.type,
+            buffer,
+          });
+          media.push({ id: queued.mediaId, processing_status: queued.status });
+        } else {
+          media.push(await uploadMediaFile({
+            client,
             albumId,
             fileName: validation.value.safeName,
             mimeType: file.type,
             buffer,
             settings,
-          }),
-        );
+          }));
+        }
       } catch (error) {
         failed.push({
           fileName: file.name,

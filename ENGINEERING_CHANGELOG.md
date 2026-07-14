@@ -312,3 +312,15 @@
 - Security impact: Block/revoke now fail closed at query time, unauthorized responses return no media and only a safe cover, and public About/Landing reads use anon RLS. Transitional broad imports decreased from 43 to 37 and remain explicitly inventoried.
 - Performance impact: Album cards use three bounded, batched entitlement queries rather than per-album access queries; public and private preview fetches remain batched.
 - Test performed: lint pass with 0 errors and 11 existing warnings; TypeScript pass; 34/34 tests pass; production build pass; guest runtime private detail is locked with zero media and safe cover. Authenticated no-grant/selected/global/revoked/blocked and cross-user runtime tests remain blocked by unavailable fixtures/browser, so Milestone 3 is not complete.
+
+## 2026-07-15 - Milestone 6 asynchronous image processing
+
+- Milestone: 6 (`IMPLEMENTED_NOT_MIGRATED`)
+- Files: additive queue migration/rollback, upload APIs, Sharp processing core, trusted cron worker, R2 helpers, settings, delivery state gate, operations, tests, and report
+- Reason: Remove CPU-heavy, non-checkpointed Sharp/R2/database work from upload requests and prevent temporary source deletion before durable completion.
+- Behavior before: Image upload requests decoded, transformed, uploaded, inserted, and sometimes deleted their temporary source in one request; completion had no durable reservation, lease, retry, or atomic state transition.
+- Behavior after: Sources upload to private staging, a service-only queue owns the source key, trusted workers claim bounded jobs, validate and generate versioned derivatives, and atomically publish only `ready` rows. Failed validation is quarantined and transient errors retry with backoff.
+- Security impact: Magic bytes and decoded formats must agree, dimensions/pixels are capped, public derivatives contain no metadata, private URL payloads remain same-site, and non-ready rows are denied by RLS and delivery selection.
+- Performance impact: Request latency no longer includes Sharp processing; derivative work is bounded and retryable. Album storage uses an aggregate RPC rather than loading every row.
+- Operational impact: Reprocess and orphan cleanup default to dry-run; no production R2 object was moved or deleted.
+- Test performed: lint pass with 0 errors and 11 existing warnings; typecheck pass; 58/58 tests pass; production build pass with 49 static pages.

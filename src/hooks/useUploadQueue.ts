@@ -223,9 +223,17 @@ export function useUploadQueue(settings: SiteSettings) {
 
       if (queueRef.current.find(q => q.id === item.id)?.status === "cancelled") return;
 
-      const result = completePayload.data.media as StudioMediaItem;
-      updateItem(item.id, { status: "done", progress: 100, message: "Upload and processing complete.", result });
-      if (onCompleteCallback) onCompleteCallback(result);
+      if (completePayload.data.queued) {
+        updateItem(item.id, {
+          status: "done",
+          progress: 100,
+          message: "Upload complete. Image queued for safe processing.",
+        });
+      } else {
+        const result = completePayload.data.media as StudioMediaItem;
+        updateItem(item.id, { status: "done", progress: 100, message: "Upload and processing complete.", result });
+        if (onCompleteCallback) onCompleteCallback(result);
+      }
 
     } catch (err) {
       delete activeXhrs.current[item.id];

@@ -150,6 +150,14 @@ export function normalizeMedia(row: UnknownRow): Media {
       typeof row.processing_status === "string"
         ? (row.processing_status as Media["processing_status"])
         : "processed",
+    content_hash: typeof row.content_hash === "string" ? row.content_hash : null,
+    duplicate_of_media_id:
+      typeof row.duplicate_of_media_id === "string" ? row.duplicate_of_media_id : null,
+    blurhash: typeof row.blurhash === "string" ? row.blurhash : null,
+    large_r2_key: typeof row.large_r2_key === "string" ? row.large_r2_key : null,
+    large_url: resolveAssetUrl(row.large_url),
+    processing_version: toNullableInteger(row.processing_version),
+    processed_at: typeof row.processed_at === "string" ? row.processed_at : null,
     public_r2_key: typeof row.public_r2_key === "string" ? row.public_r2_key : null,
     original_private_r2_key:
       typeof row.original_private_r2_key === "string" ? row.original_private_r2_key : null,
@@ -586,6 +594,7 @@ export async function getAlbum(
       .select(mediaSelect)
       .eq("album_id", album.id)
       .is("deleted_at", null)
+      .in("processing_status", ["ready", "processed"])
       .order("sort_order", { ascending: true })
       .order("created_at", { ascending: true })
       .limit(250);

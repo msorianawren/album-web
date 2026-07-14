@@ -127,4 +127,21 @@
 - [x] Create `MEDIA_DELIVERY_MODEL_REPORT.md`.
 - [x] Milestone 5 status: COMPLETE - IMPLEMENTED AND LOCALLY VERIFIED.
 
+## Milestone 6 - Asynchronous Image Processing
+
+- [x] Replace synchronous Sharp image upload paths with private staging and durable jobs.
+- [x] Verify magic bytes and decoded format; cap dimensions and total pixels.
+- [x] Normalize EXIF orientation and publish metadata-free derivatives.
+- [x] Preserve only the safe capture date when explicitly configured.
+- [x] Generate thumbnail, medium, and large WebP plus optional AVIF derivatives.
+- [x] Generate BlurHash placeholders, SHA-256 content hashes, and duplicate references.
+- [x] Implement uploaded/queued/processing/ready/failed/quarantined/deleting/deleted states.
+- [x] Add lease recovery, deterministic keys, retry backoff, and atomic completion.
+- [x] Prevent non-ready rows from public/private RLS and delivery selection.
+- [x] Add dry-run-first reprocess and non-destructive orphan-cleanup commands.
+- [x] Add an additive migration and database-only rollback; no production R2 mutation was run.
+- [v] Verify processor and architecture tests locally.
+- [~] Apply migration and run a bounded end-to-end worker smoke after Milestone 4 prerequisites are complete.
+- [~] Milestone 6 status: IN_PROGRESS - IMPLEMENTED_NOT_MIGRATED.
+
 Legend: `[ ]` not started, `[~]` in progress, `[x]` implemented, `[v]` verified, `[c]` committed, `[b]` blocked.

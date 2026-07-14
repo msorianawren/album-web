@@ -2,6 +2,7 @@ import "server-only";
 import {
   DeleteObjectsCommand,
   GetObjectCommand,
+  HeadObjectCommand,
   PutObjectCommand,
   S3Client,
 } from "@aws-sdk/client-s3";
@@ -61,16 +62,18 @@ export async function putR2Object({
   body,
   contentType,
   cacheControl,
+  bucketRole = "public",
 }: {
   key: string;
   body: Buffer;
   contentType: string;
   cacheControl: string;
+  bucketRole?: R2BucketRole;
 }) {
   await withStorageFailure("r2.put_object", () =>
     r2.send(
       new PutObjectCommand({
-        Bucket: getR2Bucket(),
+        Bucket: getR2BucketForRole(bucketRole),
         Key: key,
         Body: body,
         ContentType: contentType,
@@ -79,7 +82,7 @@ export async function putR2Object({
     ),
   );
 
-  return getPublicUrl(key);
+  return bucketRole === "public" ? getPublicUrl(key) : key;
 }
 
 export async function deleteR2Objects(keys: Array<string | null | undefined>) {
@@ -106,19 +109,40 @@ export async function getPresignedPutUrl({
   key,
   contentType,
   expiresIn = 300,
+  bucketRole = "public",
 }: {
   key: string;
   contentType: string;
   expiresIn?: number;
+  bucketRole?: R2BucketRole;
 }) {
   return withStorageFailure("r2.presign_put", () => {
     const command = new PutObjectCommand({
-      Bucket: getR2Bucket(),
+      Bucket: getR2BucketForRole(bucketRole),
       Key: key,
       ContentType: contentType,
     });
     return getSignedUrl(r2, command, { expiresIn });
   });
+}
+
+export async function headR2Object(
+  key: string,
+  bucketRole: R2BucketRole = "public",
+) {
+  const response = await withStorageFailure("r2.head_object", () =>
+    r2.send(
+      new HeadObjectCommand({
+        Bucket: getR2BucketForRole(bucketRole),
+        Key: key,
+      }),
+    ),
+  );
+  return {
+    contentLength: response.ContentLength ?? null,
+    contentType: response.ContentType ?? null,
+    etag: response.ETag ?? null,
+  };
 }
 
 export async function getR2Object(

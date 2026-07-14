@@ -42,6 +42,9 @@ export const defaultSiteSettings: SiteSettings = {
   max_upload_files_per_batch: 20,
   max_album_storage_mb: 5000,
   max_image_pixels: 36_000_000,
+  max_image_dimension: 20_000,
+  preserve_image_capture_date: false,
+  generate_avif_derivatives: false,
   max_video_duration_seconds: 600,
   max_video_resolution_pixels: 8_294_400,
   auto_set_first_image_as_cover: true,
@@ -148,6 +151,9 @@ export const siteSettingsSchema = z.object({
   max_upload_files_per_batch: z.number().int().min(1).max(100),
   max_album_storage_mb: z.number().int().min(100).max(100000),
   max_image_pixels: z.number().int().min(1_000_000).max(100_000_000),
+  max_image_dimension: z.number().int().min(1024).max(50_000),
+  preserve_image_capture_date: z.boolean(),
+  generate_avif_derivatives: z.boolean(),
   max_video_duration_seconds: z.number().int().min(1).max(24 * 60 * 60),
   max_video_resolution_pixels: z.number().int().min(1_000_000).max(100_000_000),
   auto_set_first_image_as_cover: z.boolean(),
@@ -213,8 +219,8 @@ export function normalizeSiteSettings(value: Partial<SiteSettings> | null | unde
   };
 }
 
-export async function getSiteSettings() {
-  const { data, error } = await supabase
+export async function getSiteSettings(client: SupabaseClient = supabase) {
+  const { data, error } = await client
     .from("site_settings")
     .select("*")
     .eq("id", "default")

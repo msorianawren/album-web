@@ -9,10 +9,11 @@ Upgrade album-web into a production-grade, privacy-sensitive digital asset manag
 - Status: IN_PROGRESS
 - Branch: `engineering/production-platform-overhaul`
 - Baseline commit: `f82cb5eb0e78f9ea4b5aa9c34d6a20a69cfead2d`
-- Current milestone: 4 - True private-media architecture
+- Current milestone: 6 - Asynchronous image processing (`IMPLEMENTED_NOT_MIGRATED`); Milestone 4 remains in progress
 - Completed milestone: 3 - implemented and locally verified; 34/34 tests passed and the feature branch was pushed without deploying production
 - Current subtask: Resolve migration-history drift and private-bucket provisioning before manifest backfill/object copy.
 - Independent Milestone 5 is complete and locally verified. `src/lib/media/delivery.ts` is now the only media URL-selection policy for application surfaces; see `MEDIA_DELIVERY_MODEL_REPORT.md`.
+- Milestone 6 replaces every active synchronous image upload path with private staging and a durable trusted-worker queue. See `ASYNC_IMAGE_PROCESSING_REPORT.md`.
 - Live role-matrix fixture checks are tracked in `PRE_MERGE_AUTHORIZATION_VERIFICATION.md` and must pass before merge, but do not block Milestone 4 development.
 
 ## Important Constraints
@@ -39,6 +40,7 @@ Upgrade album-web into a production-grade, privacy-sensitive digital asset manag
 - Local inventory found 13 private albums, 366 media rows, and 1,830 valid source variants; all 1,830 are still publicly reachable. No object was copied, moved, or deleted.
 - Supabase CLI is linked to the same project as the configured environment, but remote migration history records only the first five files. A normal push would replay 27 older migrations and must not be used until history is reconciled.
 - Media card/viewer/download selection is centralized. UI fallback cycles through trusted candidates without showing native broken-image states, and public download fetches reject HTML/JSON responses masquerading as media.
+- Image jobs use deterministic versioned derivative keys, private staging, state-gated RLS, atomic completion, bounded claims, lease recovery, and retry backoff. Cleanup tooling does not delete R2 objects.
 
 ## Rejected Approaches
 
@@ -83,8 +85,8 @@ Then read `AGENTS.md`, `ENGINEERING_PROGRAM_STATE.md`, this file, `CURRENT_MILES
 
 ## Next Five Actions
 
-1. Reconcile remote migration history without replaying old migrations, then apply `202607142330` only.
-2. Configure a non-public private R2 bucket without editing tracked environment files.
-3. Run `private-media:backfill-manifest -- --apply`, followed by R2 copy dry-run and bounded copy.
-4. Verify every destination and block old public delivery before activation; do not delete legacy sources yet.
-5. Complete the production role matrix and rollback rehearsal before marking Milestone 4 complete.
+1. Preserve Milestone 4 as `IMPLEMENTED_NOT_MIGRATED` and complete its private-bucket/manifest prerequisites.
+2. Apply `202607150000_async_image_processing.sql` only after migration history is reconciled.
+3. Schedule the trusted `/api/cron/process-media` worker with a bounded batch.
+4. Smoke one public and one private image through ready, retry, quarantine, and delivery paths.
+5. Complete the pre-merge authorization verification before merging the feature branch.

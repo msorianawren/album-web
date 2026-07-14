@@ -1,24 +1,25 @@
 import { NextRequest } from "next/server";
-import { requireAdmin } from "@/lib/auth";
+import { getTrustedAdminDatabase } from "@/lib/db/admin";
 import { logAuditEvent } from "@/lib/audit";
 import { apiError, apiSuccess, toServerError } from "@/lib/errors";
 import { uploadMediaFile } from "@/lib/media";
+import { enqueueImageBuffer } from "@/lib/media/processing-jobs";
 import { enforceRateLimit } from "@/lib/security-rate-limit";
 import { getSiteSettings } from "@/lib/site-settings";
-import { supabase } from "@/lib/supabase";
 import { validateUploadFile } from "@/lib/upload-validation";
 
 export const runtime = "nodejs";
 
 export async function POST(request: NextRequest) {
-  const session = await requireAdmin(request);
-  if (!session) {
+  const database = await getTrustedAdminDatabase(request);
+  if (!database) {
     return apiError("FORBIDDEN", "Only the admin can upload media.", 403);
   }
+  const { session, client } = database;
 
   try {
     const formData = await request.formData();
-    const settings = await getSiteSettings();
+    const settings = await getSiteSettings(client);
     const rate = await enforceRateLimit({
       request,
       session,
@@ -50,14 +51,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { data: existingMedia } = await supabase
-      .from("media")
-      .select("file_size")
-      .eq("album_id", albumId);
-    const currentAlbumBytes = (existingMedia ?? []).reduce(
-      (sum, item) => sum + Number(item.file_size ?? 0),
-      0,
-    );
+    const storage = await client.rpc("get_album_storage_bytes", { target_album_id: albumId });
+    if (storage.error) throw storage.error;
+    const currentAlbumBytes = Number(storage.data ?? 0);
     const incomingBytes = files.reduce((sum, file) => sum + file.size, 0);
 
     // DEPRECATED: This proxy upload route is capped at 4MB to prevent Vercel request body limits.
@@ -103,15 +99,25 @@ export async function POST(request: NextRequest) {
       }
 
       try {
-        uploaded.push(
-          await uploadMediaFile({
+        if (validation.value.mediaType === "image") {
+          const queued = await enqueueImageBuffer({
+            client,
+            albumId,
+            fileName: validation.value.safeName,
+            mimeType: file.type,
+            buffer,
+          });
+          uploaded.push({ id: queued.mediaId, processing_status: queued.status });
+        } else {
+          uploaded.push(await uploadMediaFile({
+            client,
             albumId,
             fileName: validation.value.safeName,
             mimeType: file.type,
             buffer,
             settings,
-          }),
-        );
+          }));
+        }
       } catch (error) {
         failed.push({
           fileName: file.name,

@@ -100,7 +100,24 @@ export interface Media {
   like_count?: number;
   comment_count?: number;
   metadata_status?: "extracted" | "fallback" | "unavailable" | "failed";
-  processing_status?: "processed" | "failed" | "pending";
+  processing_status?:
+    | "uploaded"
+    | "queued"
+    | "processing"
+    | "ready"
+    | "failed"
+    | "quarantined"
+    | "deleting"
+    | "deleted"
+    | "processed"
+    | "pending";
+  content_hash?: string | null;
+  duplicate_of_media_id?: string | null;
+  blurhash?: string | null;
+  large_r2_key?: string | null;
+  large_url?: string | null;
+  processing_version?: number;
+  processed_at?: string | null;
   public_r2_key?: string | null;
   original_private_r2_key?: string | null;
   security_status?: "processed" | "needs_review" | "rejected";
@@ -323,6 +340,9 @@ export interface SiteSettings {
   max_upload_files_per_batch: number;
   max_album_storage_mb: number;
   max_image_pixels: number;
+  max_image_dimension: number;
+  preserve_image_capture_date: boolean;
+  generate_avif_derivatives: boolean;
   max_video_duration_seconds: number;
   max_video_resolution_pixels: number;
   auto_set_first_image_as_cover: boolean;

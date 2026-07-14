@@ -78,10 +78,16 @@ test("authorized private delivery supports same-site gateway URLs without optimi
   assert.equal(delivery.downloadHref, `/api/media/${privateMedia.id}/download`);
 });
 
-test("pending, failed, and rejected media never select live card or viewer sources", () => {
+test("unfinished, failed, deleted, and rejected media never select live sources", () => {
   for (const media of [
     { ...baseMedia, processing_status: "pending" },
+    { ...baseMedia, processing_status: "uploaded" },
+    { ...baseMedia, processing_status: "queued" },
+    { ...baseMedia, processing_status: "processing" },
     { ...baseMedia, processing_status: "failed" },
+    { ...baseMedia, processing_status: "quarantined" },
+    { ...baseMedia, processing_status: "deleting" },
+    { ...baseMedia, processing_status: "deleted" },
     { ...baseMedia, security_status: "rejected" },
   ]) {
     const delivery = getMediaDeliveryDescriptor(media, { albumStatus: "public" });

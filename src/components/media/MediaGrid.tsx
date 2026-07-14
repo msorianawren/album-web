@@ -13,6 +13,7 @@ import {
   type MediaSortMode,
 } from "@/lib/media-sort";
 import type { AlbumStatus, Media } from "@/lib/types";
+import { isMediaReadyForDelivery } from "@/lib/media/delivery";
 
 const MediaViewer = dynamic(
   () => import("@/components/media/MediaViewer").then((mod) => mod.MediaViewer),
@@ -58,10 +59,7 @@ export function MediaGrid({
   const viewableMedia = useMemo(
     () =>
       sortedMedia.filter(
-        (item) =>
-          item.processing_status !== "pending" &&
-          item.processing_status !== "failed" &&
-          item.security_status !== "rejected",
+        (item) => isMediaReadyForDelivery(item),
       ),
     [sortedMedia],
   );
