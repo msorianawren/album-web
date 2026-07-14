@@ -23,7 +23,15 @@
 
 - No LLM, no external AI API, no realtime, and no model download.
 - Does not approve access, grant access, revoke access, block users, upload media, download private media, or send Contact messages automatically.
-- Does not store full chat history.
+- Does not store full chat history in browser storage. Confirmed human handoffs are stored securely in the database.
+
+## Human Handoff
+
+- Low-confidence and eligible Companion answers can offer an explicit handoff to Oriana Wren.
+- The visitor must confirm before a message is sent.
+- New conversations use the unified `help_threads` and `help_messages` model shared by Contact, Companion, and Studio.
+- Admin replies are always public as `Oriana Wren`; personal admin identity is not returned to users.
+- The assistant cannot approve, reject, grant, revoke, block, or otherwise make administrative decisions.
 
 ## Warning Count
 

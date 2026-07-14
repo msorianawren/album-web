@@ -5,7 +5,6 @@ import { createPortal } from "react-dom";
 import { Bell, HelpCircle, Lock, MessageSquare, ShieldCheck, X } from "lucide-react";
 import { AssistantPet } from "@/components/assistant/AssistantPet";
 import {
-  ASSISTANT_HANDOFF_STORAGE_KEY,
   ASSISTANT_PANEL_STORAGE_KEY,
   answerAssistantQuestion,
   sanitizeAssistantQuestion,
@@ -21,6 +20,7 @@ import { assistantModeCopy, type AssistantPreferences } from "@/lib/assistant/pr
 import { AssistantMessageList, type AssistantMessage } from "@/components/assistant/AssistantMessageList";
 import { AssistantQuickActions } from "@/components/assistant/AssistantQuickActions";
 import { AssistantSearchBox } from "@/components/assistant/AssistantSearchBox";
+import { HelpThreadConversation } from "@/components/help/HelpThreadConversation";
 import { cn } from "@/lib/utils";
 import type { PublicSession } from "@/lib/types";
 
@@ -69,6 +69,8 @@ export function AssistantPanel({
   const [messages, setMessages] = useState<AssistantMessage[]>([]);
   const [notificationCount, setNotificationCount] = useState<number | null>(null);
   const [handoffMessage, setHandoffMessage] = useState<AssistantMessage | null>(null);
+  const [helpThreadId, setHelpThreadId] = useState<string | null>(null);
+  const [handoffError, setHandoffError] = useState("");
   const locale: AssistantLocale = readSelectedAssistantLocale();
   const panelRef = useRef<HTMLElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
@@ -144,26 +146,31 @@ export function AssistantPanel({
     answer(action.question);
   }
 
-  function confirmHandoff(message: AssistantMessage) {
+  async function confirmHandoff(message: AssistantMessage) {
     const userQuestion = messages
       .slice(0, messages.findIndex((item) => item.id === message.id))
       .reverse()
       .find((item) => item.role === "user")?.body;
     const safeQuestion = sanitizeAssistantQuestion(userQuestion ?? message.body);
 
-    try {
-      window.sessionStorage.setItem(
-        ASSISTANT_HANDOFF_STORAGE_KEY,
-        JSON.stringify({
-          subject: "Assistant handoff",
-          message: `Question: ${safeQuestion}\n\nAssistant category: ${message.answer?.intent ?? "unknown"}`,
-        }),
-      );
-    } catch {
-      // The Contact page still works without a draft.
+    if (!session.userId) {
+      window.location.href = `/login?next=${encodeURIComponent(currentPath || "/contact")}`;
+      return;
     }
-
-    window.location.href = "/contact";
+    setHandoffError("");
+    try {
+      const response = await fetch("/api/help/threads", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ source: "assistant", subject: "Assistant handoff", body: safeQuestion, assistantIntent: message.answer?.intent ?? "unknown" }),
+      });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.message || "Could not start a conversation.");
+      setHandoffMessage(null);
+      setHelpThreadId(payload.thread.id);
+    } catch (error) {
+      setHandoffError(error instanceof Error ? error.message : "Could not start a conversation.");
+    }
   }
 
   const portalTarget = typeof document === "undefined" ? null : document.body;
@@ -194,6 +201,7 @@ export function AssistantPanel({
         )}
       >
         <div className="flex min-h-0 flex-1 flex-col">
+          {helpThreadId ? <HelpThreadConversation threadId={helpThreadId} onBack={() => setHelpThreadId(null)} /> : <>
           <header className="border-b border-border bg-background/55 p-4">
             <div className="flex items-start justify-between gap-4">
               <div className="flex min-w-0 items-center gap-3">
@@ -276,6 +284,7 @@ export function AssistantPanel({
               <p className="text-xs leading-relaxed text-text-secondary">
                 {copy.handoffPrompt}
               </p>
+              {handoffError ? <p className="mt-2 text-xs text-red-600">{handoffError}</p> : null}
               <div className="mt-3 flex gap-2">
                 <button
                   type="button"
@@ -306,6 +315,7 @@ export function AssistantPanel({
               {copy.privacyNote}
             </p>
           </footer>
+          </>}
         </div>
       </section>
     </div>,

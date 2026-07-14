@@ -14,6 +14,7 @@ export const notificationTypes = [
   "account_unblocked",
   "admin_new_request",
   "admin_new_message",
+  "help_thread_updated",
 ] as const;
 
 export type NotificationType = (typeof notificationTypes)[number];

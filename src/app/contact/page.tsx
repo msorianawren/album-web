@@ -8,6 +8,7 @@ import { CopyEmailButton } from "@/components/contact/CopyEmailButton";
 import { getPublicSession } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 import { UserConversationList } from "@/components/contact/UserConversationList";
+import { HelpInbox } from "@/components/help/HelpInbox";
 
 interface ContactThreadRow {
   id: string;
@@ -141,6 +142,7 @@ export default async function ContactPage() {
                   maxName={settings.contact_max_name_length}
                   initialEmail={session?.email || ""}
                   initialName={session?.displayName || ""}
+                  useUnifiedInbox={Boolean(session?.userId)}
                 />
               ) : (
                 <div className="h-full w-full rounded-2xl border border-dashed border-border flex flex-col items-center justify-center text-text-secondary p-8 text-center min-h-[300px]">
@@ -156,6 +158,7 @@ export default async function ContactPage() {
         {session?.userId && userMessages.length > 0 && (
           <UserConversationList initialThreads={userMessages} />
         )}
+        {session?.userId ? <HelpInbox /> : null}
       </section>
     </main>
   );

@@ -16,6 +16,7 @@ interface ContactFormProps {
   maxName?: number;
   initialEmail?: string;
   initialName?: string;
+  useUnifiedInbox?: boolean;
 }
 
 export function ContactForm({
@@ -27,6 +28,7 @@ export function ContactForm({
   maxName = 100,
   initialEmail = "",
   initialName = "",
+  useUnifiedInbox = false,
 }: ContactFormProps) {
   const [formData, setFormData] = useState({
     name: initialName,
@@ -100,10 +102,14 @@ export function ContactForm({
         submit_start_time: submitStartTime
       };
 
-      const res = await fetch("/api/contact", {
+      const res = await fetch(useUnifiedInbox ? "/api/help/threads" : "/api/contact", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payloadData),
+        body: JSON.stringify(useUnifiedInbox ? {
+          source: "contact",
+          subject: formData.subject,
+          body: formData.message,
+        } : payloadData),
       });
 
       const payload = await res.json();
