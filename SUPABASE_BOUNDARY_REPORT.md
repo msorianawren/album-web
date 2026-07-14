@@ -60,7 +60,7 @@ The private RLS and help RPC migrations are **not applied locally or remotely**.
 
 ## Remaining Legacy Surface
 
-There are 44 tracked source files still importing `@/lib/supabase`. They are intentionally not hidden by re-exporting the new trusted client under the old name.
+There are 43 tracked source files still importing `@/lib/supabase`. They are intentionally not hidden by re-exporting the new trusted client under the old name.
 
 | Class | Representative modules | Required next boundary |
 |---|---|---|

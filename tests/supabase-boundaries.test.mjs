@@ -74,6 +74,20 @@ test("founder audit and user block routes construct trusted clients only after g
   assert.equal(userRoute.includes("Boolean(body.is_blocked)"), false);
 });
 
+test("role management requires an explicit client and Founder routes pass guarded clients", () => {
+  const repository = read("src/lib/role-management.ts");
+  const listRoute = read("src/app/api/admin/users/route.ts");
+  const grantRoute = read("src/app/api/admin/users/[id]/grant-admin/route.ts");
+  const revokeRoute = read("src/app/api/admin/users/[id]/revoke-admin/route.ts");
+  assert.equal(repository.includes("@/lib/supabase"), false);
+  assert.match(repository, /listAdminUsers\(client: SupabaseClient/);
+  assert.match(repository, /getAdminProfile\(client: SupabaseClient/);
+  for (const source of [listRoute, grantRoute, revokeRoute]) {
+    assert.equal(source.includes("getTrustedFounderDatabase(request)"), true);
+    assert.equal(source.includes("database.client"), true);
+  }
+});
+
 test("cron routes require a trusted worker database and do not import the broad client", () => {
   for (const path of [
     "src/app/api/cron/prune-logs/route.ts",

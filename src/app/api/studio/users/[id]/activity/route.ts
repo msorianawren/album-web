@@ -15,7 +15,7 @@ export async function GET(request: NextRequest, { params }: ActivityParams) {
     await requireAdminUser(request);
     const { id: userId } = await params;
 
-    const userProfile = await getAdminProfile(userId);
+    const userProfile = await getAdminProfile(supabase, userId);
     if (!userProfile) return apiError("NOT_FOUND", "User not found", 404);
 
     // Get all activity for the user

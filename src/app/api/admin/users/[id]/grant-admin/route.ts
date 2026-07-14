@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { getPublicSession } from "@/lib/auth";
+import { getTrustedFounderDatabase } from "@/lib/db/admin";
 import { apiError, apiSuccess, toServerError } from "@/lib/errors";
 import { grantAdminRole, logUnauthorizedRoleAttempt } from "@/lib/role-management";
 import { enforceRateLimit } from "@/lib/security-rate-limit";
@@ -36,6 +37,11 @@ export async function POST(request: NextRequest, { params }: AdminGrantRouteProp
     return apiError("INVALID_INPUT", "Invalid user ID.", 400);
   }
 
+  const database = await getTrustedFounderDatabase(request);
+  if (!database) {
+    return apiError("FORBIDDEN", "Only the Founder can grant admin rights.", 403);
+  }
+
   const rateLimit = await enforceRateLimit({
     request,
     session,
@@ -53,7 +59,7 @@ export async function POST(request: NextRequest, { params }: AdminGrantRouteProp
       typeof body.reason === "string" && body.reason.trim()
         ? body.reason.trim()
         : undefined;
-    const result = await grantAdminRole({ request, session, targetId: id, reason });
+    const result = await grantAdminRole({ client: database.client, request, session, targetId: id, reason });
 
     if (!result.ok) {
       return roleErrorResponse(result);

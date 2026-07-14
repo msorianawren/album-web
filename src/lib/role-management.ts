@@ -1,7 +1,7 @@
 import "server-only";
 import type { NextRequest } from "next/server";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { logAuditEvent } from "@/lib/audit";
-import { supabase } from "@/lib/supabase";
 import type { AuditLog, PublicSession, UserProfile, UserRole } from "@/lib/types";
 
 export type AdminUserProfile = UserProfile & {
@@ -31,11 +31,11 @@ function isUuid(value: string) {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
 }
 
-export async function listAdminUsers(search = "", page = 1, limit = 30, filter = "all"): Promise<{ users: AdminUserProfile[], count: number }> {
+export async function listAdminUsers(client: SupabaseClient, search = "", page = 1, limit = 30, filter = "all"): Promise<{ users: AdminUserProfile[], count: number }> {
   const term = search.trim();
   const offset = (page - 1) * limit;
 
-  let query = supabase
+  let query = client
     .from("user_profiles")
     .select("*", { count: "exact" })
     .order("last_seen_at", { ascending: false })
@@ -65,8 +65,8 @@ export async function listAdminUsers(search = "", page = 1, limit = 30, filter =
   };
 }
 
-export async function getAdminProfile(userId: string) {
-  const { data, error } = await supabase
+export async function getAdminProfile(client: SupabaseClient, userId: string) {
+  const { data, error } = await client
     .from("user_profiles")
     .select("*")
     .eq("user_id", userId)
@@ -76,8 +76,8 @@ export async function getAdminProfile(userId: string) {
   return data ? normalizeAdminProfile(data as UserProfile) : null;
 }
 
-export async function getRoleAuditLogs(limit = 80): Promise<AuditLog[]> {
-  const { data, error } = await supabase
+export async function getRoleAuditLogs(client: SupabaseClient, limit = 80): Promise<AuditLog[]> {
+  const { data, error } = await client
     .from("audit_logs")
     .select("*")
     .in("action", [
@@ -154,17 +154,19 @@ export async function logUnauthorizedRoleAttempt({
 }
 
 export async function grantAdminRole({
+  client,
   request,
   session,
   targetId,
   reason,
 }: {
+  client: SupabaseClient;
   request: NextRequest;
   session: PublicSession;
   targetId: string;
   reason?: string;
 }) {
-  const target = await getAdminProfile(targetId);
+  const target = await getAdminProfile(client, targetId);
   if (!target) {
     await writeRoleAudit({
       request,
@@ -198,7 +200,7 @@ export async function grantAdminRole({
   }
 
   const now = new Date().toISOString();
-  const { data, error } = await supabase
+  const { data, error } = await client
     .from("user_profiles")
     .update({
       role: "admin",
@@ -242,17 +244,19 @@ export async function grantAdminRole({
 }
 
 export async function revokeAdminRole({
+  client,
   request,
   session,
   targetId,
   reason,
 }: {
+  client: SupabaseClient;
   request: NextRequest;
   session: PublicSession;
   targetId: string;
   reason?: string;
 }) {
-  const target = await getAdminProfile(targetId);
+  const target = await getAdminProfile(client, targetId);
   if (!target) {
     await writeRoleAudit({
       request,
@@ -286,7 +290,7 @@ export async function revokeAdminRole({
   }
 
   const now = new Date().toISOString();
-  const { data, error } = await supabase
+  const { data, error } = await client
     .from("user_profiles")
     .update({
       role: "user",

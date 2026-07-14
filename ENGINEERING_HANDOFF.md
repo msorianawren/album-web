@@ -10,8 +10,8 @@ Upgrade album-web into a production-grade, privacy-sensitive digital asset manag
 - Branch: `engineering/production-platform-overhaul`
 - Baseline commit: `f82cb5eb0e78f9ea4b5aa9c34d6a20a69cfead2d`
 - Current milestone: 3 - Supabase client and authorization boundaries
-- Completed checkpoint: `a79cec9 refactor(comments): enforce public and admin boundaries`
-- Current subtask: Commit Founder audit-log reads and admin user block/unblock queries through guarded trusted clients.
+- Completed checkpoint: `fc34389 refactor(admin): guard audit and user management queries`
+- Current subtask: Commit the role-management repository and Founder role routes with explicit guarded clients.
 - Public album rows and public/updating media now use the anon client; authenticated private access and admin/worker route migrations remain.
 
 ## Important Constraints
@@ -78,8 +78,8 @@ Then read `AGENTS.md`, `ENGINEERING_PROGRAM_STATE.md`, this file, `CURRENT_MILES
 
 ## Next Five Actions
 
-1. Commit the verified audit-log and user block/unblock route boundary.
-2. Make role-management functions accept an already-guarded founder client and migrate Founder list/grant/revoke routes.
+1. Commit the verified Founder role-management boundary.
+2. Migrate Studio user activity and access-management route families to guarded clients.
 3. Design narrow user-write RPCs for preferences/comments/likes only where current RLS cannot preserve behavior.
 4. Apply and role-test pending RLS/RPC migrations when external access is available.
 5. Only then switch private album and help write paths to JWT clients.

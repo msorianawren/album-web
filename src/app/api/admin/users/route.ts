@@ -1,11 +1,11 @@
 import { NextRequest } from "next/server";
-import { requireFounder } from "@/lib/auth";
+import { getTrustedFounderDatabase } from "@/lib/db/admin";
 import { apiError, apiSuccess, toServerError } from "@/lib/errors";
 import { listAdminUsers, getRoleAuditLogs } from "@/lib/role-management";
 
 export async function GET(request: NextRequest) {
-  const session = await requireFounder(request);
-  if (!session) {
+  const database = await getTrustedFounderDatabase(request);
+  if (!database) {
     return apiError("FORBIDDEN", "Only the Founder can view role management users.", 403);
   }
 
@@ -16,8 +16,8 @@ export async function GET(request: NextRequest) {
     const filter = request.nextUrl.searchParams.get("filter") ?? "all";
     
     const [{ users, count }, roleLogs] = await Promise.all([
-      listAdminUsers(search, page, limit, filter),
-      getRoleAuditLogs(80),
+      listAdminUsers(database.client, search, page, Math.min(100, Math.max(1, limit)), filter),
+      getRoleAuditLogs(database.client, 80),
     ]);
     return apiSuccess({ users, count, roleLogs });
   } catch (error) {

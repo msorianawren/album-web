@@ -242,3 +242,19 @@
 - Security impact: Reduces direct broad-client surface, protects Founder status with the trusted row, prevents malformed block-state coercion, and keeps sensitive responses out of public caches.
 - Performance impact: Audit requests are capped at 100 rows; user update query count remains bounded.
 - Test performed: 29 unit/static tests, lint with no errors and 14 unchanged warnings, TypeScript pass, production build pass, and guest audit/user mutation requests denied with `401` by the proxy.
+
+## 2026-07-14 - Milestone 3 audit/user route checkpoint
+
+- Commit: `fc34389 refactor(admin): guard audit and user management queries`
+- Result: COMPLETE - sensitive route queries use guarded clients and strict input handling.
+
+## 2026-07-14 22:05:00 +07:00 - Milestone 3 Founder role-management boundary
+
+- Milestone: 3
+- Files: role-management repository, Founder user list/grant/revoke routes, transitional Studio call sites, boundary tests, state files
+- Reason: Remove the repository's implicit broad client and make every caller declare its database trust source.
+- Behavior before: Role-management functions silently used the module-wide service client regardless of caller guard context.
+- Behavior after: All role queries and mutations require an explicit client; Founder API routes pass guarded clients, while legacy Studio callers are visibly transitional at their call sites.
+- Security impact: Removes one broad-client import and makes accidental unguarded role-management use a compile-time error.
+- Performance impact: Query shapes are unchanged; Founder grant/revoke currently revalidate the trusted context before mutation.
+- Test performed: 30 unit/static tests, lint with no errors and 14 unchanged warnings, TypeScript pass, and production build pass.
