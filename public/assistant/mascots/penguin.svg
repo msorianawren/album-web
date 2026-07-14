@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Penguin mascot">
+  <rect width="128" height="128" rx="36" fill="#eef3f3"/>
+  <ellipse cx="64" cy="70" rx="39" ry="47" fill="#3c3b3a"/>
+  <ellipse cx="64" cy="77" rx="28" ry="34" fill="#fff8ee"/>
+  <path d="M54 62h20l-10 9Z" fill="#d8a14f"/>
+  <circle cx="51" cy="55" r="5" fill="#fff8ee"/>
+  <circle cx="77" cy="55" r="5" fill="#fff8ee"/>
+  <circle cx="52" cy="55" r="2" fill="#2b2928"/>
+  <circle cx="78" cy="55" r="2" fill="#2b2928"/>
+  <path d="M37 81c-14 3-23-4-22-16 12 0 21 5 28 15" fill="#3c3b3a"/>
+  <path d="M91 81c14 3 23-4 22-16-12 0-21 5-28 15" fill="#3c3b3a"/>
+  <path d="M45 108h38" stroke="#d8a14f" stroke-width="7" stroke-linecap="round"/>
+  <circle cx="43" cy="70" r="5" fill="#d99d93"/>
+  <circle cx="85" cy="70" r="5" fill="#d99d93"/>
+</svg>

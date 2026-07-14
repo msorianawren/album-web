@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Parrot mascot">
+  <rect width="128" height="128" rx="34" fill="#f5eadf"/>
+  <path d="M39 72c0-24 17-42 39-42 15 0 26 10 26 24 0 25-20 51-47 51-12 0-18-12-18-33Z" fill="#6aa08f"/>
+  <path d="M57 30c5-11 16-15 27-9-7 4-12 9-14 17" fill="#c9a45d"/>
+  <path d="M88 55c12 1 19 6 24 14-11 2-20 0-28-8" fill="#d99d93"/>
+  <path d="M58 75c-10 12-20 16-32 14 6-12 15-20 29-24" fill="#4f7f86"/>
+  <circle cx="75" cy="51" r="5" fill="#25322e"/>
+  <circle cx="77" cy="49" r="2" fill="#fffaf2"/>
+  <path d="M88 58c7 3 12 7 14 13-7 0-13-2-19-7" fill="#d6ad73"/>
+  <path d="M53 102c11 8 33 8 45 0" fill="none" stroke="#bf8b5e" stroke-width="7" stroke-linecap="round"/>
+</svg>

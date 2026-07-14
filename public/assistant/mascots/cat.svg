@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Cat mascot">
+  <rect width="128" height="128" rx="34" fill="#f5eadf"/>
+  <path d="M32 47l8-25 19 19" fill="#8b6a55"/>
+  <path d="M96 47l-8-25-19 19" fill="#8b6a55"/>
+  <circle cx="64" cy="70" r="41" fill="#96705a"/>
+  <path d="M38 48l4-12 9 10" fill="#d8b49a"/>
+  <path d="M90 48l-4-12-9 10" fill="#d8b49a"/>
+  <circle cx="50" cy="65" r="5" fill="#211b18"/>
+  <circle cx="78" cy="65" r="5" fill="#211b18"/>
+  <ellipse cx="64" cy="76" rx="6" ry="5" fill="#3b2d25"/>
+  <path d="M53 84c5 6 17 6 22 0" fill="none" stroke="#3b2d25" stroke-width="4" stroke-linecap="round"/>
+  <path d="M33 74h17M32 82h17M78 74h17M79 82h17" stroke="#5b4439" stroke-width="3" stroke-linecap="round"/>
+  <circle cx="42" cy="77" r="5" fill="#d99d93"/>
+  <circle cx="86" cy="77" r="5" fill="#d99d93"/>
+</svg>

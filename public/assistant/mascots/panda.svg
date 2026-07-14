@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Panda mascot">
+  <rect width="128" height="128" rx="36" fill="#f6efe5"/>
+  <circle cx="38" cy="34" r="18" fill="#3d3028"/>
+  <circle cx="90" cy="34" r="18" fill="#3d3028"/>
+  <circle cx="64" cy="68" r="42" fill="#fff9f0"/>
+  <ellipse cx="48" cy="62" rx="13" ry="16" fill="#3d3028"/>
+  <ellipse cx="80" cy="62" rx="13" ry="16" fill="#3d3028"/>
+  <circle cx="51" cy="59" r="4" fill="#fff9f0"/>
+  <circle cx="83" cy="59" r="4" fill="#fff9f0"/>
+  <ellipse cx="64" cy="76" rx="7" ry="5" fill="#5a4336"/>
+  <path d="M53 86c6 7 16 7 22 0" fill="none" stroke="#5a4336" stroke-width="5" stroke-linecap="round"/>
+  <path d="M37 92c14 19 40 19 54 0" fill="none" stroke="#d6ad8f" stroke-width="8" stroke-linecap="round"/>
+  <circle cx="36" cy="75" r="5" fill="#e7b8ac"/>
+  <circle cx="92" cy="75" r="5" fill="#e7b8ac"/>
+</svg>

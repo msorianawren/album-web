@@ -1,4 +1,5 @@
 import {
+  assistantCharacterIds,
   DEFAULT_ASSISTANT_CHARACTER,
   type AssistantCharacter,
 } from "@/lib/assistant/mascots";
@@ -19,7 +20,7 @@ export const ASSISTANT_PREFERENCES_STORAGE_KEY = "oriana.assistant.preferences.v
 export const ASSISTANT_PREFERENCES_EVENT = "oriana-assistant-preferences-change";
 export const ASSISTANT_PROFILE_METADATA_KEY = "assistant_preferences";
 
-export const assistantCharacters = ["capybara", "fox", "owl"] as const;
+export const assistantCharacters = assistantCharacterIds;
 export const assistantModes = ["off", "quiet", "helpful", "expressive"] as const;
 export const assistantMotions = ["reduced", "standard", "playful"] as const;
 
@@ -71,7 +72,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 function isAssistantCharacter(value: unknown): value is AssistantCharacter {
-  return typeof value === "string" && assistantCharacters.includes(value as AssistantCharacter);
+  return typeof value === "string" && assistantCharacterIds.includes(value as AssistantCharacter);
 }
 
 function isAssistantMode(value: unknown): value is AssistantMode {

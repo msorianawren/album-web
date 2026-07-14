@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Doctor chibi mascot">
+  <rect width="128" height="128" rx="34" fill="#f4eadf"/>
+  <circle cx="64" cy="58" r="35" fill="#f0c9b8"/>
+  <path d="M34 55c3-22 18-34 38-32 17 2 28 14 29 32-20-10-45-11-67 0Z" fill="#6d5546"/>
+  <rect x="43" y="22" width="42" height="18" rx="8" fill="#fff9f0"/>
+  <path d="M64 26v10M59 31h10" stroke="#d99d93" stroke-width="4" stroke-linecap="round"/>
+  <circle cx="51" cy="60" r="5" fill="#2d221d"/>
+  <circle cx="77" cy="60" r="5" fill="#2d221d"/>
+  <path d="M54 76c6 7 14 7 20 0" fill="none" stroke="#7a4b40" stroke-width="4" stroke-linecap="round"/>
+  <path d="M33 113c6-20 56-22 62 0Z" fill="#fff9f0"/>
+  <path d="M44 101l20 13 20-13" fill="none" stroke="#d8c7b1" stroke-width="5" stroke-linecap="round"/>
+  <circle cx="64" cy="106" r="5" fill="#d99d93"/>
+</svg>

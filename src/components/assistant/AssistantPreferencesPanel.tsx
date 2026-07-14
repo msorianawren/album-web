@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   Check,
   Loader2,
   RotateCcw,
   Save,
+  Search,
   Sparkles,
   Volume2,
   VolumeX,
@@ -20,9 +21,12 @@ import {
   assistantMotions,
 } from "@/lib/assistant/preferences";
 import {
+  assistantCharacterIds,
+  assistantMascotGroupLabels,
   assistantMascots,
   assistantMoodLabels,
-  type AssistantCharacter,
+  DEFAULT_ASSISTANT_CHARACTER,
+  type AssistantMascotGroup,
   type AssistantMood,
 } from "@/lib/assistant/mascots";
 import { cn } from "@/lib/utils";
@@ -32,15 +36,7 @@ interface AssistantPreferencesPanelProps {
   initialPreferences?: unknown;
 }
 
-const characterCards: Array<{
-  id: AssistantCharacter;
-  title: string;
-  label: string;
-}> = [
-  { id: "capybara", title: "Capybara", label: "Calm guide" },
-  { id: "fox", title: "Fox", label: "Clever helper" },
-  { id: "owl", title: "Owl", label: "Quiet advisor" },
-];
+const mascotGroupOrder: AssistantMascotGroup[] = ["animals", "chibi_roles"];
 
 const previewMoods: AssistantMood[] = [
   "idle",
@@ -94,6 +90,7 @@ export function AssistantPreferencesPanel({
   initialPreferences,
 }: AssistantPreferencesPanelProps) {
   const [previewMood, setPreviewMood] = useState<AssistantMood>("idle");
+  const [characterSearch, setCharacterSearch] = useState("");
   const {
     preferences,
     updatePreference,
@@ -104,13 +101,32 @@ export function AssistantPreferencesPanel({
     error,
   } = useAssistantPreferences({ userId, initialPreferences });
 
-  const selectedMascot = assistantMascots[preferences.character];
+  const selectedMascot =
+    assistantMascots[preferences.character] ?? assistantMascots[DEFAULT_ASSISTANT_CHARACTER];
   const previewMoodForMotion = preferences.motion === "reduced" ? "idle" : previewMood;
+
+  const visibleCharacterIds = useMemo(() => {
+    const query = characterSearch.trim().toLowerCase();
+    if (!query) return assistantCharacterIds;
+
+    return assistantCharacterIds.filter((id) => {
+      const mascot = assistantMascots[id];
+      return [
+        id.replaceAll("_", " "),
+        mascot.name,
+        mascot.personalityLabel,
+        mascot.description,
+      ]
+        .join(" ")
+        .toLowerCase()
+        .includes(query);
+    });
+  }, [characterSearch]);
 
   return (
     <section
       id="oriana-companion"
-      className="rounded-[1.4rem] border border-border bg-surface/65 p-6 shadow-xl shadow-text-primary/5 backdrop-blur-xl md:p-8"
+      className="rounded-[1.4rem] border border-border bg-surface/65 p-5 shadow-xl shadow-text-primary/5 backdrop-blur-xl md:p-8"
     >
       <div className="flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
         <div>
@@ -155,34 +171,89 @@ export function AssistantPreferencesPanel({
         cannot approve private access, and will hand off to Contact when it is unsure.
       </div>
 
-      <div className="mt-7 grid gap-6 lg:grid-cols-[1fr_0.78fr]">
+      <div className="mt-7 grid gap-6 xl:grid-cols-[minmax(0,1fr)_22rem]">
         <div className="space-y-7">
           <div>
-            <h3 className="text-base font-semibold text-text-primary">Character</h3>
-            <div className="mt-3 grid gap-3 sm:grid-cols-3">
-              {characterCards.map((character) => {
-                const selected = preferences.character === character.id;
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <h3 className="text-base font-semibold text-text-primary">Character</h3>
+                <p className="mt-1 text-xs text-text-secondary">
+                  {visibleCharacterIds.length} of {assistantCharacterIds.length} companions shown.
+                </p>
+              </div>
+              <label className="relative w-full sm:w-72">
+                <Search
+                  className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-secondary"
+                  aria-hidden="true"
+                />
+                <span className="sr-only">Search assistant characters</span>
+                <input
+                  value={characterSearch}
+                  onChange={(event) => setCharacterSearch(event.target.value)}
+                  placeholder="Search companions"
+                  className="h-11 w-full rounded-full border border-border bg-background/70 pl-10 pr-4 text-sm text-text-primary outline-none transition placeholder:text-text-secondary focus:border-accent focus:ring-2 focus:ring-ring"
+                />
+              </label>
+            </div>
+
+            <div className="mt-4 space-y-5">
+              {mascotGroupOrder.map((group) => {
+                const groupCharacterIds = visibleCharacterIds.filter(
+                  (id) => assistantMascots[id].group === group,
+                );
+                if (groupCharacterIds.length === 0) return null;
+
                 return (
-                  <button
-                    key={character.id}
-                    type="button"
-                    aria-pressed={selected}
-                    onClick={() => updatePreference("character", character.id)}
-                    className={cn(
-                      "group rounded-[1.2rem] border bg-background/55 p-4 text-left transition hover:-translate-y-0.5 hover:bg-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                      selected
-                        ? "border-accent shadow-lg shadow-text-primary/10"
-                        : "border-border",
-                    )}
-                  >
-                    <AssistantPet character={character.id} mood="idle" decorative size="md" />
-                    <span className="mt-3 block text-sm font-semibold text-text-primary">
-                      {character.title}
-                    </span>
-                    <span className="mt-1 block text-xs text-text-secondary">
-                      {character.label}
-                    </span>
-                  </button>
+                  <div key={group}>
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-text-secondary">
+                        {assistantMascotGroupLabels[group]}
+                      </p>
+                      <span className="rounded-full border border-border bg-background/65 px-2.5 py-1 text-[0.68rem] text-text-secondary">
+                        {groupCharacterIds.length}
+                      </span>
+                    </div>
+                    <div className="mt-3 grid grid-cols-2 gap-3 md:grid-cols-3 2xl:grid-cols-4">
+                      {groupCharacterIds.map((characterId) => {
+                        const mascot = assistantMascots[characterId];
+                        const selected = preferences.character === characterId;
+                        return (
+                          <button
+                            key={characterId}
+                            type="button"
+                            aria-pressed={selected}
+                            onClick={() => updatePreference("character", characterId)}
+                            className={cn(
+                              "group min-h-36 rounded-[1.2rem] border bg-background/55 p-3 text-left transition hover:-translate-y-0.5 hover:bg-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                              selected
+                                ? "border-accent shadow-lg shadow-text-primary/10"
+                                : "border-border",
+                            )}
+                          >
+                            <span className="flex h-16 w-16 items-center justify-center rounded-[1.1rem] border border-border bg-surface/75">
+                              {/* Static card previews stay as public img assets and avoid 20 animated pets. */}
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img
+                                src={mascot.src}
+                                alt=""
+                                width={48}
+                                height={48}
+                                loading="lazy"
+                                decoding="async"
+                                className="h-12 w-12 object-contain"
+                              />
+                            </span>
+                            <span className="mt-3 block text-sm font-semibold text-text-primary">
+                              {mascot.name}
+                            </span>
+                            <span className="mt-1 block text-xs text-text-secondary">
+                              {mascot.personalityLabel}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
                 );
               })}
             </div>
@@ -264,13 +335,13 @@ export function AssistantPreferencesPanel({
           </div>
         </div>
 
-        <aside className="rounded-[1.4rem] border border-border bg-background/55 p-5 text-center">
+        <aside className="rounded-[1.4rem] border border-border bg-background/55 p-5 text-center xl:sticky xl:top-24 xl:self-start">
           <div className="mx-auto flex h-40 w-40 items-center justify-center rounded-[2rem] border border-border bg-surface/70">
             {preferences.mode === "off" ? (
               <VolumeX className="h-12 w-12 text-text-secondary" aria-hidden="true" />
             ) : (
               <AssistantPet
-                character={preferences.character}
+                character={selectedMascot.id}
                 mood={previewMoodForMotion}
                 label={`${selectedMascot.name} preview`}
                 size="lg"
@@ -279,6 +350,9 @@ export function AssistantPreferencesPanel({
           </div>
           <p className="mt-4 text-sm font-semibold text-text-primary">
             {preferences.mode === "off" ? "Assistant hidden" : selectedMascot.name}
+          </p>
+          <p className="mt-1 text-xs font-medium uppercase tracking-[0.16em] text-text-secondary">
+            {preferences.mode === "off" ? "Off" : selectedMascot.personalityLabel}
           </p>
           <p className="mx-auto mt-2 max-w-xs text-xs leading-relaxed text-text-secondary">
             {preferences.mode === "off"
@@ -295,7 +369,7 @@ export function AssistantPreferencesPanel({
                 aria-pressed={previewMood === mood}
                 onClick={() => setPreviewMood(mood)}
                 className={cn(
-                  "rounded-full border px-3 py-1.5 text-[0.68rem] font-semibold uppercase tracking-[0.12em] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                  "rounded-full border px-3 py-1.5 text-[0.68rem] font-semibold uppercase tracking-[0.12em] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-45",
                   previewMood === mood
                     ? "border-accent bg-accent text-accent-foreground"
                     : "border-border bg-surface/70 text-text-secondary hover:text-text-primary",

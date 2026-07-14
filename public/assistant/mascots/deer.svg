@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Deer mascot">
+  <rect width="128" height="128" rx="34" fill="#f4eadf"/>
+  <path d="M43 38c-9-13-14-22-7-26 5 8 11 15 19 21" fill="none" stroke="#8b6046" stroke-width="6" stroke-linecap="round"/>
+  <path d="M85 38c9-13 14-22 7-26-5 8-11 15-19 21" fill="none" stroke="#8b6046" stroke-width="6" stroke-linecap="round"/>
+  <circle cx="64" cy="71" r="42" fill="#b68158"/>
+  <path d="M39 45c-12-8-24-5-26 6 11 2 20 1 29-5" fill="#b68158"/>
+  <path d="M89 45c12-8 24-5 26 6-11 2-20 1-29-5" fill="#b68158"/>
+  <path d="M49 81c8 15 22 15 30 0" fill="#f2d5b9"/>
+  <circle cx="50" cy="65" r="5" fill="#2f241f"/>
+  <circle cx="78" cy="65" r="5" fill="#2f241f"/>
+  <ellipse cx="64" cy="78" rx="7" ry="5" fill="#2f241f"/>
+  <path d="M53 88c6 6 16 6 22 0" fill="none" stroke="#2f241f" stroke-width="4" stroke-linecap="round"/>
+  <circle cx="40" cy="77" r="5" fill="#d99d93"/>
+  <circle cx="88" cy="77" r="5" fill="#d99d93"/>
+</svg>

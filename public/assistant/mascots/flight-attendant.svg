@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Flight attendant chibi mascot">
+  <rect width="128" height="128" rx="34" fill="#f6efe5"/>
+  <circle cx="64" cy="62" r="36" fill="#f1cdbd"/>
+  <path d="M34 57c2-24 16-39 36-38 18 1 31 14 32 36-17-8-46-11-68 2Z" fill="#5d4a42"/>
+  <path d="M46 34c17-15 41-11 52 5-16-4-33-3-52 4Z" fill="#47382f"/>
+  <path d="M39 29h45l10 12H50Z" fill="#6f8f9d"/>
+  <path d="M67 28l14-12 18 16c-12 5-22 5-32-4Z" fill="#f1efe7"/>
+  <path d="M76 19l5-4 13 12-6 3Z" fill="#c9a45d"/>
+  <circle cx="51" cy="62" r="5" fill="#2e2520"/>
+  <circle cx="77" cy="62" r="5" fill="#2e2520"/>
+  <path d="M53 78c6 7 16 7 22 0" fill="none" stroke="#7a4b40" stroke-width="4" stroke-linecap="round"/>
+  <path d="M38 112c6-18 47-21 58 0Z" fill="#6f8f9d"/>
+  <path d="M50 103l14 11 14-11" fill="none" stroke="#f6efe5" stroke-width="6" stroke-linecap="round"/>
+</svg>

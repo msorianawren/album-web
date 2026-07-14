@@ -30,7 +30,7 @@
 }
 
 .assistant-pet--idle {
-  animation: assistant-pet-breathe 4.8s ease-in-out infinite;
+  opacity: 1;
 }
 
 .assistant-pet--qa {
@@ -72,18 +72,6 @@
 
 .assistant-pet--loading_dance {
   animation: assistant-pet-sway 1.4s ease-in-out infinite;
-}
-
-@keyframes assistant-pet-breathe {
-  0%,
-  100% {
-    transform: translate3d(0, var(--assistant-pet-lift), 0) rotate(var(--assistant-pet-tilt)) scale(1);
-    opacity: 1;
-  }
-  50% {
-    transform: translate3d(0, calc(var(--assistant-pet-lift) - 2px), 0) rotate(var(--assistant-pet-tilt)) scale(1.018);
-    opacity: 0.96;
-  }
 }
 
 @keyframes assistant-pet-sway {

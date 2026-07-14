@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Dinosaur mascot">
+  <rect width="128" height="128" rx="34" fill="#f4eadf"/>
+  <path d="M39 83c-5-25 8-45 33-48 20-2 33 12 31 31-2 21-19 38-42 39-10 0-18-7-22-22Z" fill="#9bb99a"/>
+  <path d="M41 78c-11 2-19-3-22-11 10-4 19-2 27 6" fill="#9bb99a"/>
+  <path d="M57 35l8-12 8 11 9-10 6 14" fill="#d6ad73"/>
+  <circle cx="75" cy="58" r="5" fill="#2f3a2f"/>
+  <circle cx="76" cy="56" r="2" fill="#fffaf2"/>
+  <path d="M78 76c7 4 15 2 20-4" fill="none" stroke="#2f3a2f" stroke-width="4" stroke-linecap="round"/>
+  <circle cx="89" cy="70" r="5" fill="#d99d93"/>
+  <path d="M48 98c12 9 34 10 49 0" fill="none" stroke="#6f8f76" stroke-width="8" stroke-linecap="round"/>
+  <circle cx="48" cy="56" r="4" fill="#d7c9a1"/>
+  <circle cx="56" cy="75" r="3" fill="#d7c9a1"/>
+</svg>

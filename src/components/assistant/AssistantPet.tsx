@@ -34,6 +34,7 @@ export function AssistantPet({
   className,
 }: AssistantPetProps) {
   const mascot = assistantMascots[character] ?? assistantMascots[DEFAULT_ASSISTANT_CHARACTER];
+  const fallbackMascot = assistantMascots[DEFAULT_ASSISTANT_CHARACTER];
   const safeMood = mascot.supportedMoods.includes(mood) ? mood : mascot.defaultMood;
   const accessibleLabel = label ?? `${mascot.name}, Oriana Companion`;
   const pixelSize = sizePixels[size];
@@ -60,6 +61,12 @@ export function AssistantPet({
         height={pixelSize}
         loading="lazy"
         decoding="async"
+        onError={(event) => {
+          if (event.currentTarget.dataset.fallbackApplied === "true") return;
+          event.currentTarget.dataset.fallbackApplied = "true";
+          event.currentTarget.src = fallbackMascot.src;
+          event.currentTarget.alt = decorative ? "" : `${fallbackMascot.name}, Oriana Companion`;
+        }}
       />
     </span>
   );
