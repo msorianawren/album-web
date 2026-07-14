@@ -191,3 +191,20 @@
 - Security impact: Documentation only; prevents an unsafe private-media or help-write cutover before additive migrations and role tests are complete.
 - Performance impact: None.
 - Test performed: Targeted report/source consistency review; repository checks are recorded at the report checkpoint commit.
+
+## 2026-07-14 - Milestone 3 boundary report checkpoint
+
+- Milestone: 3
+- Commit: `ca4da1c docs(auth): record Supabase boundary migration status`
+- Result: COMPLETE - reports verified and committed; Milestone 3 remains in progress.
+
+## 2026-07-14 21:20:00 +07:00 - Milestone 3 transactional user help-write package
+
+- Milestone: 3
+- Files: `supabase/migrations/202607142115_user_help_write_rpcs.sql`, matching rollback and static tests, boundary reports, engineering state files
+- Reason: Replace the eventual help user-write service-role bypass with narrow, atomic database operations without granting broad thread update rights.
+- Behavior before: Thread creation could leave a partial thread if message insertion failed; append inserted and then updated thread state separately; app service role performed both paths.
+- Behavior after: Prepared RPCs derive identity from `auth.uid()`, reject blocked/cross-owner/closed/capped writes, serialize append decisions with a row lock, and keep related rows atomic. Application behavior is deliberately unchanged until the migration is applied and role-tested.
+- Security impact: The prepared boundary removes caller-controlled identity and anonymous execution. No production authorization claim is made before database role verification.
+- Performance impact: One transactional RPC will replace multiple network round trips after cutover; row locking is limited to the target thread during append.
+- Test performed: 27 unit/static tests, lint with no errors and 14 unchanged warnings, TypeScript pass; SQL execution remains BLOCKED_EXTERNAL.

@@ -10,8 +10,8 @@ Upgrade album-web into a production-grade, privacy-sensitive digital asset manag
 - Branch: `engineering/production-platform-overhaul`
 - Baseline commit: `f82cb5eb0e78f9ea4b5aa9c34d6a20a69cfead2d`
 - Current milestone: 3 - Supabase client and authorization boundaries
-- Completed checkpoint: `27c2e32 refactor(help): enforce RLS on user reads`
-- Current subtask: Verify the Supabase boundary/role reports, then prepare transactional user help-write RPCs while writes remain on the guarded transitional path.
+- Completed checkpoint: `ca4da1c docs(auth): record Supabase boundary migration status`
+- Current subtask: Verify and commit transactional user help-write RPCs while application writes remain on the guarded transitional path.
 - Public album rows and public/updating media now use the anon client; authenticated private access and admin/worker route migrations remain.
 
 ## Important Constraints
@@ -33,6 +33,7 @@ Upgrade album-web into a production-grade, privacy-sensitive digital asset manag
 - Existing broad-client imports remain a documented transition path until each route family has been migrated and tested.
 - Authenticated private-media JWT reads must not be enabled until `202607141830_private_album_rls.sql` is applied and role-tested; rollback is additive-policy removal only.
 - Help create/append cannot be naively switched: Companion handoff writes an internal system note and append must atomically update thread state while enforcing the 10-message cap. Use a narrow RPC migration rather than broad user update rights.
+- The additive help RPC package is prepared, but the app must not call it until the migration is applied and ownership/blocked/status/concurrency role tests pass.
 
 ## Rejected Approaches
 
@@ -77,8 +78,8 @@ Then read `AGENTS.md`, `ENGINEERING_PROGRAM_STATE.md`, this file, `CURRENT_MILES
 
 ## Next Five Actions
 
-1. Commit the verified role matrix/boundary reports and remaining legacy broad-client register.
-2. Prepare narrow help-write RPC/rollback scripts without switching application writes before remote application.
-3. Add static ownership, blocked-user, closed-thread, and message-cap tests for the RPC package.
+1. Commit the verified, unapplied help-write RPC/rollback package.
+2. Migrate a low-risk authenticated route family such as assistant preferences to JWT/RLS if its policies support the operation.
+3. Continue guarded Studio route-family migration independently.
 4. Apply and role-test pending RLS/RPC migrations when external access is available.
 5. Only then switch private album and help write paths to JWT clients.

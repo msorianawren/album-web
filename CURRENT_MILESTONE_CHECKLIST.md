@@ -61,11 +61,13 @@
 - [v] Migrate notification count/list/read/dismiss routes to request-scoped JWT/RLS clients.
 - [c] Commit the verified notification user boundary (`098214b`).
 - [v] Migrate user help thread/message list reads to request-scoped JWT/RLS clients.
-- [b] Migrate help create/append writes to JWT/RLS (current policies cannot safely update thread state or create Companion internal notes; requires additive RPC migration and remote application).
+- [v] Prepare atomic authenticated RPCs and rollback for help create/append writes.
+- [b] Apply and role-test `202607142115_user_help_write_rpcs.sql`, then cut application writes over to the JWT/RPC path.
 - [c] Commit the verified help-read user boundary (`27c2e32`).
 - [ ] Add database/RLS role tests for all supported principals.
 - [v] Create `SUPABASE_BOUNDARY_REPORT.md` and `AUTHORIZATION_ROLE_MATRIX.md`.
-- [~] Prepare narrow transactional help create/append RPCs and rollback without enabling the application cutover.
+- [v] Add static ownership, blocked-user, closed-thread, message-cap, privilege, and rollback tests for the help RPC package.
+- [~] Verify and commit the unapplied help RPC migration package.
 - [ ] Verify and commit the complete Milestone 3 boundary migration.
 
 Legend: `[ ]` not started, `[~]` in progress, `[x]` implemented, `[v]` verified, `[c]` committed, `[b]` blocked.

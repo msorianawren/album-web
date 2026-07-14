@@ -45,7 +45,7 @@ Revocation must prevent issuance of new private media access immediately. Any al
 | Private album list/detail | verified runtime session | transitional trusted path | application grant decision | pending RLS migration/cutover |
 | Notification read/update | verified runtime session/JWT | user JWT | recipient `auth.uid()` policies | implemented, authenticated test blocked |
 | Help list/detail | verified runtime session/JWT | user JWT | owner `auth.uid()` policies | implemented, authenticated test blocked |
-| Help create/append | verified session | transitional trusted path | application owner/cap checks | RPC migration required |
+| Help create/append | verified session | transitional trusted path | application owner/cap checks | RPC package prepared; application/role verification blocked |
 | Album mutations | non-blocked admin session | trusted admin | route validation plus admin context | implemented, admin test blocked |
 | Cron maintenance | exact bearer secret | trusted worker | purpose-labelled context | implemented, valid-secret test blocked |
 
@@ -65,5 +65,7 @@ The following tests must run in an isolated Supabase environment after applying 
 10. user cannot read another user's help thread/messages;
 11. admin/founder can use only guarded trusted paths;
 12. worker cannot be obtained without the exact configured secret.
+
+For help writes, role verification must additionally prove that anonymous, blocked, cross-owner, closed-thread, archived-thread, and message-cap attempts fail while a valid owner can create and append without partial rows.
 
 Until these execute against a database, Milestone 3 remains IN_PROGRESS and no production-complete authorization guarantee is claimed.

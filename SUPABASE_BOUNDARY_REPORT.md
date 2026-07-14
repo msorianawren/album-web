@@ -43,7 +43,18 @@ The service-role constructor for new code lives in `src/lib/db/trusted-service.t
 
 `supabase/rollbacks/202607141830_private_album_rls_rollback.sql` removes only those additive objects.
 
-The migration is **not applied locally or remotely**. Application private-media reads therefore remain on the legacy trusted path. Deployment order is schema, role verification, application cutover, observation, then legacy removal.
+`supabase/migrations/202607142115_user_help_write_rpcs.sql` adds authenticated, security-definer RPCs that:
+
+- derive the user from `auth.uid()` rather than caller-provided identity;
+- reject blocked users and invalid input in the database;
+- create a thread, first message, and optional Companion internal note atomically;
+- lock an owned thread before enforcing status and the ten-consecutive-message cap;
+- append the message and update thread state in one transaction;
+- revoke execution from `public` and `anon` while granting only `authenticated`.
+
+`supabase/rollbacks/202607142115_user_help_write_rpcs_rollback.sql` removes only those two functions.
+
+The private RLS and help RPC migrations are **not applied locally or remotely**. Application private-media reads and help writes therefore remain on their legacy trusted paths. Deployment order is schema, role verification, application cutover, observation, then legacy removal.
 
 ## Remaining Legacy Surface
 
@@ -77,7 +88,7 @@ Other files mentioning `SUPABASE_SERVICE_ROLE_KEY` are primarily health/config d
 
 - ESLint: pass with 14 unchanged warnings.
 - TypeScript: pass.
-- Unit/static authorization tests: 22 pass.
+- Unit/static authorization tests: 27 pass.
 - Production build: pass; 49 routes generated.
 - Local public album list/detail and locked-private privacy checks: pass.
 - Guest notification/help denial checks: pass.
@@ -95,7 +106,7 @@ Other files mentioning `SUPABASE_SERVICE_ROLE_KEY` are primarily health/config d
 ## Next Actions
 
 1. Apply and role-test the pending private-album migration.
-2. Add narrow help create/append RPCs and rollback before moving writes to JWT.
+2. Apply and role-test the help create/append RPC migration, then move writes to JWT/RPC.
 3. Migrate comments/likes/preferences as independent user route families.
 4. Migrate remaining Studio families behind trusted admin contexts.
 5. Remove `src/lib/supabase.ts` only when the remaining import count reaches zero.
