@@ -10,8 +10,8 @@ Upgrade album-web into a production-grade, privacy-sensitive digital asset manag
 - Branch: `engineering/production-platform-overhaul`
 - Baseline commit: `f82cb5eb0e78f9ea4b5aa9c34d6a20a69cfead2d`
 - Current milestone: 3 - Supabase client and authorization boundaries
-- Completed checkpoint: `7ae6419 refactor(auth): establish scoped Supabase clients`
-- Current subtask: Commit verified public album/media reads through the anon client.
+- Completed checkpoint: `e258ede refactor(albums): route public reads through RLS`
+- Current subtask: Commit an additive private-album RLS helper/policy package; it is not applied locally or remotely.
 - Public album rows and public/updating media now use the anon client; authenticated private access and admin/worker route migrations remain.
 
 ## Important Constraints
@@ -31,6 +31,7 @@ Upgrade album-web into a production-grade, privacy-sensitive digital asset manag
 - Error logs use codes/operation/request ID/provider code only; raw causes are not serialized.
 - Public and authenticated clients use the anon key; service-role construction is isolated to trusted admin/worker modules for new code.
 - Existing broad-client imports remain a documented transition path until each route family has been migrated and tested.
+- Authenticated private-media JWT reads must not be enabled until `202607141830_private_album_rls.sql` is applied and role-tested; rollback is additive-policy removal only.
 
 ## Rejected Approaches
 
@@ -75,8 +76,8 @@ Then read `AGENTS.md`, `ENGINEERING_PROGRAM_STATE.md`, this file, `CURRENT_MILES
 
 ## Next Five Actions
 
-1. Commit the verified public album/media read migration.
-2. Add backward-compatible RLS for granted private-media reads and test the role predicates.
-3. Move authenticated album grant/request reads to the JWT-bound user client.
-4. Migrate one admin route family behind the trusted admin context.
-5. Migrate cron callers behind constant-time worker authorization and trusted worker clients.
+1. Commit the verified but unapplied private album RLS migration and rollback package.
+2. Migrate one admin route family behind the trusted admin context.
+3. Migrate cron callers behind constant-time worker authorization and trusted worker clients.
+4. Apply and role-test the private album RLS migration in Supabase when external access is available.
+5. Only then move authenticated album grant/request/private-media reads to the JWT-bound user client.

@@ -89,3 +89,20 @@
 - Security impact: Normal anonymous reads no longer bypass RLS, and an unauthorized private detail no longer returns its original cover URL.
 - Performance impact: Query count is unchanged for anonymous requests; authenticated mixed lists may issue separate bounded public/private preview queries.
 - Test performed: Lint pass with 14 unchanged warnings, TypeScript pass, 13 unit tests, production build pass with 49 routes, and runtime checks for 50 albums, 13 locked private cards, private zero-media detail, safe cover behavior, and a 23-media public detail.
+
+## 2026-07-14 - Milestone 3 public read checkpoint
+
+- Milestone: 3
+- Commit: `e258ede refactor(albums): route public reads through RLS`
+- Result: COMPLETE - bounded public-read migration implemented, verified, and committed.
+
+## 2026-07-14 19:00:00 +07:00 - Milestone 3 private album RLS package
+
+- Milestone: 3
+- Files: `supabase/migrations/202607141830_private_album_rls.sql`, `supabase/rollbacks/202607141830_private_album_rls_rollback.sql`, `tests/supabase-private-rls.test.mjs`, engineering state files
+- Reason: Prepare the database boundary required before authenticated private album media can move from service role to a request-scoped JWT client.
+- Behavior before: RLS allowed users to read own grants/requests but had no policy that translated approved access into private media/comment reads.
+- Behavior after: An additive security-definer boolean decision centralizes blocked/admin/grant/revoke/invite/request precedence and two authenticated select policies delegate to it; rollback removes only these additions.
+- Security impact: Anonymous execution is revoked; blocked and explicit revoked states are evaluated before legacy or approved-request fallbacks. Application cutover is intentionally deferred until remote application and role tests.
+- Performance impact: Existing grant/request/invite indexes support the predicates; no runtime query changes occur until deployment.
+- Test performed: 17 unit/static authorization tests, lint pass with 14 unchanged warnings, TypeScript pass, and production build pass with 49 routes. SQL execution is BLOCKED_EXTERNAL because no local Supabase CLI/`psql` or remote migration permission is available.

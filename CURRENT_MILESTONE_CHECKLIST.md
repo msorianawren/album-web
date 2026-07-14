@@ -47,7 +47,11 @@
 - [c] Commit the scoped client-boundary foundation (`7ae6419`).
 - [v] Migrate public album and public-media reads away from the legacy service-role client.
 - [v] Ensure unauthorized private album responses expose only an explicit safe preview or no cover.
-- [~] Commit the verified public album read migration.
+- [c] Commit the verified public album read migration (`e258ede`).
+- [v] Add a backward-compatible private-album RLS helper plus media/comment policies.
+- [v] Add a non-destructive rollback script and policy-order/static authorization tests.
+- [b] Apply and role-test `202607141830_private_album_rls.sql` against Supabase (no local CLI/database or remote management permission).
+- [~] Commit the verified, unapplied RLS migration package.
 - [ ] Migrate authenticated-user route families to request-scoped JWT/RLS clients.
 - [ ] Migrate admin route families behind trusted admin contexts.
 - [ ] Migrate cron routes behind trusted worker contexts.
