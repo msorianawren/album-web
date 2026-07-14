@@ -3,6 +3,7 @@ import { getPublicSession } from "@/lib/auth";
 import { logAuditEvent } from "@/lib/audit";
 import { classifyDataFailure } from "@/lib/app-failure";
 import { getTrustedAdminDatabase } from "@/lib/db/admin";
+import { createAuthenticatedUserClient } from "@/lib/db/user";
 import { apiError, apiSuccess, toServerError } from "@/lib/errors";
 import { getAlbums } from "@/lib/albums";
 import { enforceRateLimit } from "@/lib/security-rate-limit";
@@ -21,7 +22,8 @@ export async function GET(request: NextRequest) {
     }
 
     const session = await getPublicSession(request);
-    const albums = await getAlbums({ ...parsed.data, session });
+    const userClient = session.userId ? await createAuthenticatedUserClient(request) : null;
+    const albums = await getAlbums({ ...parsed.data, session, userClient });
     return apiSuccess({ albums });
   } catch (error) {
     return toServerError(error, request, "api.albums.list");

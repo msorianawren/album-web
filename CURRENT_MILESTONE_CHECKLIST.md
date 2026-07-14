@@ -51,9 +51,9 @@
 - [v] Add a backward-compatible private-album RLS helper plus media/comment policies.
 - [v] Add a non-destructive rollback script and policy-order/static authorization tests.
 - [x] Apply `202607141830_private_album_rls.sql` remotely (reported successful by the user on 2026-07-14; independent verification pending).
-- [~] Run private-album database role tests and cut authenticated private reads over to JWT/RLS.
+- [~] Run private-album database role tests and cut authenticated private reads over to JWT/RLS (application cutover and guest privacy verification complete; authenticated role fixtures blocked).
 - [c] Commit the verified, unapplied RLS migration package (`2dda6cf`).
-- [ ] Migrate authenticated-user route families to request-scoped JWT/RLS clients.
+- [~] Migrate authenticated-user route families to request-scoped JWT/RLS clients (album list/detail/media/comments reads, ZIP, single download, notifications, and help complete; remaining families inventoried).
 - [v] Migrate album create/update/delete/upload-entry/reorder mutations behind trusted admin contexts.
 - [c] Commit the verified album admin route family (`610b71c`).
 - [v] Migrate cron routes behind constant-time trusted worker contexts.
@@ -75,12 +75,17 @@
 - [x] Cut help thread creation and message append over to authenticated JWT/RPC calls.
 - [v] Add atomicity, no-multi-step-fallback, fixed-failure-mapping, and guest-denial tests.
 - [b] Runtime-test authenticated owner, cross-user, closed-thread, blocked-user, and message-cap behavior (authenticated fixtures/browser unavailable).
-- [~] Commit the verified help JWT/RPC application cutover.
+- [c] Commit the verified help JWT/RPC application cutover (`350a875`).
 - [c] Commit the verified help-read user boundary (`27c2e32`).
-- [ ] Add database/RLS role tests for all supported principals.
+- [~] Add database/RLS role tests for all supported principals (static contracts and guest runtime pass; authenticated database fixtures blocked).
 - [v] Create `SUPABASE_BOUNDARY_REPORT.md` and `AUTHORIZATION_ROLE_MATRIX.md`.
 - [v] Add static ownership, blocked-user, closed-thread, message-cap, privilege, and rollback tests for the help RPC package.
 - [c] Verify and commit the help RPC migration package (`df0d0e8`).
-- [ ] Verify and commit the complete Milestone 3 boundary migration.
+- [v] Move private album list/detail previews and media reads to request-scoped JWT/RLS clients.
+- [v] Move private ZIP and single-media authorization reads to request-scoped JWT/RLS clients.
+- [v] Verify guest private detail returns locked, zero media, and safe cover only.
+- [v] Add static no-grant/selected/global/revoked/blocked and cross-user help denial coverage.
+- [v] Remove broad service-role reads from album repository, media download, public About/Landing reads, and slug checks; inventory 37 transitional imports.
+- [~] Verify and commit the complete Milestone 3 boundary migration (authenticated role fixtures remain blocked; milestone stays in progress).
 
 Legend: `[ ]` not started, `[~]` in progress, `[x]` implemented, `[v]` verified, `[c]` committed, `[b]` blocked.

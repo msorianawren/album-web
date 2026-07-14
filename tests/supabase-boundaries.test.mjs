@@ -29,12 +29,42 @@ test("trusted service-role constructor has only explicit admin and worker import
   assert.deepEqual(new Set(importers), allowed);
 });
 
-test("album repository uses the anon client for public album and media reads", () => {
+test("album repository separates public reads from authenticated private JWT/RLS reads", () => {
   const source = read("src/lib/albums.ts");
   assert.match(source, /let builder = publicClient\s*\.from\("albums"\)/);
   assert.match(source, /let albumQuery = publicClient\s*\.from\("albums"\)/);
-  assert.match(source, /album\.status === "private" \? supabase : publicClient/);
+  assert.match(source, /album\.status === "private" \? userClient! : publicClient/);
+  assert.match(source, /userClient!\.rpc\(\s*"can_access_private_album"/);
   assert.match(source, /getPreviewRows\(publicClient, publicAlbumIds/);
+  assert.match(source, /getPreviewRows\(userClient, authorizedPrivateAlbumIds/);
+  assert.equal(source.includes("@/lib/supabase"), false);
+  assert.equal(source.includes("getPreviewRows(supabase"), false);
+});
+
+test("album request handlers pass authenticated JWT clients to private reads", () => {
+  for (const path of [
+    "src/app/api/albums/route.ts",
+    "src/app/api/albums/[id]/route.ts",
+    "src/app/api/albums/[id]/images/route.ts",
+    "src/app/api/albums/[id]/download/route.ts",
+    "src/app/api/albums/[id]/view-event/route.ts",
+  ]) {
+    const source = read(path);
+    assert.equal(source.includes("createAuthenticatedUserClient(request)"), true, path);
+    assert.equal(source.includes("userClient"), true, path);
+  }
+
+  const mediaDownload = read("src/app/api/media/[id]/download/route.ts");
+  assert.equal(mediaDownload.includes("@/lib/supabase"), false);
+  assert.equal(mediaDownload.includes("createAuthenticatedUserClient(request)"), true);
+  assert.equal(mediaDownload.includes("const readClient = userClient ?? createPublicServerClient()"), true);
+});
+
+test("media admin mutations use a guarded trusted database", () => {
+  const source = read("src/app/api/media/[id]/route.ts");
+  assert.equal(source.includes("@/lib/supabase"), false);
+  assert.equal(source.includes("getTrustedAdminDatabase(request)"), true);
+  assert.equal(source.includes("const { session, client } = database"), true);
 });
 
 test("album admin mutations use a guarded trusted database instead of the broad client", () => {
@@ -42,6 +72,7 @@ test("album admin mutations use a guarded trusted database instead of the broad 
     "src/app/api/albums/route.ts",
     "src/app/api/albums/[id]/route.ts",
     "src/app/api/albums/[id]/images/route.ts",
+    "src/app/api/albums/check-slug/route.ts",
     "src/app/api/studio/albums/reorder/route.ts",
   ]) {
     const source = read(path);
@@ -54,7 +85,8 @@ test("comment moderation uses guarded admin clients and public comment reads use
   const collectionRoute = read("src/app/api/comments/route.ts");
   const itemRoute = read("src/app/api/comments/[id]/route.ts");
   assert.equal(collectionRoute.includes("createPublicServerClient()"), true);
-  assert.equal(collectionRoute.includes("database?.client ?? createPublicServerClient()"), true);
+  assert.equal(collectionRoute.includes("userClient ?? createPublicServerClient()"), true);
+  assert.equal(collectionRoute.includes("createAuthenticatedUserClient(request)"), true);
   assert.equal(collectionRoute.includes("getTrustedAdminDatabase(request)"), true);
   assert.equal(itemRoute.includes("@/lib/supabase"), false);
   assert.equal(itemRoute.includes("getTrustedAdminDatabase(request)"), true);

@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { requireUser } from "@/lib/auth";
+import { getPublicSession, requireUser } from "@/lib/auth";
 import { getAlbum } from "@/lib/albums";
 import { logAuditEvent } from "@/lib/audit";
 import { classifyDataFailure } from "@/lib/app-failure";
@@ -12,6 +12,7 @@ import { commentBlockReason, findBlockedCommentKeywords } from "@/lib/comment-fi
 import { apiError, apiSuccess, toServerError } from "@/lib/errors";
 import { getTrustedAdminDatabase } from "@/lib/db/admin";
 import { createPublicServerClient } from "@/lib/db/public";
+import { createAuthenticatedUserClient } from "@/lib/db/user";
 import { enforceRateLimit } from "@/lib/security-rate-limit";
 import { getSiteSettings } from "@/lib/site-settings";
 import { supabase } from "@/lib/supabase";
@@ -23,13 +24,17 @@ export async function GET(request: NextRequest) {
   if (!albumId) return apiError("INVALID_INPUT", "albumId is required.", 400);
 
   const database = await getTrustedAdminDatabase(request);
-  const session = database?.session ?? null;
-  const album = await getAlbum(albumId, { isAdmin: Boolean(session?.isAdmin) });
+  const session = database?.session ?? await getPublicSession(request);
+  const userClient = session.userId ? await createAuthenticatedUserClient(request) : null;
+  const album = await getAlbum(albumId, {
+    isAdmin: Boolean(session.isAdmin),
+    userClient,
+  });
 
   if (!album) return apiError("NOT_FOUND", "Album not found.", 404);
   if (album.locked) return apiSuccess({ comments: [] });
 
-  const readClient = database?.client ?? createPublicServerClient();
+  const readClient = userClient ?? createPublicServerClient();
   let query = readClient
     .from("comments")
     .select("*")
@@ -69,7 +74,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const album = await getAlbum(parsed.data.albumId);
+    const userClient = await createAuthenticatedUserClient(request);
+    const album = await getAlbum(parsed.data.albumId, {
+      isAdmin: session.isAdmin,
+      userClient,
+    });
     if (!album) return apiError("NOT_FOUND", "Album not found.", 404);
     if (album.locked) {
       return apiError("FORBIDDEN", "Private albums do not accept public comments.", 403);

@@ -10,9 +10,9 @@ Upgrade album-web into a production-grade, privacy-sensitive digital asset manag
 - Branch: `engineering/production-platform-overhaul`
 - Baseline commit: `f82cb5eb0e78f9ea4b5aa9c34d6a20a69cfead2d`
 - Current milestone: 3 - Supabase client and authorization boundaries
-- Completed checkpoint: `4b82c62 refactor(authz): require explicit role management client`
-- Current subtask: Commit the help JWT/RPC cutover, then move private album/media reads to request JWT/RLS.
-- Public album rows and public/updating media now use the anon client; authenticated private access and admin/worker route migrations remain.
+- Completed checkpoint: `350a875 refactor(help): use authenticated write RPCs`
+- Current subtask: Final verification and checkpoint for private album/media JWT/RLS reads.
+- Public rows use anon/RLS; authorized private previews, detail media, ZIP checks, single downloads, and private comments use request JWT/RLS. Authenticated role fixtures remain unavailable.
 
 ## Important Constraints
 
@@ -31,9 +31,9 @@ Upgrade album-web into a production-grade, privacy-sensitive digital asset manag
 - Error logs use codes/operation/request ID/provider code only; raw causes are not serialized.
 - Public and authenticated clients use the anon key; service-role construction is isolated to trusted admin/worker modules for new code.
 - Existing broad-client imports remain a documented transition path until each route family has been migrated and tested.
-- Authenticated private-media JWT reads must not be enabled until `202607141830_private_album_rls.sql` is applied and role-tested; rollback is additive-policy removal only.
+- Authenticated private-media JWT reads now rely on the remotely applied `202607141830_private_album_rls.sql`; rollback requires reverting application cutover before removing the additive policy/function.
 - Help create/append cannot be naively switched: Companion handoff writes an internal system note and append must atomically update thread state while enforcing the 10-message cap. Use a narrow RPC migration rather than broad user update rights.
-- The additive help RPC package is prepared, but the app must not call it until the migration is applied and ownership/blocked/status/concurrency role tests pass.
+- Help create/append now call the applied RPC package; static/guest checks pass and authenticated role verification remains explicitly blocked.
 
 ## Rejected Approaches
 
@@ -72,14 +72,14 @@ Then read `AGENTS.md`, `ENGINEERING_PROGRAM_STATE.md`, this file, `CURRENT_MILES
 - Production silently falls back to sample albums on empty/error paths.
 - Raw video URLs are created before trusted FFmpeg/FFprobe processing.
 - Authenticated and visual interaction baselines need fixtures/stable browser automation.
-- Private single/ZIP download authorization is not unified with approved private viewing.
+- Private single/ZIP download record reads now share JWT/RLS authorization with private viewing; private user download policy remains intentionally disabled by existing product settings.
 - Proxy rate limits are per-instance and database action counters are non-atomic.
 - Audit/error logging has no centralized correlation ID or redaction contract.
 
 ## Next Five Actions
 
-1. Commit the help JWT/RPC application cutover; authenticated role verification remains blocked by fixtures.
-2. Cut authorized private album/media reads over to JWT/RLS and verify grant/revoke/blocked precedence.
-3. Finish the Milestone 3 database role matrix and authenticated/admin regression checks.
-4. Migrate remaining Studio user activity/access routes to guarded clients if Milestone 3 exit criteria still require them.
-5. Begin Milestone 4 only after object-level R2 privacy assumptions are verified.
+1. Run the final private-read lint/typecheck/test/build gate and commit the checkpoint.
+2. Obtain isolated authenticated fixtures for no-grant, selected, global, revoked, blocked, and cross-user help runtime tests.
+3. Migrate the remaining Studio/user route families listed in `SUPABASE_BOUNDARY_REPORT.md` behind explicit clients.
+4. Complete Milestone 3 acceptance only after those authenticated role tests pass.
+5. Do not begin Milestone 4 until Milestone 3 is verified complete.

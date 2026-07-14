@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { requireAdmin } from "@/lib/auth";
+import { getTrustedAdminDatabase } from "@/lib/db/admin";
 import { apiError, apiSuccess, toServerError } from "@/lib/errors";
 import { getLandingPage, saveLandingPage } from "@/lib/landing";
 import { revalidatePath } from "next/cache";
@@ -10,14 +10,14 @@ export async function GET() {
 }
 
 export async function PATCH(request: NextRequest) {
-  const session = await requireAdmin(request);
-  if (!session) {
+  const database = await getTrustedAdminDatabase(request);
+  if (!database) {
     return apiError("FORBIDDEN", "Only the admin can edit the landing page.", 403);
   }
 
   try {
     const body = await request.json().catch(() => ({}));
-    const landing = await saveLandingPage(body);
+    const landing = await saveLandingPage(database.client, body);
     revalidatePath("/", "layout");
     return apiSuccess({ landing });
   } catch (error) {

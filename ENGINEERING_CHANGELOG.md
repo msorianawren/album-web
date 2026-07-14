@@ -280,3 +280,14 @@
 - Security impact: Cross-user ownership and blocked/status/cap checks move to the database boundary; user write code no longer accepts caller identity or bypasses RLS.
 - Performance impact: Each user write reduces multiple database round trips to one RPC, excluding best-effort notification/audit side effects.
 - Test performed: 31 unit/static tests, lint with no errors and 14 unchanged warnings, TypeScript pass, production build pass, and guest create/append `401`; authenticated role tests remain blocked.
+
+## 2026-07-14 23:45:00 +07:00 - Milestone 3 private JWT/RLS read cutover
+
+- Milestone: 3 (remains IN_PROGRESS)
+- Files: album repository/pages/routes, private media/ZIP/single-download routes, guarded media/content mutations, boundary tests, authorization reports, and engineering state files
+- Reason: Make the remotely applied RLS helper the final boundary for private album/media reads and remove inappropriate broad service-role reads.
+- Behavior before: Private previews/detail media and single downloads used the broad service client after application-only checks; revoke/block could disagree with UI state, and album slug checks were callable by guests through a faulty session guard.
+- Behavior after: Private reads use the request JWT and `can_access_private_album`; grant/request/invite summaries are read through own-row RLS in three batched queries; selected/global revoke precedence matches SQL; private comments, ZIP checks, and individual media reads share the JWT boundary; media mutations and slug checks require guarded admin clients.
+- Security impact: Block/revoke now fail closed at query time, unauthorized responses return no media and only a safe cover, and public About/Landing reads use anon RLS. Transitional broad imports decreased from 43 to 37 and remain explicitly inventoried.
+- Performance impact: Album cards use three bounded, batched entitlement queries rather than per-album access queries; public and private preview fetches remain batched.
+- Test performed: lint pass with 0 errors and 11 existing warnings; TypeScript pass; 34/34 tests pass; production build pass; guest runtime private detail is locked with zero media and safe cover. Authenticated no-grant/selected/global/revoked/blocked and cross-user runtime tests remain blocked by unavailable fixtures/browser, so Milestone 3 is not complete.

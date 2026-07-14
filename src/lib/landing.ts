@@ -1,4 +1,5 @@
-import { supabase } from "@/lib/supabase";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import { createPublicServerClient } from "@/lib/db/public";
 import type { LandingPageContent, LandingBackgroundSettings, LandingSocialLink, TranslationMap } from "@/lib/types";
 
 const landingId = "home";
@@ -135,7 +136,7 @@ export function normalizeLandingPage(value: Partial<LandingPageContent> | null |
 }
 
 export async function getLandingPage() {
-  const { data, error } = await supabase
+  const { data, error } = await createPublicServerClient()
     .from("landing_page_settings")
     .select(landingColumns)
     .eq("id", landingId)
@@ -182,9 +183,9 @@ export function landingPayloadFromInput(input: Record<string, unknown>) {
   } satisfies LandingPageContent;
 }
 
-export async function saveLandingPage(input: Record<string, unknown>) {
+export async function saveLandingPage(client: SupabaseClient, input: Record<string, unknown>) {
   const payload = landingPayloadFromInput(input);
-  const { data, error } = await supabase
+  const { data, error } = await client
     .from("landing_page_settings")
     .upsert(payload, { onConflict: "id" })
     .select(landingColumns)

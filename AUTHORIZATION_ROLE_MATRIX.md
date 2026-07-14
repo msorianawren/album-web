@@ -42,10 +42,11 @@ Revocation must prevent issuance of new private media access immediately. Any al
 | Action | Session source | Database client | RLS/final guard | Current status |
 |---|---|---|---|---|
 | Public album list/detail | optional runtime session | anon | public album/media policies | implemented/local verified |
-| Private album list/detail | verified runtime session | transitional trusted path | application grant decision | pending RLS migration/cutover |
+| Private album list/detail | verified runtime session/JWT | user JWT | `can_access_private_album` plus media RLS | implemented; guest verified, authenticated fixtures blocked |
+| Private album ZIP/single media read | verified runtime session/JWT | user JWT or anon | media select RLS plus product download policy | implemented; authenticated fixtures blocked |
 | Notification read/update | verified runtime session/JWT | user JWT | recipient `auth.uid()` policies | implemented, authenticated test blocked |
 | Help list/detail | verified runtime session/JWT | user JWT | owner `auth.uid()` policies | implemented, authenticated test blocked |
-| Help create/append | verified session/JWT | user JWT RPC | RPC owner/blocked/status/cap checks | implemented; authenticated role verification blocked |
+| Help create/append | verified session/JWT | user JWT RPC | RPC owner/blocked/status/cap checks | implemented; static atomicity/cross-owner checks pass, authenticated role verification blocked |
 | Album mutations | non-blocked admin session | trusted admin | route validation plus admin context | implemented, admin test blocked |
 | Cron maintenance | exact bearer secret | trusted worker | purpose-labelled context | implemented, valid-secret test blocked |
 
@@ -68,4 +69,4 @@ The following tests must run in an isolated Supabase environment after applying 
 
 For help writes, role verification must additionally prove that anonymous, blocked, cross-owner, closed-thread, archived-thread, and message-cap attempts fail while a valid owner can create and append without partial rows.
 
-Until these execute against a database, Milestone 3 remains IN_PROGRESS and no production-complete authorization guarantee is claimed.
+Static migration/application tests cover all listed decision branches, and guest runtime checks prove locked private responses expose zero media and only a safe cover. Tests 2-10 still require isolated authenticated database fixtures. Until those execute, Milestone 3 remains IN_PROGRESS and no production-complete authorization guarantee is claimed.

@@ -1,11 +1,10 @@
 import { NextRequest } from "next/server";
-import { requireAdmin } from "@/lib/auth";
 import { logAuditEvent } from "@/lib/audit";
+import { getTrustedAdminDatabase } from "@/lib/db/admin";
 import { apiError, apiSuccess } from "@/lib/errors";
 import { deleteR2Objects } from "@/lib/r2";
 import { enforceRateLimit } from "@/lib/security-rate-limit";
 import { getSiteSettings } from "@/lib/site-settings";
-import { supabase } from "@/lib/supabase";
 import { mediaUpdateSchema } from "@/lib/validators";
 
 interface MediaRouteProps {
@@ -13,10 +12,11 @@ interface MediaRouteProps {
 }
 
 export async function PATCH(request: NextRequest, { params }: MediaRouteProps) {
-  const session = await requireAdmin(request);
-  if (!session) {
+  const database = await getTrustedAdminDatabase(request);
+  if (!database) {
     return apiError("FORBIDDEN", "Only the admin can update media.", 403);
   }
+  const { session, client } = database;
 
   const { id } = await params;
   const settings = await getSiteSettings();
@@ -45,7 +45,7 @@ export async function PATCH(request: NextRequest, { params }: MediaRouteProps) {
     );
   }
 
-  const { data: current, error: currentError } = await supabase
+  const { data: current, error: currentError } = await client
     .from("media")
     .select("album_id")
     .eq("id", id)
@@ -58,13 +58,13 @@ export async function PATCH(request: NextRequest, { params }: MediaRouteProps) {
   const targetAlbumId = parsed.data.album_id ?? current.album_id;
 
   if (parsed.data.is_cover) {
-    await supabase
+    await client
       .from("media")
       .update({ is_cover: false })
       .eq("album_id", targetAlbumId);
   }
 
-  const { data, error } = await supabase
+  const { data, error } = await client
     .from("media")
     .update(parsed.data)
     .eq("id", id)
@@ -74,7 +74,7 @@ export async function PATCH(request: NextRequest, { params }: MediaRouteProps) {
   if (error) return apiError("SERVER_ERROR", error.message, 500);
 
   if (parsed.data.is_cover) {
-    await supabase
+    await client
       .from("albums")
       .update({
         cover_media_id: id,
@@ -95,10 +95,11 @@ export async function PATCH(request: NextRequest, { params }: MediaRouteProps) {
 }
 
 export async function DELETE(request: NextRequest, { params }: MediaRouteProps) {
-  const session = await requireAdmin(request);
-  if (!session) {
+  const database = await getTrustedAdminDatabase(request);
+  if (!database) {
     return apiError("FORBIDDEN", "Only the admin can delete media.", 403);
   }
+  const { session, client } = database;
 
   const { id } = await params;
   const settings = await getSiteSettings();
@@ -117,7 +118,7 @@ export async function DELETE(request: NextRequest, { params }: MediaRouteProps) 
   }
 
   if (settings.enable_soft_delete) {
-    const { data, error } = await supabase
+    const { data, error } = await client
       .from("media")
       .update({
         deleted_at: new Date().toISOString(),
@@ -147,7 +148,7 @@ export async function DELETE(request: NextRequest, { params }: MediaRouteProps) 
     return apiSuccess({ deleted: true, softDeleted: true });
   }
 
-  const { data: media, error: selectError } = await supabase
+  const { data: media, error: selectError } = await client
     .from("media")
     .select("r2_key,thumbnail_r2_key,medium_r2_key,poster_r2_key")
     .eq("id", id)
@@ -168,7 +169,7 @@ export async function DELETE(request: NextRequest, { params }: MediaRouteProps) 
     return apiError("UPLOAD_FAILED", "R2 delete failed.", 500);
   }
 
-  const { error } = await supabase.from("media").delete().eq("id", id);
+  const { error } = await client.from("media").delete().eq("id", id);
   if (error) return apiError("SERVER_ERROR", error.message, 500);
 
   await logAuditEvent({

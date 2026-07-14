@@ -3,6 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { privateAlbumMessage } from "@/lib/config";
 import { getPublicSession } from "@/lib/auth";
 import { createPublicServerClient } from "@/lib/db/public";
+import { createAuthenticatedUserClient } from "@/lib/db/user";
 import { getPublicUrl } from "@/lib/r2";
 import { albumDemoFixturesEnabled } from "@/lib/demo-fixtures";
 import {
@@ -11,7 +12,6 @@ import {
   resolveOptionalRow,
   resolveQueryRows,
 } from "@/lib/app-failure";
-import { supabase } from "@/lib/supabase";
 import type { Album, AlbumDetail, AlbumPreviewItem, AlbumStatus, Media } from "@/lib/types";
 import { parseMediaSortMode, sortMedia, type MediaSortMode } from "@/lib/media-sort";
 
@@ -23,6 +23,7 @@ interface AlbumQuery {
   q?: string;
   status?: AlbumStatus;
   session?: PublicSession | null;
+  userClient?: SupabaseClient | null;
 }
 
 function toNullableNumber(value: unknown) {
@@ -172,96 +173,29 @@ function isUuid(value: string) {
 }
 
 export async function checkPrivateAlbumAccess(
-  albumId: string, 
-  session: PublicSession
+  albumId: string,
+  session: PublicSession,
+  userClient: SupabaseClient | null,
 ): Promise<{ allowed: boolean; reason: "admin" | "all_private_grant" | "selected_album_grant" | "approved_request" | "pending" | "revoked" | "rejected" | "none" }> {
-  if (!session.userId && !session.email) {
+  if (session.isBlocked || !session.userId || !userClient) {
     return { allowed: false, reason: "none" };
   }
 
-  // 1. Admins bypass all checks
-  if (session.isAdmin) return { allowed: true, reason: "admin" };
-
-  const userId = session.userId || null;
-  const email = session.email || null;
-
-  // Query all grants for this user/email
-  let grantQuery = supabase.from("album_access_grants").select("*");
-  if (userId && email) {
-    grantQuery = grantQuery.or(`user_id.eq.${userId},email_normalized.eq.${email}`);
-  } else if (userId) {
-    grantQuery = grantQuery.eq("user_id", userId);
-  } else if (email) {
-    grantQuery = grantQuery.eq("email_normalized", email);
-  }
-
-  const { data: grants } = await grantQuery;
-
-  if (grants && grants.length > 0) {
-    // Check for explicit revoke overrides
-    const isGlobalRevoked = grants.some(g => g.scope === "all_private" && g.status === "revoked");
-    const isAlbumRevoked = grants.some(g => g.scope === "selected_albums" && g.album_id === albumId && g.status === "revoked");
-
-    if (isAlbumRevoked) {
-      return { allowed: false, reason: "revoked" };
-    }
-
-    // If global is revoked, we can't use an old global grant. BUT a specific selected album grant COULD override a global revoke if granted *after* or *specifically*.
-    // The prompt says: "if all_private grant was revoked, user cannot rely on that all-private grant".
-    
-    // Check for active grants
-    const activeSelected = grants.find(g => g.scope === "selected_albums" && g.album_id === albumId && g.status === "active");
-    if (activeSelected) {
-      return { allowed: true, reason: "selected_album_grant" };
-    }
-
-    const activeGlobal = grants.find(g => g.scope === "all_private" && g.status === "active");
-    if (activeGlobal) {
-      return { allowed: true, reason: "all_private_grant" };
-    }
-  }
-
-  // Fallback 1: Legacy invites (only if not explicitly revoked via grants)
-  if (email) {
-    const { data: invites } = await supabase
-      .from("album_invites")
-      .select("id, is_global")
-      .eq("email", email)
-      .or(`album_id.eq.${albumId},is_global.eq.true`)
-      .limit(1);
-
-    if (invites && invites.length > 0) {
-      return { allowed: true, reason: invites[0].is_global ? "all_private_grant" : "selected_album_grant" };
-    }
-  }
-
-  // Fallback 2: Access requests
-  if (userId) {
-    const { data: requests } = await supabase
-      .from("album_access_requests")
-      .select("album_id, requested_album_ids, scope, status")
-      .eq("requester_user_id", userId)
-      .order("created_at", { ascending: false })
-      .limit(30);
-
-    for (const req of requests ?? []) {
-      const applies =
-        req.scope === "all_private" ||
-        req.album_id === albumId ||
-        (Array.isArray(req.requested_album_ids) && req.requested_album_ids.includes(albumId));
-
-      if (!applies) continue;
-      if (req.status === "approved" || req.status === "auto_approved") return { allowed: true, reason: "approved_request" };
-      if (req.status === "rejected" || req.status === "denied") return { allowed: false, reason: "rejected" };
-      if (req.status === "pending" || req.status === "needs_manual_review") return { allowed: false, reason: "pending" };
-    }
-  }
-
-  return { allowed: false, reason: "none" };
+  const { data, error } = await userClient.rpc("can_access_private_album", {
+    target_album_id: albumId,
+  });
+  if (error) throw classifyDataFailure(error, "albums.private_access");
+  return data === true
+    ? { allowed: true, reason: session.isAdmin ? "admin" : "approved_request" }
+    : { allowed: false, reason: "none" };
 }
 
-export async function checkAlbumAccess(albumId: string, session: PublicSession): Promise<boolean> {
-  const result = await checkPrivateAlbumAccess(albumId, session);
+export async function checkAlbumAccess(
+  albumId: string,
+  session: PublicSession,
+  userClient: SupabaseClient | null,
+): Promise<boolean> {
+  const result = await checkPrivateAlbumAccess(albumId, session, userClient);
   return result.allowed;
 }
 
@@ -336,127 +270,92 @@ async function getPreviewRows(
   return resolveQueryRows(data, error, operation) as UnknownRow[];
 }
 
-async function attachAlbumPreviews(albums: Album[], session?: PublicSession | null) {
+async function attachAlbumPreviews(
+  albums: Album[],
+  session?: PublicSession | null,
+  userClient?: SupabaseClient | null,
+) {
   const isAdmin = session?.isAdmin ?? false;
-  
-  // Attach access request status if logged in
-  const requestMap = new Map<string, string>();
-  
-  if (session?.userId && !isAdmin) {
-    const albumIds = albums.filter(a => a.status === "private").map(a => a.id);
-    
-    // 1. Check pending requests
-    if (albumIds.length > 0) {
-      const { data: pendingRequests } = await supabase
-        .from("album_access_requests")
-        .select("album_id, requested_album_ids, scope, status")
-        .eq("requester_user_id", session.userId);
-        
-      if (pendingRequests) {
-        for (const req of pendingRequests) {
-          const requestStatus = req.status === "auto_approved" ? "approved" : req.status;
-          if (req.scope === "all_private") {
-            for (const id of albumIds) {
-              if (requestMap.get(id) !== "approved") requestMap.set(id, requestStatus);
-            }
-            continue;
-          }
-          const ids = Array.isArray(req.requested_album_ids) && req.requested_album_ids.length
-            ? req.requested_album_ids
-            : req.album_id
-              ? [req.album_id]
-              : [];
-          for (const id of ids) {
-            if (requestMap.get(id) !== "approved") {
-              requestMap.set(id, requestStatus);
-            }
-          }
-        }
-      }
+  const requestMap = new Map<string, NonNullable<Album["access_request_status"]>>();
+  const privateAlbumIds = albums.filter((album) => album.status === "private").map((album) => album.id);
 
-      // 2. Check active AND revoked user grants
-      const { data: userGrants } = await supabase
+  if (isAdmin && !session?.isBlocked) {
+    privateAlbumIds.forEach((albumId) => requestMap.set(albumId, "approved"));
+  } else if (session?.userId && !session.isBlocked && userClient && privateAlbumIds.length) {
+    const [grantResult, requestResult, inviteResult] = await Promise.all([
+      userClient
         .from("album_access_grants")
-        .select("album_id, scope, status")
-        .eq("user_id", session.userId)
-        .or(`album_id.in.(${albumIds.join(",")}),scope.eq.all_private`);
-        
-      if (userGrants) {
-        // Evaluate revoked first
-        const globalRevoked = userGrants.some(g => g.scope === "all_private" && g.status === "revoked");
-        const revokedMap = new Map<string, boolean>();
-        userGrants.forEach(g => {
-          if (g.scope === "selected_albums" && g.status === "revoked" && g.album_id) {
-            revokedMap.set(g.album_id, true);
-          }
-        });
+        .select("id,album_id,scope,status,revoked_at,granted_at,updated_at,created_at"),
+      userClient
+        .from("album_access_requests")
+        .select("album_id,requested_album_ids,scope,status,created_at")
+        .eq("requester_user_id", session.userId)
+        .order("created_at", { ascending: false }),
+      userClient
+        .from("album_invites")
+        .select("album_id,is_global")
+        .eq("email", session.email ?? ""),
+    ]);
 
-        // Evaluate active
-        const hasGlobalActive = userGrants.some(g => g.scope === "all_private" && g.status === "active");
-        
-        albumIds.forEach(id => {
-          if (revokedMap.has(id)) {
-            requestMap.set(id, "revoked"); // Explicitly revoked
-            return;
-          }
-          if (hasGlobalActive) {
-            requestMap.set(id, "approved");
-            return;
-          }
-          const hasSelected = userGrants.some(g => g.scope === "selected_albums" && g.album_id === id && g.status === "active");
-          if (hasSelected) {
-            requestMap.set(id, "approved");
-          }
-        });
+    const grants = resolveQueryRows(grantResult.data, grantResult.error, "albums.own_grants");
+    const requests = resolveQueryRows(requestResult.data, requestResult.error, "albums.own_requests");
+    const invites = resolveQueryRows(inviteResult.data, inviteResult.error, "albums.own_invites");
+    const grantTimestamp = (row: UnknownRow) => String(
+      row.revoked_at ?? row.granted_at ?? row.updated_at ?? row.created_at ?? "",
+    );
+    const newestGrant = (rows: UnknownRow[]) => [...rows].sort(
+      (left, right) => grantTimestamp(right).localeCompare(grantTimestamp(left)) ||
+        String(right.id ?? "").localeCompare(String(left.id ?? "")),
+    )[0];
+    const globalGrant = newestGrant(
+      (grants as UnknownRow[]).filter((grant) => grant.scope === "all_private"),
+    );
+    const hasGlobalInvite = (invites as UnknownRow[]).some((invite) => invite.is_global === true);
+
+    for (const albumId of privateAlbumIds) {
+      const selectedGrant = newestGrant(
+        (grants as UnknownRow[]).filter(
+          (grant) => grant.scope === "selected_albums" && grant.album_id === albumId,
+        ),
+      );
+      if (selectedGrant?.status === "revoked") {
+        requestMap.set(albumId, "revoked");
+        continue;
       }
-    }
-  }
+      if (selectedGrant?.status === "active") {
+        requestMap.set(albumId, "approved");
+        continue;
+      }
+      if (globalGrant?.status === "revoked") {
+        requestMap.set(albumId, "revoked");
+        continue;
+      }
+      if (globalGrant?.status === "active") {
+        requestMap.set(albumId, "approved");
+        continue;
+      }
+      if (
+        hasGlobalInvite ||
+        (invites as UnknownRow[]).some((invite) => invite.album_id === albumId)
+      ) {
+        requestMap.set(albumId, "approved");
+        continue;
+      }
 
-  // 3. Check email grants (active and revoked)
-  if (session?.email && !isAdmin) {
-    const { data: emailGrants } = await supabase
-      .from("album_access_grants")
-      .select("album_id, scope, status")
-      .eq("email_normalized", session.email);
-
-    if (emailGrants && emailGrants.length > 0) {
-      const globalRevoked = emailGrants.some(g => g.scope === "all_private" && g.status === "revoked");
-      const revokedMap = new Map<string, boolean>();
-      emailGrants.forEach(g => {
-        if (g.scope === "selected_albums" && g.status === "revoked" && g.album_id) {
-          revokedMap.set(g.album_id, true);
-        }
-      });
-
-      const isGlobal = emailGrants.some(g => g.scope === "all_private" && g.status === "active");
-      
-      albums.filter(a => a.status === "private").forEach(a => {
-        if (revokedMap.has(a.id) || requestMap.get(a.id) === "revoked") {
-          requestMap.set(a.id, "revoked");
-          return;
-        }
-        if (isGlobal || emailGrants.some(g => g.scope === "selected_albums" && g.album_id === a.id && g.status === "active")) {
-          requestMap.set(a.id, "approved");
-        }
-      });
-    }
-
-    // 4. Also check legacy email invites
-    const { data: invites } = await supabase
-      .from("album_invites")
-      .select("album_id, is_global")
-      .eq("email", session.email);
-    
-    if (invites && invites.length > 0) {
-      const isGlobal = invites.some(inv => inv.is_global);
-      if (isGlobal) {
-        albums.filter(a => a.status === "private").forEach(a => {
-          requestMap.set(a.id, "approved");
-        });
-      } else {
-        invites.forEach(inv => {
-          if (inv.album_id) requestMap.set(inv.album_id, "approved");
-        });
+      const applicableRequests = (requests as UnknownRow[]).filter((request) =>
+        request.scope === "all_private" ||
+        request.album_id === albumId ||
+        (Array.isArray(request.requested_album_ids) && request.requested_album_ids.includes(albumId)),
+      );
+      const approvedRequest = applicableRequests.find((request) =>
+        request.status === "approved" || request.status === "auto_approved",
+      );
+      const requestStatus = approvedRequest?.status ?? applicableRequests[0]?.status;
+      if (typeof requestStatus === "string") {
+        requestMap.set(
+          albumId,
+          requestStatus === "auto_approved" ? "approved" : requestStatus as NonNullable<Album["access_request_status"]>,
+        );
       }
     }
   }
@@ -467,14 +366,15 @@ async function attachAlbumPreviews(albums: Album[], session?: PublicSession | nu
   const authorizedPrivateAlbumIds = albums
     .filter((album) =>
       album.status === "private" &&
-      (isAdmin || requestMap.get(album.id) === "approved"),
+      ((isAdmin && !session?.isBlocked) || requestMap.get(album.id) === "approved"),
     )
     .map((album) => album.id);
   const eligibleAlbumIds = [...publicAlbumIds, ...authorizedPrivateAlbumIds];
 
   if (!eligibleAlbumIds.length) {
     return albums.map(a => {
-      if (a.status === "private" && !isAdmin && requestMap.get(a.id) !== "approved") {
+      const canReadPrivate = (isAdmin && !session?.isBlocked) || requestMap.get(a.id) === "approved";
+      if (a.status === "private" && !canReadPrivate) {
         a.cover_url = a.safe_preview_url ?? null;
       }
       return {
@@ -487,7 +387,9 @@ async function attachAlbumPreviews(albums: Album[], session?: PublicSession | nu
   const publicClient = createPublicServerClient();
   const [publicPreviewRows, privatePreviewRows] = await Promise.all([
     getPreviewRows(publicClient, publicAlbumIds, "albums.public_previews"),
-    getPreviewRows(supabase, authorizedPrivateAlbumIds, "albums.private_previews"),
+    userClient
+      ? getPreviewRows(userClient, authorizedPrivateAlbumIds, "albums.private_previews")
+      : Promise.resolve([]),
   ]);
   const previewRows = [...publicPreviewRows, ...privatePreviewRows];
 
@@ -502,13 +404,14 @@ async function attachAlbumPreviews(albums: Album[], session?: PublicSession | nu
 
   return albums.map((album) => {
     const isApproved = requestMap.get(album.id) === "approved";
-    if (album.status === "private" && !isAdmin && !isApproved) {
+    const canReadPrivate = (isAdmin && !session?.isBlocked) || isApproved;
+    if (album.status === "private" && !canReadPrivate) {
       album.cover_url = album.safe_preview_url ?? null;
     }
     return {
       ...album,
       access_request_status: requestMap.get(album.id) as Album["access_request_status"] ?? null,
-      preview_items: (isAdmin || album.status !== "private" || isApproved) ? (previewMap.get(album.id) ?? []) : [],
+      preview_items: (album.status !== "private" || canReadPrivate) ? (previewMap.get(album.id) ?? []) : [],
     };
   });
 }
@@ -518,6 +421,9 @@ export async function getAlbums(query: AlbumQuery = {}): Promise<Album[]> {
 
   try {
     const session = query.session ?? await getPublicSession();
+    const userClient = query.userClient ?? (
+      session?.userId && !session.isBlocked ? await createAuthenticatedUserClient() : null
+    );
     const publicClient = createPublicServerClient();
     let builder = publicClient
       .from("albums")
@@ -569,7 +475,7 @@ export async function getAlbums(query: AlbumQuery = {}): Promise<Album[]> {
       parsedAlbums = [...publicAlbums, ...updatingAlbums, ...privateAlbums];
     }
 
-    return attachAlbumPreviews(parsedAlbums, session);
+    return attachAlbumPreviews(parsedAlbums, session, userClient);
   } catch (error) {
     const demoAlbums = await getDemoAlbums(query);
     if (demoAlbums) return demoAlbums;
@@ -579,12 +485,19 @@ export async function getAlbums(query: AlbumQuery = {}): Promise<Album[]> {
 
 export async function getAlbum(
   slugOrId: string,
-  options: { isAdmin?: boolean; sort?: MediaSortMode | string | null } = {},
+  options: {
+    isAdmin?: boolean;
+    sort?: MediaSortMode | string | null;
+    userClient?: SupabaseClient | null;
+  } = {},
 ): Promise<AlbumDetail | null> {
   noStore();
 
   const session = options.isAdmin === undefined ? await getPublicSession() : null;
   const isAdmin = options.isAdmin ?? session?.isAdmin ?? false;
+  const userClient = options.userClient ?? (
+    (session?.userId || isAdmin) ? await createAuthenticatedUserClient() : null
+  );
 
   try {
     const publicClient = createPublicServerClient();
@@ -610,13 +523,24 @@ export async function getAlbum(
 
     const album = normalizeAlbum(albumRow);
 
-    if (album.status === "private" && !isAdmin) {
-      let isApproved = false;
-      if (session) {
-        isApproved = await checkAlbumAccess(album.id, session);
-      }
-      
-      if (!isApproved) {
+    if (album.status === "private" && !userClient) {
+      return {
+        ...album,
+        cover_url: album.safe_preview_url ?? null,
+        media: [],
+        download_allowed: false,
+        locked: true,
+        private_message: privateAlbumMessage,
+      };
+    }
+
+    if (album.status === "private") {
+      const { data: canReadPrivate, error: accessError } = await userClient!.rpc(
+        "can_access_private_album",
+        { target_album_id: album.id },
+      );
+      if (accessError) throw classifyDataFailure(accessError, "albums.private_access");
+      if (canReadPrivate !== true) {
         return {
           ...album,
           cover_url: album.safe_preview_url ?? null,
@@ -628,7 +552,7 @@ export async function getAlbum(
       }
     }
 
-    const mediaClient = album.status === "private" ? supabase : publicClient;
+    const mediaClient = album.status === "private" ? userClient! : publicClient;
     const { data: mediaRows, error: mediaError } = await mediaClient
       .from("media")
       .select("*")

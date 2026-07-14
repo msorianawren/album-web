@@ -1,9 +1,10 @@
 import { NextRequest } from "next/server";
 import { getAlbum } from "@/lib/albums";
-import { requireAdmin } from "@/lib/auth";
+import { getPublicSession } from "@/lib/auth";
 import { logAuditEvent } from "@/lib/audit";
 import { classifyDataFailure } from "@/lib/app-failure";
 import { getTrustedAdminDatabase } from "@/lib/db/admin";
+import { createAuthenticatedUserClient } from "@/lib/db/user";
 import { apiError, apiSuccess, toServerError } from "@/lib/errors";
 import { deleteR2Objects } from "@/lib/r2";
 import { enforceRateLimit } from "@/lib/security-rate-limit";
@@ -17,8 +18,12 @@ interface AlbumRouteProps {
 export async function GET(request: NextRequest, { params }: AlbumRouteProps) {
   try {
     const { id } = await params;
-    const session = await requireAdmin(request);
-    const album = await getAlbum(id, { isAdmin: Boolean(session?.isAdmin) });
+    const session = await getPublicSession(request);
+    const userClient = session?.userId ? await createAuthenticatedUserClient(request) : null;
+    const album = await getAlbum(id, {
+      isAdmin: session.isAdmin,
+      userClient,
+    });
 
     if (!album) return apiError("NOT_FOUND", "Album not found.", 404);
     return apiSuccess({ album });

@@ -12,6 +12,7 @@ import { getAlbum } from "@/lib/albums";
 import { getSiteSettings } from "@/lib/site-settings";
 import { getLandingPage } from "@/lib/landing";
 import { getPublicSession } from "@/lib/auth";
+import { createAuthenticatedUserClient } from "@/lib/db/user";
 import { buildLoginHref } from "@/lib/auth-redirect";
 import { cookies } from "next/headers";
 import { getDictionary } from "@/lib/getDictionary";
@@ -26,7 +27,8 @@ interface AlbumPageProps {
 
 export async function generateMetadata({ params }: AlbumPageProps): Promise<Metadata> {
   const { id } = await params;
-  const album = await getAlbum(id);
+  const userClient = await createAuthenticatedUserClient();
+  const album = await getAlbum(id, { userClient });
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ?? "";
   const cookieStore = await cookies();
   const locale = (cookieStore.get("NEXT_LOCALE")?.value as string) || "en";
@@ -82,11 +84,16 @@ import { AccessRequestModal } from "@/components/albums/AccessRequestModal";
 
 export default async function AlbumPage({ params }: AlbumPageProps) {
   const { id } = await params;
-  const [album, settings, landing] = await Promise.all([getAlbum(id), getSiteSettings(), getLandingPage()]);
+  const session = await getPublicSession();
+  const userClient = session.userId ? await createAuthenticatedUserClient() : null;
+  const [album, settings, landing] = await Promise.all([
+    getAlbum(id, { isAdmin: session.isAdmin, userClient }),
+    getSiteSettings(),
+    getLandingPage(),
+  ]);
 
   if (!album) notFound();
 
-  const session = await getPublicSession();
   if (!session?.userId) {
     redirect(buildLoginHref(`/albums/${album.slug}`));
   }

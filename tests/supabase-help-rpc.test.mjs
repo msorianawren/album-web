@@ -11,6 +11,10 @@ const rollback = readFileSync(
   join(process.cwd(), "supabase/rollbacks/202607142115_user_help_write_rpcs_rollback.sql"),
   "utf8",
 ).toLowerCase();
+const helpSchema = readFileSync(
+  join(process.cwd(), "supabase/migrations/202607141000_unified_help_chat.sql"),
+  "utf8",
+).toLowerCase();
 
 test("help write RPCs use authenticated security-definer boundaries", () => {
   assert.equal((migration.match(/security definer/g) ?? []).length, 2);
@@ -52,6 +56,19 @@ test("message append serializes ownership and the consecutive-message cap", () =
   assert.ok(lock >= 0 && lock < status);
   assert.ok(status < cap && cap < insert && insert < update);
   assert.match(appendFunction, /t\.owner_user_id = current_user_id/);
+});
+
+test("help reads and appends deny cross-user thread access", () => {
+  assert.match(helpSchema, /owner_user_id = auth\.uid\(\)/);
+  assert.match(
+    helpSchema,
+    /help_threads\.owner_user_id = auth\.uid\(\)/,
+  );
+  const appendFunction = migration.slice(
+    migration.indexOf("create or replace function public.append_user_help_message"),
+  );
+  assert.match(appendFunction, /t\.id = p_thread_id[\s\S]*t\.owner_user_id = current_user_id/);
+  assert.match(appendFunction, /if not found then[\s\S]*pt404/);
 });
 
 test("help RPC rollback removes only the additive functions", () => {

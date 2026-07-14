@@ -6,7 +6,8 @@ import { apiError, toServerError } from "@/lib/errors";
 import { extensionFromUrlOrMime, safeFilename } from "@/lib/filenames";
 import { enforceRateLimit } from "@/lib/security-rate-limit";
 import { getSiteSettings } from "@/lib/site-settings";
-import { supabase } from "@/lib/supabase";
+import { createPublicServerClient } from "@/lib/db/public";
+import { createAuthenticatedUserClient } from "@/lib/db/user";
 
 export const runtime = "nodejs";
 
@@ -18,6 +19,8 @@ export async function GET(request: NextRequest, { params }: MediaDownloadProps) 
   try {
     const { id } = await params;
     const session = await getPublicSession(request);
+    const userClient = session.userId ? await createAuthenticatedUserClient(request) : null;
+    const readClient = userClient ?? createPublicServerClient();
     const settings = await getSiteSettings();
     const rate = await enforceRateLimit({
       request,
@@ -33,7 +36,7 @@ export async function GET(request: NextRequest, { params }: MediaDownloadProps) 
       return apiError("RATE_LIMITED", "Too many download requests. Please wait before trying again.", 429);
     }
 
-    const { data: media, error } = await supabase
+    const { data: media, error } = await readClient
       .from("media")
       .select("*")
       .eq("id", id)
@@ -41,7 +44,7 @@ export async function GET(request: NextRequest, { params }: MediaDownloadProps) 
 
     if (error || !media) return apiError("NOT_FOUND", "Media not found.", 404);
 
-    const { data: album, error: albumError } = await supabase
+    const { data: album, error: albumError } = await readClient
       .from("albums")
       .select("id,title,status")
       .eq("id", media.album_id)

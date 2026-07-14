@@ -2,6 +2,7 @@ import "server-only";
 import { z } from "zod";
 import { albumStatuses } from "@/lib/config";
 import { supabase } from "@/lib/supabase";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import type { SiteSettings } from "@/lib/types";
 
 export const defaultSiteSettings: SiteSettings = {
@@ -223,7 +224,7 @@ export async function getSiteSettings() {
   return normalizeSiteSettings(data as Partial<SiteSettings>);
 }
 
-export async function saveSiteSettings(input: unknown) {
+export async function saveSiteSettings(client: SupabaseClient, input: unknown) {
   const parsed = siteSettingsSchema.parse(input);
   const payload = {
     ...parsed,
@@ -242,7 +243,7 @@ export async function saveSiteSettings(input: unknown) {
     advanced_settings: typeof parsed.advanced_settings === "object" && parsed.advanced_settings !== null ? parsed.advanced_settings : defaultSiteSettings.advanced_settings,
   };
 
-  const { data, error } = await supabase
+  const { data, error } = await client
     .from("site_settings")
     .upsert(payload, { onConflict: "id" })
     .select("*")

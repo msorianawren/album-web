@@ -1,5 +1,6 @@
 import { unstable_noStore as noStore } from "next/cache";
-import { supabase } from "@/lib/supabase";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import { createPublicServerClient } from "@/lib/db/public";
 import type { AboutProfile, EducationItem, CareerItem, HobbyItem, LanguageItem, AchievementItem, PersonalMetrics, SocialLinkItem } from "@/lib/types";
 
 const aboutProfileId = "main";
@@ -70,7 +71,7 @@ export function normalizeAboutProfile(value: Partial<AboutProfile> | null | unde
 
 export async function getAboutProfile(): Promise<AboutProfile> {
   noStore();
-  const { data, error } = await supabase
+  const { data, error } = await createPublicServerClient()
     .from("about_profile")
     .select(aboutColumns)
     .eq("id", aboutProfileId)
@@ -85,11 +86,14 @@ export function aboutPayloadFromInput(input: Record<string, unknown>): AboutProf
   return payload;
 }
 
-export async function saveAboutProfile(input: Record<string, unknown>): Promise<AboutProfile> {
+export async function saveAboutProfile(
+  client: SupabaseClient,
+  input: Record<string, unknown>,
+): Promise<AboutProfile> {
   noStore();
   const payload = aboutPayloadFromInput(input);
   
-  const { data, error } = await supabase
+  const { data, error } = await client
     .from("about_profile")
     .upsert(payload, { onConflict: "id" })
     .select(aboutColumns)

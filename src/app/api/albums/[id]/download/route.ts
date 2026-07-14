@@ -3,6 +3,7 @@ import JSZip from "jszip";
 import sharp from "sharp";
 import { getAlbum } from "@/lib/albums";
 import { getPublicSession } from "@/lib/auth";
+import { createAuthenticatedUserClient } from "@/lib/db/user";
 import { logAuditEvent } from "@/lib/audit";
 import { recordUserAlbumActivity } from "@/lib/user-activity";
 import { apiError, toServerError } from "@/lib/errors";
@@ -22,6 +23,7 @@ export async function GET(request: NextRequest, { params }: AlbumDownloadProps) 
   try {
     const { id } = await params;
     const session = await getPublicSession(request);
+    const userClient = session.userId ? await createAuthenticatedUserClient(request) : null;
     const settings = await getSiteSettings();
     const rate = await enforceRateLimit({
       request,
@@ -37,7 +39,7 @@ export async function GET(request: NextRequest, { params }: AlbumDownloadProps) 
       return apiError("RATE_LIMITED", "Too many download requests. Please wait before trying again.", 429);
     }
 
-    const album = await getAlbum(id, { isAdmin: session.isAdmin });
+    const album = await getAlbum(id, { isAdmin: session.isAdmin, userClient });
 
     if (!album) return apiError("NOT_FOUND", "Album not found.", 404);
     if (!settings.allow_public_downloads && !session.isAdmin) {

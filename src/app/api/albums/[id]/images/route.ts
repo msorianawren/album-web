@@ -3,6 +3,7 @@ import { getPublicSession } from "@/lib/auth";
 import { logAuditEvent } from "@/lib/audit";
 import { classifyDataFailure } from "@/lib/app-failure";
 import { getTrustedAdminDatabase } from "@/lib/db/admin";
+import { createAuthenticatedUserClient } from "@/lib/db/user";
 import { apiError, apiSuccess, toServerError } from "@/lib/errors";
 import { uploadMediaFile } from "@/lib/media";
 import { getAlbum } from "@/lib/albums";
@@ -21,12 +22,17 @@ export async function GET(request: NextRequest, { params }: ImagesRouteProps) {
   try {
     const { id } = await params;
     const session = await getPublicSession(request);
+    const userClient = session.userId ? await createAuthenticatedUserClient(request) : null;
     const rawSort = request.nextUrl.searchParams.get("sort");
     if (rawSort && !mediaSortModes.some((mode) => mode === rawSort)) {
       return apiError("INVALID_INPUT", "Unsupported sort mode.", 400);
     }
     const sort = parseMediaSortMode(rawSort, "smart");
-    const album = await getAlbum(id, { isAdmin: Boolean(session?.isAdmin), sort });
+    const album = await getAlbum(id, {
+      isAdmin: Boolean(session?.isAdmin),
+      sort,
+      userClient,
+    });
 
     if (!album) return apiError("NOT_FOUND", "Album not found.", 404);
     if (album.locked) return apiSuccess({ media: [] });

@@ -18,6 +18,7 @@ export const metadata: Metadata = {
 };
 
 import { getPublicSession } from "@/lib/auth";
+import { createAuthenticatedUserClient } from "@/lib/db/user";
 
 import { AccessRequestModal } from "@/components/albums/AccessRequestModal";
 
@@ -26,6 +27,7 @@ import { getDictionary } from "@/lib/getDictionary";
 
 export default async function AlbumsPage({ searchParams }: AlbumsPageProps) {
   const session = await getPublicSession();
+  const userClient = session.userId ? await createAuthenticatedUserClient() : null;
 
   const cookieStore = await cookies();
   const locale = (cookieStore.get("NEXT_LOCALE")?.value as "en" | "vi") || "en";
@@ -33,7 +35,7 @@ export default async function AlbumsPage({ searchParams }: AlbumsPageProps) {
 
   const filters = await searchParams;
   const [albums, landing] = await Promise.all([
-    getAlbums({ ...filters, session }),
+    getAlbums({ ...filters, session, userClient }),
     getLandingPage()
   ]);
 
