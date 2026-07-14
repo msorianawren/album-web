@@ -55,3 +55,20 @@
 - Security impact: Removes fake success states, prevents raw provider details in structured logs/API responses, and reduces blank/unsafe media exposure.
 - Performance impact: Negligible request-ID/classification overhead; sample data is no longer statically imported by the album repository.
 - Test performed: 8 unit tests, lint (0 errors, 14 unchanged warnings), TypeScript pass, production build pass, local album/API 200/404 checks, and zero sample IDs in live list response.
+
+## 2026-07-14 - Milestone 2 checkpoint
+
+- Milestone: 2
+- Commit: `9f0e896 fix(albums): remove production demo fallbacks`
+- Result: COMPLETE - implemented, verified, and committed.
+
+## 2026-07-14 18:20:00 +07:00 - Milestone 3 scoped client foundation
+
+- Milestone: 3
+- Files: `src/lib/auth-token.ts`, `src/lib/db/*`, `src/lib/authorization/role-matrix.ts`, `src/lib/auth.ts`, `tests/supabase-boundaries.test.mjs`, engineering state files
+- Reason: Make public, user-JWT, admin, and worker trust levels explicit before migrating route families away from the broad service-role client.
+- Behavior before: One generic service-role export was the default database client and auth token parsing lived inside the session module.
+- Behavior after: New code has separate anon, request-JWT, guarded admin, and constant-time-authorized worker constructors; a pure role matrix covers private-album principals and entitlement states.
+- Security impact: Public/user clients cannot read the service-role key; new trusted clients require explicit server-only modules and guard contexts. Existing broad imports remain until isolated migration.
+- Performance impact: No route query behavior changed; clients remain request-scoped where identity is required.
+- Test performed: Lint pass with 14 unchanged warnings, TypeScript pass, 12 unit tests including static client-boundary and role-decision cases, and production build pass with 49 routes.

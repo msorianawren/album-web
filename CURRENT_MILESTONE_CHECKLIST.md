@@ -35,6 +35,22 @@
 - [v] Add focused automated tests for failure classification and fixture policy.
 - [v] Verify empty, unavailable, not-found, processing, and API error behavior.
 - [v] Create `ERROR_SEMANTICS_REPORT.md` and update engineering state/handoff/changelog.
-- [x] Stage the fully verified Milestone 2 subtask for its isolated commit.
+- [c] Commit the verified Milestone 2 subtask (`9f0e896`).
+
+## Milestone 3 - Supabase Client and Authorization Boundaries
+
+- [x] Add explicit public/anon, request-scoped JWT user, trusted admin, and trusted worker client modules.
+- [x] Extract runtime token reading into a server-only helper.
+- [x] Add a centralized private-album role decision matrix.
+- [v] Add and run client import-boundary and role-decision unit tests.
+- [v] Run full checks for the scoped client-boundary foundation.
+- [~] Commit the scoped client-boundary foundation.
+- [ ] Migrate public album reads away from the legacy service-role client.
+- [ ] Migrate authenticated-user route families to request-scoped JWT/RLS clients.
+- [ ] Migrate admin route families behind trusted admin contexts.
+- [ ] Migrate cron routes behind trusted worker contexts.
+- [ ] Add database/RLS role tests for all supported principals.
+- [ ] Create `SUPABASE_BOUNDARY_REPORT.md` and `AUTHORIZATION_ROLE_MATRIX.md`.
+- [ ] Verify and commit the complete Milestone 3 boundary migration.
 
 Legend: `[ ]` not started, `[~]` in progress, `[x]` implemented, `[v]` verified, `[c]` committed, `[b]` blocked.

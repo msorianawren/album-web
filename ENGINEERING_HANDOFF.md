@@ -9,10 +9,10 @@ Upgrade album-web into a production-grade, privacy-sensitive digital asset manag
 - Status: IN_PROGRESS
 - Branch: `engineering/production-platform-overhaul`
 - Baseline commit: `f82cb5eb0e78f9ea4b5aa9c34d6a20a69cfead2d`
-- Current milestone: 2 - Error semantics and demo-fallback removal
-- Completed checkpoint: `3f6114e docs: add architecture and threat baseline`
-- Current subtask: Commit the fully verified Milestone 2 implementation.
-- Production architecture has not been changed by this program yet.
+- Current milestone: 3 - Supabase client and authorization boundaries
+- Completed checkpoint: `9f0e896 fix(albums): remove production demo fallbacks`
+- Current subtask: Verify and commit explicit client constructors plus the central role matrix.
+- Explicit client boundaries now exist alongside the legacy broad client; route migration has not started.
 
 ## Important Constraints
 
@@ -29,6 +29,8 @@ Upgrade album-web into a production-grade, privacy-sensitive digital asset manag
 - Prefer backward-compatible schema and dual-read/dual-write cutovers where migration is required.
 - Demo fixtures are controlled by an explicit code policy and are disabled by default in every environment.
 - Error logs use codes/operation/request ID/provider code only; raw causes are not serialized.
+- Public and authenticated clients use the anon key; service-role construction is isolated to trusted admin/worker modules for new code.
+- Existing broad-client imports remain a documented transition path until each route family has been migrated and tested.
 
 ## Rejected Approaches
 
@@ -73,8 +75,8 @@ Then read `AGENTS.md`, `ENGINEERING_PROGRAM_STATE.md`, this file, `CURRENT_MILES
 
 ## Next Five Actions
 
-1. Commit the verified Milestone 2 error-semantics change and record its checkpoint.
-2. Begin Milestone 3 with scoped Supabase client modules and an authorization role matrix.
-3. Migrate public album reads away from the default service-role client first.
-4. Add JWT-bound authenticated client tests for user-owned notifications/help/access paths.
-5. Migrate admin/worker callers in isolated route-family commits with import-boundary checks.
+1. Run lint/build and commit the scoped Supabase client-boundary foundation.
+2. Migrate public album reads away from the default service-role client first.
+3. Add JWT-bound authenticated client tests for user-owned notifications/help/access paths.
+4. Migrate one admin route family behind the trusted admin context.
+5. Migrate cron callers behind constant-time worker authorization and trusted worker clients.
