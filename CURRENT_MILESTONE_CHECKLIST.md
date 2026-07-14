@@ -13,6 +13,17 @@
 - [v] Source-review assistant, help, notification, viewer, audio-default, and reduced-motion behavior.
 - [v] Create `BASELINE_PRODUCTION_READINESS_REPORT.md`.
 - [v] Update state, changelog, and handoff with verified results.
-- [~] Commit Milestone 0 baseline.
+- [c] Commit Milestone 0 baseline (`55b022c`).
+
+## Milestone 1 - Architecture, Data-Flow, and Threat Audit
+
+- [v] Inventory Next.js routes, layouts, handlers, rendering, and cache directives.
+- [v] Inventory Supabase clients, service-role call sites, RLS policies, functions, triggers, and indexes.
+- [v] Map authentication, blocked-user, admin/founder, and return-path behavior.
+- [v] Map album, access-request, grant, revoke, preview, media, upload, and download flows.
+- [v] Map help, contact, notification, assistant, rate-limit, and audit flows.
+- [v] Create architecture, data-flow, threat, service-role, route/API, and prioritized-issue reports.
+- [v] Verify report evidence and update handoff/state/changelog.
+- [ ] Commit Milestone 1 audit.
 
 Legend: `[ ]` not started, `[~]` in progress, `[x]` implemented, `[v]` verified, `[c]` committed, `[b]` blocked.

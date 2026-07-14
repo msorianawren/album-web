@@ -9,7 +9,9 @@ Upgrade album-web into a production-grade, privacy-sensitive digital asset manag
 - Status: IN_PROGRESS
 - Branch: `engineering/production-platform-overhaul`
 - Baseline commit: `f82cb5eb0e78f9ea4b5aa9c34d6a20a69cfead2d`
-- Current milestone: 0 - Baseline checkpoint ready to commit
+- Current milestone: 1 - Architecture, data-flow, and threat audit
+- Completed checkpoint: `55b022c docs: establish production readiness baseline`
+- Current subtask: Verify and commit the six Milestone 1 audit/register documents.
 - Production architecture has not been changed by this program yet.
 
 ## Important Constraints
@@ -51,6 +53,10 @@ Then read `AGENTS.md`, `ENGINEERING_PROGRAM_STATE.md`, this file, `CURRENT_MILES
 - Public image processing is synchronous; video processing is pending without a trusted worker.
 - Album list/detail queries silently fall back to sample data on empty/error paths.
 - Help threads reuse one system, paginate user data, cap consecutive messages, and normalize admin identity.
+- Tracked migrations define 21 primary application tables, 9 SQL functions, 11 triggers, RLS policies, and indexes for album/media/access/help/notification paths; no views were found.
+- Auth return paths use validated relative paths in short-lived `httpOnly` flow cookies; the proxy duplicates some redirect/session helpers.
+- Presigned upload completion has no durable reservation, HEAD, checksum, or trusted video probe.
+- Notifications use an unread count query and latest-20 list with no-store behavior.
 
 ## Known Production Risks
 
@@ -59,11 +65,14 @@ Then read `AGENTS.md`, `ENGINEERING_PROGRAM_STATE.md`, this file, `CURRENT_MILES
 - Production silently falls back to sample albums on empty/error paths.
 - Raw video URLs are created before trusted FFmpeg/FFprobe processing.
 - Authenticated and visual interaction baselines need fixtures/stable browser automation.
+- Private single/ZIP download authorization is not unified with approved private viewing.
+- Proxy rate limits are per-instance and database action counters are non-atomic.
+- Audit/error logging has no centralized correlation ID or redaction contract.
 
 ## Next Five Actions
 
-1. Commit the verified Milestone 0 baseline.
-2. Build the Next.js/Supabase/R2/auth/data-flow registers for Milestone 1.
-3. Classify every service-role import and mutation route.
-4. Create the threat model and prioritized issue register with evidence.
-5. Commit Milestone 1 audit before implementing error-semantics changes.
+1. Run Milestone 1 lint/typecheck and commit the architecture/threat baseline.
+2. Begin Milestone 2 by defining typed domain/result errors and a request/correlation ID contract.
+3. Move sample albums behind an explicit local demo fixture provider.
+4. Add empty/unavailable/permission/processing UI states without exposing backend details.
+5. Add focused tests proving production database failures never return sample albums.
