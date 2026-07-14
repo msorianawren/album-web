@@ -173,6 +173,7 @@ export interface UserProfile {
   created_at: string;
   updated_at?: string;
   registration_source?: string | null;
+  metadata?: Record<string, unknown> | null;
 }
 
 export interface AuditLog {

@@ -3,6 +3,7 @@ import { OAuthHashHandler } from "@/components/auth/OAuthHashHandler";
 import { AudioUXProvider } from "@/components/ui/AudioUXProvider";
 import { ToastProvider } from "@/components/ui/ToastProvider";
 import "./globals.css";
+import "@/components/assistant/assistant-pet.css";
 
 import { getSiteSettings } from "@/lib/site-settings";
 

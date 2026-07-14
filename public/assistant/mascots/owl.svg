@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-labelledby="title desc">
+  <title id="title">Wise owl companion</title>
+  <desc id="desc">A quiet owl mascot with cream feathers and muted gold accents.</desc>
+  <defs>
+    <linearGradient id="wing" x1="50" y1="39" x2="209" y2="219" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#b28b63"/>
+      <stop offset="1" stop-color="#5e4737"/>
+    </linearGradient>
+    <linearGradient id="face" x1="74" y1="65" x2="178" y2="198" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#fff8ef"/>
+      <stop offset="1" stop-color="#e6d2b8"/>
+    </linearGradient>
+  </defs>
+  <circle cx="128" cy="128" r="118" fill="#fbf2e7"/>
+  <ellipse cx="128" cy="180" rx="68" ry="30" fill="#d8b894" opacity=".34"/>
+  <path fill="url(#wing)" d="M58 91c0-36 31-58 70-58s70 22 70 58v55c0 38-29 66-70 66s-70-28-70-66V91Z"/>
+  <path fill="#493427" d="M75 61c15-24 36-32 53-28-10 13-24 25-45 35l-8-7Zm106 0c-15-24-36-32-53-28 10 13 24 25 45 35l8-7Z" opacity=".38"/>
+  <path fill="url(#face)" d="M77 106c0-28 21-48 51-48s51 20 51 48c0 33-22 58-51 58s-51-25-51-58Z"/>
+  <circle cx="104" cy="111" r="23" fill="#f8e7cf"/>
+  <circle cx="152" cy="111" r="23" fill="#f8e7cf"/>
+  <circle cx="104" cy="111" r="9" fill="#2a1d17"/>
+  <circle cx="152" cy="111" r="9" fill="#2a1d17"/>
+  <path fill="#c7a052" d="M119 132h18l-9 14-9-14Z"/>
+  <path fill="none" stroke="#f0dcc2" stroke-linecap="round" stroke-width="5" d="M94 172c18 13 50 13 68 0"/>
+  <path fill="#c7a052" d="M52 147c13 1 23 11 23 24-14-2-23-11-23-24Zm152 24c0-13 10-23 23-24 0 13-9 22-23 24Z" opacity=".72"/>
+</svg>

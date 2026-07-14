@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-labelledby="title desc">
+  <title id="title">Calm capybara companion</title>
+  <desc id="desc">A soft beige capybara mascot with muted gold accents.</desc>
+  <defs>
+    <linearGradient id="fur" x1="64" y1="42" x2="198" y2="220" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#d9bea0"/>
+      <stop offset="1" stop-color="#8f6c4d"/>
+    </linearGradient>
+    <linearGradient id="cream" x1="73" y1="70" x2="180" y2="206" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#fff5e8"/>
+      <stop offset="1" stop-color="#e8d3b9"/>
+    </linearGradient>
+  </defs>
+  <circle cx="128" cy="128" r="118" fill="#fbf3e7"/>
+  <ellipse cx="128" cy="176" rx="70" ry="34" fill="#d9c0a2" opacity=".42"/>
+  <path fill="url(#fur)" d="M62 122c0-49 37-82 83-82 36 0 67 24 67 66 0 48-36 85-84 85-40 0-66-27-66-69Z"/>
+  <path fill="url(#cream)" d="M72 127c0-35 27-59 65-59 35 0 59 21 59 54 0 38-28 65-68 65-34 0-56-23-56-60Z" opacity=".34"/>
+  <path fill="#705238" d="M87 85c-10-13-4-29 11-29 11 0 18 8 17 18-10 1-20 5-28 11Zm83-5c-1-13 9-22 22-17 14 6 16 23 4 33-7-8-16-13-26-16Z"/>
+  <ellipse cx="110" cy="119" rx="7" ry="9" fill="#2a1d17"/>
+  <ellipse cx="163" cy="116" rx="7" ry="9" fill="#2a1d17"/>
+  <ellipse cx="137" cy="139" rx="18" ry="12" fill="#7b5a3e"/>
+  <path fill="none" stroke="#3d2b22" stroke-linecap="round" stroke-width="5" d="M123 151c8 7 21 7 29-1"/>
+  <path fill="#c9a45d" d="M51 148c13-3 24 6 26 19-14 1-25-6-26-19Zm151 20c2-13 14-21 27-17-3 13-14 19-27 17Z"/>
+  <circle cx="104" cy="138" r="7" fill="#d99d93" opacity=".45"/>
+  <circle cx="171" cy="134" r="7" fill="#d99d93" opacity=".45"/>
+</svg>

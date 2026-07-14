@@ -1,4 +1,6 @@
 import { getLandingPage } from "@/lib/landing";
+import { getPublicSession, getUserProfile } from "@/lib/auth";
+import { getAssistantPreferencesFromMetadata } from "@/lib/assistant/preferences";
 import ProfileClient from "./ProfileClient";
 
 export const metadata = {
@@ -7,9 +9,17 @@ export const metadata = {
 };
 
 export default async function ProfilePage() {
-  const landing = await getLandingPage();
+  const [landing, session] = await Promise.all([
+    getLandingPage(),
+    getPublicSession(),
+  ]);
+  const profile = session.userId ? await getUserProfile(session.userId) : null;
   
   return (
-    <ProfileClient config={landing?.background_settings || {}} />
+    <ProfileClient
+      config={landing?.background_settings || {}}
+      userId={session.userId}
+      initialAssistantPreferences={getAssistantPreferencesFromMetadata(profile?.metadata)}
+    />
   );
 }

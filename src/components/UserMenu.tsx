@@ -3,9 +3,12 @@
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { LogIn, LogOut, Moon, Sun, UserRound, Shield } from "lucide-react";
+import { LogIn, LogOut, Moon, Sparkles, Sun, UserRound, Shield } from "lucide-react";
+import { AssistantPet } from "@/components/assistant/AssistantPet";
 import { Avatar } from "@/components/ui/Avatar";
+import { useStoredAssistantPreferences } from "@/hooks/useAssistantPreferences";
 import { buildLoginHref } from "@/lib/auth-redirect";
+import { assistantModeCopy } from "@/lib/assistant/preferences";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import type { PublicSession } from "@/lib/types";
 import type { AppDictionary } from "@/lib/i18n";
@@ -57,6 +60,7 @@ function syncThemeClass(mode: ThemeMode) {
 export function UserMenu({ session, dict }: UserMenuProps) {
   const [open, setOpen] = useState(false);
   const theme = useSyncExternalStore(subscribeTheme, getStoredTheme, () => "auto" as ThemeMode);
+  const assistantPreferences = useStoredAssistantPreferences();
   const menuRef = useRef<HTMLDivElement>(null);
   const pathname = usePathname() ?? "";
   const searchParams = useSearchParams();
@@ -173,6 +177,30 @@ export function UserMenu({ session, dict }: UserMenuProps) {
           >
             <UserRound className="h-4 w-4 text-muted-accent" aria-hidden="true" />
             {dict?.nav?.profile || "My Profile & Rules"}
+          </Link>
+
+          <Link
+            href="/profile#oriana-companion"
+            className="flex w-full items-center justify-between gap-3 rounded-[1rem] px-3 py-3 text-left text-sm font-medium text-text-primary transition hover:bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <span className="inline-flex min-w-0 items-center gap-3">
+              {assistantPreferences.mode === "off" ? (
+                <Sparkles className="h-4 w-4 shrink-0 text-muted-accent" aria-hidden="true" />
+              ) : (
+                <AssistantPet
+                  character={assistantPreferences.character}
+                  mood="idle"
+                  size="xs"
+                  decorative
+                />
+              )}
+              <span className="truncate">Assistant preferences</span>
+            </span>
+            {assistantPreferences.mode !== "off" ? (
+              <span className="shrink-0 rounded-full border border-border bg-background px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-text-secondary">
+                Companion: {assistantModeCopy[assistantPreferences.mode].label}
+              </span>
+            ) : null}
           </Link>
 
           {session.isAdmin ? (

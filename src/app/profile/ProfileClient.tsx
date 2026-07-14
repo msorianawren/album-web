@@ -1,6 +1,7 @@
 "use client";
 
-import { Leaf, Volume2, VolumeX, BookOpen, Clock, ShieldCheck, HeartHandshake, EyeOff, ArrowLeft, Palette, ImageIcon, RotateCcw, UploadCloud } from "lucide-react";
+import { Leaf, Volume2, VolumeX, BookOpen, Clock, ShieldCheck, HeartHandshake, EyeOff, ArrowLeft, Palette, RotateCcw, UploadCloud } from "lucide-react";
+import { AssistantPreferencesPanel } from "@/components/assistant/AssistantPreferencesPanel";
 import { useAlbumViewMemory } from "@/hooks/useAlbumViewMemory";
 import { useUIPreferences, ClickSoundType, AmbientSoundType, BgThemeType } from "@/hooks/useUIPreferences";
 import { useToast } from "@/hooks/useToast";
@@ -11,7 +12,17 @@ import type { LandingBackgroundSettings } from "@/lib/types";
 
 import { NatureAnimatedBackground } from "@/components/landing/NatureAnimatedBackground";
 
-export default function ProfileClient({ config }: { config: LandingBackgroundSettings }) {
+interface ProfileClientProps {
+  config: LandingBackgroundSettings;
+  userId?: string | null;
+  initialAssistantPreferences?: unknown;
+}
+
+export default function ProfileClient({
+  config,
+  userId,
+  initialAssistantPreferences,
+}: ProfileClientProps) {
   const router = useRouter();
   const { toast } = useToast();
   const { memory, isClient } = useAlbumViewMemory();
@@ -72,7 +83,7 @@ export default function ProfileClient({ config }: { config: LandingBackgroundSet
           </h1>
           <p className="mt-4 text-text-secondary leading-relaxed max-w-lg mx-auto">
             A quiet space to view your reading memory and tailor your sensory experience. 
-            Everything here is private and stored only on your device.
+            Guest choices stay on this device; signed-in companion choices can sync to your account.
           </p>
         </section>
 
@@ -189,6 +200,11 @@ export default function ProfileClient({ config }: { config: LandingBackgroundSet
             )}
           </div>
         </section>
+
+        <AssistantPreferencesPanel
+          userId={userId}
+          initialPreferences={initialAssistantPreferences}
+        />
 
         {/* Visual Theme Section */}
         <section className="rounded-[1.4rem] border border-border bg-surface/60 backdrop-blur-xl p-6 shadow-xl shadow-text-primary/5">

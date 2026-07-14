@@ -77,6 +77,7 @@ function isPublicPath(pathname: string) {
     pathname.startsWith("/albums") ||
     pathname.startsWith("/about") ||
     pathname.startsWith("/contact") ||
+    pathname === "/profile" ||
     pathname === "/boycott" ||
     pathname.startsWith("/auth/callback") ||
     pathname.startsWith("/api/auth/login") ||

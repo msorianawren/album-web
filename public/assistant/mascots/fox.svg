@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-labelledby="title desc">
+  <title id="title">Attentive fox companion</title>
+  <desc id="desc">A calm fox mascot with warm brown, blush, and cream tones.</desc>
+  <defs>
+    <linearGradient id="coat" x1="50" y1="34" x2="201" y2="218" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#cf8c62"/>
+      <stop offset="1" stop-color="#75472f"/>
+    </linearGradient>
+    <linearGradient id="muzzle" x1="90" y1="104" x2="158" y2="190" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#fff6ea"/>
+      <stop offset="1" stop-color="#ead4ba"/>
+    </linearGradient>
+  </defs>
+  <circle cx="128" cy="128" r="118" fill="#fbf2e7"/>
+  <path fill="#caa464" d="M202 177c18-7 31 3 34 18-20 5-34-3-34-18Z" opacity=".55"/>
+  <path fill="url(#coat)" d="M51 51c37 9 57 30 77 65 20-35 42-56 79-65-8 44-8 72 3 102-16 36-46 54-82 54s-66-18-82-54c11-30 13-58 5-102Z"/>
+  <path fill="#4b2f22" d="M70 72c20 9 32 22 43 43-18-7-33-18-43-43Zm116 0c-9 25-24 36-43 43 11-21 23-34 43-43Z" opacity=".28"/>
+  <path fill="url(#muzzle)" d="M80 135c15-20 30-30 48-30 18 0 33 10 48 30-4 39-24 59-48 59s-44-20-48-59Z"/>
+  <path fill="#fff8ef" d="M104 155c6-9 14-14 24-14 10 0 18 5 24 14-3 14-12 22-24 22s-21-8-24-22Z"/>
+  <ellipse cx="101" cy="124" rx="7" ry="9" fill="#2d1d17"/>
+  <ellipse cx="155" cy="124" rx="7" ry="9" fill="#2d1d17"/>
+  <path fill="#3b241b" d="M119 143c4-4 14-4 18 0-2 7-6 10-9 10s-7-3-9-10Z"/>
+  <path fill="none" stroke="#3b241b" stroke-linecap="round" stroke-width="5" d="M112 164c9 8 23 8 32 0"/>
+  <circle cx="91" cy="145" r="7" fill="#d89b91" opacity=".45"/>
+  <circle cx="165" cy="145" r="7" fill="#d89b91" opacity=".45"/>
+</svg>
