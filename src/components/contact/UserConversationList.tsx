@@ -75,8 +75,11 @@ export function UserConversationList({ initialThreads }: { initialThreads: Threa
       );
 
       setReplyBody((prev) => ({ ...prev, [threadId]: "" }));
-    } catch (err: any) {
-      setErrors((prev) => ({ ...prev, [threadId]: err.message || "An error occurred." }));
+    } catch (err) {
+      setErrors((prev) => ({
+        ...prev,
+        [threadId]: err instanceof Error ? err.message : "An error occurred.",
+      }));
     } finally {
       setSubmitting((prev) => ({ ...prev, [threadId]: false }));
     }

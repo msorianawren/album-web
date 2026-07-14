@@ -102,6 +102,12 @@ export const defaultSiteSettings: SiteSettings = {
     view_event_dedupe_hours: 24,
     user_activity_retention_days: 365,
     show_user_activity_in_security: true,
+    access_requests: {
+      auto_approve_enabled: true,
+      auto_approve_delay_days: 7,
+      high_risk_requires_manual_review: true,
+      policy_version: "2026-07-14",
+    },
   },
 };
 

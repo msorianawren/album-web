@@ -7,10 +7,11 @@ import { useToast } from "@/hooks/useToast";
 import { useRouter } from "next/navigation";
 import { useRef } from "react";
 import { imageStore } from "@/lib/idb";
+import type { LandingBackgroundSettings } from "@/lib/types";
 
 import { NatureAnimatedBackground } from "@/components/landing/NatureAnimatedBackground";
 
-export default function ProfileClient({ config }: { config: any }) {
+export default function ProfileClient({ config }: { config: LandingBackgroundSettings }) {
   const router = useRouter();
   const { toast } = useToast();
   const { memory, isClient } = useAlbumViewMemory();
@@ -208,7 +209,7 @@ export default function ProfileClient({ config }: { config: any }) {
                 }}
                 className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-muted-accent"
               >
-                <option value="default">Default (Artist's Choice)</option>
+                <option value="default">Default (Artist&apos;s Choice)</option>
                 <option value="sakura">Sakura (Cherry Blossoms)</option>
                 <option value="fireflies">Fireflies (Golden Glow)</option>
                 <option value="snow">Winter Snow</option>
@@ -291,7 +292,7 @@ export default function ProfileClient({ config }: { config: any }) {
               <div>
                 <h3 className="text-lg font-medium text-text-primary mb-2">Privacy & Boundaries</h3>
                 <p className="text-sm text-text-secondary leading-relaxed">
-                  Private albums and exclusive collections are shared with trust. Redistributing, scraping, or sharing access to private material without consent directly violates our core principles. We protect our community's privacy fiercely.
+                  Private albums and exclusive collections are shared with trust. Redistributing, scraping, or sharing access to private material without consent directly violates our core principles. We protect our community&apos;s privacy fiercely.
                 </p>
               </div>
             </article>

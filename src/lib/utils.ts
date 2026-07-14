@@ -5,12 +5,21 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export function formatPhotoCount(count: number, dict?: any) {
+type AlbumCountDictionary = {
+  albums?: {
+    photo?: string;
+    photos?: string;
+    video?: string;
+    videos?: string;
+  };
+};
+
+export function formatPhotoCount(count: number, dict?: AlbumCountDictionary) {
   const label = count === 1 ? (dict?.albums?.photo || "photo") : (dict?.albums?.photos || "photos");
   return `${new Intl.NumberFormat("en").format(count)} ${label}`;
 }
 
-export function formatMediaCount(photoCount: number, videoCount: number, dict?: any) {
+export function formatMediaCount(photoCount: number, videoCount: number, dict?: AlbumCountDictionary) {
   const photoLabel = photoCount === 1 ? (dict?.albums?.photo || "photo") : (dict?.albums?.photos || "photos");
   const videoLabel = videoCount === 1 ? (dict?.albums?.video || "video") : (dict?.albums?.videos || "videos");
   

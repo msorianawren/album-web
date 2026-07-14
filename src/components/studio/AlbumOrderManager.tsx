@@ -145,8 +145,11 @@ export function AlbumOrderManager({ initialAlbums }: { initialAlbums: Album[] })
       return fallbackSort(a, b);
     });
 
-    setOriginalAlbums(sorted);
-    setAlbums(sorted);
+    const timer = window.setTimeout(() => {
+      setOriginalAlbums(sorted);
+      setAlbums(sorted);
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, [initialAlbums]);
 
   const currentTabAlbums = useMemo(() => {

@@ -6,6 +6,7 @@ import { StudioStatCard } from "@/components/studio/StudioStatCard";
 import { getPublicSession } from "@/lib/auth";
 import { getStudioDashboardData } from "@/lib/studio-data";
 import { formatBytes } from "@/lib/utils";
+import type { Album, AuditLog, StudioCommentItem, StudioMediaItem } from "@/lib/types";
 
 export default async function StudioDashboardPage() {
   const session = await getPublicSession();
@@ -55,7 +56,7 @@ export default async function StudioDashboardPage() {
         <Panel title="Recent albums">
           {data.recentAlbums.length ? (
             <div className="grid gap-3">
-              {data.recentAlbums.map((album: any) => (
+              {data.recentAlbums.map((album: Album) => (
                 <Link key={album.id} href={`/studio/albums/${album.id}`} className="rounded-[1rem] border border-border bg-background/60 p-4 transition hover:bg-surface">
                   <p className="font-semibold text-text-primary">{album.title}</p>
                   <p className="mt-1 text-xs text-text-secondary">{album.status} - {album.media_count} media - {album.comment_count} comments</p>
@@ -80,7 +81,7 @@ export default async function StudioDashboardPage() {
         <Panel title="Recent media">
           {data.recentMedia.length ? (
             <div className="grid gap-3">
-              {data.recentMedia.map((item: any) => (
+              {data.recentMedia.map((item: StudioMediaItem) => (
                 <div key={item.id} className="rounded-[1rem] border border-border bg-background/60 p-4">
                   <p className="truncate font-semibold text-text-primary">{item.title ?? item.original_filename ?? "Untitled media"}</p>
                   <p className="mt-1 text-xs text-text-secondary">{item.album_title ?? "No album"} - {item.media_type} - {formatBytes(item.file_size)}</p>
@@ -95,7 +96,7 @@ export default async function StudioDashboardPage() {
         <Panel title="Recent comments">
           {data.recentComments.length ? (
             <div className="grid gap-3">
-              {data.recentComments.map((comment: any) => (
+              {data.recentComments.map((comment: StudioCommentItem) => (
                 <div key={comment.id} className="rounded-[1rem] border border-border bg-background/60 p-4">
                   <p className="line-clamp-2 text-sm text-text-primary">{comment.body}</p>
                   <p className="mt-2 text-xs text-text-secondary">{comment.author_name ?? "Anonymous"} - {comment.album_title ?? "Album"} - {comment.is_hidden ? "hidden" : "visible"}</p>
@@ -111,7 +112,7 @@ export default async function StudioDashboardPage() {
       <Panel title="Recent audit activity">
         {data.recentAuditLogs.length ? (
           <div className="grid gap-3">
-            {data.recentAuditLogs.map((log: any) => (
+            {data.recentAuditLogs.map((log: AuditLog) => (
               <div key={log.id} className="grid gap-2 rounded-[1rem] border border-border bg-background/60 p-4 sm:grid-cols-[1fr_auto] sm:items-center">
                 <div className="min-w-0">
                   <p className="truncate font-semibold text-text-primary">{log.action}</p>

@@ -2,10 +2,11 @@
 
 import { useAlbumViewMemory } from "@/hooks/useAlbumViewMemory";
 import { ArrowRight } from "lucide-react";
+import type { AppDictionary } from "@/lib/i18n";
 
 interface AlbumMemoryHintProps {
   albumId: string;
-  dict?: any;
+  dict?: AppDictionary;
 }
 
 export function AlbumMemoryHint({ albumId, dict }: AlbumMemoryHintProps) {

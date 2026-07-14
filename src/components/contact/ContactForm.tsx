@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useRef } from "react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
@@ -38,13 +38,8 @@ export function ContactForm({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSent, setIsSent] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
-  const [submitStartTime, setSubmitStartTime] = useState<string>("");
+  const [submitStartTime] = useState(() => Date.now().toString());
   const formRef = useRef<HTMLFormElement>(null);
-
-  useEffect(() => {
-    // Record when the user first loaded the form to detect fast-submit bots
-    setSubmitStartTime(Date.now().toString());
-  }, []);
 
   const getMailtoLink = () => {
     if (!contactEmail) return "#";

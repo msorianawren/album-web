@@ -1,5 +1,6 @@
-const fs = require('fs');
-const path = require('path');
+void (async () => {
+const fs = await import("node:fs");
+const path = await import("node:path");
 
 const urls = {
   "piano": "https://archive.org/download/minecraft-volume-alpha/01%20-%20C418%20-%20Key.mp3",
@@ -30,4 +31,5 @@ async function download() {
   }
 }
 
-download();
+await download();
+})();

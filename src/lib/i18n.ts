@@ -1,4 +1,6 @@
 export type AppLocale = "en" | "vi" | "zh" | "ja" | "ko" | "th" | "id" | "fr" | "de" | "es";
+export type DictionarySection = Record<string, string | undefined>;
+export type AppDictionary = Partial<Record<string, DictionarySection>>;
 
 export const LOCALES: Record<AppLocale, string> = {
   en: "English",

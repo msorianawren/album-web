@@ -1,5 +1,6 @@
-const fs = require('fs');
-const path = require('path');
+void (async () => {
+const fs = await import("node:fs");
+const path = await import("node:path");
 
 const dictionariesPath = path.join(__dirname, 'src', 'dictionaries');
 const locales = ['de', 'en', 'es', 'fr', 'id', 'ja', 'ko', 'th', 'vi', 'zh'];
@@ -266,3 +267,4 @@ UPDATE landing_page_settings SET translations = jsonb_build_object(
 
 fs.writeFileSync(path.join(__dirname, 'supabase', 'migrations', '202607090400_seed_translations.sql'), sql);
 console.log("SQL Seed generated.");
+})();

@@ -6,12 +6,16 @@ import "./globals.css";
 
 import { getSiteSettings } from "@/lib/site-settings";
 
+function stringSetting(value: unknown, fallback: string) {
+  return typeof value === "string" && value.trim() ? value : fallback;
+}
+
 export async function generateMetadata(): Promise<Metadata> {
   const settings = await getSiteSettings();
   const faviconUrl = settings.site_favicon_url || "/favicon.ico";
-  const appIconUrl = settings.advanced_settings?.app_icon_url || "/icon.png";
-  const appleIconUrl = settings.advanced_settings?.apple_touch_icon_url || "/apple-icon.png";
-  const brandVersion = settings.advanced_settings?.brand_updated_at || "oriana-wren-v1";
+  const appIconUrl = stringSetting(settings.advanced_settings?.app_icon_url, "/icon.png");
+  const appleIconUrl = stringSetting(settings.advanced_settings?.apple_touch_icon_url, "/apple-icon.png");
+  const brandVersion = stringSetting(settings.advanced_settings?.brand_updated_at, "oriana-wren-v1");
   const v = `?v=${brandVersion}`;
 
   return {
@@ -59,8 +63,8 @@ export default async function RootLayout({
       </head>
       <body className="flex min-h-full flex-col">
         <AudioUXProvider 
-          defaultAmbient={settings.advanced_settings?.default_ambient_sound || "drone"}
-          defaultClick={settings.advanced_settings?.default_click_sound || "water"}
+          defaultAmbient={stringSetting(settings.advanced_settings?.default_ambient_sound, "drone")}
+          defaultClick={stringSetting(settings.advanced_settings?.default_click_sound, "water")}
         />
         <ToastProvider>
           <OAuthHashHandler />

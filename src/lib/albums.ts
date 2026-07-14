@@ -229,19 +229,23 @@ export async function checkPrivateAlbumAccess(
 
   // Fallback 2: Access requests
   if (userId) {
-    const { data: req } = await supabase
+    const { data: requests } = await supabase
       .from("album_access_requests")
-      .select("status")
-      .eq("album_id", albumId)
+      .select("album_id, requested_album_ids, scope, status")
       .eq("requester_user_id", userId)
       .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
+      .limit(30);
 
-    if (req) {
-      if (req.status === "approved") return { allowed: true, reason: "approved_request" };
-      if (req.status === "rejected") return { allowed: false, reason: "rejected" };
-      if (req.status === "pending") return { allowed: false, reason: "pending" };
+    for (const req of requests ?? []) {
+      const applies =
+        req.scope === "all_private" ||
+        req.album_id === albumId ||
+        (Array.isArray(req.requested_album_ids) && req.requested_album_ids.includes(albumId));
+
+      if (!applies) continue;
+      if (req.status === "approved" || req.status === "auto_approved") return { allowed: true, reason: "approved_request" };
+      if (req.status === "rejected" || req.status === "denied") return { allowed: false, reason: "rejected" };
+      if (req.status === "pending" || req.status === "needs_manual_review") return { allowed: false, reason: "pending" };
     }
   }
 
@@ -298,14 +302,27 @@ async function attachAlbumPreviews(albums: Album[], session?: PublicSession | nu
     if (albumIds.length > 0) {
       const { data: pendingRequests } = await supabase
         .from("album_access_requests")
-        .select("album_id, status")
-        .in("album_id", albumIds)
+        .select("album_id, requested_album_ids, scope, status")
         .eq("requester_user_id", session.userId);
         
       if (pendingRequests) {
         for (const req of pendingRequests) {
-          if (requestMap.get(req.album_id) !== "approved") {
-            requestMap.set(req.album_id, req.status);
+          const requestStatus = req.status === "auto_approved" ? "approved" : req.status;
+          if (req.scope === "all_private") {
+            for (const id of albumIds) {
+              if (requestMap.get(id) !== "approved") requestMap.set(id, requestStatus);
+            }
+            continue;
+          }
+          const ids = Array.isArray(req.requested_album_ids) && req.requested_album_ids.length
+            ? req.requested_album_ids
+            : req.album_id
+              ? [req.album_id]
+              : [];
+          for (const id of ids) {
+            if (requestMap.get(id) !== "approved") {
+              requestMap.set(id, requestStatus);
+            }
           }
         }
       }

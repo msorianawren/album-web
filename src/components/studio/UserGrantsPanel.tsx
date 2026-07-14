@@ -9,13 +9,23 @@ interface UserGrantsPanelProps {
   email?: string;
 }
 
+interface PrivateAlbumGrantOption {
+  id: string;
+  title: string;
+}
+
+interface UserAlbumGrant {
+  scope: "all_private" | "selected_albums" | string;
+  album_id: string | null;
+}
+
 export function UserGrantsPanel({ userId, email }: UserGrantsPanelProps) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
-  const [privateAlbums, setPrivateAlbums] = useState<any[]>([]);
+  const [privateAlbums, setPrivateAlbums] = useState<PrivateAlbumGrantOption[]>([]);
   
   // Grant state
   const [scope, setScope] = useState<"all_private" | "selected_albums">("selected_albums");
@@ -39,14 +49,14 @@ export function UserGrantsPanel({ userId, email }: UserGrantsPanelProps) {
         const grantsPayload = await grantsRes.json();
         
         if (grantsPayload.success) {
-          const grants = grantsPayload.data.grants || [];
-          const hasGlobal = grants.some((g: any) => g.scope === "all_private");
+          const grants = (grantsPayload.data.grants || []) as UserAlbumGrant[];
+          const hasGlobal = grants.some((g) => g.scope === "all_private");
           if (hasGlobal) {
             setScope("all_private");
           } else {
             setScope("selected_albums");
             const ids = new Set<string>();
-            grants.forEach((g: any) => {
+            grants.forEach((g) => {
               if (g.album_id) ids.add(g.album_id);
             });
             setSelectedIds(ids);

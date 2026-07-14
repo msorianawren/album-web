@@ -31,29 +31,32 @@ export function AlbumForm({ defaultStatus = "private", settings }: { defaultStat
 
   useEffect(() => {
     if (!debouncedSlug) {
-      setSlugError("");
-      return;
+      const timer = window.setTimeout(() => setSlugError(""), 0);
+      return () => window.clearTimeout(timer);
     }
     
     let active = true;
-    setIsCheckingSlug(true);
-    setSlugError("");
+    const timer = window.setTimeout(() => {
+      setIsCheckingSlug(true);
+      setSlugError("");
 
-    fetch(`/api/albums/check-slug?slug=${encodeURIComponent(debouncedSlug)}`)
-      .then((res) => res.json())
-      .then((payload) => {
-        if (!active) return;
-        if (payload.success && payload.data.exists) {
-          setSlugError("This album name already exists.");
-        }
-      })
-      .catch(() => {})
-      .finally(() => {
-        if (active) setIsCheckingSlug(false);
-      });
+      fetch(`/api/albums/check-slug?slug=${encodeURIComponent(debouncedSlug)}`)
+        .then((res) => res.json())
+        .then((payload) => {
+          if (!active) return;
+          if (payload.success && payload.data.exists) {
+            setSlugError("This album name already exists.");
+          }
+        })
+        .catch(() => {})
+        .finally(() => {
+          if (active) setIsCheckingSlug(false);
+        });
+    }, 0);
       
     return () => {
       active = false;
+      window.clearTimeout(timer);
     };
   }, [debouncedSlug]);
 

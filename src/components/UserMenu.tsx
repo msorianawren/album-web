@@ -8,12 +8,13 @@ import { Avatar } from "@/components/ui/Avatar";
 import { buildLoginHref } from "@/lib/auth-redirect";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import type { PublicSession } from "@/lib/types";
+import type { AppDictionary } from "@/lib/i18n";
 
 type ThemeMode = "day" | "night" | "auto";
 
 interface UserMenuProps {
   session: PublicSession;
-  dict?: any;
+  dict?: AppDictionary;
 }
 
 const themeEvent = "album-theme-change";

@@ -14,7 +14,7 @@ export function AudioUXProvider({
   defaultClick?: string;
 }) {
   const { soundEnabled, clickSound, ambientSound, ambientVolume } = useUIPreferences();
-  const [isReady, setIsReady] = useState(false);
+  const [isReady, setIsReady] = useState(() => Boolean(audioUX.isReady));
 
   useEffect(() => {
     const initAudio = () => {
@@ -27,10 +27,6 @@ export function AudioUXProvider({
 
     document.addEventListener("pointerdown", initAudio, { once: true });
     document.addEventListener("keydown", initAudio, { once: true });
-
-    if (audioUX.isReady) {
-      setIsReady(true);
-    }
 
     return () => {
       document.removeEventListener("pointerdown", initAudio);

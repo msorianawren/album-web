@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { Check, X, Clock, Edit2, Shield, Search, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Loader2 } from "lucide-react";
+import Image from "next/image";
+import { Check, X, Clock, Edit2, Search, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { UserAccessDrawer } from "@/components/studio/UserAccessDrawer";
 import { cn } from "@/lib/utils";
@@ -15,13 +16,61 @@ interface PaginationData {
   hasPrevious: boolean;
 }
 
+type ActiveTab = "permissions" | "requests" | "history";
+
+interface StudioUserRow {
+  id: string;
+  avatar_url?: string | null;
+  display_name?: string | null;
+  email?: string | null;
+  current_access: string;
+  pending_requests: number;
+  last_grant?: string | number | null;
+}
+
+interface StudioAccessRequestRow {
+  id: string;
+  display_name?: string | null;
+  requester_name?: string | null;
+  requester_email?: string | null;
+  requester_phone?: string | null;
+  requester_phone_masked?: string | null;
+  reason?: string | null;
+  status: string;
+  scope?: "selected_albums" | "all_private" | null;
+  album_count?: number | null;
+  album_titles?: string[];
+  auto_approve_at?: string | null;
+  risk_flags?: Record<string, boolean> | null;
+  albums?: { title?: string | null } | null;
+}
+
+interface StudioHistoryRow {
+  id: string;
+  action: string;
+  scope?: "selected_albums" | "all_private" | null;
+  target_email?: string | null;
+  target_user?: { display_name?: string | null; email?: string | null } | null;
+  actor_user?: { display_name?: string | null; email?: string | null } | null;
+  album_titles?: string[];
+  created_at: string;
+}
+
+interface ApiData<T> {
+  data?: {
+    rows?: T[];
+    requests?: StudioAccessRequestRow[];
+    pagination?: PaginationData;
+  };
+}
+
 export default function AccessRequestsPage() {
-  const [activeTab, setActiveTab] = useState<"permissions" | "requests" | "history">("permissions");
+  const [activeTab, setActiveTab] = useState<ActiveTab>("permissions");
   
   // Data State
-  const [users, setUsers] = useState<any[]>([]);
-  const [history, setHistory] = useState<any[]>([]);
-  const [requests, setRequests] = useState<any[]>([]);
+  const [users, setUsers] = useState<StudioUserRow[]>([]);
+  const [history, setHistory] = useState<StudioHistoryRow[]>([]);
+  const [requests, setRequests] = useState<StudioAccessRequestRow[]>([]);
   
   const [loading, setLoading] = useState(true);
   const [pagination, setPagination] = useState<PaginationData | null>(null);
@@ -32,9 +81,11 @@ export default function AccessRequestsPage() {
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [grantFilter, setGrantFilter] = useState("all");
+  const [requestStatusFilter, setRequestStatusFilter] = useState("pending");
+  const [selectedRequestIds, setSelectedRequestIds] = useState<Set<string>>(() => new Set());
 
   // Drawer state
-  const [drawerUser, setDrawerUser] = useState<any | null>(null);
+  const [drawerUser, setDrawerUser] = useState<StudioUserRow | null>(null);
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(search), 300);
@@ -54,7 +105,7 @@ export default function AccessRequestsPage() {
 
         const res = await fetch(`/api/studio/access/users?${query.toString()}`);
         if (res.ok) {
-          const json = await res.json();
+          const json = await res.json() as ApiData<StudioUserRow>;
           setUsers(json.data?.rows || []);
           setPagination(json.data?.pagination || null);
         }
@@ -62,18 +113,26 @@ export default function AccessRequestsPage() {
         const query = new URLSearchParams({
           page: page.toString(),
           pageSize: pageSize.toString(),
+          search: debouncedSearch,
         });
         const res = await fetch(`/api/studio/access/history?${query.toString()}`);
         if (res.ok) {
-          const json = await res.json();
+          const json = await res.json() as ApiData<StudioHistoryRow>;
           setHistory(json.data?.rows || []);
           setPagination(json.data?.pagination || null);
         }
       } else if (activeTab === "requests") {
-        const res = await fetch("/api/studio/access-requests");
+        const query = new URLSearchParams({
+          page: page.toString(),
+          pageSize: pageSize.toString(),
+          search: debouncedSearch,
+          status: requestStatusFilter,
+        });
+        const res = await fetch(`/api/studio/access-requests?${query.toString()}`);
         if (res.ok) {
-          const json = await res.json();
+          const json = await res.json() as ApiData<StudioAccessRequestRow>;
           setRequests(json.data?.requests || []);
+          setPagination(json.data?.pagination || null);
         }
       }
     } catch (err) {
@@ -81,10 +140,13 @@ export default function AccessRequestsPage() {
     } finally {
       setLoading(false);
     }
-  }, [activeTab, page, pageSize, debouncedSearch, grantFilter]);
+  }, [activeTab, page, pageSize, debouncedSearch, grantFilter, requestStatusFilter]);
 
   useEffect(() => {
-    fetchData();
+    const timer = window.setTimeout(() => {
+      void fetchData();
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, [fetchData]);
 
   const handlePageChange = (newPage: number) => {
@@ -109,10 +171,40 @@ export default function AccessRequestsPage() {
       const res = await fetch(`/api/studio/access-requests/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: "rejected" }),
+        body: JSON.stringify({ status: "denied" }),
       });
       if (res.ok) fetchData();
     } catch (e) { console.error(e); }
+  };
+
+  const toggleRequestSelection = (id: string) => {
+    setSelectedRequestIds((current) => {
+      const next = new Set(current);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const bulkDecision = async (status: "approved" | "denied") => {
+    if (selectedRequestIds.size === 0) return;
+    try {
+      const res = await fetch("/api/studio/access-requests", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: Array.from(selectedRequestIds), status }),
+      });
+      if (res.ok) {
+        setSelectedRequestIds(new Set());
+        fetchData();
+      }
+    } catch (e) { console.error(e); }
+  };
+
+  const formatOptionalDate = (value: string | number | null | undefined) => {
+    if (!value) return "-";
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? "-" : date.toLocaleDateString();
   };
 
   return (
@@ -126,14 +218,14 @@ export default function AccessRequestsPage() {
 
       <div className="mb-6 flex gap-4 border-b border-border justify-between items-center">
         <div className="flex gap-4">
-          {[
+          {([
             { id: "permissions", label: "User Permissions" },
             { id: "requests", label: "Pending Requests" },
             { id: "history", label: "Grant/Revoke History" }
-          ].map(tab => (
+          ] satisfies Array<{ id: ActiveTab; label: string }>).map(tab => (
             <button
               key={tab.id}
-              onClick={() => { setActiveTab(tab.id as any); setPage(1); }}
+              onClick={() => { setActiveTab(tab.id); setPage(1); }}
               className={cn(
                 "pb-3 text-sm font-medium transition-colors border-b-2",
                 activeTab === tab.id
@@ -168,7 +260,7 @@ export default function AccessRequestsPage() {
               </div>
               <select
                 value={grantFilter}
-                onChange={e => { setGrantFilter(e.target.value); setPage(1); }}
+              onChange={e => { setGrantFilter(e.target.value); setPage(1); }}
                 className="py-2 px-3 bg-background border border-border rounded-lg text-sm focus:outline-none"
               >
                 <option value="all">All Users</option>
@@ -211,7 +303,7 @@ export default function AccessRequestsPage() {
                     <tr key={u.id} className="hover:bg-background/50 transition-colors cursor-pointer group" onClick={() => setDrawerUser(u)}>
                       <td className="p-4">
                         <div className="flex items-center gap-3">
-                          {u.avatar_url ? <img src={u.avatar_url} className="w-8 h-8 rounded-full object-cover" alt="" /> : <div className="w-8 h-8 rounded-full bg-background border flex items-center justify-center font-bold text-xs">{(u.display_name || u.email || "?")[0].toUpperCase()}</div>}
+                          {u.avatar_url ? <Image src={u.avatar_url} width={32} height={32} className="w-8 h-8 rounded-full object-cover" alt="" /> : <div className="w-8 h-8 rounded-full bg-background border flex items-center justify-center font-bold text-xs">{(u.display_name || u.email || "?")[0].toUpperCase()}</div>}
                           <div>
                             <div className="font-medium text-text-primary">{u.display_name || "Pending Registration"}</div>
                             <div className="text-xs text-text-tertiary">{u.email}</div>
@@ -235,7 +327,7 @@ export default function AccessRequestsPage() {
                         {u.pending_requests > 0 ? <span className="text-yellow-500 font-bold">{u.pending_requests} reqs</span> : "-"}
                       </td>
                       <td className="p-4 text-text-secondary">
-                        {u.last_grant > 0 ? new Date(u.last_grant).toLocaleDateString() : "-"}
+                        {formatOptionalDate(u.last_grant)}
                       </td>
                       <td className="p-4 text-right">
                         <Button variant="ghost" className="h-8 px-2 group-hover:bg-background">
@@ -269,30 +361,150 @@ export default function AccessRequestsPage() {
 
       {activeTab === "requests" && (
         <div className="grid gap-4">
-          {requests.map(req => (
-            <div key={req.id} className="flex flex-col gap-4 rounded-2xl border border-border bg-surface p-5 sm:flex-row sm:items-start sm:justify-between">
-              <div>
-                <div className="mb-2 flex items-center gap-2">
-                  <span className="rounded bg-background px-2 py-1 text-xs font-semibold text-text-secondary uppercase">{req.albums?.title || "Unknown Album"}</span>
-                  {req.status === "pending" && <span className="flex items-center gap-1 text-xs font-semibold text-yellow-500 uppercase"><Clock className="h-3 w-3" /> Pending</span>}
-                  {req.status === "approved" && <span className="flex items-center gap-1 text-xs font-semibold text-green-500 uppercase"><Check className="h-3 w-3" /> Approved</span>}
-                  {req.status === "rejected" && <span className="flex items-center gap-1 text-xs font-semibold text-red-500 uppercase"><X className="h-3 w-3" /> Rejected</span>}
-                </div>
-                <h3 className="text-lg font-medium text-text-primary">{req.requester_name}</h3>
-                <div className="mt-1 flex gap-4 text-sm text-text-secondary">
-                  {req.requester_email && <span>{req.requester_email}</span>}
-                  <span>{req.requester_phone}</span>
-                </div>
-                <p className="mt-4 text-sm text-text-primary bg-background/50 p-3 rounded-xl border border-border">&quot;{req.reason}&quot;</p>
+          <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-border bg-surface p-4">
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-tertiary" />
+                <input
+                  value={search}
+                  onChange={e => { setSearch(e.target.value); setPage(1); }}
+                  placeholder="Search requests..."
+                  className="w-64 rounded-lg border border-border bg-background py-2 pl-9 pr-4 text-sm outline-none"
+                />
               </div>
-              {req.status === "pending" && (
-                <div className="flex shrink-0 gap-2 sm:flex-col">
-                  <Button onClick={() => approveRequest(req.id)} className="bg-green-500 hover:bg-green-600 text-white">Approve</Button>
-                  <Button onClick={() => rejectRequest(req.id)} variant="ghost" className="text-red-500">Reject</Button>
-                </div>
-              )}
+              <select
+                value={requestStatusFilter}
+                onChange={e => { setRequestStatusFilter(e.target.value); setPage(1); setSelectedRequestIds(new Set()); }}
+                className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none"
+              >
+                <option value="pending">Pending</option>
+                <option value="needs_manual_review">Needs manual review</option>
+                <option value="approved">Approved</option>
+                <option value="auto_approved">Auto approved</option>
+                <option value="denied">Denied</option>
+                <option value="all">All statuses</option>
+              </select>
+              <select value={pageSize} onChange={e => { setPageSize(Number(e.target.value)); setPage(1); }} className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none">
+                <option value={10}>10 rows</option>
+                <option value={25}>25 rows</option>
+                <option value={50}>50 rows</option>
+                <option value={100}>100 rows</option>
+              </select>
             </div>
-          ))}
+            <div className="flex flex-wrap gap-2">
+              <Button disabled={selectedRequestIds.size === 0} onClick={() => bulkDecision("approved")} className="bg-green-500 text-white hover:bg-green-600">
+                Approve selected
+              </Button>
+              <Button disabled={selectedRequestIds.size === 0} onClick={() => bulkDecision("denied")} variant="ghost" className="text-red-500">
+                Deny selected
+              </Button>
+            </div>
+          </div>
+
+          <div className="overflow-x-auto rounded-2xl border border-border bg-surface">
+            <table className="w-full min-w-[900px] text-left text-sm">
+              <thead className="border-b border-border bg-background/50 text-text-secondary">
+                <tr>
+                  <th className="p-4">
+                    <input
+                      type="checkbox"
+                      checked={requests.length > 0 && requests.every(req => selectedRequestIds.has(req.id))}
+                      onChange={event => {
+                        if (event.target.checked) setSelectedRequestIds(new Set(requests.filter(req => req.status === "pending" || req.status === "needs_manual_review").map(req => req.id)));
+                        else setSelectedRequestIds(new Set());
+                      }}
+                    />
+                  </th>
+                  <th className="p-4 font-medium">Requester</th>
+                  <th className="p-4 font-medium">Scope</th>
+                  <th className="p-4 font-medium">Reason</th>
+                  <th className="p-4 font-medium">Risk</th>
+                  <th className="p-4 font-medium">Auto approve</th>
+                  <th className="p-4 font-medium text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {loading ? (
+                  <tr><td colSpan={7} className="p-8 text-center"><Loader2 className="mx-auto h-6 w-6 animate-spin text-accent" /></td></tr>
+                ) : requests.length === 0 ? (
+                  <tr><td colSpan={7} className="p-8 text-center text-text-secondary">No access requests found.</td></tr>
+                ) : requests.map(req => {
+                  const pending = req.status === "pending" || req.status === "needs_manual_review";
+                  const riskFlags = Object.entries(req.risk_flags || {}).filter(([, value]) => value).map(([key]) => key.replaceAll("_", " "));
+                  return (
+                    <tr key={req.id} className="align-top hover:bg-background/50">
+                      <td className="p-4">
+                        <input
+                          type="checkbox"
+                          disabled={!pending}
+                          checked={selectedRequestIds.has(req.id)}
+                          onChange={() => toggleRequestSelection(req.id)}
+                        />
+                      </td>
+                      <td className="p-4">
+                        <div className="font-medium text-text-primary">{req.display_name || req.requester_name}</div>
+                        <div className="text-xs text-text-secondary">{req.requester_email}</div>
+                        <div className="mt-1 text-xs text-text-tertiary">{req.requester_phone_masked || req.requester_phone}</div>
+                        <div className="mt-2">
+                          {req.status === "pending" && <span className="inline-flex items-center gap-1 text-xs font-semibold uppercase text-yellow-500"><Clock className="h-3 w-3" /> Pending</span>}
+                          {req.status === "needs_manual_review" && <span className="inline-flex items-center gap-1 text-xs font-semibold uppercase text-orange-500"><Clock className="h-3 w-3" /> Manual review</span>}
+                          {(req.status === "approved" || req.status === "auto_approved") && <span className="inline-flex items-center gap-1 text-xs font-semibold uppercase text-green-500"><Check className="h-3 w-3" /> {req.status === "auto_approved" ? "Auto approved" : "Approved"}</span>}
+                          {(req.status === "denied" || req.status === "rejected") && <span className="inline-flex items-center gap-1 text-xs font-semibold uppercase text-red-500"><X className="h-3 w-3" /> Denied</span>}
+                        </div>
+                      </td>
+                      <td className="p-4 text-text-secondary">
+                        {req.scope === "all_private" ? (
+                          <span className="rounded-full bg-accent/10 px-3 py-1 text-xs font-semibold text-accent">All private</span>
+                        ) : (
+                          <div>
+                            <span className="rounded-full bg-background px-3 py-1 text-xs font-semibold text-text-primary">{req.album_count || req.album_titles?.length || 1} selected</span>
+                            <div className="mt-2 max-w-[220px] text-xs">{(req.album_titles || []).join(", ") || req.albums?.title || "Selected albums"}</div>
+                          </div>
+                        )}
+                      </td>
+                      <td className="p-4">
+                        <p className="max-w-[260px] text-sm text-text-primary">&quot;{req.reason}&quot;</p>
+                      </td>
+                      <td className="p-4">
+                        {riskFlags.length ? (
+                          <div className="flex max-w-[220px] flex-wrap gap-1">
+                            {riskFlags.map(flag => <span key={flag} className="rounded bg-red-500/10 px-2 py-1 text-[11px] text-red-500">{flag}</span>)}
+                          </div>
+                        ) : (
+                          <span className="text-xs text-text-tertiary">No flags</span>
+                        )}
+                      </td>
+                      <td className="p-4 text-xs text-text-secondary">
+                        {req.auto_approve_at ? new Date(req.auto_approve_at).toLocaleString() : "-"}
+                      </td>
+                      <td className="p-4 text-right">
+                        {pending && (
+                          <div className="flex justify-end gap-2">
+                            <Button onClick={() => approveRequest(req.id)} className="bg-green-500 text-white hover:bg-green-600">Approve</Button>
+                            <Button onClick={() => rejectRequest(req.id)} variant="ghost" className="text-red-500">Deny</Button>
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          {pagination && pagination.totalPages > 1 && (
+            <div className="flex items-center justify-between rounded-2xl border border-border bg-surface p-4">
+              <div className="text-sm text-text-secondary">
+                Showing {(page - 1) * pageSize + 1} to {Math.min(page * pageSize, pagination.totalRows)} of {pagination.totalRows}
+              </div>
+              <div className="flex items-center gap-1">
+                <Button variant="ghost" className="h-8 w-8 p-0" disabled={!pagination.hasPrevious} onClick={() => handlePageChange(1)}><ChevronsLeft className="w-4 h-4" /></Button>
+                <Button variant="ghost" className="h-8 w-8 p-0" disabled={!pagination.hasPrevious} onClick={() => handlePageChange(page - 1)}><ChevronLeft className="w-4 h-4" /></Button>
+                <div className="px-3 text-sm font-medium">{page} / {pagination.totalPages}</div>
+                <Button variant="ghost" className="h-8 w-8 p-0" disabled={!pagination.hasNext} onClick={() => handlePageChange(page + 1)}><ChevronRight className="w-4 h-4" /></Button>
+                <Button variant="ghost" className="h-8 w-8 p-0" disabled={!pagination.hasNext} onClick={() => handlePageChange(pagination.totalPages)}><ChevronsRight className="w-4 h-4" /></Button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -311,19 +523,17 @@ export default function AccessRequestsPage() {
             <tbody className="divide-y divide-border">
               {history.map(row => (
                 <tr key={row.id}>
-                  <td className="p-4 text-text-secondary">{new Date(row.updated_at || row.granted_at || row.revoked_at || Date.now()).toLocaleString()}</td>
-                  <td className="p-4 font-medium">{row.display_name || row.email}</td>
+                  <td className="p-4 text-text-secondary">{new Date(row.created_at).toLocaleString()}</td>
+                  <td className="p-4 font-medium">{row.target_user?.display_name || row.target_email || row.target_user?.email || "-"}</td>
                   <td className="p-4">
-                    {row.status === "active" ? (
-                      <span className="text-green-500 font-semibold">Granted</span>
-                    ) : (
-                      <span className="text-red-500 font-semibold">Revoked</span>
-                    )}
+                    <span className={cn("font-semibold", row.action.includes("denied") || row.action.includes("revoked") ? "text-red-500" : "text-green-500")}>
+                      {String(row.action).replaceAll("_", " ")}
+                    </span>
                   </td>
                   <td className="p-4 text-text-secondary">
-                    {row.scope === "all_private" ? "All Private" : row.album?.title || "Selected Albums"}
+                    {row.scope === "all_private" ? "All Private" : row.album_titles?.join(", ") || "Selected Albums"}
                   </td>
-                  <td className="p-4 text-text-tertiary">{row.status === "active" ? row.granted_by : row.revoked_by}</td>
+                  <td className="p-4 text-text-tertiary">{row.actor_user?.display_name || row.actor_user?.email || "System"}</td>
                 </tr>
               ))}
             </tbody>

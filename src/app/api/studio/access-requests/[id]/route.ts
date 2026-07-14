@@ -1,24 +1,27 @@
 import { NextRequest } from "next/server";
-import { requireAdmin, getPublicSession } from "@/lib/auth";
-import { supabase } from "@/lib/supabase";
+import { requireAdmin } from "@/lib/auth";
 import { apiError, apiSuccess, toServerError } from "@/lib/errors";
 import { z } from "zod";
-import {
-  createAccessRequestApprovedNotification,
-  createAccessRequestRejectedNotification,
-} from "@/lib/notifications";
+import { decideAccessRequest, type AccessRequestDecision } from "@/lib/access-request-workflow";
+import { supabase } from "@/lib/supabase";
 
 const updateSchema = z.object({
-  status: z.enum(["approved", "rejected"]),
-  admin_note: z.string().optional().nullable(),
+  status: z.enum(["approved", "rejected", "denied", "needs_manual_review"]),
+  admin_note: z.string().trim().max(1000).optional().nullable(),
+  review_note: z.string().trim().max(1000).optional().nullable(),
 });
 
+function normalizeDecision(status: string): AccessRequestDecision {
+  if (status === "rejected") return "denied";
+  return status as AccessRequestDecision;
+}
+
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const adminCheck = await requireAdmin(request);
-  if (!adminCheck) return apiError("FORBIDDEN", "Requires admin privileges.", 403);
+  const adminSession = await requireAdmin(request);
+  if (!adminSession) return apiError("FORBIDDEN", "Requires admin privileges.", 403);
 
   try {
-    const p = await params;
+    const { id } = await params;
     const body = await request.json();
     const parsed = updateSchema.safeParse(body);
 
@@ -26,80 +29,39 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       return apiError("INVALID_INPUT", "Invalid payload.", 400, parsed.error.flatten());
     }
 
-    const session = await getPublicSession();
+    const result = await decideAccessRequest({
+      requestId: id,
+      decision: normalizeDecision(parsed.data.status),
+      actorSession: adminSession,
+      note: parsed.data.review_note ?? parsed.data.admin_note ?? null,
+      request,
+    });
 
-    const { data: requestRecord, error: fetchError } = await supabase
-      .from("album_access_requests")
-      .select("*, albums(id, title, slug)")
-      .eq("id", p.id)
-      .single();
-
-    if (fetchError || !requestRecord) {
-      return apiError("NOT_FOUND", "Request not found", 404);
+    if (!result.ok && result.status === "not_found") {
+      return apiError("NOT_FOUND", result.message, 404);
     }
 
-    const { data, error } = await supabase
-      .from("album_access_requests")
-      .update({
-        status: parsed.data.status,
-        admin_note: parsed.data.admin_note ?? null,
-        reviewed_by: session!.userId,
-        reviewed_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", p.id)
-      .select()
-      .single();
-
-    if (error) {
-      return apiError("SERVER_ERROR", error.message, 500);
+    if (!result.ok) {
+      return apiError("INVALID_INPUT", result.message, 400);
     }
 
-    if (parsed.data.status === "approved") {
-      // Create explicit grant
-      await supabase.from("album_access_grants").insert({
-        user_id: requestRecord.requester_user_id || null,
-        email_normalized: requestRecord.requester_email || null,
-        scope: "selected_albums",
-        album_id: requestRecord.album_id,
-        status: "active",
-        granted_by: session!.userId,
-      });
-
-      await createAccessRequestApprovedNotification({
-        recipientUserId: requestRecord.requester_user_id,
-        album: requestRecord.albums,
-        requestId: requestRecord.id,
-        request,
-        actorSession: session!,
-      });
-    } else {
-      await createAccessRequestRejectedNotification({
-        recipientUserId: requestRecord.requester_user_id,
-        album: requestRecord.albums,
-        requestId: requestRecord.id,
-        request,
-        actorSession: session!,
-      });
-    }
-
-    return apiSuccess({ request: data });
+    return apiSuccess({ request: result.request, status: result.status });
   } catch (error) {
     return toServerError(error);
   }
 }
 
 export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const adminCheck = await requireAdmin(request);
-  if (!adminCheck) return apiError("FORBIDDEN", "Requires admin privileges.", 403);
+  const adminSession = await requireAdmin(request);
+  if (!adminSession) return apiError("FORBIDDEN", "Requires admin privileges.", 403);
 
   try {
-    const p = await params;
+    const { id } = await params;
 
     const { error } = await supabase
       .from("album_access_requests")
       .delete()
-      .eq("id", p.id);
+      .eq("id", id);
 
     if (error) {
       return apiError("SERVER_ERROR", error.message, 500);

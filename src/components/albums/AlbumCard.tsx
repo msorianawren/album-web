@@ -8,10 +8,11 @@ import type { Album } from "@/lib/types";
 import { formatMediaCount } from "@/lib/utils";
 import { ScrollReveal } from "@/components/ui/ScrollReveal";
 import { useAlbumViewMemory } from "@/hooks/useAlbumViewMemory";
+import type { AppDictionary } from "@/lib/i18n";
 
 interface AlbumCardProps {
   album: Album;
-  dict?: any;
+  dict?: AppDictionary;
   locale?: string;
 }
 

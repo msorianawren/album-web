@@ -80,15 +80,20 @@ export function useAlbumViewMemory(settings?: { retentionDays?: number, recentTh
   const recentThresholdHours = settings?.recentThresholdHours || 48;
 
   useEffect(() => {
-    setIsClient(true);
-    setMemory(getRawMemory());
-    if (settings?.retentionDays) {
-      pruneAlbumViewMemory(settings.retentionDays);
-    }
+    const initTimer = window.setTimeout(() => {
+      setIsClient(true);
+      setMemory(getRawMemory());
+      if (settings?.retentionDays) {
+        pruneAlbumViewMemory(settings.retentionDays);
+      }
+    }, 0);
     
     const handleUpdate = () => setMemory(getRawMemory());
     window.addEventListener("albumMemoryUpdated", handleUpdate);
-    return () => window.removeEventListener("albumMemoryUpdated", handleUpdate);
+    return () => {
+      window.clearTimeout(initTimer);
+      window.removeEventListener("albumMemoryUpdated", handleUpdate);
+    };
   }, [settings?.retentionDays]);
 
   const markAlbumViewed = useCallback((params: { albumId: string, slug: string, mediaId?: string, mediaIndex?: number }) => {

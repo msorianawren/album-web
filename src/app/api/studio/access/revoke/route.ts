@@ -5,6 +5,7 @@ import { apiError, apiSuccess, toServerError } from "@/lib/errors";
 import { logAuditEvent } from "@/lib/audit";
 import { z } from "zod";
 import { createAccessRevokedNotification, fetchAlbumsForNotifications } from "@/lib/notifications";
+import { writeAccessHistory } from "@/lib/access-request-workflow";
 
 const revokeSchema = z.object({
   userId: z.string().uuid().optional(),
@@ -66,13 +67,26 @@ export async function POST(request: NextRequest) {
       return apiError("SERVER_ERROR", error.message, 500);
     }
 
+    for (const row of updatedRows ?? []) {
+      await writeAccessHistory({
+        actorUserId: adminCheck.userId,
+        targetUserId: userId ?? null,
+        targetEmail: email ?? null,
+        action: "grant_revoked",
+        scope: row.scope,
+        grantId: row.id,
+        albumIds: row.album_id ? [row.album_id] : undefined,
+        reason: reason || null,
+      });
+    }
+
     // Also explicitly create a "revoked" row if they never had a grant, 
     // to strictly enforce denial in the future (optional, but good practice).
     // If no rows were updated (meaning they didn't have an active grant), we still want to block them.
     if (updatedRows && updatedRows.length === 0) {
        // Insert a pure revoked record
        if (scope === "all_private") {
-         await supabase.from("album_access_grants").insert({
+         const { data: inserted } = await supabase.from("album_access_grants").insert({
            user_id: userId || null,
            email_normalized: email || null,
            scope: "all_private",
@@ -82,6 +96,15 @@ export async function POST(request: NextRequest) {
            revoked_by: adminCheck.userId,
            revoked_at: new Date().toISOString(),
            revoke_reason: reason || null,
+         }).select("id").single();
+         await writeAccessHistory({
+           actorUserId: adminCheck.userId,
+           targetUserId: userId ?? null,
+           targetEmail: email ?? null,
+           action: "grant_revoked",
+           scope: "all_private",
+           grantId: inserted?.id ?? null,
+           reason: reason || null,
          });
        } else if (scope === "selected_albums" && albumIds) {
          const inserts = albumIds.map(id => ({
@@ -96,7 +119,19 @@ export async function POST(request: NextRequest) {
            revoked_at: new Date().toISOString(),
            revoke_reason: reason || null,
          }));
-         await supabase.from("album_access_grants").insert(inserts);
+         const { data: insertedRows } = await supabase.from("album_access_grants").insert(inserts).select("id, album_id");
+         for (const row of insertedRows ?? []) {
+           await writeAccessHistory({
+             actorUserId: adminCheck.userId,
+             targetUserId: userId ?? null,
+             targetEmail: email ?? null,
+             action: "grant_revoked",
+             scope: "selected_albums",
+             grantId: row.id,
+             albumIds: row.album_id ? [row.album_id] : undefined,
+             reason: reason || null,
+           });
+         }
        }
     }
 

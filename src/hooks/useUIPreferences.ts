@@ -31,25 +31,28 @@ export function useUIPreferences(): UIPreferences {
   const [bgCustomUrlOverride, setBgCustomUrlOverrideState] = useState(false);
 
   useEffect(() => {
-    try {
-      const storedSound = localStorage.getItem("ui_sound_enabled");
-      if (storedSound !== null) setSoundEnabledState(storedSound === "true");
-      
-      const storedClick = localStorage.getItem("ui_click_sound");
-      if (storedClick) setClickSoundState(storedClick as ClickSoundType);
+    const timer = window.setTimeout(() => {
+      try {
+        const storedSound = localStorage.getItem("ui_sound_enabled");
+        if (storedSound !== null) setSoundEnabledState(storedSound === "true");
 
-      const storedAmbient = localStorage.getItem("ui_ambient_sound");
-      if (storedAmbient) setAmbientSoundState(storedAmbient as AmbientSoundType);
-      
-      const storedVolume = localStorage.getItem("ui_ambient_volume");
-      if (storedVolume) setAmbientVolumeState(parseFloat(storedVolume));
-      
-      const storedTheme = localStorage.getItem("ui_bg_theme");
-      if (storedTheme) setBgThemeOverrideState(storedTheme as BgThemeType);
-      
-      const storedCustomUrl = localStorage.getItem("ui_has_custom_bg");
-      if (storedCustomUrl) setBgCustomUrlOverrideState(storedCustomUrl === "true");
-    } catch (e) {}
+        const storedClick = localStorage.getItem("ui_click_sound");
+        if (storedClick) setClickSoundState(storedClick as ClickSoundType);
+
+        const storedAmbient = localStorage.getItem("ui_ambient_sound");
+        if (storedAmbient) setAmbientSoundState(storedAmbient as AmbientSoundType);
+
+        const storedVolume = localStorage.getItem("ui_ambient_volume");
+        if (storedVolume) setAmbientVolumeState(parseFloat(storedVolume));
+
+        const storedTheme = localStorage.getItem("ui_bg_theme");
+        if (storedTheme) setBgThemeOverrideState(storedTheme as BgThemeType);
+
+        const storedCustomUrl = localStorage.getItem("ui_has_custom_bg");
+        if (storedCustomUrl) setBgCustomUrlOverrideState(storedCustomUrl === "true");
+      } catch (e) {}
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, []);
 
   const dispatchCustomEvent = () => window.dispatchEvent(new CustomEvent("ui_preferences_changed"));

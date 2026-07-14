@@ -3,9 +3,10 @@
 import { useEffect, useState } from "react";
 import { Globe, ChevronDown, Check } from "lucide-react";
 import { AppLocale, LOCALES, getStoredLocale, setStoredLocale } from "@/lib/i18n";
+import type { AppDictionary } from "@/lib/i18n";
 import { motion, AnimatePresence } from "framer-motion";
 
-export function LanguageSwitcher({ dict }: { dict?: any }) {
+export function LanguageSwitcher({ dict }: { dict?: AppDictionary }) {
   const [locale, setLocale] = useState<AppLocale>("en");
   const [isOpen, setIsOpen] = useState(false);
 

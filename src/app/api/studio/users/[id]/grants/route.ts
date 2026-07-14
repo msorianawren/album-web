@@ -8,6 +8,7 @@ import {
   createAccessRevokedNotification,
   fetchAlbumsForNotifications,
 } from "@/lib/notifications";
+import { writeAccessHistory } from "@/lib/access-request-workflow";
 
 const grantSchema = z.object({
   scope: z.enum(["all_private", "selected_albums"]),
@@ -56,18 +57,38 @@ export async function POST(
     }
 
     const { data: revokedRows } = await revokeQuery.select("id, scope, album_id");
+    for (const row of revokedRows ?? []) {
+      await writeAccessHistory({
+        actorUserId: session.userId,
+        targetUserId,
+        targetEmail,
+        action: "grant_revoked",
+        scope: row.scope,
+        grantId: row.id,
+        albumIds: row.album_id ? [row.album_id] : undefined,
+        reason: "Superseded by new grant",
+      });
+    }
 
     // 2. Insert new grants
     const isEmptySelectedGrant = scope === "selected_albums" && (!albumIds || albumIds.length === 0);
     if (scope === "all_private") {
-      const { error } = await supabase.from("album_access_grants").insert({
+      const { data: grant, error } = await supabase.from("album_access_grants").insert({
         user_id: targetUserId,
         email_normalized: targetEmail,
         scope: "all_private",
         granted_by: session.userId,
         status: "active",
-      });
+      }).select("id").single();
       if (error) throw error;
+      await writeAccessHistory({
+        actorUserId: session.userId,
+        targetUserId,
+        targetEmail,
+        action: "grant_created",
+        scope: "all_private",
+        grantId: grant?.id ?? null,
+      });
     } else if (scope === "selected_albums" && albumIds && albumIds.length > 0) {
       const grants = albumIds.map((albumId) => ({
         user_id: targetUserId,
@@ -77,8 +98,19 @@ export async function POST(
         granted_by: session.userId,
         status: "active",
       }));
-      const { error } = await supabase.from("album_access_grants").insert(grants);
+      const { data: createdGrants, error } = await supabase.from("album_access_grants").insert(grants).select("id, album_id");
       if (error) throw error;
+      for (const grant of createdGrants ?? []) {
+        await writeAccessHistory({
+          actorUserId: session.userId,
+          targetUserId,
+          targetEmail,
+          action: "grant_created",
+          scope: "selected_albums",
+          grantId: grant.id,
+          albumIds: grant.album_id ? [grant.album_id] : undefined,
+        });
+      }
     }
     if (targetUserId) {
       if (isEmptySelectedGrant) {

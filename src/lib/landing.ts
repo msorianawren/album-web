@@ -1,5 +1,5 @@
 import { supabase } from "@/lib/supabase";
-import type { LandingPageContent, LandingBackgroundSettings } from "@/lib/types";
+import type { LandingPageContent, LandingBackgroundSettings, LandingSocialLink, TranslationMap } from "@/lib/types";
 
 const landingId = "home";
 
@@ -85,12 +85,27 @@ function cleanUrl(value: unknown, fallback: string) {
   return fallback;
 }
 
-function normalizeBackgroundSettings(bg: any): LandingBackgroundSettings {
-  const merged = { ...defaultLandingPage.background_settings, ...(bg || {}) };
+function normalizeBackgroundSettings(bg: unknown): LandingBackgroundSettings {
+  const saved = typeof bg === "object" && bg !== null ? (bg as Partial<LandingBackgroundSettings>) : {};
+  const merged = { ...defaultLandingPage.background_settings, ...saved };
   if (!["sakura", "fireflies", "snow", "autumn", "mist", "rain"].includes(merged.preset)) {
     merged.preset = "sakura";
   }
   return merged as LandingBackgroundSettings;
+}
+
+function normalizeTranslations(value: unknown): TranslationMap {
+  if (typeof value !== "object" || value === null) return {};
+  const output: TranslationMap = {};
+  for (const [locale, fields] of Object.entries(value)) {
+    if (typeof fields !== "object" || fields === null) continue;
+    const cleanedFields: Partial<Record<string, string>> = {};
+    for (const [key, text] of Object.entries(fields)) {
+      if (typeof text === "string") cleanedFields[key] = text;
+    }
+    output[locale] = cleanedFields;
+  }
+  return output;
 }
 
 export function normalizeLandingPage(value: Partial<LandingPageContent> | null | undefined) {
@@ -103,7 +118,7 @@ export function normalizeLandingPage(value: Partial<LandingPageContent> | null |
     if (index >= 0) {
       mergedSocials[index] = { ...mergedSocials[index], ...saved };
     } else {
-      mergedSocials.push(saved as any);
+      mergedSocials.push(saved as LandingSocialLink);
     }
   }
 
@@ -162,7 +177,7 @@ export function landingPayloadFromInput(input: Record<string, unknown>) {
     background_settings: typeof input.background_settings === "object" && input.background_settings !== null 
       ? normalizeBackgroundSettings(input.background_settings)
       : defaultLandingPage.background_settings,
-    translations: typeof input.translations === "object" && input.translations !== null ? (input.translations as Record<string, any>) : {},
+    translations: normalizeTranslations(input.translations),
     section_toggles: typeof input.section_toggles === "object" && input.section_toggles !== null ? (input.section_toggles as Record<string, boolean>) : {},
   } satisfies LandingPageContent;
 }

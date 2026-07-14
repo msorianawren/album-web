@@ -3,6 +3,32 @@ import { requireAdmin } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 import { apiError, apiSuccess, toServerError } from "@/lib/errors";
 
+interface AccessGrantSummary {
+  id: string;
+  user_id: string | null;
+  email_normalized: string | null;
+  scope: "all_private" | "selected_albums" | string;
+  album_id: string | null;
+  status: "active" | "revoked" | string;
+  granted_at: string | null;
+  revoked_at: string | null;
+}
+
+interface PendingAccessRequestSummary {
+  id: string;
+  requester_user_id: string | null;
+  status: string;
+}
+
+function latestTimestamp(values: Array<string | null | undefined>) {
+  return Math.max(
+    ...values
+      .map((value) => (value ? new Date(value).getTime() : 0))
+      .filter((value) => Number.isFinite(value)),
+    0,
+  );
+}
+
 export async function GET(request: NextRequest) {
   const adminCheck = await requireAdmin(request);
   if (!adminCheck) return apiError("FORBIDDEN", "Requires admin privileges.", 403);
@@ -114,7 +140,7 @@ export async function GET(request: NextRequest) {
     const userIds = (users || []).map(u => u.user_id);
     const emails = (users || []).map(u => u.email).filter(Boolean);
 
-    let grantsData: any[] = [];
+    let grantsData: AccessGrantSummary[] = [];
     if (userIds.length > 0 || emails.length > 0) {
       let gQuery = supabase.from("album_access_grants").select("id, user_id, email_normalized, scope, album_id, status, granted_at, revoked_at");
       if (userIds.length > 0 && emails.length > 0) {
@@ -129,7 +155,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Fetch pending requests
-    let requestsData: any[] = [];
+    let requestsData: PendingAccessRequestSummary[] = [];
     if (userIds.length > 0) {
       const { data: rd } = await supabase.from("album_access_requests").select("id, requester_user_id, status").in("requester_user_id", userIds).eq("status", "pending");
       if (rd) requestsData = rd;
@@ -150,12 +176,16 @@ export async function GET(request: NextRequest) {
         accessLevel = "All Private Albums";
       } else if (activeGrants.length > 0) {
         accessLevel = `${activeGrants.length} Selected Albums`;
-        activeAlbums = activeGrants.map(g => g.album_id).filter(Boolean);
+        activeAlbums = activeGrants
+          .map((g) => g.album_id)
+          .filter((albumId): albumId is string => Boolean(albumId));
       } else if (revokedGrants.length > 0) {
         accessLevel = "Revoked";
       }
 
-      revokedAlbums = revokedGrants.map(g => g.album_id).filter(Boolean);
+      revokedAlbums = revokedGrants
+        .map((g) => g.album_id)
+        .filter((albumId): albumId is string => Boolean(albumId));
 
       return {
         id: u.user_id,
@@ -169,8 +199,8 @@ export async function GET(request: NextRequest) {
         active_albums: activeAlbums,
         revoked_albums: revokedAlbums,
         pending_requests: uReqs.length,
-        last_grant: Math.max(...uGrants.filter(g => g.status === "active").map(g => new Date(g.granted_at).getTime()), 0),
-        last_revoke: Math.max(...uGrants.filter(g => g.status === "revoked").map(g => new Date(g.revoked_at).getTime()), 0),
+        last_grant: latestTimestamp(uGrants.filter((g) => g.status === "active").map((g) => g.granted_at)),
+        last_revoke: latestTimestamp(uGrants.filter((g) => g.status === "revoked").map((g) => g.revoked_at)),
       };
     });
 

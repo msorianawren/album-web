@@ -6,7 +6,7 @@ import { CheckCircle2, Database, HardDrive, ImageUp, RotateCcw, Save, ShieldChec
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
-import type { AlbumStatus, LandingPageContent, SiteSettings, AboutProfile } from "@/lib/types";
+import type { AlbumStatus, LandingBackgroundSettings, LandingPageContent, SiteSettings, AboutProfile, TranslationMap } from "@/lib/types";
 import { AboutSettingsTab } from "@/components/studio/settings/AboutSettingsTab";
 import dynamic from "next/dynamic";
 const PerformanceSettingsTab = dynamic(() => import("@/components/studio/settings/PerformanceSettingsTab"));
@@ -99,7 +99,7 @@ export function SettingsCenter({
     setSettings((current) => ({ ...current, [key]: value }));
   }
 
-  function updateAdvanced(key: string, value: any) {
+  function updateAdvanced(key: string, value: unknown) {
     setSettings((current) => ({
       ...current,
       advanced_settings: {
@@ -118,13 +118,13 @@ export function SettingsCenter({
     return landing.translations?.[activeLandingLocale]?.[key] ?? "";
   }
 
-  function updateLandingLocalized<K extends keyof LandingPageContent>(key: K, value: string) {
+  function updateLandingLocalized<K extends keyof LandingPageContent>(key: K, value: LandingPageContent[K] & string) {
     if (activeLandingLocale === "en") {
-      updateLanding(key, value as any);
+      updateLanding(key, value);
     } else {
-      const trans = { ...(landing.translations || {}) };
+      const trans: TranslationMap = { ...(landing.translations || {}) };
       if (!trans[activeLandingLocale]) trans[activeLandingLocale] = {};
-      trans[activeLandingLocale][key] = value;
+      trans[activeLandingLocale][String(key)] = value;
       updateLanding("translations", trans);
     }
   }
@@ -564,7 +564,7 @@ export function SettingsCenter({
                   <Select 
                     label="Default Preset Theme" 
                     value={landing.background_settings.preset} 
-                    onChange={(val) => updateLanding("background_settings", { ...landing.background_settings, preset: val as any })} 
+                    onChange={(val) => updateLanding("background_settings", { ...landing.background_settings, preset: val as LandingBackgroundSettings["preset"] })} 
                     options={["sakura", "fireflies", "snow", "autumn", "mist", "rain"]} 
                   />
                   <Select 
@@ -906,7 +906,7 @@ export function SettingsCenter({
           <Select 
             label="Contact form mode" 
             value={settings.contact_form_mode} 
-            onChange={(value) => update("contact_form_mode", value as any)} 
+            onChange={(value) => update("contact_form_mode", value as SiteSettings["contact_form_mode"])} 
             options={["mailto_only", "store_only", "store_and_fallback", "disabled"]} 
           />
 

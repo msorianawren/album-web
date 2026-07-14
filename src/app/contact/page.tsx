@@ -10,6 +10,27 @@ import { getPublicSession } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 import { UserConversationList } from "@/components/contact/UserConversationList";
 
+interface ContactThreadRow {
+  id: string;
+  subject: string;
+  message_body: string;
+  created_at: string;
+  status: string;
+}
+
+interface ContactReplyRow {
+  id: string;
+  message_id: string;
+  author_type: "user" | "admin";
+  body: string;
+  public_display_name: string;
+  created_at: string;
+}
+
+interface UserMessageThread extends ContactThreadRow {
+  replies: ContactReplyRow[];
+}
+
 export default async function ContactPage() {
   const [settings, landing, session] = await Promise.all([
     getSiteSettings(),
@@ -18,7 +39,7 @@ export default async function ContactPage() {
   ]);
   const hasEmail = Boolean(settings.contact_email);
 
-  let userMessages: any[] = [];
+  let userMessages: UserMessageThread[] = [];
   if (session?.userId) {
     const { data: threads } = await supabase
       .from("contact_messages")

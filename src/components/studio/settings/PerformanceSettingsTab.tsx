@@ -40,7 +40,7 @@ export default function PerformanceSettingsTab({
   settings: SiteSettings;
   landing: LandingPageContent;
   updateSettings: <K extends keyof SiteSettings>(key: K, value: SiteSettings[K]) => void;
-  updateAdvanced: (key: string, value: any) => void;
+  updateAdvanced: (key: string, value: unknown) => void;
   updateLanding: <K extends keyof LandingPageContent>(key: K, value: LandingPageContent[K]) => void;
 }) {
   return (

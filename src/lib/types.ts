@@ -1,6 +1,7 @@
 export type AlbumStatus = "public" | "updating" | "private";
 export type MediaType = "image" | "video";
 export type UserRole = "founder" | "admin" | "user" | "guest";
+export type TranslationMap = Record<string, Partial<Record<string, string>>>;
 
 export interface AlbumPreviewItem {
   id: string;
@@ -22,7 +23,7 @@ export interface Album {
   cover_url: string | null;
   cover_media_id: string | null;
   safe_preview_url?: string | null;
-  access_request_status?: "pending" | "approved" | "rejected" | null;
+  access_request_status?: "pending" | "approved" | "rejected" | "denied" | "auto_approved" | "cancelled" | "needs_manual_review" | "revoked" | null;
   photo_count: number;
   video_count: number;
   media_count: number;
@@ -36,22 +37,33 @@ export interface Album {
   order_updated_by?: string | null;
   created_at: string;
   updated_at?: string;
-  translations?: Record<string, any>;
+  translations?: TranslationMap;
   preview_items?: AlbumPreviewItem[];
 }
 
 export interface AlbumAccessRequest {
   id: string;
-  album_id: string;
+  album_id: string | null;
   requester_user_id: string | null;
   requester_email: string | null;
   requester_name: string;
   requester_phone: string;
+  full_name?: string | null;
+  phone_normalized?: string | null;
+  phone_hash?: string | null;
   reason: string;
-  status: "pending" | "approved" | "rejected";
+  scope?: "selected_albums" | "all_private";
+  status: "pending" | "approved" | "rejected" | "denied" | "auto_approved" | "cancelled" | "needs_manual_review";
+  requested_album_ids?: string[] | null;
   admin_note: string | null;
+  review_note?: string | null;
   reviewed_by: string | null;
   reviewed_at: string | null;
+  auto_approve_at?: string | null;
+  auto_approved_at?: string | null;
+  risk_flags?: Record<string, unknown> | null;
+  policy_version?: string | null;
+  policy_accepted_at?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -268,7 +280,7 @@ export interface LandingPageContent {
   media_items: LandingMediaItem[];
   collaborators: CollaboratorProfile[];
   background_settings: LandingBackgroundSettings;
-  translations?: Record<string, any>;
+  translations?: TranslationMap;
   section_toggles?: Record<string, boolean>;
   updated_at?: string;
 }
@@ -359,8 +371,26 @@ export interface SiteSettings {
   store_spam_metadata: boolean;
   spam_retention_days: number;
   deleted_message_retention_days: number;
-  advanced_settings?: Record<string, any> & {
+  advanced_settings?: Record<string, unknown> & {
     vanity_urls?: Record<string, string>;
+    default_ambient_sound?: string;
+    default_click_sound?: string;
+    perf_animation_fps?: number;
+    perf_upload_concurrency?: number;
+    enable_album_memory?: boolean;
+    show_recently_viewed_badge?: boolean;
+    show_already_viewed_badge?: boolean;
+    show_continue_viewing_hint?: boolean;
+    album_memory_retention_days?: number;
+    track_album_views?: boolean;
+    track_album_downloads?: boolean;
+    show_user_activity_in_security?: boolean;
+    view_event_dedupe_hours?: number;
+    user_activity_retention_days?: number;
+    app_icon_url?: string;
+    apple_touch_icon_url?: string;
+    brand_updated_at?: string;
+    access_requests?: unknown;
   };
   updated_at?: string;
 }

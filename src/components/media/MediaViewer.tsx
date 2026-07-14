@@ -64,7 +64,7 @@ export function MediaViewer({
   };
 
   useEffect(() => {
-    resetZoom();
+    const resetTimer = window.setTimeout(resetZoom, 0);
     if (item) {
       markAlbumViewed({
         albumId: item.album_id,
@@ -74,6 +74,7 @@ export function MediaViewer({
         mediaIndex: currentIndex!,
       });
     }
+    return () => window.clearTimeout(resetTimer);
   }, [currentIndex, item, markAlbumViewed]);
 
   useEffect(() => {

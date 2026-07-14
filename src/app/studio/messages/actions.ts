@@ -9,7 +9,10 @@ const supabase = createClient(
 );
 
 export async function updateMessageStatus(id: string, status: string) {
-  const updates: any = { status, updated_at: new Date().toISOString() };
+  const updates: { status: string; updated_at: string; archived_at?: string; deleted_at?: string } = {
+    status,
+    updated_at: new Date().toISOString(),
+  };
   if (status === "archived") updates.archived_at = new Date().toISOString();
   if (status === "deleted") updates.deleted_at = new Date().toISOString();
 

@@ -5,10 +5,44 @@ import { X, Shield, Clock, Info } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
 
-export function UserAccessDrawer({ user, onClose, onUpdate }: { user: any; onClose: () => void; onUpdate: () => void }) {
+interface AccessDrawerUser {
+  id?: string | null;
+  email?: string | null;
+  display_name?: string | null;
+  avatar_url?: string | null;
+  role?: string | null;
+  created_at?: string | null;
+}
+
+interface AccessDrawerGrant {
+  id: string;
+  scope: "all_private" | "selected_albums" | string;
+  status: "active" | "revoked" | string;
+  granted_at?: string | null;
+  revoked_at?: string | null;
+  revoke_reason?: string | null;
+  albums?: { title?: string | null } | null;
+}
+
+interface AccessDrawerDetails {
+  grants: AccessDrawerGrant[];
+  requests: Array<{ id: string; status: string; created_at?: string | null }>;
+}
+
+interface PrivateAlbumOption {
+  id: string;
+  title: string;
+}
+
+function formatGrantDate(grant: AccessDrawerGrant) {
+  const source = grant.granted_at || grant.revoked_at;
+  return source ? new Date(source).toLocaleDateString() : "No date";
+}
+
+export function UserAccessDrawer({ user, onClose, onUpdate }: { user: AccessDrawerUser; onClose: () => void; onUpdate: () => void }) {
   const [loading, setLoading] = useState(true);
-  const [details, setDetails] = useState<any>({ grants: [], requests: [] });
-  const [albums, setAlbums] = useState<any[]>([]);
+  const [details, setDetails] = useState<AccessDrawerDetails>({ grants: [], requests: [] });
+  const [albums, setAlbums] = useState<PrivateAlbumOption[]>([]);
 
   // Form states
   const [action, setAction] = useState<"none" | "grant" | "revoke">("none");
@@ -41,8 +75,8 @@ export function UserAccessDrawer({ user, onClose, onUpdate }: { user: any; onClo
     fetchDetails();
   }, [user.id, user.email]);
 
-  const activeGrants = details.grants?.filter((g: any) => g.status === "active") || [];
-  const revokedGrants = details.grants?.filter((g: any) => g.status === "revoked") || [];
+  const activeGrants = details.grants?.filter((g) => g.status === "active") || [];
+  const revokedGrants = details.grants?.filter((g) => g.status === "revoked") || [];
 
   const handleToggleAlbum = (id: string) => {
     setSelectedAlbums(prev => {
@@ -139,7 +173,7 @@ export function UserAccessDrawer({ user, onClose, onUpdate }: { user: any; onClo
               <div>
                 <h3 className="text-sm font-semibold text-text-secondary uppercase tracking-wider mb-3">Current Access</h3>
                 
-                {activeGrants.some((g: any) => g.scope === "all_private") ? (
+                {activeGrants.some((g) => g.scope === "all_private") ? (
                   <div className="flex items-center gap-2 text-green-500 bg-green-500/10 px-3 py-2 rounded-lg text-sm font-medium">
                     <Shield className="w-4 h-4" /> Has All Private Access
                   </div>
@@ -147,7 +181,7 @@ export function UserAccessDrawer({ user, onClose, onUpdate }: { user: any; onClo
                   <div className="space-y-2">
                     <p className="text-sm text-text-primary font-medium">{activeGrants.length} Selected Albums</p>
                     <div className="flex flex-wrap gap-2">
-                      {activeGrants.map((g: any) => (
+                      {activeGrants.map((g) => (
                         <span key={g.id} className="bg-background border px-2 py-1 rounded text-xs font-medium text-text-secondary">
                           {g.albums?.title || "Unknown Album"}
                         </span>
@@ -263,14 +297,14 @@ export function UserAccessDrawer({ user, onClose, onUpdate }: { user: any; onClo
                 <div className="pt-4 border-t border-border">
                   <h3 className="text-sm font-semibold text-text-secondary uppercase tracking-wider mb-4">Grant History</h3>
                   <div className="space-y-4">
-                    {details.grants.map((g: any) => (
+                    {details.grants.map((g) => (
                       <div key={g.id} className="text-sm">
                         <div className="flex items-center gap-2 mb-1">
                           <span className={cn("text-xs font-bold uppercase", g.status === "active" ? "text-green-500" : "text-red-500")}>
                             {g.status}
                           </span>
                           <span className="text-text-secondary text-xs">•</span>
-                          <span className="text-text-secondary text-xs">{new Date(g.granted_at || g.revoked_at || Date.now()).toLocaleDateString()}</span>
+                          <span className="text-text-secondary text-xs">{formatGrantDate(g)}</span>
                         </div>
                         <p className="text-text-primary mb-1">
                           {g.scope === "all_private" ? "All Private Albums" : `Selected Album: ${g.albums?.title || "Unknown"}`}

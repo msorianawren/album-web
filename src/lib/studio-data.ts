@@ -288,7 +288,7 @@ export async function getStudioAnalyticsData() {
     .map(([label, value]) => ({ label, value }));
     
   const registrationSources = Object.entries(
-    ((sourcesResult?.data ?? []) as any[]).reduce<Record<string, number>>((acc, item) => {
+    ((sourcesResult?.data ?? []) as Array<{ registration_source?: string | null }>).reduce<Record<string, number>>((acc, item) => {
       const source = item.registration_source;
       if (source) {
         acc[source] = (acc[source] ?? 0) + 1;

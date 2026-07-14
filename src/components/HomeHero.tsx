@@ -1,12 +1,13 @@
 import { ArrowRight, Camera, Sparkles } from "lucide-react";
 import type { LandingPageContent, SiteSettings } from "@/lib/types";
 import { ScrollReveal } from "@/components/ui/ScrollReveal";
+import type { AppDictionary } from "@/lib/i18n";
 
 interface HomeHeroProps {
   landing: LandingPageContent;
   settings?: SiteSettings;
   locale?: string;
-  dict?: any;
+  dict?: AppDictionary;
 }
 
 export function HomeHero({ landing, settings, locale = "en", dict }: HomeHeroProps) {

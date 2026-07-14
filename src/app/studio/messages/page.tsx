@@ -10,6 +10,47 @@ const supabase = createClient(
 
 export const revalidate = 0;
 
+interface ContactMessageRow {
+  id: string;
+  name: string | null;
+  reply_email: string | null;
+  subject: string | null;
+  inquiry_type: string | null;
+  message_preview: string | null;
+  message_body: string;
+  status: string;
+  risk_level: string | null;
+  created_at: string;
+}
+
+interface ContactMessageReplyRow {
+  id: string;
+  message_id: string;
+  author_type: "user" | "admin";
+  body: string;
+  public_display_name: string;
+  created_at: string;
+  is_internal_note?: boolean;
+}
+
+type ContactMessageWithReplies = ContactMessageRow & {
+  replies: ContactMessageReplyRow[];
+};
+
+interface MessageListItem {
+  id: string;
+  name: string;
+  reply_email: string;
+  subject: string;
+  inquiry_type: string;
+  message_preview: string;
+  message_body: string;
+  status: string;
+  risk_level: string;
+  created_at: string;
+  replies: ContactMessageReplyRow[];
+}
+
 export default async function MessagesPage() {
   const { data: messages, error } = await supabase
     .from("contact_messages")
@@ -17,18 +58,21 @@ export default async function MessagesPage() {
     .neq("status", "deleted") // Don't fetch deleted here to save load
     .order("created_at", { ascending: false });
 
-  let fullMessages: any[] = messages || [];
+  let fullMessages: ContactMessageWithReplies[] = ((messages ?? []) as ContactMessageRow[]).map((message) => ({
+    ...message,
+    replies: [],
+  }));
   if (fullMessages.length > 0) {
-    const messageIds = fullMessages.map((m: any) => m.id);
+    const messageIds = fullMessages.map((m) => m.id);
     const { data: replies } = await supabase
       .from("contact_message_replies")
       .select("*")
       .in("message_id", messageIds)
       .order("created_at", { ascending: true });
 
-    fullMessages = fullMessages.map((m: any) => ({
+    fullMessages = fullMessages.map((m) => ({
       ...m,
-      replies: replies?.filter((r: any) => r.message_id === m.id) || []
+      replies: ((replies ?? []) as ContactMessageReplyRow[]).filter((r) => r.message_id === m.id)
     }));
   }
 
@@ -46,7 +90,21 @@ export default async function MessagesPage() {
             Failed to load messages. Make sure the database migration has been applied.
           </div>
         ) : (
-          <MessageList initialMessages={fullMessages} />
+          <MessageList
+            initialMessages={fullMessages.map((message): MessageListItem => ({
+              id: message.id,
+              name: message.name ?? "Anonymous",
+              reply_email: message.reply_email ?? "",
+              subject: message.subject ?? "No subject",
+              inquiry_type: message.inquiry_type ?? "General Inquiry",
+              message_preview: message.message_preview ?? "",
+              message_body: message.message_body,
+              status: message.status,
+              risk_level: message.risk_level ?? "normal",
+              created_at: message.created_at,
+              replies: message.replies,
+            }))}
+          />
         )}
       </div>
     </div>

@@ -6,10 +6,11 @@ import { ShareButton } from "@/components/ui/ShareButton";
 import { AlbumMemoryHint } from "@/components/albums/AlbumMemoryHint";
 import type { AlbumDetail } from "@/lib/types";
 import { formatMediaCount } from "@/lib/utils";
+import type { AppDictionary } from "@/lib/i18n";
 
 interface AlbumHeaderProps {
   album: AlbumDetail;
-  dict?: any;
+  dict?: AppDictionary;
 }
 
 export function AlbumHeader({ album, dict }: AlbumHeaderProps) {

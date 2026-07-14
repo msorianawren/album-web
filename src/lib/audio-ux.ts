@@ -2,6 +2,11 @@
 
 import type { ClickSoundType, AmbientSoundType } from "@/hooks/useUIPreferences";
 
+type WindowWithAudioFallback = Window & {
+  webkitAudioContext?: typeof AudioContext;
+  __albumBgAudio?: HTMLAudioElement | null;
+};
+
 class AudioUXSystem {
   private context: AudioContext | null = null;
   private isInitialized = false;
@@ -15,7 +20,8 @@ class AudioUXSystem {
   public init() {
     if (this.isInitialized || typeof window === "undefined") return;
     try {
-      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+      const AudioContextClass = window.AudioContext || (window as WindowWithAudioFallback).webkitAudioContext;
+      if (!AudioContextClass) return;
       this.context = new AudioContextClass();
       this.isInitialized = true;
     } catch (e) {
@@ -202,11 +208,12 @@ class AudioUXSystem {
   }
 
   public stopAmbient() {
-    if (typeof window !== "undefined" && (window as any).__albumBgAudio) {
-      const audio = (window as any).__albumBgAudio as HTMLAudioElement;
+    const audioWindow = typeof window !== "undefined" ? (window as WindowWithAudioFallback) : null;
+    if (audioWindow?.__albumBgAudio) {
+      const audio = audioWindow.__albumBgAudio;
       audio.pause();
       audio.src = "";
-      (window as any).__albumBgAudio = null;
+      audioWindow.__albumBgAudio = null;
     }
 
     this.currentPlayingType = null;

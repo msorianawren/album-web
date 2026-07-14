@@ -20,7 +20,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
 import { mediaSortLabels, mediaSortModes, parseMediaSortMode } from "@/lib/media-sort";
-import type { AlbumDetail, AlbumStatus, Media, SiteSettings } from "@/lib/types";
+import type { AlbumDetail, AlbumStatus, Media, SiteSettings, TranslationMap } from "@/lib/types";
 import { formatBytes, slugify } from "@/lib/utils";
 import { LOCALES } from "@/lib/i18n";
 import { useUploadQueue } from "@/hooks/useUploadQueue";
@@ -39,7 +39,7 @@ export function AlbumEditor({ album, settings }: { album: AlbumDetail; settings:
   const [status, setStatus] = useState<AlbumStatus>(album.status);
   const [coverUrl, setCoverUrl] = useState(album.cover_url ?? "");
   const [defaultMediaSort, setDefaultMediaSort] = useState(parseMediaSortMode(album.default_media_sort, "smart"));
-  const [translations, setTranslations] = useState<Record<string, any>>(album.translations || {});
+  const [translations, setTranslations] = useState<TranslationMap>(album.translations || {});
   const [activeLocale, setActiveLocale] = useState("en");
   const [media, setMedia] = useState(album.media);
 
@@ -75,29 +75,32 @@ export function AlbumEditor({ album, settings }: { album: AlbumDetail; settings:
 
   useEffect(() => {
     if (!debouncedSlug || debouncedSlug === album.slug) {
-      setSlugError("");
-      return;
+      const timer = window.setTimeout(() => setSlugError(""), 0);
+      return () => window.clearTimeout(timer);
     }
     
     let active = true;
-    setIsCheckingSlug(true);
-    setSlugError("");
+    const timer = window.setTimeout(() => {
+      setIsCheckingSlug(true);
+      setSlugError("");
 
-    fetch(`/api/albums/check-slug?slug=${encodeURIComponent(debouncedSlug)}&excludeId=${album.id}`)
-      .then((res) => res.json())
-      .then((payload) => {
-        if (!active) return;
-        if (payload.success && payload.data.exists) {
-          setSlugError("This album name already exists.");
-        }
-      })
-      .catch(() => {})
-      .finally(() => {
-        if (active) setIsCheckingSlug(false);
-      });
+      fetch(`/api/albums/check-slug?slug=${encodeURIComponent(debouncedSlug)}&excludeId=${album.id}`)
+        .then((res) => res.json())
+        .then((payload) => {
+          if (!active) return;
+          if (payload.success && payload.data.exists) {
+            setSlugError("This album name already exists.");
+          }
+        })
+        .catch(() => {})
+        .finally(() => {
+          if (active) setIsCheckingSlug(false);
+        });
+    }, 0);
       
     return () => {
       active = false;
+      window.clearTimeout(timer);
     };
   }, [debouncedSlug, album.slug, album.id]);
 

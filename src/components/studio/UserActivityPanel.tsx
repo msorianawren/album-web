@@ -11,6 +11,50 @@ interface UserActivityPanelProps {
   onClose: () => void;
 }
 
+interface ActivityUser {
+  id: string;
+  name: string | null;
+  email: string | null;
+  role: string;
+  status: string;
+  source: string | null;
+  created_at: string | null;
+}
+
+interface ActivitySummary {
+  total_view_events: number;
+  viewed_album_count: number;
+  total_download_events: number;
+  downloaded_album_count: number;
+}
+
+interface AlbumActivitySummary {
+  album_id: string;
+  title: string | null;
+  status: string | null;
+  view_count?: number;
+  last_viewed_at?: string | null;
+  download_count?: number;
+  last_downloaded_at?: string | null;
+}
+
+interface ActivityTimelineEvent {
+  id: string;
+  event_type: string;
+  created_at: string;
+  album_title: string | null;
+  result?: string | null;
+  reason_code?: string | null;
+}
+
+interface UserActivityData {
+  user: ActivityUser;
+  summary: ActivitySummary;
+  viewed_albums: AlbumActivitySummary[];
+  downloaded_albums: AlbumActivitySummary[];
+  timeline: ActivityTimelineEvent[];
+}
+
 function formatDate(value: string | null | undefined) {
   if (!value) return "Never";
   return new Intl.DateTimeFormat("en", {
@@ -20,7 +64,7 @@ function formatDate(value: string | null | undefined) {
 }
 
 export function UserActivityPanel({ userId, onClose }: UserActivityPanelProps) {
-  const [data, setData] = useState<Record<string, unknown> | null>(null);
+  const [data, setData] = useState<UserActivityData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<"overview" | "viewed" | "downloads" | "timeline" | "grants">("overview");
@@ -43,7 +87,10 @@ export function UserActivityPanel({ userId, onClose }: UserActivityPanelProps) {
   }, [userId]);
 
   useEffect(() => {
-    void fetchActivity();
+    const timer = window.setTimeout(() => {
+      void fetchActivity();
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, [fetchActivity]);
 
   if (loading) {
@@ -74,7 +121,7 @@ export function UserActivityPanel({ userId, onClose }: UserActivityPanelProps) {
     );
   }
 
-  const { user, summary, viewed_albums, downloaded_albums, timeline } = data as Record<string, any>;
+  const { user, summary, viewed_albums, downloaded_albums, timeline } = data;
 
   return (
     <div className="fixed inset-y-0 right-0 z-50 w-full max-w-2xl border-l border-border bg-surface shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-right duration-200">
@@ -160,12 +207,12 @@ export function UserActivityPanel({ userId, onClose }: UserActivityPanelProps) {
         )}
 
         {tab === "grants" && (
-          <UserGrantsPanel userId={user.id} email={user.email} />
+          <UserGrantsPanel userId={user.id} email={user.email ?? undefined} />
         )}
 
         {tab === "viewed" && (
           <div className="grid gap-3">
-            {viewed_albums.length ? viewed_albums.map((item: Record<string, any>) => (
+            {viewed_albums.length ? viewed_albums.map((item) => (
               <div key={item.album_id} className="rounded-[1rem] border border-border bg-background p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                   <p className="font-semibold text-text-primary flex items-center gap-2">
@@ -189,7 +236,7 @@ export function UserActivityPanel({ userId, onClose }: UserActivityPanelProps) {
 
         {tab === "downloads" && (
           <div className="grid gap-3">
-            {downloaded_albums.length ? downloaded_albums.map((item: Record<string, any>) => (
+            {downloaded_albums.length ? downloaded_albums.map((item) => (
               <div key={item.album_id} className="rounded-[1rem] border border-border bg-background p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                   <p className="font-semibold text-text-primary flex items-center gap-2">
@@ -213,7 +260,7 @@ export function UserActivityPanel({ userId, onClose }: UserActivityPanelProps) {
 
         {tab === "timeline" && (
           <div className="relative pl-4 border-l-2 border-border/60 ml-2 space-y-6">
-            {timeline.length ? timeline.map((event: Record<string, any>) => (
+            {timeline.length ? timeline.map((event) => (
               <div key={event.id} className="relative">
                 <div className="absolute w-3 h-3 bg-surface border-2 border-accent rounded-full -left-[1.35rem] top-1"></div>
                 <div className="rounded-[1rem] border border-border bg-background p-4">

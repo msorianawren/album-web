@@ -19,19 +19,37 @@ const generateParticles = (count: number) => {
 
 import { NatureSettlingEffect } from "./NatureSettlingEffect";
 
-export function NatureAnimatedBackground({ config = {} as any }: { config?: any }) {
+type NatureParticle = ReturnType<typeof generateParticles>[number];
+
+const defaultBackgroundSettings: LandingBackgroundSettings = {
+  enabled: true,
+  preset: "mist",
+  intensity: 50,
+  opacity: 45,
+  speed: 50,
+  density: 50,
+  blur: 2,
+  accent_color_1: null,
+  accent_color_2: null,
+  custom_url: null,
+  apply_to_all_public_pages: true,
+  reduce_animations_on_mobile: true,
+};
+
+export function NatureAnimatedBackground({ config }: { config?: Partial<LandingBackgroundSettings> }) {
   const pathname = usePathname();
   const [mounted, setMounted] = useState(false);
-  const [particles, setParticles] = useState<any[]>([]);
+  const [particles, setParticles] = useState<NatureParticle[]>([]);
+  const resolvedConfig = { ...defaultBackgroundSettings, ...config };
   
   const { bgThemeOverride, bgCustomUrlOverride } = useUIPreferences();
   const [customImageUrl, setCustomImageUrl] = useState<string | null>(null);
 
   // Determine final effective settings
-  const effectivePreset = bgThemeOverride !== "default" ? bgThemeOverride : (config?.preset || "mist");
-  const effectiveCustomUrl = bgCustomUrlOverride && customImageUrl ? customImageUrl : (!bgCustomUrlOverride ? config?.custom_url : null);
+  const effectivePreset = bgThemeOverride !== "default" ? bgThemeOverride : resolvedConfig.preset;
+  const effectiveCustomUrl = bgCustomUrlOverride && customImageUrl ? customImageUrl : (!bgCustomUrlOverride ? resolvedConfig.custom_url : null);
   // Enhance default preset intensity slightly
-  const effectiveIntensity = Math.min(100, (config?.intensity || 50) * 1.5);
+  const effectiveIntensity = Math.min(100, resolvedConfig.intensity * 1.5);
 
   useEffect(() => {
     if (bgCustomUrlOverride) {
@@ -42,20 +60,22 @@ export function NatureAnimatedBackground({ config = {} as any }: { config?: any 
   }, [bgCustomUrlOverride]);
 
   useEffect(() => {
-    setMounted(true);
-    
-    // Check if mobile and reduction is enabled
-    const isMobile = window.innerWidth <= 768;
-    const shouldReduce = isMobile && config.reduce_animations_on_mobile;
-    
-    // Cap particles aggressively for performance
-    let baseCount = Math.floor((config.density / 100) * 20) + 2;
-    if (shouldReduce) {
-      baseCount = Math.max(2, Math.floor(baseCount * 0.3));
-    }
-    
-    const count = effectivePreset === "rain" ? Math.floor(baseCount * 1.5) : baseCount;
-    setParticles(generateParticles(count));
+    const timer = window.setTimeout(() => {
+      setMounted(true);
+
+      // Check if mobile and reduction is enabled
+      const isMobile = window.innerWidth <= 768;
+      const shouldReduce = isMobile && resolvedConfig.reduce_animations_on_mobile;
+
+      // Cap particles aggressively for performance
+      let baseCount = Math.floor((resolvedConfig.density / 100) * 20) + 2;
+      if (shouldReduce) {
+        baseCount = Math.max(2, Math.floor(baseCount * 0.3));
+      }
+
+      const count = effectivePreset === "rain" ? Math.floor(baseCount * 1.5) : baseCount;
+      setParticles(generateParticles(count));
+    }, 0);
 
     // Inject global CSS variables for UI integration
     const root = document.documentElement;
@@ -84,19 +104,20 @@ export function NatureAnimatedBackground({ config = {} as any }: { config?: any 
       root.style.setProperty("--preset-glow", "0 0 20px rgba(200, 200, 200, 0.1)");
       root.style.setProperty("--preset-hover-bg", "rgba(200, 200, 200, 0.05)");
     }
-  }, [config.density, effectivePreset]);
+    return () => window.clearTimeout(timer);
+  }, [resolvedConfig.density, resolvedConfig.reduce_animations_on_mobile, effectivePreset]);
 
   if (!mounted) return null;
-  if (config.enabled === false || (config.enabled as unknown) === "false") return null;
+  if (resolvedConfig.enabled === false || (resolvedConfig.enabled as unknown) === "false") return null;
   if (pathname?.startsWith("/studio") || pathname?.startsWith("/login")) return null;
-  if (!config.apply_to_all_public_pages && pathname !== "/") return null;
+  if (!resolvedConfig.apply_to_all_public_pages && pathname !== "/") return null;
 
   const blurVal = effectivePreset === "mist" ? 6 : 2;
   const isDark = true; 
-  const speedMultiplier = config.speed > 0 ? 50 / config.speed : 999;
+  const speedMultiplier = resolvedConfig.speed > 0 ? 50 / resolvedConfig.speed : 999;
 
   const cssVars = {
-    "--nature-opacity": (config.opacity / 100).toString(),
+    "--nature-opacity": (resolvedConfig.opacity / 100).toString(),
     "--nature-intensity": (effectiveIntensity / 100).toString(),
     "--nature-blur": `${blurVal}px`,
   } as React.CSSProperties;
@@ -244,14 +265,14 @@ export function NatureAnimatedBackground({ config = {} as any }: { config?: any 
           })}
         </div>
 
-        {(config.accent_color_1 || config.accent_color_2) && (
+        {(resolvedConfig.accent_color_1 || resolvedConfig.accent_color_2) && (
           <div 
             className="absolute inset-0"
             style={{ 
-              opacity: (config.intensity / 100),
+              opacity: (resolvedConfig.intensity / 100),
               backgroundImage: [
-                config.accent_color_1 ? `radial-gradient(circle at top right, ${config.accent_color_1}33, transparent 60%)` : null,
-                config.accent_color_2 ? `radial-gradient(circle at bottom left, ${config.accent_color_2}33, transparent 60%)` : null
+                resolvedConfig.accent_color_1 ? `radial-gradient(circle at top right, ${resolvedConfig.accent_color_1}33, transparent 60%)` : null,
+                resolvedConfig.accent_color_2 ? `radial-gradient(circle at bottom left, ${resolvedConfig.accent_color_2}33, transparent 60%)` : null
               ].filter(Boolean).join(", ")
             }}
           />
