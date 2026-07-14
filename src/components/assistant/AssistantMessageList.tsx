@@ -22,12 +22,16 @@ interface AssistantMessageListProps {
   messages: AssistantMessage[];
   onQuickAction: (action: AssistantQuickAction) => void;
   onHandoff: (message: AssistantMessage) => void;
+  openPathLabel: (path: string) => string;
+  sendToContactLabel: string;
 }
 
 export function AssistantMessageList({
   messages,
   onQuickAction,
   onHandoff,
+  openPathLabel,
+  sendToContactLabel,
 }: AssistantMessageListProps) {
   return (
     <div className="space-y-3">
@@ -68,7 +72,7 @@ export function AssistantMessageList({
                     href={href}
                     className="inline-flex items-center gap-1 rounded-full border border-border bg-surface px-3 py-1.5 text-[0.68rem] font-semibold uppercase tracking-[0.12em] text-text-primary hover:border-accent"
                   >
-                    Open {href.replace("/", "") || "home"}
+                    {openPathLabel(href)}
                     <ExternalLink className="h-3 w-3" />
                   </Link>
                 ) : null;
@@ -82,7 +86,7 @@ export function AssistantMessageList({
               onClick={() => onHandoff(message)}
               className="mt-3 rounded-full border border-border bg-surface px-3 py-1.5 text-[0.68rem] font-semibold uppercase tracking-[0.12em] text-text-primary transition hover:border-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
-              Send to Contact
+              {sendToContactLabel}
             </button>
           ) : null}
         </article>

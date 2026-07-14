@@ -6,9 +6,14 @@ import {
 } from "@/lib/assistant/intents";
 import {
   assistantKnowledge,
-  type AssistantLocale,
   type AssistantQuickAction,
 } from "@/lib/assistant/knowledge";
+import {
+  DEFAULT_ASSISTANT_LOCALE,
+  normalizeAssistantLocale,
+  type AssistantLocale,
+} from "@/lib/assistant/locales";
+import { getAssistantUICopy } from "@/lib/assistant/ui-copy";
 import type { AssistantMode } from "@/lib/assistant/preferences";
 
 export const ASSISTANT_PANEL_STORAGE_KEY = "oriana.assistant.panel.v1";
@@ -33,9 +38,8 @@ export interface AssistantAnswer {
   canHandoffToContact: boolean;
 }
 
-const fallbackAnswer = "I'm not fully sure. You can send this to Oriana Wren through Contact.";
-
 function detectLocale(input: string, preferred?: AssistantLocale): AssistantLocale {
+  if (preferred) return normalizeAssistantLocale(preferred);
   const normalized = normalizeAssistantText(input);
   if (
     normalized.includes("xin quyen") ||
@@ -48,7 +52,7 @@ function detectLocale(input: string, preferred?: AssistantLocale): AssistantLoca
   ) {
     return "vi";
   }
-  return preferred ?? "en";
+  return DEFAULT_ASSISTANT_LOCALE;
 }
 
 function safePath(path?: string) {
@@ -56,11 +60,12 @@ function safePath(path?: string) {
   return path;
 }
 
-function authQuickAction(currentPath?: string): AssistantQuickAction {
+function authQuickAction(currentPath: string | undefined, locale: AssistantLocale): AssistantQuickAction {
   const next = encodeURIComponent(safePath(currentPath));
+  const copy = getAssistantUICopy(locale);
   return {
     id: "login",
-    label: "Sign in",
+    label: copy.signIn,
     question: "How do I login?",
     href: `/login?next=${next}`,
   };
@@ -72,12 +77,16 @@ function findKnowledge(intent: AssistantIntent, locale: AssistantLocale, input: 
   const localeMatch = candidates.find((item) => item.locale === locale);
   if (localeMatch) return localeMatch;
 
-  const patternMatch = assistantKnowledge.find((item) =>
+  const localePatternMatch = assistantKnowledge.find((item) =>
+    item.locale === locale &&
     item.questionPatterns.some((pattern) =>
       normalizedInput.includes(normalizeAssistantText(pattern)),
     ),
   );
-  if (patternMatch) return patternMatch;
+  if (localePatternMatch) return localePatternMatch;
+
+  const englishMatch = candidates.find((item) => item.locale === DEFAULT_ASSISTANT_LOCALE);
+  if (englishMatch) return englishMatch;
 
   return candidates[0] ?? assistantKnowledge.find((item) => item.intent === "unknown");
 }
@@ -97,11 +106,13 @@ export function answerAssistantQuestion(
 ): AssistantAnswer {
   const question = sanitizeAssistantQuestion(input);
   if (!question) {
+    const locale = normalizeAssistantLocale(context.locale);
+    const copy = getAssistantUICopy(locale);
     return {
       intent: "unknown",
       confidence: "low",
-      title: "Ask a website question",
-      answer: "Ask about albums, private access, downloads, messages, notifications, or account basics.",
+      title: copy.emptyQuestionTitle,
+      answer: copy.emptyQuestionAnswer,
       quickActions: [],
       relatedUrls: [],
       requiresAuth: false,
@@ -111,15 +122,17 @@ export function answerAssistantQuestion(
 
   const intentResult = detectAssistantIntent(question);
   const locale = detectLocale(question, context.locale);
+  const copy = getAssistantUICopy(locale);
   const item = findKnowledge(intentResult.intent, locale, question);
 
   if (!item || intentResult.intent === "unknown" || intentResult.confidence === "low") {
+    const unknownItem = findKnowledge("unknown", locale, question);
     return {
       intent: "unknown",
       confidence: "low",
-      title: "Contact handoff",
-      answer: fallbackAnswer,
-      quickActions: [{ id: "contact", label: "Contact Oriana Wren", question, href: "/contact" }],
+      title: unknownItem?.title ?? copy.contactHandoffTitle,
+      answer: unknownItem?.answer ?? copy.unknownAnswer,
+      quickActions: [{ id: "contact", label: copy.openContactDraft, question, href: "/contact" }],
       relatedUrls: ["/contact"],
       requiresAuth: false,
       canHandoffToContact: true,
@@ -131,8 +144,8 @@ export function answerAssistantQuestion(
       intent: intentResult.intent,
       confidence: intentResult.confidence,
       title: item.title,
-      answer: "Please sign in with Google first. After login, return to the album or page you were viewing and check your own request, message, or notification status there.",
-      quickActions: [authQuickAction(context.currentPath), ...(item.quickActions ?? [])],
+      answer: copy.authRequiredAnswer,
+      quickActions: [authQuickAction(context.currentPath, locale), ...(item.quickActions ?? [])],
       relatedUrls: ["/login", ...(item.relatedUrls ?? [])],
       requiresAuth: true,
       canHandoffToContact: false,
@@ -141,7 +154,7 @@ export function answerAssistantQuestion(
 
   const notificationSuffix =
     intentResult.intent === "notifications_help" && typeof context.notificationCount === "number"
-      ? ` You currently have ${context.notificationCount} unread notification${context.notificationCount === 1 ? "" : "s"}.`
+      ? copy.unreadNotification(context.notificationCount)
       : "";
 
   return {

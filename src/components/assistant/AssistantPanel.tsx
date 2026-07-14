@@ -11,7 +11,12 @@ import {
   sanitizeAssistantQuestion,
   type AssistantAnswer,
 } from "@/lib/assistant/answer-engine";
-import { assistantQuickActions, type AssistantQuickAction } from "@/lib/assistant/knowledge";
+import { getAssistantQuickActions, type AssistantQuickAction } from "@/lib/assistant/knowledge";
+import {
+  readSelectedAssistantLocale,
+  type AssistantLocale,
+} from "@/lib/assistant/locales";
+import { getAssistantUICopy } from "@/lib/assistant/ui-copy";
 import { assistantModeCopy, type AssistantPreferences } from "@/lib/assistant/preferences";
 import { AssistantMessageList, type AssistantMessage } from "@/components/assistant/AssistantMessageList";
 import { AssistantQuickActions } from "@/components/assistant/AssistantQuickActions";
@@ -29,11 +34,6 @@ interface AssistantPanelProps {
 
 function makeId(prefix: string) {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-}
-
-function detectBrowserLocale(): "en" | "vi" {
-  if (typeof navigator === "undefined") return "en";
-  return navigator.language.toLowerCase().startsWith("vi") ? "vi" : "en";
 }
 
 function createAssistantMessage(answer: AssistantAnswer): AssistantMessage {
@@ -69,9 +69,11 @@ export function AssistantPanel({
   const [messages, setMessages] = useState<AssistantMessage[]>([]);
   const [notificationCount, setNotificationCount] = useState<number | null>(null);
   const [handoffMessage, setHandoffMessage] = useState<AssistantMessage | null>(null);
-  const [locale] = useState(detectBrowserLocale);
+  const locale: AssistantLocale = readSelectedAssistantLocale();
   const panelRef = useRef<HTMLElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
+  const copy = getAssistantUICopy(locale);
+  const quickActions = getAssistantQuickActions(locale);
 
   useEffect(() => {
     if (!open) return;
@@ -173,12 +175,12 @@ export function AssistantPanel({
       className="fixed inset-0 z-[100] flex items-end justify-center p-0 sm:items-center sm:justify-end sm:p-4"
       role="dialog"
       aria-modal="true"
-      aria-label="Oriana Companion"
+      aria-label={copy.title}
       data-testid="oriana-companion-overlay"
     >
       <button
         type="button"
-        aria-label="Close Oriana Companion"
+        aria-label={copy.closeLabel}
         className="absolute inset-0 bg-text-primary/45 backdrop-blur-md"
         onClick={onClose}
       />
@@ -205,13 +207,13 @@ export function AssistantPanel({
                 </div>
                 <div className="min-w-0">
                   <p className="text-xs font-semibold uppercase tracking-[0.18em] text-text-secondary">
-                    Oriana Companion
+                    {copy.title}
                   </p>
                   <h2 className="mt-1 truncate text-lg font-semibold text-text-primary">
-                    Rule-based site helper
+                    {copy.subtitle}
                   </h2>
                   <p className="mt-1 text-xs text-text-secondary">
-                    Companion: {assistantModeCopy[preferences.mode].label}
+                    {copy.companionLabel}: {assistantModeCopy[preferences.mode].label}
                   </p>
                 </div>
               </div>
@@ -219,7 +221,7 @@ export function AssistantPanel({
                 type="button"
                 onClick={onClose}
                 className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-border bg-surface text-text-primary transition hover:border-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                aria-label="Close assistant"
+                aria-label={copy.closeLabel}
               >
                 <X className="h-4 w-4" />
               </button>
@@ -229,40 +231,42 @@ export function AssistantPanel({
           <div className="min-h-0 flex-1 space-y-5 overflow-y-auto p-4">
             <div className="rounded-[1.3rem] border border-border bg-background/70 p-4">
               <p className="text-sm leading-relaxed text-text-secondary">
-                I can help with albums, private access, downloads, messages, and notifications.
+                {copy.greeting}
               </p>
               <div className="mt-4 grid grid-cols-2 gap-2 text-xs text-text-secondary">
                 <span className="inline-flex items-center gap-2">
                   <Lock className="h-3.5 w-3.5 text-muted-accent" />
-                  Private access
+                  {copy.privateAccess}
                 </span>
                 <span className="inline-flex items-center gap-2">
                   <Bell className="h-3.5 w-3.5 text-muted-accent" />
-                  Notifications
+                  {copy.notifications}
                 </span>
                 <span className="inline-flex items-center gap-2">
                   <MessageSquare className="h-3.5 w-3.5 text-muted-accent" />
-                  Contact replies
+                  {copy.contactReplies}
                 </span>
                 <span className="inline-flex items-center gap-2">
                   <ShieldCheck className="h-3.5 w-3.5 text-muted-accent" />
-                  Site rules
+                  {copy.siteRules}
                 </span>
               </div>
             </div>
 
-            <AssistantQuickActions actions={assistantQuickActions} onSelect={handleQuickAction} />
+            <AssistantQuickActions actions={quickActions} onSelect={handleQuickAction} />
 
             {messages.length === 0 ? (
               <div className="rounded-[1.3rem] border border-dashed border-border bg-background/45 p-4 text-sm text-text-secondary">
                 <HelpCircle className="mb-3 h-5 w-5 text-muted-accent" />
-                Ask in English or Vietnamese. I only answer from website rules and safe account status.
+                {copy.emptyState}
               </div>
             ) : (
               <AssistantMessageList
                 messages={messages}
                 onQuickAction={handleQuickAction}
                 onHandoff={setHandoffMessage}
+                openPathLabel={copy.openPath}
+                sendToContactLabel={copy.sendToContact}
               />
             )}
           </div>
@@ -270,7 +274,7 @@ export function AssistantPanel({
           {handoffMessage ? (
             <div className="border-t border-border bg-background/75 p-4">
               <p className="text-xs leading-relaxed text-text-secondary">
-                Send this question to Contact? Nothing is sent automatically; the Contact page will open with a draft.
+                {copy.handoffPrompt}
               </p>
               <div className="mt-3 flex gap-2">
                 <button
@@ -278,23 +282,28 @@ export function AssistantPanel({
                   onClick={() => confirmHandoff(handoffMessage)}
                   className="rounded-full bg-accent px-4 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-accent-foreground"
                 >
-                  Open Contact Draft
+                  {copy.openContactDraft}
                 </button>
                 <button
                   type="button"
                   onClick={() => setHandoffMessage(null)}
                   className="rounded-full border border-border bg-surface px-4 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-text-primary"
                 >
-                  Cancel
+                  {copy.cancel}
                 </button>
               </div>
             </div>
           ) : null}
 
           <footer className="border-t border-border bg-surface p-4">
-            <AssistantSearchBox onSubmit={answer} />
+            <AssistantSearchBox
+              onSubmit={answer}
+              placeholder={copy.inputPlaceholder}
+              inputLabel={copy.inputLabel}
+              sendLabel={copy.sendLabel}
+            />
             <p className="mt-3 text-[0.68rem] leading-relaxed text-text-secondary">
-              This helper only uses website rules and your own account status.
+              {copy.privacyNote}
             </p>
           </footer>
         </div>

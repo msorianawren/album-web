@@ -45,18 +45,18 @@ const intentRules: Array<{
   },
   {
     intent: "phone_policy",
-    high: ["phone number", "why phone", "so dien thoai", "số điện thoại", "tai sao can phone", "tại sao cần phone"],
-    medium: ["phone", "privacy promise", "điện thoại", "dien thoai"],
+    high: ["phone number", "why phone", "so dien thoai", "số điện thoại", "tai sao can phone", "tại sao cần phone", "nomor telepon", "telephone", "telefono", "telefon", "電話番号", "电话号码", "전화번호"],
+    medium: ["phone", "privacy promise", "điện thoại", "dien thoai", "tel", "téléphone"],
   },
   {
     intent: "private_access_help",
-    high: ["private access", "request access", "xin quyền album", "xin quyen album", "album private", "album riêng tư", "album rieng tu"],
-    medium: ["locked album", "restricted album", "xem album", "mở khóa", "mo khoa"],
+    high: ["private access", "request access", "xin quyền album", "xin quyen album", "album private", "album riêng tư", "album rieng tu", "akses album private", "album privé", "album prive", "album privado", "privaten albumzugriff", "非公開アルバム", "私密相册", "비공개 앨범"],
+    medium: ["locked album", "restricted album", "xem album", "mở khóa", "mo khoa", "accès privé", "acceso privado", "privater zugriff"],
   },
   {
     intent: "login_help",
-    high: ["login", "sign in", "google login", "dang nhap", "đăng nhập"],
-    medium: ["account", "google", "tài khoản", "tai khoan"],
+    high: ["login", "sign in", "google login", "dang nhap", "đăng nhập", "masuk", "connexion", "anmelden", "iniciar sesión", "iniciar sesion", "ログイン", "登录"],
+    medium: ["account", "google", "tài khoản", "tai khoan", "compte", "cuenta", "konto"],
   },
   {
     intent: "request_status",
@@ -70,8 +70,8 @@ const intentRules: Array<{
   },
   {
     intent: "download_zip_help",
-    high: ["download zip", "zip download", "tải zip", "tai zip"],
-    medium: ["zip", "download album", "tải album", "tai album"],
+    high: ["download zip", "zip download", "tải zip", "tai zip", "unduh zip", "télécharger zip", "telecharger zip", "descargar zip", "zip herunterladen", "zip ダウンロード", "ZIP 下载"],
+    medium: ["zip", "download album", "tải album", "tai album", "unduh", "descarga"],
   },
   {
     intent: "download_blocked",
@@ -80,7 +80,7 @@ const intentRules: Array<{
   },
   {
     intent: "contact_help",
-    high: ["contact oriana", "contact", "liên hệ", "lien he"],
+    high: ["contact oriana", "contact", "liên hệ", "lien he", "hubungi", "contacter", "kontakt", "contactar", "連絡", "联系"],
     medium: ["email", "message oriana", "gửi tin", "gui tin"],
   },
   {
@@ -90,7 +90,7 @@ const intentRules: Array<{
   },
   {
     intent: "notifications_help",
-    high: ["notification", "notifications", "thông báo", "thong bao"],
+    high: ["notification", "notifications", "thông báo", "thong bao", "notifikasi", "benachrichtigung", "notificación", "notificacion", "通知", "알림"],
     medium: ["bell", "unread", "chuông", "chuong"],
   },
   {

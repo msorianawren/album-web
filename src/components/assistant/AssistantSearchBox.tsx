@@ -7,9 +7,17 @@ import { Input } from "@/components/ui/Input";
 
 interface AssistantSearchBoxProps {
   onSubmit: (question: string) => void;
+  placeholder: string;
+  inputLabel: string;
+  sendLabel: string;
 }
 
-export function AssistantSearchBox({ onSubmit }: AssistantSearchBoxProps) {
+export function AssistantSearchBox({
+  onSubmit,
+  placeholder,
+  inputLabel,
+  sendLabel,
+}: AssistantSearchBoxProps) {
   const [question, setQuestion] = useState("");
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -26,11 +34,11 @@ export function AssistantSearchBox({ onSubmit }: AssistantSearchBoxProps) {
         value={question}
         onChange={(event) => setQuestion(event.target.value)}
         maxLength={300}
-        placeholder="Ask about access, ZIP, messages..."
-        aria-label="Ask Oriana Companion"
+        placeholder={placeholder}
+        aria-label={inputLabel}
         className="h-11 rounded-full bg-background/70"
       />
-      <Button type="submit" variant="icon" aria-label="Send question">
+      <Button type="submit" variant="icon" aria-label={sendLabel}>
         <Send className="h-4 w-4" />
       </Button>
     </form>
