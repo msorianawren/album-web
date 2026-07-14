@@ -51,6 +51,8 @@ export function AssistantPet({
       aria-label={decorative ? undefined : accessibleLabel}
       style={{ width: pixelSize, height: pixelSize }}
     >
+      {/* SVG mascots stay as public img assets so they do not enter the JS bundle. */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={mascot.src}
         alt={decorative ? "" : accessibleLabel}

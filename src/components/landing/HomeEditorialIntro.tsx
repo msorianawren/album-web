@@ -1,6 +1,6 @@
 import type { LandingPageContent, SiteSettings } from "@/lib/types";
 
-export function HomeEditorialIntro({ landing, settings }: { landing: LandingPageContent, settings?: SiteSettings }) {
+export function HomeEditorialIntro({ landing }: { landing: LandingPageContent; settings?: SiteSettings }) {
   return (
     <section className="relative mx-auto w-full max-w-[800px] px-6 py-32 md:py-48 text-center">
       <h2 className="animate-editorial-in font-serif text-[1.6rem] md:text-[2.2rem] lg:text-[2.6rem] font-light italic leading-[1.6] text-text-primary">

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Clock, CheckCircle, Send, MessageSquare } from "lucide-react";
+import { Clock, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 
 interface Reply {

@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { useCallback, useMemo, useState, useTransition } from "react";
-import { Camera, RotateCcw, SlidersHorizontal } from "lucide-react";
+import { Camera, RotateCcw } from "lucide-react";
 import { MediaCard } from "@/components/media/MediaCard";
 import { Button } from "@/components/ui/Button";
 import {

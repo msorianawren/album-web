@@ -17,7 +17,6 @@ export const metadata: Metadata = {
   description: "Browse editorial albums, image galleries, downloads, likes, and comments.",
 };
 
-import { redirect } from "next/navigation";
 import { getPublicSession } from "@/lib/auth";
 
 import { AccessRequestModal } from "@/components/albums/AccessRequestModal";

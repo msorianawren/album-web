@@ -62,7 +62,7 @@ export function UserGrantsPanel({ userId, email }: UserGrantsPanelProps) {
             setSelectedIds(ids);
           }
         }
-      } catch (err) {
+      } catch {
         setError("Failed to load access data.");
       }
       setLoading(false);
@@ -98,7 +98,7 @@ export function UserGrantsPanel({ userId, email }: UserGrantsPanelProps) {
       } else {
         setError(data.message || "Failed to save.");
       }
-    } catch (err) {
+    } catch {
       setError("Network error.");
     }
     setSaving(false);
@@ -128,7 +128,7 @@ export function UserGrantsPanel({ userId, email }: UserGrantsPanelProps) {
       } else {
         setError(data.message || "Failed to revoke.");
       }
-    } catch (err) {
+    } catch {
       setError("Network error.");
     }
     setSaving(false);

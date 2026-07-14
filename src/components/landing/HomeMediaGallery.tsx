@@ -24,7 +24,7 @@ export function HomeMediaGallery({ items, settings }: { items: LandingMediaItem[
             ? "flex overflow-x-auto gap-4 sm:gap-6 pb-8 snap-x snap-mandatory pr-4 sm:pr-6"
             : "grid gap-6 sm:gap-8 sm:grid-cols-2 md:grid-cols-3"
       }>
-        {displayItems.map((item, idx) => (
+        {displayItems.map((item) => (
           <div 
             key={item.id} 
             className={`group relative overflow-hidden rounded-[1.2rem] border border-border/40 bg-surface-secondary/30 break-inside-avoid ${

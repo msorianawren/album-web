@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { imageStore } from "@/lib/idb";
 
 export type ClickSoundType = "auto" | "water" | "crystal" | "wood" | "chime" | "thud";
 export type BgThemeType = "default" | "sakura" | "fireflies" | "snow" | "autumn" | "mist" | "rain";
@@ -50,7 +49,7 @@ export function useUIPreferences(): UIPreferences {
 
         const storedCustomUrl = localStorage.getItem("ui_has_custom_bg");
         if (storedCustomUrl) setBgCustomUrlOverrideState(storedCustomUrl === "true");
-      } catch (e) {}
+      } catch {}
     }, 0);
     return () => window.clearTimeout(timer);
   }, []);
@@ -62,7 +61,7 @@ export function useUIPreferences(): UIPreferences {
     try {
       localStorage.setItem("ui_sound_enabled", enabled.toString());
       dispatchCustomEvent();
-    } catch (e) {}
+    } catch {}
   };
 
   const setClickSound = (sound: ClickSoundType) => {
@@ -70,7 +69,7 @@ export function useUIPreferences(): UIPreferences {
     try {
       localStorage.setItem("ui_click_sound", sound);
       dispatchCustomEvent();
-    } catch (e) {}
+    } catch {}
   };
 
   const setAmbientSound = (sound: AmbientSoundType) => {
@@ -78,7 +77,7 @@ export function useUIPreferences(): UIPreferences {
     try {
       localStorage.setItem("ui_ambient_sound", sound);
       dispatchCustomEvent();
-    } catch (e) {}
+    } catch {}
   };
 
   const setAmbientVolume = (val: number) => {
@@ -86,7 +85,7 @@ export function useUIPreferences(): UIPreferences {
     try {
       localStorage.setItem("ui_ambient_volume", val.toString());
       dispatchCustomEvent();
-    } catch (e) {}
+    } catch {}
   };
 
   const setBgThemeOverride = (theme: BgThemeType) => {
@@ -94,7 +93,7 @@ export function useUIPreferences(): UIPreferences {
     try {
       localStorage.setItem("ui_bg_theme", theme);
       dispatchCustomEvent();
-    } catch (e) {}
+    } catch {}
   };
 
   const setBgCustomUrlOverride = (hasCustom: boolean) => {
@@ -102,7 +101,7 @@ export function useUIPreferences(): UIPreferences {
     try {
       localStorage.setItem("ui_has_custom_bg", hasCustom.toString());
       dispatchCustomEvent();
-    } catch (e) {}
+    } catch {}
   };
 
   useEffect(() => {
@@ -134,7 +133,7 @@ export function useUIPreferences(): UIPreferences {
         
         const storedCustomUrl = localStorage.getItem("ui_has_custom_bg");
         if (storedCustomUrl) setBgCustomUrlOverrideState(storedCustomUrl === "true");
-      } catch (e) {}
+      } catch {}
     };
 
     window.addEventListener("storage", handleStorage);

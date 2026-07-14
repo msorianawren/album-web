@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState, useEffect } from "react";
-import { Ban, CheckCircle2, Crown, Search, ShieldAlert, ShieldCheck, UserCog, Activity, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, FileText, Users } from "lucide-react";
+import { Ban, CheckCircle2, Crown, Search, ShieldCheck, UserCog, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, FileText, Users } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
@@ -78,7 +78,6 @@ export function SecurityConsole({
   initialTotalUsers,
   initialLogs,
   initialTotalLogs,
-  initialRoleLogs,
   session,
 }: SecurityConsoleProps) {
   const USERS_LIMIT = 30;
@@ -129,7 +128,7 @@ export function SecurityConsole({
         } else {
           setMessage(payload.message ?? "Failed to fetch users.");
         }
-      } catch (err) {
+      } catch {
         setMessage("Network error fetching users.");
       }
       setIsUsersLoading(false);
@@ -174,7 +173,7 @@ export function SecurityConsole({
         } else {
           setMessage(payload.message ?? "Failed to fetch logs.");
         }
-      } catch (err) {
+      } catch {
         setMessage("Network error fetching logs.");
       }
       setIsLogsLoading(false);

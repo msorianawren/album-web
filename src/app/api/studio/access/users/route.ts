@@ -39,9 +39,6 @@ export async function GET(request: NextRequest) {
     const pageSize = parseInt(searchParams.get("pageSize") || "25", 10);
     const search = searchParams.get("search") || "";
     
-    // Filters
-    const accessStatus = searchParams.get("accessStatus"); // active | revoked | none | all_private | selected_albums
-    const requestStatus = searchParams.get("requestStatus"); // pending | approved | rejected
     // Specific logic required by Phase 10: "Ever granted", "Currently active", "Ever revoked", "Currently no access", "Revoked only"
     const grantFilter = searchParams.get("grantFilter"); 
 

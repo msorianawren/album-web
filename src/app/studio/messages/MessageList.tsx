@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Clock, CheckCircle2, Archive, Trash2, ShieldAlert, ChevronDown, ChevronUp, Reply, Send, MessageSquare } from "lucide-react";
+import { Clock, CheckCircle2, Archive, Trash2, ShieldAlert, ChevronDown, ChevronUp, Reply, Send } from "lucide-react";
 import { updateMessageStatus } from "./actions";
 import { Button } from "@/components/ui/Button";
 

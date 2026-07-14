@@ -113,7 +113,6 @@ export function NatureAnimatedBackground({ config }: { config?: Partial<LandingB
   if (!resolvedConfig.apply_to_all_public_pages && pathname !== "/") return null;
 
   const blurVal = effectivePreset === "mist" ? 6 : 2;
-  const isDark = true; 
   const speedMultiplier = resolvedConfig.speed > 0 ? 50 / resolvedConfig.speed : 999;
 
   const cssVars = {

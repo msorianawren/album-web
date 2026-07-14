@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { X, Shield, Clock, Info } from "lucide-react";
+import { X, Shield, Info } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
 
@@ -76,8 +76,6 @@ export function UserAccessDrawer({ user, onClose, onUpdate }: { user: AccessDraw
   }, [user.id, user.email]);
 
   const activeGrants = details.grants?.filter((g) => g.status === "active") || [];
-  const revokedGrants = details.grants?.filter((g) => g.status === "revoked") || [];
-
   const handleToggleAlbum = (id: string) => {
     setSelectedAlbums(prev => {
       const next = new Set(prev);

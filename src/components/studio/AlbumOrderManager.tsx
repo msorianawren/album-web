@@ -20,7 +20,6 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { GripVertical, AlertCircle, Save, RotateCcw, ArrowUp, ArrowDown, ArrowUpToLine, ArrowDownToLine } from "lucide-react";
 import { Button } from "@/components/ui/Button";
-import { AlbumStatusBadge } from "@/components/ui/Badge";
 import type { Album, AlbumStatus } from "@/lib/types";
 
 function SortableAlbumRow({

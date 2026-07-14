@@ -91,10 +91,6 @@ export function SettingsCenter({
 
   const envRows = useMemo(() => Object.entries(systemHealth.env), [systemHealth.env]);
 
-  // Dirty state detection
-  const isSettingsDirty = useMemo(() => JSON.stringify(settings) !== JSON.stringify(initialSettings), [settings, initialSettings]);
-  const isLandingDirty = useMemo(() => JSON.stringify(landing) !== JSON.stringify(initialLanding), [landing, initialLanding]);
-
   function update<K extends keyof SiteSettings>(key: K, value: SiteSettings[K]) {
     setSettings((current) => ({ ...current, [key]: value }));
   }

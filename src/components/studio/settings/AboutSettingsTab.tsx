@@ -5,7 +5,7 @@ import { Plus, Trash2 } from "lucide-react";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
 import { Button } from "@/components/ui/Button";
-import { CheckCircle2, AlertCircle, Save } from "lucide-react";
+import { Save } from "lucide-react";
 import type { AboutProfile } from "@/lib/types";
 import { useToast } from "@/hooks/useToast";
 

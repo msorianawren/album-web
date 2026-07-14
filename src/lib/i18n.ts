@@ -22,7 +22,7 @@ export function getStoredLocale(): AppLocale {
   try {
     const stored = localStorage.getItem("album-locale") as AppLocale;
     if (stored && LOCALES[stored]) return stored;
-  } catch (e) {
+  } catch {
     // Ignore error
   }
   return DEFAULT_LOCALE;
@@ -33,7 +33,7 @@ export function setStoredLocale(locale: AppLocale) {
   try {
     localStorage.setItem("album-locale", locale);
     document.cookie = `NEXT_LOCALE=${locale}; path=/; max-age=31536000; SameSite=Lax`;
-  } catch (e) {
+  } catch {
     // Ignore error
   }
 }
@@ -42,6 +42,6 @@ export function getServerLocale() {
   try {
     // We can't import cookies directly in this shared file without causing issues in client components,
     // so we'll fetch it in server components directly from next/headers.
-  } catch (e) {}
+  } catch {}
   return DEFAULT_LOCALE;
 }
