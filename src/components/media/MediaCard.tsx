@@ -1,15 +1,15 @@
-import Image from "next/image";
 import { Clock3, Play, TriangleAlert } from "lucide-react";
-import { useState } from "react";
 import { DownloadButton } from "@/components/media/DownloadButton";
 import { MediaLikeButton } from "@/components/media/MediaLikeButton";
-import { getMediaDisplayUrls, shouldBypassNextImageOptimization } from "@/lib/media/display-url";
-import type { Media } from "@/lib/types";
+import { ReliableMediaImage } from "@/components/media/ReliableMediaImage";
+import { getMediaDeliveryDescriptor } from "@/lib/media/delivery";
+import type { AlbumStatus, Media } from "@/lib/types";
 
 interface MediaCardProps {
   media: Media;
   index: number;
   downloadAllowed: boolean;
+  albumStatus: AlbumStatus;
   protectAssets?: boolean;
   onOpen: (index: number) => void;
 }
@@ -18,18 +18,18 @@ export function MediaCard({
   media,
   index,
   downloadAllowed,
+  albumStatus,
   protectAssets = false,
   onOpen,
 }: MediaCardProps) {
-  const [failedSrc, setFailedSrc] = useState<string | null>(null);
-  const aspectRatio =
-    media.width && media.height ? `${media.width} / ${media.height}` : "4 / 3";
-  const display = getMediaDisplayUrls(media);
-  const previewUrl = display.cardSrc;
-  const imageFailed = failedSrc === previewUrl;
-  const isProcessing = media.processing_status === "pending";
-  const isPermanentlyFailed =
-    media.processing_status === "failed" || media.security_status === "rejected";
+  const delivery = getMediaDeliveryDescriptor(media, {
+    albumStatus,
+    isAuthorized: true,
+    downloadAllowed,
+  });
+  const aspectRatio = `${delivery.width} / ${delivery.height}`;
+  const isProcessing = delivery.processingState === "pending";
+  const isPermanentlyFailed = ["failed", "rejected"].includes(delivery.processingState);
   const isUnavailable = isProcessing || isPermanentlyFailed;
 
   const fallback = (
@@ -37,7 +37,7 @@ export function MediaCard({
       <span className="text-[0.62rem] font-semibold uppercase tracking-[0.24em] text-text-secondary">
         Image unavailable
       </span>
-      <span className="line-clamp-2 text-sm text-text-secondary/70">{display.alt}</span>
+      <span className="text-sm text-text-secondary/70">This media could not be loaded.</span>
     </div>
   );
 
@@ -76,33 +76,27 @@ export function MediaCard({
                 : "Processing failed. An administrator can review or retry this item."}
             </span>
           </div>
-        ) : imageFailed ? fallback : media.media_type === "image" ? (
-          <Image
-            src={previewUrl}
-            alt={display.alt}
+        ) : media.media_type === "image" ? (
+          <ReliableMediaImage
+            target={delivery.card}
+            alt={delivery.alt}
             fill
             sizes="(min-width: 1024px) 25vw, (min-width: 768px) 33vw, (min-width: 640px) 50vw, 100vw"
             className="object-cover transition duration-300 ease-out group-hover:scale-[1.05]"
-            unoptimized={shouldBypassNextImageOptimization(previewUrl)}
             draggable={!protectAssets}
-            onError={() => setFailedSrc(previewUrl)}
+            fallback={fallback}
           />
         ) : (
           <>
-            {previewUrl ? (
-              <Image
-                src={previewUrl}
-                alt={display.alt}
-                fill
-                sizes="(min-width: 1024px) 25vw, (min-width: 768px) 33vw, (min-width: 640px) 50vw, 100vw"
-                className="object-cover transition duration-300 ease-out group-hover:scale-[1.05]"
-                unoptimized={shouldBypassNextImageOptimization(previewUrl)}
-                draggable={!protectAssets}
-                onError={() => setFailedSrc(previewUrl)}
-              />
-            ) : (
-              <div className="h-full w-full bg-surface" />
-            )}
+            <ReliableMediaImage
+              target={delivery.card}
+              alt={delivery.alt}
+              fill
+              sizes="(min-width: 1024px) 25vw, (min-width: 768px) 33vw, (min-width: 640px) 50vw, 100vw"
+              className="object-cover transition duration-300 ease-out group-hover:scale-[1.05]"
+              draggable={!protectAssets}
+              fallback={fallback}
+            />
             <div className="absolute inset-0 flex items-center justify-center">
               <span className="flex h-14 w-14 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur-md transition-colors group-hover:bg-accent group-hover:text-accent-foreground">
                 <Play className="ml-1 h-6 w-6" aria-hidden="true" />
@@ -116,7 +110,7 @@ export function MediaCard({
         <div className="pointer-events-auto flex items-center gap-2">
           <MediaLikeButton mediaId={media.id} compact />
           {downloadAllowed ? (
-            <DownloadButton href={`/api/media/${media.id}/download`} compact />
+            <DownloadButton href={delivery.downloadHref ?? `/api/media/${media.id}/download`} compact />
           ) : null}
         </div>
       </div> : null}

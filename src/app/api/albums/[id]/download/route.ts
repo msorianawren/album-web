@@ -11,6 +11,10 @@ import { extensionFromUrlOrMime, safeFilename, sanitizeZipPathSegment } from "@/
 import { enforceRateLimit } from "@/lib/security-rate-limit";
 import { getSiteSettings } from "@/lib/site-settings";
 import { authorizePrivateMediaAsset, readAuthorizedPrivateMedia } from "@/lib/private-media";
+import {
+  getMediaDeliveryDescriptor,
+  isExpectedMediaContentType,
+} from "@/lib/media/delivery";
 
 export const runtime = "nodejs";
 const maxZipImages = 100;
@@ -87,18 +91,16 @@ export async function GET(request: NextRequest, { params }: AlbumDownloadProps) 
 
     for (const [index, image] of images.entries()) {
       const canDownloadOriginal = session.isAdmin || (settings.allow_original_downloads && image.original_download_allowed);
-      let sourceUrl = image.medium_url ?? image.thumbnail_url;
       const privateVariant = canDownloadOriginal ? "original" : "medium";
-
-      if (canDownloadOriginal) {
-        sourceUrl = image.url;
-      } else if (!sourceUrl) {
-        if (image.metadata_stripped) {
-          sourceUrl = image.url;
-        } else {
-          continue;
-        }
-      }
+      const delivery = getMediaDeliveryDescriptor(image, {
+        albumStatus: album.status,
+        isAuthorized: true,
+        downloadAllowed: true,
+        originalDownloadAllowed: canDownloadOriginal,
+      });
+      const sourceTarget = canDownloadOriginal ? delivery.originalDownload : delivery.download;
+      const sourceUrl = sourceTarget.src;
+      if (!sourceUrl && album.status !== "private") continue;
 
       let fileData: ArrayBuffer | Buffer;
       let sourceForExtension = sourceUrl ?? image.id;
@@ -110,12 +112,27 @@ export async function GET(request: NextRequest, { params }: AlbumDownloadProps) 
         sourceForExtension = asset.objectKey;
         sourceMime = asset.contentType ?? image.mime_type ?? sourceMime;
       } else {
-        const response = await fetch(sourceUrl!);
-        if (!response.ok) continue;
-        const length = Number(response.headers.get("content-length") ?? 0);
-        if (length && length > maxZipSourceBytes) continue;
-        fileData = await response.arrayBuffer();
-        sourceMime = response.headers.get("content-type") ?? sourceMime;
+        let selectedResponse: Response | null = null;
+        let selectedSource = sourceUrl!;
+        for (const candidate of sourceTarget.candidates) {
+          const response = await fetch(candidate.src);
+          const contentType = response.headers.get("content-type");
+          const length = Number(response.headers.get("content-length") ?? 0);
+          if (
+            response.ok &&
+            (!length || length <= maxZipSourceBytes) &&
+            isExpectedMediaContentType(contentType, candidate.expectedContentType)
+          ) {
+            selectedResponse = response;
+            selectedSource = candidate.src;
+            break;
+          }
+          await response.body?.cancel();
+        }
+        if (!selectedResponse) continue;
+        fileData = await selectedResponse.arrayBuffer();
+        sourceMime = selectedResponse.headers.get("content-type")!.split(";", 1)[0];
+        sourceForExtension = selectedSource;
       }
       if (fileData.byteLength > maxZipSourceBytes) continue;
       

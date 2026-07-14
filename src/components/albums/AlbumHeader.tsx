@@ -4,7 +4,7 @@ import { AlbumStatusBadge } from "@/components/ui/Badge";
 import { ShareButton } from "@/components/ui/ShareButton";
 import { AlbumMemoryHint } from "@/components/albums/AlbumMemoryHint";
 import { LivingPreviewImages } from "@/components/albums/LivingPreviewImages";
-import { getMediaDisplayUrls } from "@/lib/media/display-url";
+import { createMediaDeliveryTarget, getMediaDeliveryDescriptor } from "@/lib/media/delivery";
 import type { AlbumDetail } from "@/lib/types";
 import { formatMediaCount } from "@/lib/utils";
 import type { AppDictionary } from "@/lib/i18n";
@@ -19,9 +19,9 @@ export function AlbumHeader({ album, dict }: AlbumHeaderProps) {
     ...(album.media ?? [])
       .filter((item) => item.media_type === "image")
       .slice(0, 4)
-      .map((item) => getMediaDisplayUrls(item).cardSrc),
-    album.cover_url,
-  ].filter((value, index, values): value is string => Boolean(value) && values.indexOf(value) === index).slice(0, 4);
+      .map((item) => getMediaDeliveryDescriptor(item, { albumStatus: album.status }).card),
+    createMediaDeliveryTarget(album.cover_url),
+  ].filter((target, index, values) => Boolean(target.src) && values.findIndex((value) => value.src === target.src) === index).slice(0, 4);
 
   return (
     <section className="mx-auto w-full max-w-[1200px] px-6 py-20 lg:py-32 grid gap-12 lg:grid-cols-[1fr_1.2fr] lg:items-center">

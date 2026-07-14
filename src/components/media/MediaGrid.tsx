@@ -12,7 +12,7 @@ import {
   sortMedia,
   type MediaSortMode,
 } from "@/lib/media-sort";
-import type { Media } from "@/lib/types";
+import type { AlbumStatus, Media } from "@/lib/types";
 
 const MediaViewer = dynamic(
   () => import("@/components/media/MediaViewer").then((mod) => mod.MediaViewer),
@@ -23,6 +23,7 @@ interface MediaGridProps {
   albumId: string;
   media: Media[];
   downloadAllowed: boolean;
+  albumStatus: AlbumStatus;
   protectAssets?: boolean;
   defaultSortMode?: string | null;
 }
@@ -31,6 +32,7 @@ export function MediaGrid({
   albumId,
   media,
   downloadAllowed,
+  albumStatus,
   protectAssets = false,
   defaultSortMode = "smart",
 }: MediaGridProps) {
@@ -180,6 +182,7 @@ export function MediaGrid({
             media={item}
             index={viewerIndexById.get(item.id) ?? index}
             downloadAllowed={downloadAllowed}
+            albumStatus={albumStatus}
             protectAssets={protectAssets}
             onOpen={setCurrentIndex}
           />
@@ -189,6 +192,7 @@ export function MediaGrid({
         media={viewableMedia}
         currentIndex={currentIndex}
         downloadAllowed={downloadAllowed}
+        albumStatus={albumStatus}
         protectAssets={protectAssets}
         onClose={() => setCurrentIndex(null)}
         onNext={handleNext}

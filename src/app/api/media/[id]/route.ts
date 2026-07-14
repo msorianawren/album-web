@@ -6,6 +6,8 @@ import { deleteR2Objects } from "@/lib/r2";
 import { enforceRateLimit } from "@/lib/security-rate-limit";
 import { getSiteSettings } from "@/lib/site-settings";
 import { mediaUpdateSchema } from "@/lib/validators";
+import { normalizeMedia } from "@/lib/albums";
+import { getMediaDeliveryDescriptor } from "@/lib/media/delivery";
 
 interface MediaRouteProps {
   params: Promise<{ id: string }>;
@@ -78,7 +80,9 @@ export async function PATCH(request: NextRequest, { params }: MediaRouteProps) {
       .from("albums")
       .update({
         cover_media_id: id,
-        cover_url: data.thumbnail_url ?? data.poster_url ?? data.url,
+        cover_url: getMediaDeliveryDescriptor(
+          normalizeMedia(data as unknown as Record<string, unknown>),
+        ).card.src,
       })
       .eq("id", targetAlbumId);
   }

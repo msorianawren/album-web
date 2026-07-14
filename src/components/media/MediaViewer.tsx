@@ -1,21 +1,22 @@
 "use client";
 
-import Image from "next/image";
 import { AnimatePresence, motion } from "framer-motion";
 import { ChevronLeft, ChevronRight, Pause, Play, X, Maximize, Minimize, ZoomIn } from "lucide-react";
 import { useEffect, useState, useRef } from "react";
 import { DownloadButton } from "@/components/media/DownloadButton";
 import { MediaLikeButton } from "@/components/media/MediaLikeButton";
+import { ReliableMediaImage } from "@/components/media/ReliableMediaImage";
 import { Button } from "@/components/ui/Button";
 import { ORIANA_MEDIA_VIEWER_STATE_EVENT } from "@/lib/assistant/runtime-events";
-import { getMediaDisplayUrls } from "@/lib/media/display-url";
-import type { Media } from "@/lib/types";
+import { getMediaDeliveryDescriptor } from "@/lib/media/delivery";
+import type { AlbumStatus, Media } from "@/lib/types";
 import { useAlbumViewMemory } from "@/hooks/useAlbumViewMemory";
 
 interface MediaViewerProps {
   media: Media[];
   currentIndex: number | null;
   downloadAllowed: boolean;
+  albumStatus: AlbumStatus;
   protectAssets?: boolean;
   onClose: () => void;
   onNext: () => void;
@@ -27,6 +28,7 @@ export function MediaViewer({
   media,
   currentIndex,
   downloadAllowed,
+  albumStatus,
   protectAssets = false,
   onClose,
   onNext,
@@ -35,6 +37,7 @@ export function MediaViewer({
 }: MediaViewerProps) {
   const item = currentIndex === null ? null : media[currentIndex];
   const [loadedImages, setLoadedImages] = useState<Record<string, boolean>>({});
+  const [failedVideos, setFailedVideos] = useState<Record<string, boolean>>({});
   const [autoPlay, setAutoPlay] = useState(false);
   
   // Zoom & Pan state
@@ -48,10 +51,13 @@ export function MediaViewer({
   const { markAlbumViewed } = useAlbumViewMemory();
 
   const isImageLoading = item?.media_type === "image" && !loadedImages[item.id];
-  const imageWidth = item?.width ?? 1600;
-  const imageHeight = item?.height ?? 1200;
-  const imageDisplay = item ? getMediaDisplayUrls(item) : null;
-  const imageSource = imageDisplay?.viewerSrc ?? "";
+  const delivery = item
+    ? getMediaDeliveryDescriptor(item, {
+        albumStatus,
+        isAuthorized: true,
+        downloadAllowed,
+      })
+    : null;
 
   const resetZoom = () => {
     setScale(1);
@@ -291,31 +297,37 @@ export function MediaViewer({
               {isImageLoading ? (
                 <div className="absolute left-1/2 top-1/2 z-10 h-10 w-10 -translate-x-1/2 -translate-y-1/2 animate-spin rounded-full border border-lightbox-border border-t-accent-foreground" />
               ) : null}
-              {item.media_type === "image" ? (
-                <Image
-                  src={imageSource}
-                  alt={imageDisplay?.alt ?? "Album image"}
-                  width={imageWidth}
-                  height={imageHeight}
+              {item.media_type === "image" && delivery ? (
+                <ReliableMediaImage
+                  target={delivery.viewer}
+                  alt={delivery.alt}
+                  width={delivery.width}
+                  height={delivery.height}
                   sizes="100vw"
-                  className="max-h-full max-w-full object-contain pointer-events-none pb-8"
-                  unoptimized
+                  className="max-h-full max-w-full object-contain pointer-events-none pb-8 transition-opacity duration-200"
                   priority
                   draggable={false}
                   onLoad={() => {
-                    setTimeout(() => {
-                      setLoadedImages((current) => ({ ...current, [item.id]: true }));
-                    }, 0);
+                    setLoadedImages((current) => ({ ...current, [item.id]: true }));
+                  }}
+                  onUnavailable={() => {
+                    setLoadedImages((current) => ({ ...current, [item.id]: true }));
                   }}
                 />
+              ) : failedVideos[item.id] || !delivery?.viewer.src ? (
+                <div className="flex min-h-64 min-w-64 items-center justify-center rounded-[18px] border border-white/10 bg-white/5 px-8 text-center text-sm text-white/65">
+                  Video unavailable
+                </div>
               ) : (
                 <video
-                  src={item.url}
-                  poster={item.poster_url ?? item.thumbnail_url ?? undefined}
+                  key={delivery.viewer.src}
+                  src={delivery.viewer.src}
+                  poster={delivery.card.src ?? undefined}
                   controls
                   preload="metadata"
                   controlsList={protectAssets ? "nodownload" : undefined}
                   className="max-h-full max-w-full object-contain shadow-2xl shadow-black/40 sm:rounded-[18px]"
+                  onError={() => setFailedVideos((current) => ({ ...current, [item.id]: true }))}
                 />
               )}
             </motion.div>
@@ -338,14 +350,17 @@ export function MediaViewer({
               <div className="flex w-full max-w-[min(56rem,calc(100vw-2rem))] flex-col gap-3 rounded-[1.2rem] border border-lightbox-border bg-white/5 p-3 backdrop-blur-md sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex shrink-0 items-center justify-center gap-2">
                   <MediaLikeButton mediaId={item.id} />
-                  {downloadAllowed && <DownloadButton href={`/api/media/${item.id}/download`} />}
+                  {downloadAllowed && delivery?.downloadHref ? <DownloadButton href={delivery.downloadHref} /> : null}
                 </div>
                 
                 {media.length > 1 && (
                   <div className="hidden min-w-0 flex-1 gap-2 overflow-x-auto sm:flex sm:justify-end">
                     {media.map((thumb, index) => (
                       (() => {
-                        const thumbDisplay = getMediaDisplayUrls(thumb);
+                        const thumbDelivery = getMediaDeliveryDescriptor(thumb, {
+                          albumStatus,
+                          isAuthorized: true,
+                        });
                         return (
                       <button
                         key={thumb.id}
@@ -355,21 +370,16 @@ export function MediaViewer({
                           index === currentIndex ? "border-white opacity-100" : "border-transparent opacity-50 hover:opacity-100 focus-visible:opacity-100"
                         }`}
                       >
-                        {thumb.media_type === "image" ? (
-                          <Image
-                            src={thumbDisplay.cardSrc}
+                        {thumbDelivery.card.src ? (
+                          <ReliableMediaImage
+                            target={thumbDelivery.card}
                             alt=""
                             fill
                             sizes="64px"
-                            className="object-cover"
-                            unoptimized
+                            className="object-cover transition-opacity duration-150"
                           />
                         ) : (
-                          <video
-                            src={thumbDisplay.viewerSrc}
-                            className="h-full w-full object-cover"
-                            preload="metadata"
-                          />
+                          <span className="flex h-full w-full items-center justify-center bg-white/5 text-[0.55rem] uppercase tracking-wider text-white/50">Unavailable</span>
                         )}
                       </button>
                         );

@@ -9,6 +9,11 @@ import { getSiteSettings } from "@/lib/site-settings";
 import { createPublicServerClient } from "@/lib/db/public";
 import { createAuthenticatedUserClient } from "@/lib/db/user";
 import { authorizePrivateMediaAsset, streamAuthorizedPrivateMedia } from "@/lib/private-media";
+import {
+  getMediaDeliveryDescriptor,
+  isExpectedMediaContentType,
+  type MediaDeliveryTarget,
+} from "@/lib/media/delivery";
 
 export const runtime = "nodejs";
 
@@ -16,6 +21,18 @@ const MEDIA_DOWNLOAD_SELECT = "id,album_id,media_type,title,original_filename,mi
 
 interface MediaDownloadProps {
   params: Promise<{ id: string }>;
+}
+
+async function fetchPublicMedia(target: MediaDeliveryTarget) {
+  for (const candidate of target.candidates) {
+    const response = await fetch(candidate.src);
+    const contentType = response.headers.get("content-type");
+    if (response.ok && isExpectedMediaContentType(contentType, candidate.expectedContentType)) {
+      return { response, candidate };
+    }
+    await response.body?.cancel();
+  }
+  return null;
 }
 
 export async function GET(request: NextRequest, { params }: MediaDownloadProps) {
@@ -62,12 +79,20 @@ export async function GET(request: NextRequest, { params }: MediaDownloadProps) 
       return apiError("FORBIDDEN", "Downloads are not available for this media.", 403);
     }
 
-    const sourceUrl =
-      session.isAdmin && settings.allow_original_downloads && media.original_download_allowed
-        ? media.url
-        : media.media_type === "image"
-          ? media.medium_url ?? media.thumbnail_url ?? media.url
-          : media.url;
+    const delivery = getMediaDeliveryDescriptor(media, {
+      albumStatus: album.status,
+      isAuthorized: true,
+      downloadAllowed: canDownload,
+      originalDownloadAllowed:
+        session.isAdmin && settings.allow_original_downloads && media.original_download_allowed,
+    });
+    const useOriginal =
+      session.isAdmin && settings.allow_original_downloads && media.original_download_allowed;
+    const sourceTarget = useOriginal ? delivery.originalDownload : delivery.download;
+    const sourceUrl = sourceTarget.src;
+    if (!sourceUrl && album.status !== "private") {
+      return apiError("NOT_FOUND", "Source file not found.", 404);
+    }
 
     const privateVariant =
       session.isAdmin && settings.allow_original_downloads && media.original_download_allowed
@@ -78,7 +103,7 @@ export async function GET(request: NextRequest, { params }: MediaDownloadProps) 
     let body: BodyInit | null;
     let contentLength: number | undefined;
     let contentType: string;
-    let extensionSource = sourceUrl;
+    let extensionSource = sourceUrl ?? media.id;
 
     if (album.status === "private") {
       const asset = await authorizePrivateMediaAsset(request, media.id, privateVariant);
@@ -89,14 +114,13 @@ export async function GET(request: NextRequest, { params }: MediaDownloadProps) 
       contentType = object.contentType ?? asset.contentType ?? media.mime_type ?? "application/octet-stream";
       extensionSource = asset.objectKey;
     } else {
-      const upstream = await fetch(sourceUrl);
-      if (!upstream.ok) return apiError("NOT_FOUND", "Source file not found.", 404);
+      const publicMedia = await fetchPublicMedia(sourceTarget);
+      if (!publicMedia) return apiError("NOT_FOUND", "Source file not found.", 404);
+      const { response: upstream, candidate: selected } = publicMedia;
       body = upstream.body;
       contentLength = Number(upstream.headers.get("content-length") ?? 0) || undefined;
-      contentType =
-        media.media_type === "image" && sourceUrl !== media.url
-          ? "image/webp"
-          : media.mime_type ?? upstream.headers.get("content-type") ?? "application/octet-stream";
+      contentType = upstream.headers.get("content-type")!.split(";", 1)[0];
+      extensionSource = selected.src;
     }
     const extension = extensionFromUrlOrMime(extensionSource, contentType);
     const filename = `${safeFilename(album?.title ?? "album")}-${safeFilename(
@@ -111,7 +135,7 @@ export async function GET(request: NextRequest, { params }: MediaDownloadProps) 
       targetId: media.id,
       metadata: {
         albumId: album.id,
-        variant: sourceUrl === media.url ? "source" : "public-processed",
+        variant: useOriginal ? "source" : "public-processed",
       },
     });
 
@@ -122,7 +146,7 @@ export async function GET(request: NextRequest, { params }: MediaDownloadProps) 
       mediaId: media.id,
       eventType: "album_downloaded_media",
       albumStatus: album.status,
-      metadata: { variant: sourceUrl === media.url ? "source" : "public-processed" },
+      metadata: { variant: useOriginal ? "source" : "public-processed" },
     });
 
     const headers = new Headers({

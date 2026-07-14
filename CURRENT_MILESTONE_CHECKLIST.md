@@ -112,4 +112,19 @@
 - [ ] Activate verified private-bucket assets; production source cleanup remains a later reviewed change.
 - [~] Milestone 4 status: IN_PROGRESS - IMPLEMENTED_NOT_MIGRATED.
 
+## Milestone 5 - Media URL Model and Display Reliability
+
+- [x] Add one typed `getMediaDeliveryDescriptor(media, context)` source of truth.
+- [x] Separate public card, authorized private card, viewer, processed download, original download, safe preview, and placeholder sources.
+- [x] Make unauthorized private delivery return only an explicit safe preview or placeholder.
+- [x] Add ordered stale-derivative fallback without native broken-image states or visible raw alt errors.
+- [x] Normalize spaces, parentheses, Unicode, existing encoding, signed URLs, and same-site authenticated routes.
+- [x] Bypass image optimization when authenticated delivery or host restrictions require it.
+- [x] Reject HTML/JSON responses in public single and ZIP media fetches and preserve correct media MIME.
+- [x] Supply stable dimensions/aspect ratios to cards and the full viewer.
+- [x] Migrate public album surfaces, private authorized surfaces, viewer, Studio previews, cover selection, and downloads to the shared model.
+- [v] Verify 54/54 tests, lint with 0 errors, typecheck, production build, and local public/guest HTTP smoke checks.
+- [x] Create `MEDIA_DELIVERY_MODEL_REPORT.md`.
+- [x] Milestone 5 status: COMPLETE - IMPLEMENTED AND LOCALLY VERIFIED.
+
 Legend: `[ ]` not started, `[~]` in progress, `[x]` implemented, `[v]` verified, `[c]` committed, `[b]` blocked.

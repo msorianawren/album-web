@@ -19,6 +19,7 @@ import {
   projectPrivateMediaForClient,
   projectPrivatePreviewForClient,
 } from "@/lib/private-media";
+import { getMediaDeliveryDescriptor } from "@/lib/media/delivery";
 
 import type { PublicSession } from "@/lib/types";
 
@@ -424,8 +425,14 @@ async function attachAlbumPreviews(
     const isApproved = requestMap.get(album.id) === "approved";
     const canReadPrivate = (isAdmin && !session?.isBlocked) || isApproved;
     if (album.status === "private") {
+      const privatePreview = previewMap.get(album.id)?.[0];
       album.cover_url = canReadPrivate
-        ? previewMap.get(album.id)?.[0]?.thumbnail_url ?? album.safe_preview_url ?? null
+        ? privatePreview
+          ? getMediaDeliveryDescriptor(privatePreview, {
+              albumStatus: "private",
+              isAuthorized: true,
+            }).card.src ?? album.safe_preview_url ?? null
+          : album.safe_preview_url ?? null
         : album.safe_preview_url ?? null;
     }
     return {
@@ -602,7 +609,12 @@ export async function getAlbum(
     return {
       ...album,
       cover_url: album.status === "private"
-        ? privateCover?.thumbnail_url ?? album.safe_preview_url ?? null
+        ? privateCover
+          ? getMediaDeliveryDescriptor(privateCover, {
+              albumStatus: "private",
+              isAuthorized: true,
+            }).card.src ?? album.safe_preview_url ?? null
+          : album.safe_preview_url ?? null
         : album.cover_url,
       media: deliveredMedia,
       preview_items: deliveredMedia.slice(0, 4).map((item) => ({

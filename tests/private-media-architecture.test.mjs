@@ -31,7 +31,7 @@ test("private album repository selects safe metadata and projects before seriali
   assert.match(repository, /PRIVATE_MEDIA_SAFE_SELECT/);
   assert.match(repository, /sortedMedia\.map\(projectPrivateMediaForClient\)/);
   assert.match(repository, /projectPrivatePreviewForClient/);
-  assert.match(repository, /privateCover\?\.thumbnail_url/);
+  assert.match(repository, /getMediaDeliveryDescriptor\(privateCover/);
   assert.match(repository, /cover_url: album\.safe_preview_url \?\? null/);
 });
 

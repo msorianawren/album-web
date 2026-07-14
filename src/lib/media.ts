@@ -6,6 +6,7 @@ import { supabase } from "@/lib/supabase";
 import type { Media, SiteSettings } from "@/lib/types";
 import { normalizeMedia } from "@/lib/albums";
 import { createProcessingFailure } from "@/lib/app-failure";
+import { getMediaDeliveryDescriptor } from "@/lib/media/delivery";
 
 
 function extensionFromMime(mimeType: string) {
@@ -89,6 +90,10 @@ async function setFirstImageAsCoverIfNeeded(albumId: string, mediaId: string, co
     })
     .eq("id", albumId);
   await supabase.from("media").update({ is_cover: true }).eq("id", mediaId);
+}
+
+function coverUrlForMediaRow(row: Record<string, unknown>) {
+  return getMediaDeliveryDescriptor(normalizeMedia(row)).card.src;
 }
 
 async function uploadImageMediaUnchecked({
@@ -399,7 +404,7 @@ export async function uploadMediaFile({
         await setFirstImageAsCoverIfNeeded(
           albumId,
           mediaId,
-          legacyData.thumbnail_url ?? legacyData.url,
+          coverUrlForMediaRow(legacyData),
         );
       }
       return normalizeMedia(legacyData);
@@ -423,7 +428,7 @@ export async function uploadMediaFile({
       await setFirstImageAsCoverIfNeeded(
         albumId,
         mediaId,
-        fallbackData.thumbnail_url ?? fallbackData.url,
+        coverUrlForMediaRow(fallbackData),
       );
     }
 
@@ -432,7 +437,7 @@ export async function uploadMediaFile({
 
   if (error) throw error;
   if (mediaType === "image") {
-    await setFirstImageAsCoverIfNeeded(albumId, mediaId, data.thumbnail_url ?? data.url);
+    await setFirstImageAsCoverIfNeeded(albumId, mediaId, coverUrlForMediaRow(data));
   }
 
   return normalizeMedia(data);
@@ -572,7 +577,7 @@ export async function completeUploadFile({
         await setFirstImageAsCoverIfNeeded(
           albumId,
           mediaId,
-          legacyData.thumbnail_url ?? legacyData.url,
+          coverUrlForMediaRow(legacyData),
         );
       }
       return normalizeMedia(legacyData);
@@ -596,7 +601,7 @@ export async function completeUploadFile({
       await setFirstImageAsCoverIfNeeded(
         albumId,
         mediaId,
-        fallbackData.thumbnail_url ?? fallbackData.url,
+        coverUrlForMediaRow(fallbackData),
       );
     }
 
@@ -605,7 +610,7 @@ export async function completeUploadFile({
 
   if (error) throw error;
   if (mediaType === "image") {
-    await setFirstImageAsCoverIfNeeded(albumId, mediaId, data.thumbnail_url ?? data.url);
+    await setFirstImageAsCoverIfNeeded(albumId, mediaId, coverUrlForMediaRow(data));
   }
 
   return normalizeMedia(data);

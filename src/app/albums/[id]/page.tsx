@@ -127,6 +127,7 @@ export default async function AlbumPage({ params }: AlbumPageProps) {
           <MediaGrid
             albumId={album.id}
             media={album.media}
+            albumStatus={album.status}
             downloadAllowed={album.download_allowed}
             protectAssets={settings.disable_public_right_click}
             defaultSortMode={album.default_media_sort}

@@ -1,6 +1,6 @@
-import Image from "next/image";
 import { Lock } from "lucide-react";
-import { shouldBypassNextImageOptimization } from "@/lib/media/display-url";
+import { ReliableMediaImage } from "@/components/media/ReliableMediaImage";
+import { createMediaDeliveryTarget } from "@/lib/media/delivery";
 import type { AlbumDetail } from "@/lib/types";
 
 export function LockedAlbumState({ album }: { album: AlbumDetail }) {
@@ -8,13 +8,12 @@ export function LockedAlbumState({ album }: { album: AlbumDetail }) {
     <section className="mx-auto grid w-full max-w-[1440px] gap-8 px-4 pb-20 pt-6 sm:px-8 lg:grid-cols-[0.9fr_1.1fr] lg:px-12">
       <div className="relative aspect-[4/3] overflow-hidden rounded-[2rem] bg-surface">
         {album.cover_url ? (
-          <Image
-            src={album.cover_url}
+          <ReliableMediaImage
+            target={createMediaDeliveryTarget(album.cover_url, "safe-preview")}
             alt={`${album.title} private album cover`}
             fill
             sizes="(min-width: 1024px) 45vw, 100vw"
-            className="object-cover"
-            unoptimized={shouldBypassNextImageOptimization(album.cover_url)}
+            className="object-cover transition-opacity duration-150"
           />
         ) : (
           <div className="flex h-full w-full items-center justify-center">

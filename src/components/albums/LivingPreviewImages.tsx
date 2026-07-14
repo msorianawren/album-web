@@ -1,8 +1,11 @@
-import Image from "next/image";
-import { shouldBypassNextImageOptimization } from "@/lib/media/display-url";
+import { ReliableMediaImage } from "@/components/media/ReliableMediaImage";
+import {
+  createMediaDeliveryTarget,
+  type MediaDeliveryTarget,
+} from "@/lib/media/delivery";
 
 interface LivingPreviewImagesProps {
-  images: string[];
+  images: Array<string | MediaDeliveryTarget>;
   title: string;
   sizes: string;
   imageClassName?: string;
@@ -16,7 +19,12 @@ export function LivingPreviewImages({
   sizes,
   imageClassName = "",
 }: LivingPreviewImagesProps) {
-  const usableImages = images.filter(Boolean).slice(0, 4);
+  const usableImages = images
+    .map((image) =>
+      typeof image === "string" ? createMediaDeliveryTarget(image) : image,
+    )
+    .filter((image) => Boolean(image.src))
+    .slice(0, 4);
 
   if (!usableImages.length) return null;
 
@@ -33,21 +41,24 @@ export function LivingPreviewImages({
 
   return (
     <>
-      {usableImages.map((src, index) => (
-        <Image
-          key={src}
-          src={src}
-          alt={index === 0 ? `${title} animated album preview` : ""}
-          fill
-          sizes={sizes}
-          className={`living-preview-image absolute inset-0 object-cover ${countClass} ${imageClassName}`}
-          unoptimized={shouldBypassNextImageOptimization(src)}
-          loading="lazy"
+      {usableImages.map((target, index) => (
+        <div
+          key={`${target.src}:${index}`}
+          className={`living-preview-image absolute inset-0 ${countClass}`}
           style={{
             animationDelay: `${index * SLIDE_DURATION_SECONDS - cycleDuration * 2}s`,
             animationDuration,
           }}
-        />
+        >
+          <ReliableMediaImage
+            target={target}
+            alt={index === 0 ? `${title} animated album preview` : ""}
+            fill
+            sizes={sizes}
+            className={`object-cover transition-opacity duration-500 ${imageClassName}`}
+            loading="lazy"
+          />
+        </div>
       ))}
     </>
   );

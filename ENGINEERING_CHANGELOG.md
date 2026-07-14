@@ -1,5 +1,15 @@
 # Engineering Changelog
 
+## 2026-07-14 - Milestone 5 media delivery model
+
+- Added one typed media delivery descriptor for public cards, authorized private cards, viewer, processed/original downloads, explicit safe previews, placeholders, authorization state, processing state, and stable dimensions.
+- Replaced duplicated media-column selection across album cards, animated previews, the viewer, Studio previews, cover updates, single downloads, and ZIP exports.
+- Added ordered stale-derivative fallback that hides unloaded/failed images and ends in an intentional unavailable state instead of a native broken-image icon or visible raw alt text.
+- Added URL normalization for spaces, Unicode, existing encoding, signed URLs, and authenticated same-site gateway paths.
+- Public download fetches now reject HTML/JSON responses and retry valid media candidates with the expected MIME family.
+- Added focused delivery/security tests; 54/54 tests, lint with 0 errors, typecheck, production build, and local HTTP smoke checks pass.
+- Milestone 4 remains `IN_PROGRESS - IMPLEMENTED_NOT_MIGRATED`; no remote migration, R2 copy, cutover, or production deployment occurred in this checkpoint.
+
 ## 2026-07-14 - Milestone 4 private-media foundation
 
 - Closed Milestone 3 as implemented and locally verified; moved live role fixtures to the required pre-merge authorization checklist.

@@ -12,6 +12,7 @@ Upgrade album-web into a production-grade, privacy-sensitive digital asset manag
 - Current milestone: 4 - True private-media architecture
 - Completed milestone: 3 - implemented and locally verified; 34/34 tests passed and the feature branch was pushed without deploying production
 - Current subtask: Resolve migration-history drift and private-bucket provisioning before manifest backfill/object copy.
+- Independent Milestone 5 is complete and locally verified. `src/lib/media/delivery.ts` is now the only media URL-selection policy for application surfaces; see `MEDIA_DELIVERY_MODEL_REPORT.md`.
 - Live role-matrix fixture checks are tracked in `PRE_MERGE_AUTHORIZATION_VERIFICATION.md` and must pass before merge, but do not block Milestone 4 development.
 
 ## Important Constraints
@@ -37,6 +38,7 @@ Upgrade album-web into a production-grade, privacy-sensitive digital asset manag
 - Private browser payloads use same-site gateway URLs and redact object-key values. A server-only manifest is the target source of truth; its compatibility fallback remains server-only until the additive migration is applied.
 - Local inventory found 13 private albums, 366 media rows, and 1,830 valid source variants; all 1,830 are still publicly reachable. No object was copied, moved, or deleted.
 - Supabase CLI is linked to the same project as the configured environment, but remote migration history records only the first five files. A normal push would replay 27 older migrations and must not be used until history is reconciled.
+- Media card/viewer/download selection is centralized. UI fallback cycles through trusted candidates without showing native broken-image states, and public download fetches reject HTML/JSON responses masquerading as media.
 
 ## Rejected Approaches
 
