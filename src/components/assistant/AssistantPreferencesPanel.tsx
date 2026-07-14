@@ -150,6 +150,11 @@ export function AssistantPreferencesPanel({
         {error ? <span className="ml-2 text-red-500">{error}</span> : null}
       </div>
 
+      <div className="mt-4 rounded-[1.2rem] border border-border bg-background/45 px-4 py-3 text-xs leading-relaxed text-text-secondary">
+        Oriana Companion answers basic site questions from fixed website rules. It is not a human,
+        cannot approve private access, and will hand off to Contact when it is unsure.
+      </div>
+
       <div className="mt-7 grid gap-6 lg:grid-cols-[1fr_0.78fr]">
         <div className="space-y-7">
           <div>

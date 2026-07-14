@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
 import { Send, CheckCircle2, AlertCircle, Mail } from "lucide-react";
+import { ASSISTANT_HANDOFF_STORAGE_KEY, sanitizeAssistantQuestion } from "@/lib/assistant/answer-engine";
 
 interface ContactFormProps {
   contactEmail?: string;
@@ -40,6 +41,39 @@ export function ContactForm({
   const [errorMsg, setErrorMsg] = useState("");
   const [submitStartTime] = useState(() => Date.now().toString());
   const formRef = useRef<HTMLFormElement>(null);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      try {
+        const raw = window.sessionStorage.getItem(ASSISTANT_HANDOFF_STORAGE_KEY);
+        if (!raw) return;
+
+        const draft = JSON.parse(raw);
+        const subject =
+          typeof draft?.subject === "string"
+            ? draft.subject.trim().slice(0, maxSubject)
+            : "Assistant handoff";
+        const message =
+          typeof draft?.message === "string"
+            ? sanitizeAssistantQuestion(draft.message).slice(0, maxMessage)
+            : "";
+
+        setFormData((current) => ({
+          ...current,
+          subject: subject || "Assistant handoff",
+          inquiry_type: allowedTypes.includes("General Inquiry")
+            ? "General Inquiry"
+            : current.inquiry_type,
+          message,
+        }));
+        window.sessionStorage.removeItem(ASSISTANT_HANDOFF_STORAGE_KEY);
+      } catch {
+        window.sessionStorage.removeItem(ASSISTANT_HANDOFF_STORAGE_KEY);
+      }
+    }, 0);
+
+    return () => window.clearTimeout(timer);
+  }, [allowedTypes, maxMessage, maxSubject]);
 
   const getMailtoLink = () => {
     if (!contactEmail) return "#";

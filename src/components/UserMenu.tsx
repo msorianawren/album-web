@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { usePathname, useSearchParams } from "next/navigation";
 import { LogIn, LogOut, Moon, Sparkles, Sun, UserRound, Shield } from "lucide-react";
 import { AssistantPet } from "@/components/assistant/AssistantPet";
@@ -21,6 +22,11 @@ interface UserMenuProps {
 }
 
 const themeEvent = "album-theme-change";
+
+const AssistantPanel = dynamic(
+  () => import("@/components/assistant/AssistantPanel").then((mod) => mod.AssistantPanel),
+  { ssr: false },
+);
 
 function getStoredTheme(): ThemeMode {
   if (typeof window === "undefined") return "auto";
@@ -59,11 +65,16 @@ function syncThemeClass(mode: ThemeMode) {
 
 export function UserMenu({ session, dict }: UserMenuProps) {
   const [open, setOpen] = useState(false);
+  const [assistantOpen, setAssistantOpen] = useState(false);
   const theme = useSyncExternalStore(subscribeTheme, getStoredTheme, () => "auto" as ThemeMode);
   const assistantPreferences = useStoredAssistantPreferences();
   const menuRef = useRef<HTMLDivElement>(null);
   const pathname = usePathname() ?? "";
   const searchParams = useSearchParams();
+  const currentPath = useMemo(() => {
+    const query = searchParams?.toString();
+    return query ? `${pathname}?${query}` : pathname || "/";
+  }, [pathname, searchParams]);
 
   const name = session.displayName ?? session.email ?? (dict?.common?.guest || "Guest");
   const roleLabel = session.isFounder
@@ -179,6 +190,20 @@ export function UserMenu({ session, dict }: UserMenuProps) {
             {dict?.nav?.profile || "My Profile & Rules"}
           </Link>
 
+          {assistantPreferences.mode !== "off" ? (
+            <button
+              type="button"
+              className="flex w-full items-center gap-3 rounded-[1rem] px-3 py-3 text-left text-sm font-medium text-text-primary transition hover:bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              onClick={() => {
+                setAssistantOpen(true);
+                setOpen(false);
+              }}
+            >
+              <Sparkles className="h-4 w-4 text-muted-accent" aria-hidden="true" />
+              Ask Oriana Companion
+            </button>
+          ) : null}
+
           <Link
             href="/profile#oriana-companion"
             className="flex w-full items-center justify-between gap-3 rounded-[1rem] px-3 py-3 text-left text-sm font-medium text-text-primary transition hover:bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
@@ -233,6 +258,15 @@ export function UserMenu({ session, dict }: UserMenuProps) {
           )}
         </div>
       </div>
+      {assistantOpen ? (
+        <AssistantPanel
+          open={assistantOpen}
+          onClose={() => setAssistantOpen(false)}
+          preferences={assistantPreferences}
+          session={session}
+          currentPath={currentPath}
+        />
+      ) : null}
     </div>
   );
 }
