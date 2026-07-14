@@ -2,9 +2,10 @@ import { NextRequest } from "next/server";
 import { apiError, toServerError } from "@/lib/errors";
 import {
   authorizePrivateMediaAsset,
+  streamAuthorizedPrivateMedia,
   type PrivateMediaVariant,
 } from "@/lib/private-media";
-import { getR2ObjectStream } from "@/lib/r2";
+import { isMediaUuid, parseSingleByteRange } from "@/lib/private-media-range";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -15,20 +16,19 @@ interface PrivateMediaContentProps {
   params: Promise<{ id: string }>;
 }
 
-function validRange(value: string | null) {
-  if (!value) return undefined;
-  return /^bytes=\d*-\d*$/.test(value) ? value : null;
-}
-
 export async function GET(request: NextRequest, { params }: PrivateMediaContentProps) {
   try {
     const { id } = await params;
+    if (!isMediaUuid(id)) return apiError("NOT_FOUND", "Media not found.", 404);
     const variant = (request.nextUrl.searchParams.get("variant") ?? "display") as PrivateMediaVariant;
     if (!browserVariants.has(variant)) {
       return apiError("INVALID_INPUT", "Unsupported private media variant.", 400);
     }
 
-    const range = validRange(request.headers.get("range"));
+    const asset = await authorizePrivateMediaAsset(request, id, variant);
+    if (!asset) return apiError("NOT_FOUND", "Media not found.", 404);
+
+    const range = parseSingleByteRange(request.headers.get("range"));
     if (range === null) {
       return new Response(null, {
         status: 416,
@@ -36,14 +36,7 @@ export async function GET(request: NextRequest, { params }: PrivateMediaContentP
       });
     }
 
-    const asset = await authorizePrivateMediaAsset(request, id, variant);
-    if (!asset) return apiError("NOT_FOUND", "Media not found.", 404);
-
-    const object = await getR2ObjectStream({
-      key: asset.objectKey,
-      bucketRole: asset.bucketRole,
-      range,
-    });
+    const object = await streamAuthorizedPrivateMedia(asset, range);
     const headers = new Headers({
       "Accept-Ranges": "bytes",
       "Cache-Control": "private, no-store, max-age=0",

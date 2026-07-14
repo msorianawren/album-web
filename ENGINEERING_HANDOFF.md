@@ -11,7 +11,7 @@ Upgrade album-web into a production-grade, privacy-sensitive digital asset manag
 - Baseline commit: `f82cb5eb0e78f9ea4b5aa9c34d6a20a69cfead2d`
 - Current milestone: 4 - True private-media architecture
 - Completed milestone: 3 - implemented and locally verified; 34/34 tests passed and the feature branch was pushed without deploying production
-- Current subtask: Validate the authenticated private-media gateway and server-only asset manifest before any R2 copy or activation.
+- Current subtask: Resolve migration-history drift and private-bucket provisioning before manifest backfill/object copy.
 - Live role-matrix fixture checks are tracked in `PRE_MERGE_AUTHORIZATION_VERIFICATION.md` and must pass before merge, but do not block Milestone 4 development.
 
 ## Important Constraints
@@ -35,6 +35,8 @@ Upgrade album-web into a production-grade, privacy-sensitive digital asset manag
 - Help create/append cannot be naively switched: Companion handoff writes an internal system note and append must atomically update thread state while enforcing the 10-message cap. Use a narrow RPC migration rather than broad user update rights.
 - Help create/append now call the applied RPC package; static/guest checks pass and authenticated role verification remains explicitly blocked.
 - Private browser payloads use same-site gateway URLs and redact object-key values. A server-only manifest is the target source of truth; its compatibility fallback remains server-only until the additive migration is applied.
+- Local inventory found 13 private albums, 366 media rows, and 1,830 valid source variants; all 1,830 are still publicly reachable. No object was copied, moved, or deleted.
+- Supabase CLI is linked to the same project as the configured environment, but remote migration history records only the first five files. A normal push would replay 27 older migrations and must not be used until history is reconciled.
 
 ## Rejected Approaches
 
@@ -79,8 +81,8 @@ Then read `AGENTS.md`, `ENGINEERING_PROGRAM_STATE.md`, this file, `CURRENT_MILES
 
 ## Next Five Actions
 
-1. Run lint, typecheck, all tests, and production build for the gateway checkpoint.
-2. Apply `202607142330_private_media_manifest.sql` in a controlled environment and run inventory queries only.
-3. Configure a non-public private R2 bucket without editing tracked environment files.
-4. Copy and verify representative objects; do not delete legacy sources.
-5. Test authorized, revoked, blocked, Range, single-download, ZIP, safe-preview, and rollback behavior before activation.
+1. Reconcile remote migration history without replaying old migrations, then apply `202607142330` only.
+2. Configure a non-public private R2 bucket without editing tracked environment files.
+3. Run `private-media:backfill-manifest -- --apply`, followed by R2 copy dry-run and bounded copy.
+4. Verify every destination and block old public delivery before activation; do not delete legacy sources yet.
+5. Complete the production role matrix and rollback rehearsal before marking Milestone 4 complete.

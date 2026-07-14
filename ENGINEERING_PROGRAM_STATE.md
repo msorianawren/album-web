@@ -5,7 +5,7 @@
 - Repository branch: `engineering/production-platform-overhaul`
 - Latest implementation checkpoint: `89b2688 refactor(authz): enforce private reads with user RLS`
 - Current milestone: Milestone 4 - True private-media architecture
-- Current subtask: Verify the authenticated gateway and additive private-asset manifest before any R2 copy or activation
+- Current subtask: Resolve remote migration-history drift and provision a non-public R2 bucket before manifest backfill/object copy
 - Completed milestones: Milestone 0, Milestone 1, Milestone 2, Milestone 3 (implemented and locally verified)
 - Files changed in current milestone: private media authorization/projection, authenticated streaming gateway, private download/ZIP delivery, manifest migration/rollback, tests, architecture report, and engineering state files
 - Migrations created: prior authorization migrations plus additive private media manifest (`202607142330`) with rollback
@@ -14,11 +14,11 @@
 - Commands already run: prior milestone checks; feature-branch push/hash verification; help RPC cutover gates; private JWT/RLS typecheck, tests, lint, and guest locked-album runtime check
 - Lint result: PASS WITH WARNINGS - 0 errors, 11 existing warnings
 - Typecheck result: PASS
-- Test result: PASS - 40/40 after the initial Milestone 4 private-media checkpoint
+- Test result: PASS - 46/46 after dual-read, identifier/Range, ZIP/single-download, migration-command, activation, and rollback coverage
 - Build result: PASS - Next.js 16.2.10 compiled and generated all routes, including the authenticated private-media gateway (48 static generation units)
-- Known failures: Legacy private derivatives remain publicly retrievable by permanent URL until copied to a non-public bucket and activated
-- Unresolved blockers: None for Milestone 4 development; live role-matrix fixtures remain a tracked pre-merge gate
-- Exact next action: Run full local checks, apply the additive manifest in a controlled environment, then execute inventory dry-run without moving or deleting R2 objects
+- Known failures: Inventory verified that all 1,830 legacy private-media variants remain publicly retrievable through the configured public R2 domain
+- Unresolved blockers: `db push --dry-run` would replay 27 older migration files; `R2_PRIVATE_BUCKET_NAME` is not configured; production-equivalent role fixtures remain unavailable
+- Exact next action: Reconcile Supabase migration history without replaying old SQL, apply only `202607142330`, provision a private bucket, then run manifest backfill and copy dry-runs
 - Inspect first: `PRIVATE_MEDIA_ARCHITECTURE_REPORT.md`, `src/lib/private-media.ts`, and `src/app/api/media/[id]/content/route.ts`
 
 ## Program Rules

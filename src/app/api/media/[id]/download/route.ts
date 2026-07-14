@@ -8,8 +8,7 @@ import { enforceRateLimit } from "@/lib/security-rate-limit";
 import { getSiteSettings } from "@/lib/site-settings";
 import { createPublicServerClient } from "@/lib/db/public";
 import { createAuthenticatedUserClient } from "@/lib/db/user";
-import { authorizePrivateMediaAsset } from "@/lib/private-media";
-import { getR2ObjectStream } from "@/lib/r2";
+import { authorizePrivateMediaAsset, streamAuthorizedPrivateMedia } from "@/lib/private-media";
 
 export const runtime = "nodejs";
 
@@ -84,10 +83,7 @@ export async function GET(request: NextRequest, { params }: MediaDownloadProps) 
     if (album.status === "private") {
       const asset = await authorizePrivateMediaAsset(request, media.id, privateVariant);
       if (!asset) return apiError("NOT_FOUND", "Media not found.", 404);
-      const object = await getR2ObjectStream({
-        key: asset.objectKey,
-        bucketRole: asset.bucketRole,
-      });
+      const object = await streamAuthorizedPrivateMedia(asset);
       body = object.body;
       contentLength = object.contentLength;
       contentType = object.contentType ?? asset.contentType ?? media.mime_type ?? "application/octet-stream";

@@ -9,7 +9,12 @@
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "test": "node --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types --test tests/*.test.mjs",
-    "test:unit": "node --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types --test tests/*.test.mjs"
+    "test:unit": "node --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types --test tests/*.test.mjs",
+    "private-media:inventory": "node scripts/private-media/inventory.mjs",
+    "private-media:backfill-manifest": "node scripts/private-media/backfill-manifest.mjs",
+    "private-media:migrate-r2": "node scripts/private-media/migrate-r2.mjs",
+    "private-media:activate": "node scripts/private-media/activate.mjs",
+    "private-media:rollback-cutover": "node scripts/private-media/rollback-cutover.mjs"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1079.0",

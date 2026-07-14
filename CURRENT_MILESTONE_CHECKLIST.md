@@ -103,9 +103,13 @@
 - [x] Preserve locked-album safe-preview covers.
 - [x] Add an additive manifest migration and non-R2 rollback script.
 - [v] Add static private-media boundary, safe-preview, migration, and rollback tests.
-- [ ] Apply the manifest migration in a controlled environment and run inventory dry-run queries.
+- [v] Add checkpointed, idempotent inventory, manifest-backfill, R2-copy, activation, and rollback commands; all mutation commands default to dry-run.
+- [v] Inventory 13 private albums, 366 media rows, and 1,830 asset variants; all source objects exist and all remain publicly reachable.
+- [b] Apply the manifest migration: target link matches the configured environment, but remote migration history would replay 27 older files, so direct `db push` is unsafe.
+- [b] Configure `R2_PRIVATE_BUCKET_NAME` and provision a non-public R2 bucket before object copy.
 - [ ] Copy representative objects to the private bucket without deleting legacy sources.
 - [ ] Verify checksum/size, gateway delivery, revocation, Range requests, and rollback.
 - [ ] Activate verified private-bucket assets; production source cleanup remains a later reviewed change.
+- [~] Milestone 4 status: IN_PROGRESS - IMPLEMENTED_NOT_MIGRATED.
 
 Legend: `[ ]` not started, `[~]` in progress, `[x]` implemented, `[v]` verified, `[c]` committed, `[b]` blocked.

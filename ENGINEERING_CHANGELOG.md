@@ -7,6 +7,9 @@
 - Removed private object-key values and permanent R2 URLs from album payloads and routed private single/ZIP downloads through the same boundary.
 - Added an additive server-only asset manifest migration, rollback, architecture inventory, and focused tests.
 - No production R2 object was moved or deleted, and production was not deployed.
+- Added resumable inventory, idempotent manifest backfill, bounded copy, activation, and rollback commands with dry-run defaults.
+- Inventory verified 13 private albums, 366 media rows, and 1,830 source variants; all are still publicly reachable.
+- Supabase target linkage matches the configured environment, but migration-history drift makes a normal `db push` unsafe; migration remains unapplied.
 
 ## 2026-07-14 16:54:59 +07:00 - Program initialization
 

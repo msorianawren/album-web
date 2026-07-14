@@ -10,8 +10,7 @@ import { apiError, toServerError } from "@/lib/errors";
 import { extensionFromUrlOrMime, safeFilename, sanitizeZipPathSegment } from "@/lib/filenames";
 import { enforceRateLimit } from "@/lib/security-rate-limit";
 import { getSiteSettings } from "@/lib/site-settings";
-import { authorizePrivateMediaAsset } from "@/lib/private-media";
-import { getR2Object } from "@/lib/r2";
+import { authorizePrivateMediaAsset, readAuthorizedPrivateMedia } from "@/lib/private-media";
 
 export const runtime = "nodejs";
 const maxZipImages = 100;
@@ -107,7 +106,7 @@ export async function GET(request: NextRequest, { params }: AlbumDownloadProps) 
       if (album.status === "private") {
         const asset = await authorizePrivateMediaAsset(request, image.id, privateVariant);
         if (!asset) continue;
-        fileData = await getR2Object(asset.objectKey, asset.bucketRole);
+        fileData = await readAuthorizedPrivateMedia(asset);
         sourceForExtension = asset.objectKey;
         sourceMime = asset.contentType ?? image.mime_type ?? sourceMime;
       } else {

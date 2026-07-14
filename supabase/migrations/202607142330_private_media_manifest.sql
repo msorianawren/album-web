@@ -1,30 +1,53 @@
--- Additive inventory for private media delivery. This migration does not move or delete R2 objects.
+-- Additive private-media inventory. This migration never moves or deletes R2 objects.
 
 create table if not exists public.private_media_assets (
   id uuid primary key default gen_random_uuid(),
+  album_id uuid not null references public.albums(id) on delete cascade,
   media_id uuid not null references public.media(id) on delete cascade,
-  variant text not null check (variant in ('thumbnail', 'medium', 'poster', 'display', 'original')),
+  variant text not null
+    check (variant in ('thumbnail', 'medium', 'display', 'poster', 'original', 'video')),
   object_key text not null,
-  bucket_role text not null default 'public' check (bucket_role in ('public', 'private')),
+  legacy_object_key text not null,
+  intended_private_key text not null,
+  bucket_role text not null default 'public'
+    check (bucket_role in ('public', 'private')),
   mime_type text,
-  migration_state text not null default 'inventory'
-    check (migration_state in ('inventory', 'copied', 'verified', 'active', 'rollback')),
+  migration_state text not null default 'discovered'
+    check (migration_state in (
+      'discovered', 'verified', 'copied', 'cutover_ready', 'active', 'failed', 'rollback_required'
+    )),
   checksum text,
+  etag text,
   source_size bigint,
+  destination_size bigint,
+  last_error_code text,
   verified_at timestamptz,
+  activated_at timestamptz,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   unique (media_id, variant)
 );
 
+create index if not exists private_media_assets_album_id_idx
+  on public.private_media_assets (album_id);
 create index if not exists private_media_assets_media_id_idx
   on public.private_media_assets (media_id);
+create index if not exists private_media_assets_object_key_idx
+  on public.private_media_assets (object_key);
 create index if not exists private_media_assets_migration_state_idx
   on public.private_media_assets (migration_state, bucket_role);
 
 alter table public.private_media_assets enable row level security;
 revoke all on table public.private_media_assets from anon, authenticated;
 grant all on table public.private_media_assets to service_role;
+
+drop policy if exists "service role manages private media assets" on public.private_media_assets;
+create policy "service role manages private media assets"
+on public.private_media_assets
+for all
+to service_role
+using (true)
+with check (true);
 
 create or replace function public.sync_private_media_asset_inventory(target_media_id uuid)
 returns void
@@ -33,8 +56,26 @@ security definer
 set search_path = public, pg_temp
 as $$
 begin
-  insert into public.private_media_assets (media_id, variant, object_key, bucket_role, mime_type)
-  select m.id, asset.variant, asset.object_key, 'public', asset.mime_type
+  insert into public.private_media_assets (
+    album_id,
+    media_id,
+    variant,
+    object_key,
+    legacy_object_key,
+    intended_private_key,
+    bucket_role,
+    mime_type
+  )
+  select
+    m.album_id,
+    m.id,
+    asset.variant,
+    asset.object_key,
+    asset.object_key,
+    'private/albums/' || m.album_id::text || '/' || m.id::text || '/' || asset.variant || '/' ||
+      regexp_replace(asset.object_key, '^.*/', ''),
+    'public',
+    asset.mime_type
   from public.media m
   join public.albums a on a.id = m.album_id
   cross join lateral (
@@ -43,17 +84,22 @@ begin
       ('medium', coalesce(m.medium_r2_key, m.public_r2_key, m.thumbnail_r2_key, m.r2_key), case when m.media_type = 'image' then 'image/webp' else m.mime_type end),
       ('poster', coalesce(m.poster_r2_key, m.thumbnail_r2_key), 'image/webp'),
       ('display', case when m.media_type = 'video' then m.r2_key else coalesce(m.medium_r2_key, m.public_r2_key, m.thumbnail_r2_key, m.r2_key) end, case when m.media_type = 'image' then 'image/webp' else m.mime_type end),
-      ('original', coalesce(m.original_private_r2_key, m.r2_key), m.mime_type)
+      ('original', coalesce(m.original_private_r2_key, m.r2_key), m.mime_type),
+      ('video', case when m.media_type = 'video' then m.r2_key else null end, case when m.media_type = 'video' then m.mime_type else null end)
   ) as asset(variant, object_key, mime_type)
   where m.id = target_media_id
     and a.status = 'private'
     and asset.object_key is not null
     and asset.object_key <> ''
   on conflict (media_id, variant) do update
-    set object_key = excluded.object_key,
+    set album_id = excluded.album_id,
+        object_key = excluded.object_key,
+        legacy_object_key = excluded.legacy_object_key,
+        intended_private_key = excluded.intended_private_key,
         mime_type = excluded.mime_type,
         updated_at = now()
-  where public.private_media_assets.migration_state in ('inventory', 'rollback');
+  where public.private_media_assets.migration_state in ('discovered', 'failed', 'rollback_required')
+    and public.private_media_assets.bucket_role = 'public';
 end;
 $$;
 
@@ -118,4 +164,4 @@ end;
 $$;
 
 comment on table public.private_media_assets is
-  'Server-only private media object manifest. inventory/public rows are not private at origin until copied, verified, and activated.';
+  'Server-only object manifest. Public/discovered rows remain legacy delivery until a verified private copy is explicitly activated.';

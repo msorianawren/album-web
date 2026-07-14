@@ -4,7 +4,15 @@ import { getPublicSession } from "@/lib/auth";
 import { createAuthenticatedUserClient } from "@/lib/db/user";
 import { createTrustedPrivateMediaDeliveryClient } from "@/lib/db/private-media-delivery";
 import type { AlbumPreviewItem, Media } from "@/lib/types";
-import type { R2BucketRole } from "@/lib/r2";
+import {
+  getR2Object,
+  getR2ObjectStream,
+  type R2BucketRole,
+} from "@/lib/r2";
+import {
+  isSafePrivateMediaObjectKey,
+  selectPrivateMediaManifestSource,
+} from "@/lib/private-media-delivery-policy";
 
 export const PRIVATE_MEDIA_SAFE_SELECT = [
   "id",
@@ -55,6 +63,7 @@ export interface AuthorizedPrivateMediaAsset {
   objectKey: string;
   bucketRole: R2BucketRole;
   contentType: string | null;
+  fallbackObjectKey: string | null;
 }
 
 function privateMediaUrl(mediaId: string, variant: Exclude<PrivateMediaVariant, "original">) {
@@ -95,24 +104,13 @@ export function projectPrivatePreviewForClient({
   };
 }
 
-function isSafeObjectKey(value: unknown): value is string {
-  return (
-    typeof value === "string" &&
-    value.length > 0 &&
-    value.length <= 1024 &&
-    !value.startsWith("/") &&
-    !value.includes("..") &&
-    !/^https?:\/\//i.test(value)
-  );
-}
-
 function variantFallbacks(variant: PrivateMediaVariant, mediaType: "image" | "video") {
   if (variant === "original") return ["original", "display"];
   if (variant === "thumbnail") return ["thumbnail", "poster", "medium", "display"];
   if (variant === "poster") return ["poster", "thumbnail", "display"];
   if (variant === "medium") return ["medium", "display", "thumbnail"];
   return mediaType === "video"
-    ? ["display", "original"]
+    ? ["video", "display", "original"]
     : ["display", "medium", "thumbnail", "original"];
 }
 
@@ -130,7 +128,7 @@ function legacyAssetForVariant(
       : [row.medium_r2_key, row.public_r2_key, row.thumbnail_r2_key, row.r2_key],
     original: [row.original_private_r2_key, row.r2_key],
   };
-  return candidates[variant].find(isSafeObjectKey) ?? null;
+  return candidates[variant].find(isSafePrivateMediaObjectKey) ?? null;
 }
 
 async function getPrivateAssetRecord(
@@ -142,21 +140,14 @@ async function getPrivateAssetRecord(
   const fallbacks = variantFallbacks(variant, mediaType);
   const manifest = await trusted
     .from("private_media_assets")
-    .select("variant,object_key,bucket_role,mime_type")
+    .select("variant,object_key,legacy_object_key,bucket_role,mime_type,migration_state")
     .eq("media_id", mediaId)
     .in("variant", fallbacks);
 
   if (!manifest.error) {
-    const rows = manifest.data ?? [];
-    const asset = fallbacks
-      .map((candidate) => rows.find((row) => row.variant === candidate))
-      .find((row) => row && isSafeObjectKey(row.object_key));
+    const asset = selectPrivateMediaManifestSource(manifest.data ?? [], fallbacks);
     if (asset) {
-      return {
-        objectKey: asset.object_key as string,
-        bucketRole: asset.bucket_role === "private" ? "private" as const : "public" as const,
-        contentType: typeof asset.mime_type === "string" ? asset.mime_type : null,
-      };
+      return asset;
     }
   } else if (!["42P01", "PGRST205"].includes(manifest.error.code)) {
     throw manifest.error;
@@ -174,6 +165,7 @@ async function getPrivateAssetRecord(
   return {
     objectKey,
     bucketRole: "public" as const,
+    fallbackObjectKey: null,
     contentType:
       variant !== "original" && (mediaType === "image" || variant === "thumbnail" || variant === "poster")
         ? "image/webp"
@@ -215,5 +207,31 @@ export async function authorizePrivateMediaAsset(
     objectKey: asset.objectKey,
     bucketRole: asset.bucketRole,
     contentType: asset.contentType ?? (typeof media.mime_type === "string" ? media.mime_type : null),
+    fallbackObjectKey: asset.fallbackObjectKey,
   };
+}
+
+export async function streamAuthorizedPrivateMedia(
+  asset: AuthorizedPrivateMediaAsset,
+  range?: string,
+) {
+  try {
+    return await getR2ObjectStream({
+      key: asset.objectKey,
+      bucketRole: asset.bucketRole,
+      range,
+    });
+  } catch (error) {
+    if (asset.bucketRole !== "private" || !asset.fallbackObjectKey) throw error;
+    return getR2ObjectStream({ key: asset.fallbackObjectKey, bucketRole: "public", range });
+  }
+}
+
+export async function readAuthorizedPrivateMedia(asset: AuthorizedPrivateMediaAsset) {
+  try {
+    return await getR2Object(asset.objectKey, asset.bucketRole);
+  } catch (error) {
+    if (asset.bucketRole !== "private" || !asset.fallbackObjectKey) throw error;
+    return getR2Object(asset.fallbackObjectKey, "public");
+  }
 }
