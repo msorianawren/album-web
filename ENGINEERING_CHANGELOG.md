@@ -157,3 +157,20 @@
 - Security impact: Cross-user notification access is constrained by RLS even if a future application filter regresses; user IDs are never accepted from the browser as authority and user data remains `no-store`.
 - Performance impact: Query shapes and limits remain unchanged; the client is request-scoped.
 - Test performed: Lint pass with 14 unchanged warnings, TypeScript pass, 21 unit/boundary tests, production build pass with 49 routes, and guest count/list/mark-all/single-update checks returning `401`. Authenticated fixture testing is BLOCKED_EXTERNAL.
+
+## 2026-07-14 - Milestone 3 notification checkpoint
+
+- Milestone: 3
+- Commit: `098214b refactor(notifications): enforce user RLS client`
+- Result: COMPLETE - bounded user route family implemented, verified, and committed.
+
+## 2026-07-14 20:20:00 +07:00 - Milestone 3 help-read user boundary
+
+- Milestone: 3
+- Files: user help API routes, `src/lib/help-chat.ts`, `tests/supabase-boundaries.test.mjs`, engineering state files
+- Reason: Let RLS enforce thread/message ownership for user conversation reads without replacing the existing help system.
+- Behavior before: User list/detail reads used the broad service-role client and application `.eq(owner_user_id, session.userId)` filters.
+- Behavior after: Routes create a request-scoped JWT client and pass it into the existing list/detail functions; pagination and public `Oriana Wren` admin identity normalization remain unchanged. Thread IDs are UUID-validated.
+- Security impact: Cross-user read isolation now has an RLS boundary in addition to application filters. Create/append remain explicitly transitional because current policies cannot safely preserve internal-note and atomic thread-update behavior.
+- Performance impact: Existing page size and query count are unchanged.
+- Test performed: Lint pass with 14 unchanged warnings, TypeScript pass, 22 unit/boundary tests, production build pass with 49 routes, and guest list/detail/create/append checks returning `401`. Authenticated help fixture remains BLOCKED_EXTERNAL.

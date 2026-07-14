@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { getPublicSession } from "@/lib/auth";
+import { createAuthenticatedUserClient } from "@/lib/db/user";
 import { createHelpThread, listUserHelpThreads, type HelpSource } from "@/lib/help-chat";
 import { enforceRateLimit } from "@/lib/security-rate-limit";
 
@@ -11,8 +12,10 @@ const createSchema = z.object({ source: z.enum(["contact", "assistant", "private
 export async function GET(request: NextRequest) {
   const session = await getPublicSession(request);
   if (!session.userId) return NextResponse.json({ success: false, message: "Sign in to view conversations." }, { status: 401, headers: noStore });
+  const client = await createAuthenticatedUserClient(request);
+  if (!client) return NextResponse.json({ success: false, message: "Sign in to view conversations." }, { status: 401, headers: noStore });
   const page = Math.max(1, Number(request.nextUrl.searchParams.get("page")) || 1);
-  try { return NextResponse.json({ success: true, ...(await listUserHelpThreads(session, page)) }, { headers: noStore }); }
+  try { return NextResponse.json({ success: true, ...(await listUserHelpThreads(session, client, page)) }, { headers: noStore }); }
   catch { return NextResponse.json({ success: false, message: "Could not load conversations." }, { status: 500, headers: noStore }); }
 }
 

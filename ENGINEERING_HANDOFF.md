@@ -10,8 +10,8 @@ Upgrade album-web into a production-grade, privacy-sensitive digital asset manag
 - Branch: `engineering/production-platform-overhaul`
 - Baseline commit: `f82cb5eb0e78f9ea4b5aa9c34d6a20a69cfead2d`
 - Current milestone: 3 - Supabase client and authorization boundaries
-- Completed checkpoint: `de15980 security(cron): require trusted worker context`
-- Current subtask: Commit notification count/list/read/dismiss routes using request-scoped JWT/RLS clients.
+- Completed checkpoint: `098214b refactor(notifications): enforce user RLS client`
+- Current subtask: Commit user help list/detail reads through JWT/RLS while writes remain on the guarded transitional path.
 - Public album rows and public/updating media now use the anon client; authenticated private access and admin/worker route migrations remain.
 
 ## Important Constraints
@@ -32,6 +32,7 @@ Upgrade album-web into a production-grade, privacy-sensitive digital asset manag
 - Public and authenticated clients use the anon key; service-role construction is isolated to trusted admin/worker modules for new code.
 - Existing broad-client imports remain a documented transition path until each route family has been migrated and tested.
 - Authenticated private-media JWT reads must not be enabled until `202607141830_private_album_rls.sql` is applied and role-tested; rollback is additive-policy removal only.
+- Help create/append cannot be naively switched: Companion handoff writes an internal system note and append must atomically update thread state while enforcing the 10-message cap. Use a narrow RPC migration rather than broad user update rights.
 
 ## Rejected Approaches
 
@@ -76,8 +77,8 @@ Then read `AGENTS.md`, `ENGINEERING_PROGRAM_STATE.md`, this file, `CURRENT_MILES
 
 ## Next Five Actions
 
-1. Commit the verified notification JWT/RLS boundary.
-2. Migrate user help reads/writes to JWT/RLS while preserving public admin identity and message limits.
-3. Create the role matrix/boundary reports and inventory remaining legacy broad-client imports.
-4. Apply and role-test the private album RLS migration in Supabase when external access is available.
-5. Only then move authenticated album grant/request/private-media reads to the JWT-bound user client.
+1. Commit the verified help-read JWT/RLS boundary.
+2. Create the role matrix/boundary reports and inventory remaining legacy broad-client imports.
+3. Prepare narrow help-write RPC/rollback scripts without switching application reads before remote application.
+4. Apply and role-test pending RLS/RPC migrations when external access is available.
+5. Only then switch private album and help write paths to JWT clients.

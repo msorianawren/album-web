@@ -83,6 +83,17 @@ test("notification routes use request-scoped JWT clients and never the broad cli
   }
 });
 
+test("user help reads pass a request-scoped JWT client into the existing conversation service", () => {
+  const listRoute = read("src/app/api/help/threads/route.ts");
+  const detailRoute = read("src/app/api/help/threads/[id]/messages/route.ts");
+  const service = read("src/lib/help-chat.ts");
+  assert.equal(listRoute.includes("listUserHelpThreads(session, client, page)"), true);
+  assert.equal(detailRoute.includes("getUserHelpThread(session, client"), true);
+  assert.match(service, /listUserHelpThreads\([\s\S]*client: SupabaseClient/);
+  assert.match(service, /getUserHelpThread\([\s\S]*client: SupabaseClient/);
+  assert.equal(service.includes('row.sender_type === "admin" ? "Oriana Wren"'), true);
+});
+
 test("private album role matrix denies untrusted and revoked principals", () => {
   assert.deepEqual(decidePrivateAlbumAccess("anonymous", "all_private"), {
     allowed: false,

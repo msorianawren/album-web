@@ -1,6 +1,7 @@
 import "server-only";
 
 import type { NextRequest } from "next/server";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
 import { createAdminNotification, createUserNotification } from "@/lib/notifications";
 import { logAuditEvent } from "@/lib/audit";
@@ -59,11 +60,15 @@ function asPublicThread(row: Record<string, unknown>): PublicHelpThread {
   };
 }
 
-export async function listUserHelpThreads(session: PublicSession, page = 1) {
+export async function listUserHelpThreads(
+  session: PublicSession,
+  client: SupabaseClient,
+  page = 1,
+) {
   if (!session.userId) throw new Error("Unauthorized");
   const safePage = Math.max(1, page);
   const from = (safePage - 1) * HELP_PAGE_SIZE;
-  const { data, count, error } = await supabase
+  const { data, count, error } = await client
     .from("help_threads")
     .select("id, source, status, subject, last_message_at, created_at", { count: "exact" })
     .eq("owner_user_id", session.userId)
@@ -73,9 +78,14 @@ export async function listUserHelpThreads(session: PublicSession, page = 1) {
   return { threads: (data ?? []).map(asPublicThread), total: count ?? 0, page: safePage, pageSize: HELP_PAGE_SIZE };
 }
 
-export async function getUserHelpThread(session: PublicSession, threadId: string, page = 1) {
+export async function getUserHelpThread(
+  session: PublicSession,
+  client: SupabaseClient,
+  threadId: string,
+  page = 1,
+) {
   if (!session.userId) throw new Error("Unauthorized");
-  const { data: thread, error: threadError } = await supabase
+  const { data: thread, error: threadError } = await client
     .from("help_threads")
     .select("id, source, status, subject, last_message_at, created_at")
     .eq("id", threadId)
@@ -85,7 +95,7 @@ export async function getUserHelpThread(session: PublicSession, threadId: string
   if (!thread) return null;
   const safePage = Math.max(1, page);
   const from = (safePage - 1) * HELP_PAGE_SIZE;
-  const { data, count, error } = await supabase
+  const { data, count, error } = await client
     .from("help_messages")
     .select("id, thread_id, sender_type, public_sender_name, public_sender_avatar_url, body, created_at", { count: "exact" })
     .eq("thread_id", threadId)
