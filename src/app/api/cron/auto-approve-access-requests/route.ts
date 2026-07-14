@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
+import { classifyDataFailure } from "@/lib/app-failure";
+import { getTrustedWorkerDatabase } from "@/lib/db/worker";
 import { apiError, apiSuccess, toServerError } from "@/lib/errors";
-import { supabase } from "@/lib/supabase";
 import { getSiteSettings } from "@/lib/site-settings";
 import { decideAccessRequest } from "@/lib/access-request-workflow";
 import type { PublicSession } from "@/lib/types";
@@ -29,12 +30,11 @@ function hasRiskFlags(flags: Record<string, boolean> | null) {
 }
 
 export async function GET(request: NextRequest) {
-  const authHeader = request.headers.get("authorization");
-  const expectedAuth = `Bearer ${process.env.CRON_SECRET}`;
-
-  if (process.env.VERCEL_ENV === "production" && authHeader !== expectedAuth) {
+  const database = getTrustedWorkerDatabase(request, "access-auto-approval");
+  if (!database) {
     return apiError("UNAUTHENTICATED", "Invalid cron secret.", 401);
   }
+  const { client } = database;
 
   try {
     const settings = await getSiteSettings();
@@ -50,7 +50,7 @@ export async function GET(request: NextRequest) {
     }
 
     const highRiskRequiresManualReview = accessSettings?.high_risk_requires_manual_review !== false;
-    const { data, error } = await supabase
+    const { data, error } = await client
       .from("album_access_requests")
       .select("id, requester_user_id, risk_flags")
       .eq("status", "pending")
@@ -58,16 +58,19 @@ export async function GET(request: NextRequest) {
       .order("auto_approve_at", { ascending: true })
       .limit(50);
 
-    if (error) return apiError("SERVER_ERROR", error.message, 500);
+    if (error) throw classifyDataFailure(error, "cron.access_requests_due");
 
     const dueRequests = (data ?? []) as DueRequest[];
     const userIds = dueRequests.map((row) => row.requester_user_id).filter((id): id is string => Boolean(id));
     const blockedUsers = new Set<string>();
     if (userIds.length > 0) {
-      const { data: profiles } = await supabase
+      const { data: profiles, error: profilesError } = await client
         .from("user_profiles")
         .select("user_id,is_blocked")
         .in("user_id", userIds);
+      if (profilesError) {
+        throw classifyDataFailure(profilesError, "cron.access_request_profiles");
+      }
       for (const profile of profiles ?? []) {
         if (profile.is_blocked) blockedUsers.add(String(profile.user_id));
       }
@@ -79,7 +82,7 @@ export async function GET(request: NextRequest) {
 
     for (const row of dueRequests) {
       if (row.requester_user_id && blockedUsers.has(row.requester_user_id)) {
-        await supabase
+        const { error: updateError } = await client
           .from("album_access_requests")
           .update({
             status: "needs_manual_review",
@@ -88,13 +91,16 @@ export async function GET(request: NextRequest) {
             updated_at: new Date().toISOString(),
           })
           .eq("id", row.id);
+        if (updateError) {
+          throw classifyDataFailure(updateError, "cron.access_request_blocked_review");
+        }
         skipped += 1;
         manualReview += 1;
         continue;
       }
 
       if (highRiskRequiresManualReview && hasRiskFlags(row.risk_flags)) {
-        await supabase
+        const { error: updateError } = await client
           .from("album_access_requests")
           .update({
             status: "needs_manual_review",
@@ -103,6 +109,9 @@ export async function GET(request: NextRequest) {
             updated_at: new Date().toISOString(),
           })
           .eq("id", row.id);
+        if (updateError) {
+          throw classifyDataFailure(updateError, "cron.access_request_risk_review");
+        }
         skipped += 1;
         manualReview += 1;
         continue;
@@ -123,6 +132,6 @@ export async function GET(request: NextRequest) {
 
     return apiSuccess({ processed, skipped, manualReview });
   } catch (error) {
-    return toServerError(error);
+    return toServerError(error, request, "api.cron.auto_approve_access_requests");
   }
 }

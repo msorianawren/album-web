@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
 import { decidePrivateAlbumAccess } from "../src/lib/authorization/role-matrix.ts";
+import { isValidWorkerAuthorization } from "../src/lib/authorization/worker-secret.ts";
 
 const root = process.cwd();
 const read = (path) => readFileSync(join(root, path), "utf8");
@@ -47,6 +48,26 @@ test("album admin mutations use a guarded trusted database instead of the broad 
     assert.equal(source.includes("@/lib/supabase"), false, path);
     assert.equal(source.includes("getTrustedAdminDatabase"), true, path);
   }
+});
+
+test("cron routes require a trusted worker database and do not import the broad client", () => {
+  for (const path of [
+    "src/app/api/cron/prune-logs/route.ts",
+    "src/app/api/cron/auto-approve-access-requests/route.ts",
+  ]) {
+    const source = read(path);
+    assert.equal(source.includes("@/lib/supabase"), false, path);
+    assert.equal(source.includes("getTrustedWorkerDatabase"), true, path);
+    assert.equal(source.includes("VERCEL_ENV"), false, path);
+  }
+});
+
+test("worker authorization fails closed and accepts only an exact bearer secret", () => {
+  assert.equal(isValidWorkerAuthorization(null, "secret"), false);
+  assert.equal(isValidWorkerAuthorization("Bearer secret", undefined), false);
+  assert.equal(isValidWorkerAuthorization("Bearer secret-extra", "secret"), false);
+  assert.equal(isValidWorkerAuthorization("bearer secret", "secret"), false);
+  assert.equal(isValidWorkerAuthorization("Bearer secret", "secret"), true);
 });
 
 test("private album role matrix denies untrusted and revoked principals", () => {

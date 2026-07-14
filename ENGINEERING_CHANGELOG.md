@@ -123,3 +123,20 @@
 - Security impact: A service client is not constructed until a non-blocked admin session is validated, broad client imports are removed from the route family, and raw Supabase failure text is no longer returned on these paths.
 - Performance impact: No query-count change; guard/session work is equivalent to the previous route-level check.
 - Test performed: Lint pass with 14 unchanged warnings, TypeScript pass, 18 unit/boundary tests, production build pass with 49 routes, and anonymous POST/PATCH/DELETE/upload/reorder denial checks (four `403`, Studio proxy `401`). Authenticated admin mutation testing is BLOCKED_EXTERNAL by missing fixture.
+
+## 2026-07-14 - Milestone 3 album admin checkpoint
+
+- Milestone: 3
+- Commit: `610b71c refactor(admin): guard album mutations with trusted client`
+- Result: COMPLETE - bounded admin route family implemented, verified, and committed.
+
+## 2026-07-14 19:40:00 +07:00 - Milestone 3 cron worker boundary
+
+- Milestone: 3
+- Files: `src/lib/authorization/worker-secret.ts`, `src/lib/db/worker.ts`, both cron routes, `tests/supabase-boundaries.test.mjs`, engineering state files
+- Reason: Ensure scheduled maintenance/system mutations cannot obtain service-role access before exact worker authentication.
+- Behavior before: Cron secrets used normal string comparison only in production; local/preview requests bypassed the check and routes imported the broad client directly.
+- Behavior after: Exact bearer validation uses constant-time comparison and fails closed in every environment; direct cron queries use a purpose-labelled trusted worker client and safe classified errors.
+- Security impact: Missing configuration no longer creates a permissive environment, invalid secrets are rejected before settings/database reads, and raw Supabase errors are not returned from the touched paths.
+- Performance impact: Constant-time secret comparison is negligible; database query behavior is unchanged after authorization.
+- Test performed: Lint pass with 14 unchanged warnings, TypeScript pass, 20 unit/boundary tests, production build pass with 49 routes, and local missing/invalid-secret HTTP checks returning `401` for both routes. Valid-secret execution is BLOCKED_EXTERNAL to avoid reading/logging secret material.

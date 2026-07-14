@@ -10,8 +10,8 @@ Upgrade album-web into a production-grade, privacy-sensitive digital asset manag
 - Branch: `engineering/production-platform-overhaul`
 - Baseline commit: `f82cb5eb0e78f9ea4b5aa9c34d6a20a69cfead2d`
 - Current milestone: 3 - Supabase client and authorization boundaries
-- Completed checkpoint: `2dda6cf security(db): add private album RLS decision`
-- Current subtask: Commit album create/update/delete/upload-entry/reorder routes behind the trusted admin database context.
+- Completed checkpoint: `610b71c refactor(admin): guard album mutations with trusted client`
+- Current subtask: Commit both cron routes behind a fail-closed trusted worker context.
 - Public album rows and public/updating media now use the anon client; authenticated private access and admin/worker route migrations remain.
 
 ## Important Constraints
@@ -76,8 +76,8 @@ Then read `AGENTS.md`, `ENGINEERING_PROGRAM_STATE.md`, this file, `CURRENT_MILES
 
 ## Next Five Actions
 
-1. Commit the verified album admin mutation boundary.
-2. Migrate cron callers behind constant-time worker authorization and trusted worker clients.
+1. Commit the verified cron worker boundary.
+2. Create the role matrix/boundary reports and inventory remaining legacy broad-client imports.
 3. Apply and role-test the private album RLS migration in Supabase when external access is available.
 4. Only then move authenticated album grant/request/private-media reads to the JWT-bound user client.
-5. Create the role matrix/boundary reports and inventory remaining legacy broad-client imports.
+5. Continue migrating admin/user route families in isolated checkpoints.

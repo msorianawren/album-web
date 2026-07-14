@@ -54,8 +54,10 @@
 - [c] Commit the verified, unapplied RLS migration package (`2dda6cf`).
 - [ ] Migrate authenticated-user route families to request-scoped JWT/RLS clients.
 - [v] Migrate album create/update/delete/upload-entry/reorder mutations behind trusted admin contexts.
-- [~] Commit the verified album admin route family.
-- [ ] Migrate cron routes behind trusted worker contexts.
+- [c] Commit the verified album admin route family (`610b71c`).
+- [v] Migrate cron routes behind constant-time trusted worker contexts.
+- [v] Fail closed for missing/invalid worker secrets in every environment.
+- [~] Commit the verified cron worker boundary.
 - [ ] Add database/RLS role tests for all supported principals.
 - [ ] Create `SUPABASE_BOUNDARY_REPORT.md` and `AUTHORIZATION_ROLE_MATRIX.md`.
 - [ ] Verify and commit the complete Milestone 3 boundary migration.
