@@ -31,6 +31,7 @@ The service-role constructor for new code lives in `src/lib/db/trusted-service.t
 | Notification count/list/read/dismiss | IMPLEMENTED_NOT_VERIFIED for authenticated user | request JWT/RLS; guest denial verified |
 | Help thread/message list reads | IMPLEMENTED_NOT_VERIFIED for authenticated user | request JWT/RLS; guest denial verified |
 | Public comment list and admin comment-item moderation | IMPLEMENTED_NOT_VERIFIED for authenticated admin | anon/RLS reads; guarded admin mutations; guest HTTP verified |
+| Founder audit-log list and admin user block/unblock | IMPLEMENTED_NOT_VERIFIED for authenticated admin/founder | guarded trusted queries; guest proxy denial verified |
 
 ## Database Work
 
@@ -59,7 +60,7 @@ The private RLS and help RPC migrations are **not applied locally or remotely**.
 
 ## Remaining Legacy Surface
 
-There are 46 tracked source files still importing `@/lib/supabase`. They are intentionally not hidden by re-exporting the new trusted client under the old name.
+There are 44 tracked source files still importing `@/lib/supabase`. They are intentionally not hidden by re-exporting the new trusted client under the old name.
 
 | Class | Representative modules | Required next boundary |
 |---|---|---|
@@ -84,6 +85,7 @@ Other files mentioning `SUPABASE_SERVICE_ROLE_KEY` are primarily health/config d
 - Worker authentication fails closed when the secret is missing and uses constant-time exact comparison.
 - User/private/admin responses remain `no-store` where already required.
 - Raw Supabase errors were removed from the migrated album/cron/notification routes.
+- Admin route query paths use guarded clients, but shared auth bootstrap and legacy audit/notification append helpers remain transitional broad-client dependencies.
 
 ## Verification
 
@@ -94,6 +96,7 @@ Other files mentioning `SUPABASE_SERVICE_ROLE_KEY` are primarily health/config d
 - Local public album list/detail and locked-private privacy checks: pass.
 - Guest notification/help denial checks: pass.
 - Public comment GET and guest comment PATCH/DELETE checks: pass.
+- Guest Founder audit-log and user block requests are denied by the proxy: pass.
 - Missing/invalid cron secret checks: pass.
 - Authenticated user/admin and valid-worker fixtures: BLOCKED_EXTERNAL.
 - SQL execution and database role tests: BLOCKED_EXTERNAL.

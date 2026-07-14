@@ -61,6 +61,19 @@ test("comment moderation uses guarded admin clients and public comment reads use
   assert.equal(itemRoute.includes("commentIdSchema.safeParse"), true);
 });
 
+test("founder audit and user block routes construct trusted clients only after guards", () => {
+  const auditRoute = read("src/app/api/admin/audit-logs/route.ts");
+  const userRoute = read("src/app/api/admin/users/[id]/route.ts");
+  assert.equal(auditRoute.includes("@/lib/supabase"), false);
+  assert.equal(auditRoute.includes("getTrustedFounderDatabase(request)"), true);
+  assert.equal(auditRoute.includes("Math.min(100"), true);
+  assert.equal(userRoute.includes("@/lib/supabase"), false);
+  assert.equal(userRoute.includes("@/lib/role-management"), false);
+  assert.equal(userRoute.includes("getTrustedAdminDatabase(request)"), true);
+  assert.equal(userRoute.includes("z.boolean()"), true);
+  assert.equal(userRoute.includes("Boolean(body.is_blocked)"), false);
+});
+
 test("cron routes require a trusted worker database and do not import the broad client", () => {
   for (const path of [
     "src/app/api/cron/prune-logs/route.ts",

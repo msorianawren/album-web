@@ -61,7 +61,10 @@
 - [v] Migrate notification count/list/read/dismiss routes to request-scoped JWT/RLS clients.
 - [c] Commit the verified notification user boundary (`098214b`).
 - [v] Migrate public comment reads to anon/RLS and comment moderation item mutations to a guarded admin client.
-- [~] Commit the verified comment read/moderation boundary.
+- [c] Commit the verified comment read/moderation boundary (`a79cec9`).
+- [v] Migrate Founder audit-log reads and admin user block/unblock queries to guarded trusted clients.
+- [v] Add pagination bounds, strict block-state validation, UUID validation, safe errors, and no-store responses to those admin routes.
+- [~] Commit the verified audit-log/user-management route boundary.
 - [v] Migrate user help thread/message list reads to request-scoped JWT/RLS clients.
 - [v] Prepare atomic authenticated RPCs and rollback for help create/append writes.
 - [b] Apply and role-test `202607142115_user_help_write_rpcs.sql`, then cut application writes over to the JWT/RPC path.

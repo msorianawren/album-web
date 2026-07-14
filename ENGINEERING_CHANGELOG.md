@@ -225,3 +225,20 @@
 - Security impact: Public reads no longer bypass RLS and the item moderation route cannot construct a trusted client before the admin guard succeeds.
 - Performance impact: Query shape and limits are unchanged.
 - Test performed: 28 unit/static tests, lint with no errors and 14 unchanged warnings, TypeScript pass, production build pass with 49 routes, public GET `200`, and guest PATCH/DELETE `403`.
+
+## 2026-07-14 - Milestone 3 comment boundary checkpoint
+
+- Milestone: 3
+- Commit: `a79cec9 refactor(comments): enforce public and admin boundaries`
+- Result: COMPLETE - public comment reads and item moderation database operations use scoped boundaries; user creation remains transitional.
+
+## 2026-07-14 21:50:00 +07:00 - Milestone 3 Founder audit and user management routes
+
+- Milestone: 3
+- Files: Founder audit-log route, admin user detail route, boundary tests, reports, engineering state files
+- Reason: Ensure sensitive audit/profile queries obtain a trusted client only through explicit Founder/admin guards and fix permissive request coercion.
+- Behavior before: Both routes imported the broad client; audit page size was unbounded; `Boolean(body.is_blocked)` interpreted the string `"false"` as blocked; raw provider messages could reach user-management errors.
+- Behavior after: Routes use guarded trusted clients, audit pages are clamped to 100, user IDs and block payloads are strictly validated, user responses are no-store, and migrated failures are safely classified. Shared auth bootstrap and append-only audit/notification helpers remain transitional.
+- Security impact: Reduces direct broad-client surface, protects Founder status with the trusted row, prevents malformed block-state coercion, and keeps sensitive responses out of public caches.
+- Performance impact: Audit requests are capped at 100 rows; user update query count remains bounded.
+- Test performed: 29 unit/static tests, lint with no errors and 14 unchanged warnings, TypeScript pass, production build pass, and guest audit/user mutation requests denied with `401` by the proxy.
