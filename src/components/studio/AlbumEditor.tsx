@@ -18,6 +18,7 @@ import {
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
+import { LivingPreviewImages } from "@/components/albums/LivingPreviewImages";
 import { mediaSortLabels, mediaSortModes, parseMediaSortMode } from "@/lib/media-sort";
 import type { AlbumDetail, AlbumStatus, Media, SiteSettings, TranslationMap } from "@/lib/types";
 import { formatBytes, slugify } from "@/lib/utils";
@@ -401,20 +402,11 @@ export function AlbumEditor({ album, settings }: { album: AlbumDetail; settings:
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-text-secondary">Animated preview</p>
           <div className="living-preview-frame relative mt-3 aspect-[4/5] overflow-hidden rounded-[1.4rem] border border-border bg-surface-secondary shadow-2xl shadow-text-primary/10">
             {animatedPreviewImages.length ? (
-              animatedPreviewImages.map((src, index) => (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  key={`${src}-${index}`}
-                  src={src}
-                  alt={index === 0 ? `${title} animated preview` : ""}
-                  className="living-preview-image absolute inset-0 h-full w-full object-cover"
-                  style={{
-                    animationDelay: `${index * 3.2}s`,
-                    opacity: index === 0 ? 1 : undefined,
-                  }}
-                  loading="eager"
-                />
-              ))
+              <LivingPreviewImages
+                images={animatedPreviewImages}
+                title={title}
+                sizes="(min-width: 1024px) 28vw, 100vw"
+              />
             ) : (
               <div className="living-preview-placeholder flex h-full w-full items-center justify-center">
                 <ImageUp className="h-10 w-10 text-text-secondary" aria-hidden="true" />

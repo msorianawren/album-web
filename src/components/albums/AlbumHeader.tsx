@@ -1,10 +1,10 @@
-import Image from "next/image";
 import { Image as ImageIcon } from "lucide-react";
 import { DownloadButton } from "@/components/media/DownloadButton";
 import { AlbumStatusBadge } from "@/components/ui/Badge";
 import { ShareButton } from "@/components/ui/ShareButton";
 import { AlbumMemoryHint } from "@/components/albums/AlbumMemoryHint";
-import { getMediaDisplayUrls, shouldBypassNextImageOptimization } from "@/lib/media/display-url";
+import { LivingPreviewImages } from "@/components/albums/LivingPreviewImages";
+import { getMediaDisplayUrls } from "@/lib/media/display-url";
 import type { AlbumDetail } from "@/lib/types";
 import { formatMediaCount } from "@/lib/utils";
 import type { AppDictionary } from "@/lib/i18n";
@@ -27,22 +27,12 @@ export function AlbumHeader({ album, dict }: AlbumHeaderProps) {
     <section className="mx-auto w-full max-w-[1200px] px-6 py-20 lg:py-32 grid gap-12 lg:grid-cols-[1fr_1.2fr] lg:items-center">
       <div className="living-preview-frame relative aspect-[3/4] sm:aspect-square lg:aspect-[4/5] overflow-hidden rounded-[1.2rem] bg-surface-secondary shadow-xl shadow-text-primary/5">
         {previewImages.length ? (
-          previewImages.map((src, index) => (
-            <Image
-              key={`${src}-${index}`}
-              src={src}
-              alt={index === 0 ? `${album.title} animated album preview` : ""}
-              fill
-              sizes="(min-width: 1024px) 45vw, 100vw"
-              className="living-preview-image object-cover grayscale-[15%] transition-all duration-[3s]"
-              unoptimized={shouldBypassNextImageOptimization(src)}
-              loading="eager"
-              style={{
-                animationDelay: `${index * 3.2}s`,
-                opacity: index === 0 ? 1 : undefined,
-              }}
-            />
-          ))
+          <LivingPreviewImages
+            images={previewImages}
+            title={album.title}
+            sizes="(min-width: 1024px) 45vw, 100vw"
+            imageClassName="grayscale-[15%]"
+          />
         ) : (
           <div className="flex h-full w-full items-center justify-center">
             <ImageIcon className="h-10 w-10 text-text-secondary/30" aria-hidden="true" />

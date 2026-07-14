@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { Heart, Lock, MessageCircle, RefreshCw } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
@@ -8,7 +7,8 @@ import type { Album } from "@/lib/types";
 import { formatMediaCount } from "@/lib/utils";
 import { ScrollReveal } from "@/components/ui/ScrollReveal";
 import { useAlbumViewMemory } from "@/hooks/useAlbumViewMemory";
-import { getMediaDisplayUrls, shouldBypassNextImageOptimization } from "@/lib/media/display-url";
+import { LivingPreviewImages } from "@/components/albums/LivingPreviewImages";
+import { getMediaDisplayUrls } from "@/lib/media/display-url";
 import type { AppDictionary } from "@/lib/i18n";
 
 interface AlbumCardProps {
@@ -42,22 +42,12 @@ export function AlbumCard({ album, dict, locale = "en" }: AlbumCardProps) {
         <div data-nature-surface="album-card" className="relative overflow-hidden rounded-[1.5rem] border border-border/40 bg-surface/30 p-2 shadow-sm transition duration-500 ease-out group-hover:-translate-y-1 group-hover:border-border/80 group-hover:bg-surface/60 group-hover:shadow-md">
         <div className="living-preview-frame relative aspect-[3/4] overflow-hidden rounded-[1.2rem] bg-surface-secondary">
           {previewImages.length ? (
-            previewImages.map((src, index) => (
-              <Image
-                key={`${src}-${index}`}
-                src={src}
-                alt={index === 0 ? `${album.title} animated album preview` : ""}
-                fill
-                sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
-                className="living-preview-image object-cover grayscale-[15%] group-hover:grayscale-0 transition-all duration-700"
-                unoptimized={shouldBypassNextImageOptimization(src)}
-                loading="eager"
-                style={{
-                  animationDelay: `${index * 3.2}s`,
-                  opacity: index === 0 ? 1 : undefined,
-                }}
-              />
-            ))
+            <LivingPreviewImages
+              images={previewImages}
+              title={album.title}
+              sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+              imageClassName="grayscale-[15%] group-hover:grayscale-0"
+            />
           ) : (
             <div className="living-preview-placeholder flex h-full w-full items-center justify-center bg-surface-secondary relative overflow-hidden border border-border/10">
               <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-transparent to-black/5" />
