@@ -24,6 +24,17 @@
 - [v] Map help, contact, notification, assistant, rate-limit, and audit flows.
 - [v] Create architecture, data-flow, threat, service-role, route/API, and prioritized-issue reports.
 - [v] Verify report evidence and update handoff/state/changelog.
-- [ ] Commit Milestone 1 audit.
+- [c] Commit Milestone 1 audit (`3f6114e`).
+
+## Milestone 2 - Error Semantics and Demo-Fallback Removal
+
+- [v] Define typed failure categories, safe public messages, retryability, and request IDs.
+- [v] Put sample album fixtures behind an explicit code flag that is disabled by default.
+- [v] Preserve successful empty album lists and true not-found detail results.
+- [v] Report database/schema/R2/processing failures structurally without exposing provider details to users.
+- [v] Add focused automated tests for failure classification and fixture policy.
+- [v] Verify empty, unavailable, not-found, processing, and API error behavior.
+- [v] Create `ERROR_SEMANTICS_REPORT.md` and update engineering state/handoff/changelog.
+- [x] Stage the fully verified Milestone 2 subtask for its isolated commit.
 
 Legend: `[ ]` not started, `[~]` in progress, `[x]` implemented, `[v]` verified, `[c]` committed, `[b]` blocked.

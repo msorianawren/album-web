@@ -1,4 +1,12 @@
 import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
+import {
+  AppFailure,
+  createRequestId,
+  reportAppFailure,
+  toAppFailure,
+  type AppFailureCode,
+} from "@/lib/app-failure";
 
 export type ApiErrorCode =
   | "INVALID_INPUT"
@@ -11,11 +19,16 @@ export type ApiErrorCode =
   | "RATE_LIMITED"
   | "COMMENT_BLOCKED"
   | "UPLOAD_FAILED"
-  | "SERVER_ERROR";
+  | "SERVER_ERROR"
+  | AppFailureCode;
 
 const publicErrorMessages: Partial<Record<ApiErrorCode, string>> = {
   SERVER_ERROR: "The server could not complete this request.",
   UPLOAD_FAILED: "The upload or storage operation could not be completed.",
+};
+
+const noStoreHeaders = {
+  "Cache-Control": "no-store",
 };
 
 function publicMessage(code: ApiErrorCode, message: string) {
@@ -32,19 +45,50 @@ export function apiError(
   message: string,
   status: number,
   details?: unknown,
+  requestId?: string,
 ) {
+  let responseRequestId = requestId;
+  if (status >= 500 && !responseRequestId) {
+    const failure = reportAppFailure(
+      new AppFailure({
+        code: "UNEXPECTED_FAILURE",
+        operation: "api.error_response",
+        publicMessage: publicMessage(code, message),
+        status,
+        retryable: false,
+      }),
+    );
+    responseRequestId = failure.requestId;
+  }
+
   return NextResponse.json(
     {
       success: false,
       code,
       message: publicMessage(code, message),
       ...(details ? { details } : {}),
+      ...(responseRequestId ? { requestId: responseRequestId } : {}),
     },
-    { status },
+    { status, headers: noStoreHeaders },
   );
 }
 
-export function toServerError(error: unknown) {
-  const message = error instanceof Error ? error.message : "Unexpected server error";
-  return apiError("SERVER_ERROR", message, 500);
+export function toServerError(
+  error: unknown,
+  request?: NextRequest,
+  operation = "api.request",
+) {
+  const incomingRequestId = request?.headers.get("x-request-id");
+  const failure = reportAppFailure(
+    error instanceof AppFailure
+      ? error
+      : toAppFailure(error, operation, createRequestId(incomingRequestId)),
+  );
+  return apiError(
+    failure.code,
+    failure.publicMessage,
+    failure.status,
+    undefined,
+    failure.requestId,
+  );
 }

@@ -17,22 +17,26 @@ interface ImagesRouteProps {
 }
 
 export async function GET(request: NextRequest, { params }: ImagesRouteProps) {
-  const { id } = await params;
-  const session = await getPublicSession(request);
-  const rawSort = request.nextUrl.searchParams.get("sort");
-  if (rawSort && !mediaSortModes.some((mode) => mode === rawSort)) {
-    return apiError("INVALID_INPUT", "Unsupported sort mode.", 400);
-  }
-  const sort = parseMediaSortMode(rawSort, "smart");
-  const album = await getAlbum(id, { isAdmin: Boolean(session?.isAdmin), sort });
+  try {
+    const { id } = await params;
+    const session = await getPublicSession(request);
+    const rawSort = request.nextUrl.searchParams.get("sort");
+    if (rawSort && !mediaSortModes.some((mode) => mode === rawSort)) {
+      return apiError("INVALID_INPUT", "Unsupported sort mode.", 400);
+    }
+    const sort = parseMediaSortMode(rawSort, "smart");
+    const album = await getAlbum(id, { isAdmin: Boolean(session?.isAdmin), sort });
 
-  if (!album) return apiError("NOT_FOUND", "Album not found.", 404);
-  if (album.locked) return apiSuccess({ media: [] });
-  return apiSuccess({
-    media: album.media,
-    sort,
-    download_allowed: album.download_allowed,
-  });
+    if (!album) return apiError("NOT_FOUND", "Album not found.", 404);
+    if (album.locked) return apiSuccess({ media: [] });
+    return apiSuccess({
+      media: album.media,
+      sort,
+      download_allowed: album.download_allowed,
+    });
+  } catch (error) {
+    return toServerError(error, request, "api.albums.media.list");
+  }
 }
 
 export async function POST(request: NextRequest, { params }: ImagesRouteProps) {

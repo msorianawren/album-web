@@ -10,17 +10,21 @@ import { slugify } from "@/lib/utils";
 import { albumCreateSchema, searchParamsSchema } from "@/lib/validators";
 
 export async function GET(request: NextRequest) {
-  const parsed = searchParamsSchema.safeParse(
-    Object.fromEntries(request.nextUrl.searchParams),
-  );
+  try {
+    const parsed = searchParamsSchema.safeParse(
+      Object.fromEntries(request.nextUrl.searchParams),
+    );
 
-  if (!parsed.success) {
-    return apiError("INVALID_INPUT", "Invalid album filters.", 400);
+    if (!parsed.success) {
+      return apiError("INVALID_INPUT", "Invalid album filters.", 400);
+    }
+
+    const session = await getPublicSession(request);
+    const albums = await getAlbums({ ...parsed.data, session });
+    return apiSuccess({ albums });
+  } catch (error) {
+    return toServerError(error, request, "api.albums.list");
   }
-
-  const session = await getPublicSession();
-  const albums = await getAlbums({ ...parsed.data, session });
-  return apiSuccess({ albums });
 }
 
 export async function POST(request: NextRequest) {
@@ -96,6 +100,6 @@ export async function POST(request: NextRequest) {
 
     return apiSuccess({ album: data }, { status: 201 });
   } catch (error) {
-    return toServerError(error);
+    return toServerError(error, request, "api.albums.create");
   }
 }

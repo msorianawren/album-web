@@ -5,6 +5,7 @@ import { putR2Object, getR2Object, deleteR2Objects, getPublicUrl } from "@/lib/r
 import { supabase } from "@/lib/supabase";
 import type { Media, SiteSettings } from "@/lib/types";
 import { normalizeMedia } from "@/lib/albums";
+import { createProcessingFailure } from "@/lib/app-failure";
 
 
 function extensionFromMime(mimeType: string) {
@@ -90,7 +91,7 @@ async function setFirstImageAsCoverIfNeeded(albumId: string, mediaId: string, co
   await supabase.from("media").update({ is_cover: true }).eq("id", mediaId);
 }
 
-async function uploadImageMedia({
+async function uploadImageMediaUnchecked({
   albumId,
   mediaId,
   ownerId,
@@ -236,6 +237,16 @@ async function uploadImageMedia({
     original_download_allowed: false,
     metadata_stripped: true,
   };
+}
+
+async function uploadImageMedia(
+  input: Parameters<typeof uploadImageMediaUnchecked>[0],
+) {
+  try {
+    return await uploadImageMediaUnchecked(input);
+  } catch (error) {
+    throw createProcessingFailure(error, "media.process_image");
+  }
 }
 
 async function uploadVideoMedia({
@@ -599,4 +610,3 @@ export async function completeUploadFile({
 
   return normalizeMedia(data);
 }
-

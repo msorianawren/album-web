@@ -14,12 +14,16 @@ interface AlbumRouteProps {
 }
 
 export async function GET(request: NextRequest, { params }: AlbumRouteProps) {
-  const { id } = await params;
-  const session = await requireAdmin(request);
-  const album = await getAlbum(id, { isAdmin: Boolean(session?.isAdmin) });
+  try {
+    const { id } = await params;
+    const session = await requireAdmin(request);
+    const album = await getAlbum(id, { isAdmin: Boolean(session?.isAdmin) });
 
-  if (!album) return apiError("NOT_FOUND", "Album not found.", 404);
-  return apiSuccess({ album });
+    if (!album) return apiError("NOT_FOUND", "Album not found.", 404);
+    return apiSuccess({ album });
+  } catch (error) {
+    return toServerError(error, request, "api.albums.detail");
+  }
 }
 
 export async function PATCH(request: NextRequest, { params }: AlbumRouteProps) {

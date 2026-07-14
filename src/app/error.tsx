@@ -4,6 +4,7 @@ import { RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 
 export default function Error({
+  error,
   reset,
 }: {
   error: Error & { digest?: string };
@@ -22,6 +23,11 @@ export default function Error({
           The gallery service is temporarily unavailable. Try refreshing the
           view.
         </p>
+        {error.digest ? (
+          <p className="mt-2 text-xs text-text-secondary" role="status">
+            Reference: {error.digest}
+          </p>
+        ) : null}
         <Button className="mt-6" onClick={reset}>
           <RotateCcw className="h-4 w-4" aria-hidden="true" />
           Retry

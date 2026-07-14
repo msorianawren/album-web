@@ -53,6 +53,20 @@ export function MediaGrid({
     () => sortMedia(media, sortMode, shuffleSeed),
     [media, shuffleSeed, sortMode],
   );
+  const viewableMedia = useMemo(
+    () =>
+      sortedMedia.filter(
+        (item) =>
+          item.processing_status !== "pending" &&
+          item.processing_status !== "failed" &&
+          item.security_status !== "rejected",
+      ),
+    [sortedMedia],
+  );
+  const viewerIndexById = useMemo(
+    () => new Map(viewableMedia.map((item, index) => [item.id, index])),
+    [viewableMedia],
+  );
 
   const chooseSortMode = useCallback((value: MediaSortMode) => {
     startTransition(() => {
@@ -81,15 +95,19 @@ export function MediaGrid({
 
   const handleNext = useCallback(() => {
     setCurrentIndex((index) =>
-      index === null ? null : (index + 1) % sortedMedia.length,
+      index === null || viewableMedia.length === 0
+        ? null
+        : (index + 1) % viewableMedia.length,
     );
-  }, [sortedMedia.length]);
+  }, [viewableMedia.length]);
 
   const handlePrevious = useCallback(() => {
     setCurrentIndex((index) =>
-      index === null ? null : (index - 1 + sortedMedia.length) % sortedMedia.length,
+      index === null || viewableMedia.length === 0
+        ? null
+        : (index - 1 + viewableMedia.length) % viewableMedia.length,
     );
-  }, [sortedMedia.length]);
+  }, [viewableMedia.length]);
 
   if (!media.length) {
     return (
@@ -160,7 +178,7 @@ export function MediaGrid({
           <MediaCard
             key={item.id}
             media={item}
-            index={index}
+            index={viewerIndexById.get(item.id) ?? index}
             downloadAllowed={downloadAllowed}
             protectAssets={protectAssets}
             onOpen={setCurrentIndex}
@@ -168,7 +186,7 @@ export function MediaGrid({
         ))}
       </div>
       <MediaViewer
-        media={sortedMedia}
+        media={viewableMedia}
         currentIndex={currentIndex}
         downloadAllowed={downloadAllowed}
         protectAssets={protectAssets}

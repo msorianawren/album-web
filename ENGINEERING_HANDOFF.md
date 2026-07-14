@@ -9,9 +9,9 @@ Upgrade album-web into a production-grade, privacy-sensitive digital asset manag
 - Status: IN_PROGRESS
 - Branch: `engineering/production-platform-overhaul`
 - Baseline commit: `f82cb5eb0e78f9ea4b5aa9c34d6a20a69cfead2d`
-- Current milestone: 1 - Architecture, data-flow, and threat audit
-- Completed checkpoint: `55b022c docs: establish production readiness baseline`
-- Current subtask: Verify and commit the six Milestone 1 audit/register documents.
+- Current milestone: 2 - Error semantics and demo-fallback removal
+- Completed checkpoint: `3f6114e docs: add architecture and threat baseline`
+- Current subtask: Commit the fully verified Milestone 2 implementation.
 - Production architecture has not been changed by this program yet.
 
 ## Important Constraints
@@ -27,6 +27,8 @@ Upgrade album-web into a production-grade, privacy-sensitive digital asset manag
 - Establish the baseline before architecture changes.
 - Treat production as the behavioral reference and repository/migrations as technical sources of truth.
 - Prefer backward-compatible schema and dual-read/dual-write cutovers where migration is required.
+- Demo fixtures are controlled by an explicit code policy and are disabled by default in every environment.
+- Error logs use codes/operation/request ID/provider code only; raw causes are not serialized.
 
 ## Rejected Approaches
 
@@ -71,8 +73,8 @@ Then read `AGENTS.md`, `ENGINEERING_PROGRAM_STATE.md`, this file, `CURRENT_MILES
 
 ## Next Five Actions
 
-1. Run Milestone 1 lint/typecheck and commit the architecture/threat baseline.
-2. Begin Milestone 2 by defining typed domain/result errors and a request/correlation ID contract.
-3. Move sample albums behind an explicit local demo fixture provider.
-4. Add empty/unavailable/permission/processing UI states without exposing backend details.
-5. Add focused tests proving production database failures never return sample albums.
+1. Commit the verified Milestone 2 error-semantics change and record its checkpoint.
+2. Begin Milestone 3 with scoped Supabase client modules and an authorization role matrix.
+3. Migrate public album reads away from the default service-role client first.
+4. Add JWT-bound authenticated client tests for user-owned notifications/help/access paths.
+5. Migrate admin/worker callers in isolated route-family commits with import-boundary checks.

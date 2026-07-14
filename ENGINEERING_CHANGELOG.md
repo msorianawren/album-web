@@ -38,3 +38,20 @@
 - Security impact: Documentation only; distinguishes confirmed weaknesses from unverified R2/private-prefix risks and defines the least-privilege migration target.
 - Performance impact: Documentation only; records unbounded query, cache, ZIP, and processing bottlenecks.
 - Test performed: Targeted tracked-file inventories, `git diff --check`, lint (0 errors, 14 unchanged warnings), TypeScript pass, and production build pass (49 routes generated).
+
+## 2026-07-14 - Milestone 1 checkpoint
+
+- Milestone: 1
+- Commit: `3f6114e docs: add architecture and threat baseline`
+- Result: COMPLETE - implemented, verified, and committed.
+
+## 2026-07-14 - Milestone 2 error semantics and fixture isolation
+
+- Milestone: 2
+- Files: `src/lib/app-failure.ts`, `src/lib/demo-fixtures.ts`, `src/lib/errors.ts`, `src/lib/albums.ts`, `src/lib/r2.ts`, `src/lib/media.ts`, album/search APIs, error boundaries, media cards/grid, tests, package scripts, `ERROR_SEMANTICS_REPORT.md`, engineering state files
+- Reason: Stop backend failures from presenting demo albums and make error categories observable without exposing provider details.
+- Behavior before: Empty/error album queries could return sample data; R2, processing, schema, and unexpected failures collapsed into generic behavior; pending/failed media could reach the viewer.
+- Behavior after: Demo fixtures require explicit code opt-in; empty/not-found remain real states; typed failures include safe request IDs; R2/processing are distinct; unavailable media has intentional UI and is excluded from the viewer.
+- Security impact: Removes fake success states, prevents raw provider details in structured logs/API responses, and reduces blank/unsafe media exposure.
+- Performance impact: Negligible request-ID/classification overhead; sample data is no longer statically imported by the album repository.
+- Test performed: 8 unit tests, lint (0 errors, 14 unchanged warnings), TypeScript pass, production build pass, local album/API 200/404 checks, and zero sample IDs in live list response.

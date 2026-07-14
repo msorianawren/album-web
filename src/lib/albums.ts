@@ -2,7 +2,13 @@ import { unstable_noStore as noStore } from "next/cache";
 import { privateAlbumMessage } from "@/lib/config";
 import { getPublicSession } from "@/lib/auth";
 import { getPublicUrl } from "@/lib/r2";
-import { sampleAlbums } from "@/lib/sample-data";
+import { albumDemoFixturesEnabled } from "@/lib/demo-fixtures";
+import {
+  classifyDataFailure,
+  reportAppFailure,
+  resolveOptionalRow,
+  resolveQueryRows,
+} from "@/lib/app-failure";
 import { supabase } from "@/lib/supabase";
 import type { Album, AlbumDetail, AlbumPreviewItem, AlbumStatus, Media } from "@/lib/types";
 import { parseMediaSortMode, sortMedia, type MediaSortMode } from "@/lib/media-sort";
@@ -257,7 +263,10 @@ export async function checkAlbumAccess(albumId: string, session: PublicSession):
   return result.allowed;
 }
 
-function filterSampleAlbums({ q, status, session }: AlbumQuery) {
+function filterSampleAlbums(
+  sampleAlbums: AlbumDetail[],
+  { q, status, session }: AlbumQuery,
+) {
   const search = q?.toLowerCase().trim();
   const isAdmin = session?.isAdmin ?? false;
   return sampleAlbums.filter((album) => {
@@ -287,6 +296,25 @@ function filterSampleAlbums({ q, status, session }: AlbumQuery) {
       })),
     };
   });
+}
+
+async function getDemoAlbums(query: AlbumQuery) {
+  if (!albumDemoFixturesEnabled()) return null;
+  const { sampleAlbums } = await import("@/lib/sample-data");
+  return filterSampleAlbums(sampleAlbums, query);
+}
+
+async function getDemoAlbum(slugOrId: string, isAdmin: boolean) {
+  if (!albumDemoFixturesEnabled()) return null;
+  const { sampleAlbums } = await import("@/lib/sample-data");
+  const sample = sampleAlbums.find(
+    (album) => album.slug === slugOrId || album.id === slugOrId,
+  );
+  if (!sample) return null;
+  if (sample.status === "private" && !isAdmin) {
+    return { ...sample, media: [], locked: true, download_allowed: false };
+  }
+  return sample;
 }
 
 async function attachAlbumPreviews(albums: Album[], session?: PublicSession | null) {
@@ -438,20 +466,10 @@ async function attachAlbumPreviews(albums: Album[], session?: PublicSession | nu
     .order("sort_order", { ascending: true })
     .order("created_at", { ascending: true });
 
-  if (error || !data) {
-    return albums.map(a => {
-      if (a.status === "private" && !isAdmin && requestMap.get(a.id) !== "approved") {
-        a.cover_url = null;
-      }
-      return {
-        ...a,
-        access_request_status: requestMap.get(a.id) as Album["access_request_status"] ?? null,
-      };
-    });
-  }
+  const previewRows = resolveQueryRows(data, error, "albums.previews");
 
   const previewMap = new Map<string, AlbumPreviewItem[]>();
-  for (const row of data as UnknownRow[]) {
+  for (const row of previewRows as UnknownRow[]) {
     const albumId = String(row.album_id);
     const current = previewMap.get(albumId) ?? [];
     if (current.length >= 4) continue;
@@ -497,10 +515,12 @@ export async function getAlbums(query: AlbumQuery = {}): Promise<Album[]> {
     }
 
     const { data, error } = await builder;
-    if (error) throw error;
-    if (!data?.length) return filterSampleAlbums({ ...query, session });
+    const rows = resolveQueryRows(data, error, "albums.list");
+    if (!rows.length) {
+      return (await getDemoAlbums({ ...query, session })) ?? [];
+    }
 
-    let parsedAlbums = data.map((row) => normalizeAlbum(row));
+    let parsedAlbums = rows.map((row) => normalizeAlbum(row));
     
     if (!query.status) {
       const getFallbackTime = (a: Album) => new Date(a.created_at).getTime();
@@ -526,8 +546,10 @@ export async function getAlbums(query: AlbumQuery = {}): Promise<Album[]> {
     }
 
     return attachAlbumPreviews(parsedAlbums, session);
-  } catch {
-    return filterSampleAlbums(query);
+  } catch (error) {
+    const demoAlbums = await getDemoAlbums(query);
+    if (demoAlbums) return demoAlbums;
+    throw reportAppFailure(classifyDataFailure(error, "albums.list"));
   }
 }
 
@@ -557,10 +579,9 @@ export async function getAlbum(
         .maybeSingle();
     }
 
-    const { data: albumRow, error: albumError } = await albumQuery;
-
-    if (albumError) throw albumError;
-    if (!albumRow) return null;
+    const { data, error } = await albumQuery;
+    const albumRow = resolveOptionalRow(data, error, "albums.detail");
+    if (!albumRow) return getDemoAlbum(slugOrId, isAdmin);
 
     const album = normalizeAlbum(albumRow);
 
@@ -614,17 +635,10 @@ export async function getAlbum(
       download_allowed: album.status === "public" || isAdmin,
       locked: false,
     };
-  } catch {
-    const sample = sampleAlbums.find(
-      (album) => album.slug === slugOrId || album.id === slugOrId,
-    );
-
-    if (!sample) return null;
-    if (sample.status === "private" && !isAdmin) {
-      return { ...sample, media: [], locked: true, download_allowed: false };
-    }
-
-    return sample;
+  } catch (error) {
+    const demoAlbum = await getDemoAlbum(slugOrId, isAdmin);
+    if (demoAlbum) return demoAlbum;
+    throw reportAppFailure(classifyDataFailure(error, "albums.detail"));
   }
 }
 
