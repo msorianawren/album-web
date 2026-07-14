@@ -57,7 +57,9 @@
 - [c] Commit the verified album admin route family (`610b71c`).
 - [v] Migrate cron routes behind constant-time trusted worker contexts.
 - [v] Fail closed for missing/invalid worker secrets in every environment.
-- [~] Commit the verified cron worker boundary.
+- [c] Commit the verified cron worker boundary (`de15980`).
+- [v] Migrate notification count/list/read/dismiss routes to request-scoped JWT/RLS clients.
+- [~] Commit the verified notification user boundary.
 - [ ] Add database/RLS role tests for all supported principals.
 - [ ] Create `SUPABASE_BOUNDARY_REPORT.md` and `AUTHORIZATION_ROLE_MATRIX.md`.
 - [ ] Verify and commit the complete Milestone 3 boundary migration.

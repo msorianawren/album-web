@@ -140,3 +140,20 @@
 - Security impact: Missing configuration no longer creates a permissive environment, invalid secrets are rejected before settings/database reads, and raw Supabase errors are not returned from the touched paths.
 - Performance impact: Constant-time secret comparison is negligible; database query behavior is unchanged after authorization.
 - Test performed: Lint pass with 14 unchanged warnings, TypeScript pass, 20 unit/boundary tests, production build pass with 49 routes, and local missing/invalid-secret HTTP checks returning `401` for both routes. Valid-secret execution is BLOCKED_EXTERNAL to avoid reading/logging secret material.
+
+## 2026-07-14 - Milestone 3 cron worker checkpoint
+
+- Milestone: 3
+- Commit: `de15980 security(cron): require trusted worker context`
+- Result: COMPLETE - bounded worker route family implemented, verified, and committed.
+
+## 2026-07-14 20:00:00 +07:00 - Milestone 3 notification user boundary
+
+- Milestone: 3
+- Files: both notification API routes, `tests/supabase-boundaries.test.mjs`, engineering state files
+- Reason: Enforce notification ownership through the caller's verified JWT and database RLS instead of a service-role query plus application filter.
+- Behavior before: Count/list/read/dismiss used the broad client and relied only on `.eq(recipient_user_id, session.userId)` in application code.
+- Behavior after: Each route requires a request-derived JWT client; the same ownership filters remain defense in depth, notification IDs are UUID-validated, and failures use safe classified responses.
+- Security impact: Cross-user notification access is constrained by RLS even if a future application filter regresses; user IDs are never accepted from the browser as authority and user data remains `no-store`.
+- Performance impact: Query shapes and limits remain unchanged; the client is request-scoped.
+- Test performed: Lint pass with 14 unchanged warnings, TypeScript pass, 21 unit/boundary tests, production build pass with 49 routes, and guest count/list/mark-all/single-update checks returning `401`. Authenticated fixture testing is BLOCKED_EXTERNAL.

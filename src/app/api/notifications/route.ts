@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabase } from "@/lib/supabase";
+import { classifyDataFailure } from "@/lib/app-failure";
 import { getPublicSession } from "@/lib/auth";
+import { createAuthenticatedUserClient } from "@/lib/db/user";
+import { toServerError } from "@/lib/errors";
 
 export const dynamic = "force-dynamic";
 
@@ -20,10 +22,14 @@ export async function GET(request: NextRequest) {
     if (!session.userId) {
       return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401, headers: noStoreHeaders });
     }
+    const client = await createAuthenticatedUserClient(request);
+    if (!client) {
+      return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401, headers: noStoreHeaders });
+    }
 
     const { searchParams } = new URL(request.url);
     if (searchParams.get("mode") === "count") {
-      const { count, error } = await supabase
+      const { count, error } = await client
         .from("notifications")
         .select("id", { count: "exact", head: true })
         .eq("recipient_user_id", session.userId)
@@ -33,7 +39,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: true, count: count ?? 0 }, { headers: noStoreHeaders });
     }
 
-    const { data: notifications, error } = await supabase
+    const { data: notifications, error } = await client
       .from("notifications")
       .select("id, type, title, body, target_url, status, created_at, read_at")
       .eq("recipient_user_id", session.userId)
@@ -50,9 +56,12 @@ export async function GET(request: NextRequest) {
         type: normalizeType(notification.type),
       })),
     }, { headers: noStoreHeaders });
-  } catch (err: unknown) {
-    console.error("Notifications GET Error:", err);
-    return NextResponse.json({ success: false, message: "Server error" }, { status: 500, headers: noStoreHeaders });
+  } catch (error: unknown) {
+    return toServerError(
+      classifyDataFailure(error, "notifications.user_list"),
+      request,
+      "api.notifications.list",
+    );
   }
 }
 
@@ -62,9 +71,13 @@ export async function PATCH(request: NextRequest) {
     if (!session.userId) {
       return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401, headers: noStoreHeaders });
     }
+    const client = await createAuthenticatedUserClient(request);
+    if (!client) {
+      return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401, headers: noStoreHeaders });
+    }
 
     const now = new Date().toISOString();
-    const { error } = await supabase
+    const { error } = await client
       .from("notifications")
       .update({ status: "read", read_at: now })
       .eq("recipient_user_id", session.userId)
@@ -72,8 +85,11 @@ export async function PATCH(request: NextRequest) {
 
     if (error) throw error;
     return NextResponse.json({ success: true }, { headers: noStoreHeaders });
-  } catch (err: unknown) {
-    console.error("Notifications PATCH Error:", err);
-    return NextResponse.json({ success: false, message: "Server error" }, { status: 500, headers: noStoreHeaders });
+  } catch (error: unknown) {
+    return toServerError(
+      classifyDataFailure(error, "notifications.user_mark_all_read"),
+      request,
+      "api.notifications.mark_all_read",
+    );
   }
 }

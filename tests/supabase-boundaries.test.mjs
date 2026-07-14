@@ -70,6 +70,19 @@ test("worker authorization fails closed and accepts only an exact bearer secret"
   assert.equal(isValidWorkerAuthorization("Bearer secret", "secret"), true);
 });
 
+test("notification routes use request-scoped JWT clients and never the broad client", () => {
+  for (const path of [
+    "src/app/api/notifications/route.ts",
+    "src/app/api/notifications/[id]/route.ts",
+  ]) {
+    const source = read(path);
+    assert.equal(source.includes("@/lib/supabase"), false, path);
+    assert.equal(source.includes("createAuthenticatedUserClient(request)"), true, path);
+    assert.equal(source.includes("recipient_user_id"), true, path);
+    assert.equal(source.includes("session.userId"), true, path);
+  }
+});
+
 test("private album role matrix denies untrusted and revoked principals", () => {
   assert.deepEqual(decidePrivateAlbumAccess("anonymous", "all_private"), {
     allowed: false,
