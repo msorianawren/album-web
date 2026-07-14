@@ -258,3 +258,14 @@
 - Security impact: Removes one broad-client import and makes accidental unguarded role-management use a compile-time error.
 - Performance impact: Query shapes are unchanged; Founder grant/revoke currently revalidate the trusted context before mutation.
 - Test performed: 30 unit/static tests, lint with no errors and 14 unchanged warnings, TypeScript pass, and production build pass.
+
+## 2026-07-14 22:20:00 +07:00 - Milestone 3 remote migration status
+
+- Milestone: 3
+- Files: engineering state, checklist, handoff, and Supabase boundary report
+- Reason: Record the user's confirmation that the latest private-album RLS and help-write RPC migrations were run successfully in Supabase.
+- Behavior before: Both migrations were recorded as unapplied external blockers.
+- Behavior after: Schema application is user-reported complete; database role verification and application cutover remain in progress.
+- Security impact: No runtime change in this checkpoint; prevents treating unverified role behavior as production-guaranteed.
+- Performance impact: None.
+- Test performed: Repository migration inventory and current commit/state consistency review; remote database execution was not independently observed.

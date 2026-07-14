@@ -10,8 +10,8 @@ Upgrade album-web into a production-grade, privacy-sensitive digital asset manag
 - Branch: `engineering/production-platform-overhaul`
 - Baseline commit: `f82cb5eb0e78f9ea4b5aa9c34d6a20a69cfead2d`
 - Current milestone: 3 - Supabase client and authorization boundaries
-- Completed checkpoint: `fc34389 refactor(admin): guard audit and user management queries`
-- Current subtask: Commit the role-management repository and Founder role routes with explicit guarded clients.
+- Completed checkpoint: `4b82c62 refactor(authz): require explicit role management client`
+- Current subtask: Verify the user-reported private RLS/help RPC deployment, then cut application reads/writes over in isolated checkpoints.
 - Public album rows and public/updating media now use the anon client; authenticated private access and admin/worker route migrations remain.
 
 ## Important Constraints
@@ -78,8 +78,8 @@ Then read `AGENTS.md`, `ENGINEERING_PROGRAM_STATE.md`, this file, `CURRENT_MILES
 
 ## Next Five Actions
 
-1. Commit the verified Founder role-management boundary.
-2. Migrate Studio user activity and access-management route families to guarded clients.
-3. Design narrow user-write RPCs for preferences/comments/likes only where current RLS cannot preserve behavior.
-4. Apply and role-test pending RLS/RPC migrations when external access is available.
-5. Only then switch private album and help write paths to JWT clients.
+1. Cut user help create/append routes over to the authenticated RPCs and verify ownership/status/message-cap behavior.
+2. Cut authorized private album media reads over to JWT/RLS and verify grant/revoke/blocked precedence.
+3. Finish the Milestone 3 database role matrix and authenticated/admin regression checks.
+4. Migrate remaining Studio user activity/access routes to guarded clients if Milestone 3 exit criteria still require them.
+5. Begin Milestone 4 only after object-level R2 privacy assumptions are verified.

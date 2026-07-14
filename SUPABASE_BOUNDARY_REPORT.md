@@ -56,7 +56,7 @@ The service-role constructor for new code lives in `src/lib/db/trusted-service.t
 
 `supabase/rollbacks/202607142115_user_help_write_rpcs_rollback.sql` removes only those two functions.
 
-The private RLS and help RPC migrations are **not applied locally or remotely**. Application private-media reads and help writes therefore remain on their legacy trusted paths. Deployment order is schema, role verification, application cutover, observation, then legacy removal.
+The user reports that the private RLS and help RPC migrations were applied remotely on 2026-07-14. This workspace has not independently executed database role tests, so application private-media reads and help writes remain on their legacy trusted paths until verification. Remaining order: role verification, isolated application cutover, observation, then legacy removal.
 
 ## Remaining Legacy Surface
 

@@ -50,7 +50,8 @@
 - [c] Commit the verified public album read migration (`e258ede`).
 - [v] Add a backward-compatible private-album RLS helper plus media/comment policies.
 - [v] Add a non-destructive rollback script and policy-order/static authorization tests.
-- [b] Apply and role-test `202607141830_private_album_rls.sql` against Supabase (no local CLI/database or remote management permission).
+- [x] Apply `202607141830_private_album_rls.sql` remotely (reported successful by the user on 2026-07-14; independent verification pending).
+- [~] Run private-album database role tests and cut authenticated private reads over to JWT/RLS.
 - [c] Commit the verified, unapplied RLS migration package (`2dda6cf`).
 - [ ] Migrate authenticated-user route families to request-scoped JWT/RLS clients.
 - [v] Migrate album create/update/delete/upload-entry/reorder mutations behind trusted admin contexts.
@@ -67,15 +68,16 @@
 - [c] Commit the verified audit-log/user-management route boundary (`fc34389`).
 - [v] Make the role-management repository require an explicit database client.
 - [v] Pass guarded Founder clients from list/grant/revoke role routes.
-- [~] Commit the verified Founder role-management boundary.
+- [c] Commit the verified Founder role-management boundary (`4b82c62`).
 - [v] Migrate user help thread/message list reads to request-scoped JWT/RLS clients.
 - [v] Prepare atomic authenticated RPCs and rollback for help create/append writes.
-- [b] Apply and role-test `202607142115_user_help_write_rpcs.sql`, then cut application writes over to the JWT/RPC path.
+- [x] Apply `202607142115_user_help_write_rpcs.sql` remotely (reported successful by the user on 2026-07-14; independent verification pending).
+- [~] Role-test the help RPCs, then cut application writes over to the JWT/RPC path.
 - [c] Commit the verified help-read user boundary (`27c2e32`).
 - [ ] Add database/RLS role tests for all supported principals.
 - [v] Create `SUPABASE_BOUNDARY_REPORT.md` and `AUTHORIZATION_ROLE_MATRIX.md`.
 - [v] Add static ownership, blocked-user, closed-thread, message-cap, privilege, and rollback tests for the help RPC package.
-- [~] Verify and commit the unapplied help RPC migration package.
+- [c] Verify and commit the help RPC migration package (`df0d0e8`).
 - [ ] Verify and commit the complete Milestone 3 boundary migration.
 
 Legend: `[ ]` not started, `[~]` in progress, `[x]` implemented, `[v]` verified, `[c]` committed, `[b]` blocked.
