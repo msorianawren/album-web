@@ -44,8 +44,10 @@
 - [x] Add a centralized private-album role decision matrix.
 - [v] Add and run client import-boundary and role-decision unit tests.
 - [v] Run full checks for the scoped client-boundary foundation.
-- [~] Commit the scoped client-boundary foundation.
-- [ ] Migrate public album reads away from the legacy service-role client.
+- [c] Commit the scoped client-boundary foundation (`7ae6419`).
+- [v] Migrate public album and public-media reads away from the legacy service-role client.
+- [v] Ensure unauthorized private album responses expose only an explicit safe preview or no cover.
+- [~] Commit the verified public album read migration.
 - [ ] Migrate authenticated-user route families to request-scoped JWT/RLS clients.
 - [ ] Migrate admin route families behind trusted admin contexts.
 - [ ] Migrate cron routes behind trusted worker contexts.

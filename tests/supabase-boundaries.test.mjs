@@ -28,6 +28,14 @@ test("trusted service-role constructor has only explicit admin and worker import
   assert.deepEqual(new Set(importers), allowed);
 });
 
+test("album repository uses the anon client for public album and media reads", () => {
+  const source = read("src/lib/albums.ts");
+  assert.match(source, /let builder = publicClient\s*\.from\("albums"\)/);
+  assert.match(source, /let albumQuery = publicClient\s*\.from\("albums"\)/);
+  assert.match(source, /album\.status === "private" \? supabase : publicClient/);
+  assert.match(source, /getPreviewRows\(publicClient, publicAlbumIds/);
+});
+
 test("private album role matrix denies untrusted and revoked principals", () => {
   assert.deepEqual(decidePrivateAlbumAccess("anonymous", "all_private"), {
     allowed: false,

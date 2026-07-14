@@ -72,3 +72,20 @@
 - Security impact: Public/user clients cannot read the service-role key; new trusted clients require explicit server-only modules and guard contexts. Existing broad imports remain until isolated migration.
 - Performance impact: No route query behavior changed; clients remain request-scoped where identity is required.
 - Test performed: Lint pass with 14 unchanged warnings, TypeScript pass, 12 unit tests including static client-boundary and role-decision cases, and production build pass with 49 routes.
+
+## 2026-07-14 - Milestone 3 scoped client checkpoint
+
+- Milestone: 3
+- Commit: `7ae6419 refactor(auth): establish scoped Supabase clients`
+- Result: COMPLETE - bounded foundation implemented, verified, and committed; route-family migration continues.
+
+## 2026-07-14 18:40:00 +07:00 - Milestone 3 public album read boundary
+
+- Milestone: 3
+- Files: `src/lib/albums.ts`, `tests/supabase-boundaries.test.mjs`, engineering state files
+- Reason: Stop anonymous public album and media reads from using the broad service-role client while preserving authorized private album behavior.
+- Behavior before: Album list/detail rows, all previews, public media, and engagement counts used service role.
+- Behavior after: Album rows and public/updating previews/media use the anon client; only authorized private media remains on the transitional trusted path. Unauthorized private covers resolve only to the explicit safe preview or null.
+- Security impact: Normal anonymous reads no longer bypass RLS, and an unauthorized private detail no longer returns its original cover URL.
+- Performance impact: Query count is unchanged for anonymous requests; authenticated mixed lists may issue separate bounded public/private preview queries.
+- Test performed: Lint pass with 14 unchanged warnings, TypeScript pass, 13 unit tests, production build pass with 49 routes, and runtime checks for 50 albums, 13 locked private cards, private zero-media detail, safe cover behavior, and a 23-media public detail.

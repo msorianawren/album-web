@@ -1,6 +1,8 @@
 import { unstable_noStore as noStore } from "next/cache";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { privateAlbumMessage } from "@/lib/config";
 import { getPublicSession } from "@/lib/auth";
+import { createPublicServerClient } from "@/lib/db/public";
 import { getPublicUrl } from "@/lib/r2";
 import { albumDemoFixturesEnabled } from "@/lib/demo-fixtures";
 import {
@@ -317,6 +319,23 @@ async function getDemoAlbum(slugOrId: string, isAdmin: boolean) {
   return sample;
 }
 
+async function getPreviewRows(
+  client: SupabaseClient,
+  albumIds: string[],
+  operation: string,
+) {
+  if (!albumIds.length) return [];
+  const { data, error } = await client
+    .from("media")
+    .select("id,album_id,media_type,title,url,thumbnail_url,medium_url,poster_url,sort_order,created_at")
+    .in("album_id", albumIds)
+    .is("deleted_at", null)
+    .order("sort_order", { ascending: true })
+    .order("created_at", { ascending: true });
+
+  return resolveQueryRows(data, error, operation) as UnknownRow[];
+}
+
 async function attachAlbumPreviews(albums: Album[], session?: PublicSession | null) {
   const isAdmin = session?.isAdmin ?? false;
   
@@ -442,14 +461,21 @@ async function attachAlbumPreviews(albums: Album[], session?: PublicSession | nu
     }
   }
 
-  const eligibleAlbumIds = albums
-    .filter(a => isAdmin || a.status !== "private" || requestMap.get(a.id) === "approved")
-    .map(a => a.id);
+  const publicAlbumIds = albums
+    .filter((album) => album.status !== "private")
+    .map((album) => album.id);
+  const authorizedPrivateAlbumIds = albums
+    .filter((album) =>
+      album.status === "private" &&
+      (isAdmin || requestMap.get(album.id) === "approved"),
+    )
+    .map((album) => album.id);
+  const eligibleAlbumIds = [...publicAlbumIds, ...authorizedPrivateAlbumIds];
 
   if (!eligibleAlbumIds.length) {
     return albums.map(a => {
       if (a.status === "private" && !isAdmin && requestMap.get(a.id) !== "approved") {
-        a.cover_url = null;
+        a.cover_url = a.safe_preview_url ?? null;
       }
       return {
         ...a,
@@ -458,15 +484,12 @@ async function attachAlbumPreviews(albums: Album[], session?: PublicSession | nu
     });
   }
 
-  const { data, error } = await supabase
-    .from("media")
-    .select("id,album_id,media_type,title,url,thumbnail_url,medium_url,poster_url,sort_order,created_at")
-    .in("album_id", eligibleAlbumIds)
-    .is("deleted_at", null)
-    .order("sort_order", { ascending: true })
-    .order("created_at", { ascending: true });
-
-  const previewRows = resolveQueryRows(data, error, "albums.previews");
+  const publicClient = createPublicServerClient();
+  const [publicPreviewRows, privatePreviewRows] = await Promise.all([
+    getPreviewRows(publicClient, publicAlbumIds, "albums.public_previews"),
+    getPreviewRows(supabase, authorizedPrivateAlbumIds, "albums.private_previews"),
+  ]);
+  const previewRows = [...publicPreviewRows, ...privatePreviewRows];
 
   const previewMap = new Map<string, AlbumPreviewItem[]>();
   for (const row of previewRows as UnknownRow[]) {
@@ -480,7 +503,7 @@ async function attachAlbumPreviews(albums: Album[], session?: PublicSession | nu
   return albums.map((album) => {
     const isApproved = requestMap.get(album.id) === "approved";
     if (album.status === "private" && !isAdmin && !isApproved) {
-      album.cover_url = null;
+      album.cover_url = album.safe_preview_url ?? null;
     }
     return {
       ...album,
@@ -495,7 +518,8 @@ export async function getAlbums(query: AlbumQuery = {}): Promise<Album[]> {
 
   try {
     const session = query.session ?? await getPublicSession();
-    let builder = supabase
+    const publicClient = createPublicServerClient();
+    let builder = publicClient
       .from("albums")
       .select("*")
       .is("deleted_at", null);
@@ -563,7 +587,8 @@ export async function getAlbum(
   const isAdmin = options.isAdmin ?? session?.isAdmin ?? false;
 
   try {
-    let albumQuery = supabase
+    const publicClient = createPublicServerClient();
+    let albumQuery = publicClient
       .from("albums")
       .select("*")
       .eq("slug", slugOrId)
@@ -571,7 +596,7 @@ export async function getAlbum(
       .maybeSingle();
 
     if (isUuid(slugOrId)) {
-      albumQuery = supabase
+      albumQuery = publicClient
         .from("albums")
         .select("*")
         .or(`slug.eq.${slugOrId},id.eq.${slugOrId}`)
@@ -594,6 +619,7 @@ export async function getAlbum(
       if (!isApproved) {
         return {
           ...album,
+          cover_url: album.safe_preview_url ?? null,
           media: [],
           download_allowed: false,
           locked: true,
@@ -602,7 +628,8 @@ export async function getAlbum(
       }
     }
 
-    const { data: mediaRows, error: mediaError } = await supabase
+    const mediaClient = album.status === "private" ? supabase : publicClient;
+    const { data: mediaRows, error: mediaError } = await mediaClient
       .from("media")
       .select("*")
       .eq("album_id", album.id)
@@ -613,7 +640,10 @@ export async function getAlbum(
 
     if (mediaError) throw mediaError;
 
-    const media = await attachMediaEngagementCounts((mediaRows ?? []).map((row) => normalizeMedia(row)));
+    const media = await attachMediaEngagementCounts(
+      (mediaRows ?? []).map((row) => normalizeMedia(row)),
+      mediaClient,
+    );
     const sortMode = parseMediaSortMode(options.sort, parseMediaSortMode(album.default_media_sort, "smart"));
     const sortedMedia = sortMedia(media, sortMode, `${album.id}:${sortMode}`);
 
@@ -642,13 +672,16 @@ export async function getAlbum(
   }
 }
 
-async function attachMediaEngagementCounts(media: Media[]) {
+async function attachMediaEngagementCounts(
+  media: Media[],
+  client: SupabaseClient = createPublicServerClient(),
+) {
   const ids = media.map((item) => item.id);
   if (!ids.length) return media;
 
   const [likesResult, commentsResult] = await Promise.all([
-    supabase.from("likes").select("media_id").in("media_id", ids),
-    supabase
+    client.from("likes").select("media_id").in("media_id", ids),
+    client
       .from("comments")
       .select("media_id")
       .in("media_id", ids)
