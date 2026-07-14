@@ -60,3 +60,13 @@ The application compatibility fallback reads legacy keys server-side only until 
 - `npm run private-media:rollback-cutover -- --dry-run` rehearses manifest rollback without changing rows or objects.
 
 Detailed inventory artifacts are local and ignored by Git because they contain storage keys and legacy URL fields.
+
+## Operational checkpoint - 2026-07-15
+
+- The linked Supabase target matches the configured application project.
+- Remote migration history is reconciled through `202607142330_private_media_manifest.sql`.
+- A linked push dry-run proposes only `202607150000_async_image_processing.sql`; it was not applied because Milestone 4 must finish first.
+- Inventory verified 13 private albums, 366 media rows, 1,830 manifest variants, zero missing source objects, and 1,830 publicly reachable legacy variants.
+- Manifest dry-run prepared 1,830 rows and the apply pass checkpointed all 1,830 rows without deleting storage objects.
+- R2 copy dry-run prepared 1,830 candidates and performed no copy because `R2_PRIVATE_BUCKET_NAME` is not configured.
+- The current R2 credentials are bucket-scoped and cannot list or provision a second bucket. Private-bucket provisioning and configuration are therefore the remaining external gate before copy-only migration.

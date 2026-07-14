@@ -105,7 +105,8 @@
 - [v] Add static private-media boundary, safe-preview, migration, and rollback tests.
 - [v] Add checkpointed, idempotent inventory, manifest-backfill, R2-copy, activation, and rollback commands; all mutation commands default to dry-run.
 - [v] Inventory 13 private albums, 366 media rows, and 1,830 asset variants; all source objects exist and all remain publicly reachable.
-- [b] Apply the manifest migration: target link matches the configured environment, but remote migration history would replay 27 older files, so direct `db push` is unsafe.
+- [x] Reconcile linked migration history and verify the manifest migration is applied remotely; the safe push dry-run now proposes only `202607150000`.
+- [x] Backfill 1,830 manifest rows idempotently with no duplicate rows or object deletion.
 - [b] Configure `R2_PRIVATE_BUCKET_NAME` and provision a non-public R2 bucket before object copy.
 - [ ] Copy representative objects to the private bucket without deleting legacy sources.
 - [ ] Verify checksum/size, gateway delivery, revocation, Range requests, and rollback.

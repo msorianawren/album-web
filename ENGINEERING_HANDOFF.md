@@ -11,7 +11,7 @@ Upgrade album-web into a production-grade, privacy-sensitive digital asset manag
 - Baseline commit: `f82cb5eb0e78f9ea4b5aa9c34d6a20a69cfead2d`
 - Current milestone: 6 - Asynchronous image processing (`IMPLEMENTED_NOT_MIGRATED`); Milestone 4 remains in progress
 - Completed milestone: 3 - implemented and locally verified; 34/34 tests passed and the feature branch was pushed without deploying production
-- Current subtask: Resolve migration-history drift and private-bucket provisioning before manifest backfill/object copy.
+- Current subtask: Provision and configure the private R2 bucket before checkpointed copy-only migration and cutover verification.
 - Independent Milestone 5 is complete and locally verified. `src/lib/media/delivery.ts` is now the only media URL-selection policy for application surfaces; see `MEDIA_DELIVERY_MODEL_REPORT.md`.
 - Milestone 6 replaces every active synchronous image upload path with private staging and a durable trusted-worker queue. See `ASYNC_IMAGE_PROCESSING_REPORT.md`.
 - Live role-matrix fixture checks are tracked in `PRE_MERGE_AUTHORIZATION_VERIFICATION.md` and must pass before merge, but do not block Milestone 4 development.
@@ -38,7 +38,8 @@ Upgrade album-web into a production-grade, privacy-sensitive digital asset manag
 - Help create/append now call the applied RPC package; static/guest checks pass and authenticated role verification remains explicitly blocked.
 - Private browser payloads use same-site gateway URLs and redact object-key values. A server-only manifest is the target source of truth; its compatibility fallback remains server-only until the additive migration is applied.
 - Local inventory found 13 private albums, 366 media rows, and 1,830 valid source variants; all 1,830 are still publicly reachable. No object was copied, moved, or deleted.
-- Supabase CLI is linked to the same project as the configured environment, but remote migration history records only the first five files. A normal push would replay 27 older migrations and must not be used until history is reconciled.
+- Supabase CLI is linked to the configured project. Remote migration history is reconciled through `202607142330`; a linked push dry-run now proposes only the intentionally deferred Milestone 6 migration `202607150000`.
+- The private manifest contains 1,830 checkpointed rows after an idempotent backfill. No R2 object was copied or deleted because `R2_PRIVATE_BUCKET_NAME` is absent and the current bucket-scoped R2 credentials cannot provision or enumerate another bucket.
 - Media card/viewer/download selection is centralized. UI fallback cycles through trusted candidates without showing native broken-image states, and public download fetches reject HTML/JSON responses masquerading as media.
 - Image jobs use deterministic versioned derivative keys, private staging, state-gated RLS, atomic completion, bounded claims, lease recovery, and retry backoff. Cleanup tooling does not delete R2 objects.
 
@@ -85,8 +86,8 @@ Then read `AGENTS.md`, `ENGINEERING_PROGRAM_STATE.md`, this file, `CURRENT_MILES
 
 ## Next Five Actions
 
-1. Preserve Milestone 4 as `IMPLEMENTED_NOT_MIGRATED` and complete its private-bucket/manifest prerequisites.
-2. Apply `202607150000_async_image_processing.sql` only after migration history is reconciled.
+1. Preserve Milestone 4 as `IMPLEMENTED_NOT_MIGRATED`; provision/configure the non-public bucket and complete copy, activation, delivery, and rollback verification.
+2. Apply `202607150000_async_image_processing.sql` only after Milestone 4 storage is operational.
 3. Schedule the trusted `/api/cron/process-media` worker with a bounded batch.
 4. Smoke one public and one private image through ready, retry, quarantine, and delivery paths.
 5. Complete the pre-merge authorization verification before merging the feature branch.
