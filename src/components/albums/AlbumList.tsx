@@ -17,6 +17,8 @@ interface AlbumListProps {
 }
 
 export function AlbumList({ albums, dict, locale = "en" }: AlbumListProps) {
+  const [publicPage, setPublicPage] = useState(1);
+  const [publicPageSize, setPublicPageSize] = useState(24);
   const [privatePage, setPrivatePage] = useState(1);
   const [privatePageSize, setPrivatePageSize] = useState(24);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
@@ -27,6 +29,9 @@ export function AlbumList({ albums, dict, locale = "en" }: AlbumListProps) {
     () => privateAlbums.filter((album) => !["approved", "pending", "revoked", "rejected", "denied", "needs_manual_review"].includes(album.access_request_status ?? "")),
     [privateAlbums],
   );
+  const totalPublicPages = Math.max(1, Math.ceil(publicAlbums.length / publicPageSize));
+  const currentPublicPage = Math.min(publicPage, totalPublicPages);
+  const visiblePublicAlbums = publicAlbums.slice((currentPublicPage - 1) * publicPageSize, currentPublicPage * publicPageSize);
   const totalPrivatePages = Math.max(1, Math.ceil(privateAlbums.length / privatePageSize));
   const currentPrivatePage = Math.min(privatePage, totalPrivatePages);
   const visiblePrivateAlbums = privateAlbums.slice((currentPrivatePage - 1) * privatePageSize, currentPrivatePage * privatePageSize);
@@ -106,10 +111,55 @@ export function AlbumList({ albums, dict, locale = "en" }: AlbumListProps) {
       </ScrollReveal>
       
       {publicAlbums.length > 0 && (
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 mb-24 border-t border-border/40 pt-16">
-          {publicAlbums.map((album) => (
+        <div className="mb-24 border-t border-border/40 pt-16">
+          <div className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <span className="text-sm text-text-secondary">
+              Showing {(currentPublicPage - 1) * publicPageSize + 1}-{Math.min(currentPublicPage * publicPageSize, publicAlbums.length)} of {publicAlbums.length}
+            </span>
+            <select
+              value={publicPageSize}
+              onChange={(event) => {
+                setPublicPageSize(Number(event.target.value));
+                setPublicPage(1);
+              }}
+              className="w-full rounded-full border border-border bg-surface px-4 py-2 text-sm text-text-primary outline-none sm:w-auto"
+            >
+              {[12, 24, 48, 96].map((size) => (
+                <option key={size} value={size}>{size} per page</option>
+              ))}
+            </select>
+          </div>
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {visiblePublicAlbums.map((album) => (
               <AlbumCard key={album.id} album={album} dict={dict} locale={locale} />
             ))}
+          </div>
+          <div className="mt-12 flex flex-col gap-4 rounded-[1.5rem] border border-border bg-surface/70 p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+            <div className="text-sm text-text-secondary">
+              Page <span className="font-semibold text-text-primary">{currentPublicPage}</span> of <span className="font-semibold text-text-primary">{totalPublicPages}</span>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button variant="secondary" disabled={currentPublicPage === 1} onClick={() => setPublicPage(1)}>First</Button>
+              <Button variant="secondary" disabled={currentPublicPage === 1} onClick={() => setPublicPage((page) => Math.max(1, page - 1))}>Previous</Button>
+              {Array.from({ length: Math.min(5, totalPublicPages) }, (_, index) => {
+                const start = Math.max(1, Math.min(currentPublicPage - 2, totalPublicPages - 4));
+                const page = start + index;
+                if (page > totalPublicPages) return null;
+                return (
+                  <Button
+                    key={page}
+                    variant={page === currentPublicPage ? "primary" : "secondary"}
+                    onClick={() => setPublicPage(page)}
+                    className="w-11 px-0"
+                  >
+                    {page}
+                  </Button>
+                );
+              })}
+              <Button variant="secondary" disabled={currentPublicPage === totalPublicPages} onClick={() => setPublicPage((page) => Math.min(totalPublicPages, page + 1))}>Next</Button>
+              <Button variant="secondary" disabled={currentPublicPage === totalPublicPages} onClick={() => setPublicPage(totalPublicPages)}>Last</Button>
+            </div>
+          </div>
         </div>
       )}
 
