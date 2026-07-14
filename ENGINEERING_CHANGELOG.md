@@ -174,3 +174,20 @@
 - Security impact: Cross-user read isolation now has an RLS boundary in addition to application filters. Create/append remain explicitly transitional because current policies cannot safely preserve internal-note and atomic thread-update behavior.
 - Performance impact: Existing page size and query count are unchanged.
 - Test performed: Lint pass with 14 unchanged warnings, TypeScript pass, 22 unit/boundary tests, production build pass with 49 routes, and guest list/detail/create/append checks returning `401`. Authenticated help fixture remains BLOCKED_EXTERNAL.
+
+## 2026-07-14 - Milestone 3 help-read checkpoint
+
+- Milestone: 3
+- Commit: `27c2e32 refactor(help): enforce RLS on user reads`
+- Result: COMPLETE - bounded user read path implemented, verified, and committed; help writes remain transitional.
+
+## 2026-07-14 21:05:00 +07:00 - Milestone 3 boundary and role reports
+
+- Milestone: 3
+- Files: `SUPABASE_BOUNDARY_REPORT.md`, `AUTHORIZATION_ROLE_MATRIX.md`, engineering state files
+- Reason: Record the implemented trust-specific clients, private-access precedence, migrated route families, remaining broad-client surface, external blockers, and required database role tests before further authorization changes.
+- Behavior before: Boundary decisions and remaining service-role migration work were distributed across checkpoint notes and source.
+- Behavior after: The client boundary, role matrix, 47-file transitional register, migration order, rollback constraints, and production verification limits are explicit and resumable.
+- Security impact: Documentation only; prevents an unsafe private-media or help-write cutover before additive migrations and role tests are complete.
+- Performance impact: None.
+- Test performed: Targeted report/source consistency review; repository checks are recorded at the report checkpoint commit.

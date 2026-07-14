@@ -10,8 +10,8 @@ Upgrade album-web into a production-grade, privacy-sensitive digital asset manag
 - Branch: `engineering/production-platform-overhaul`
 - Baseline commit: `f82cb5eb0e78f9ea4b5aa9c34d6a20a69cfead2d`
 - Current milestone: 3 - Supabase client and authorization boundaries
-- Completed checkpoint: `098214b refactor(notifications): enforce user RLS client`
-- Current subtask: Commit user help list/detail reads through JWT/RLS while writes remain on the guarded transitional path.
+- Completed checkpoint: `27c2e32 refactor(help): enforce RLS on user reads`
+- Current subtask: Verify the Supabase boundary/role reports, then prepare transactional user help-write RPCs while writes remain on the guarded transitional path.
 - Public album rows and public/updating media now use the anon client; authenticated private access and admin/worker route migrations remain.
 
 ## Important Constraints
@@ -77,8 +77,8 @@ Then read `AGENTS.md`, `ENGINEERING_PROGRAM_STATE.md`, this file, `CURRENT_MILES
 
 ## Next Five Actions
 
-1. Commit the verified help-read JWT/RLS boundary.
-2. Create the role matrix/boundary reports and inventory remaining legacy broad-client imports.
-3. Prepare narrow help-write RPC/rollback scripts without switching application reads before remote application.
+1. Commit the verified role matrix/boundary reports and remaining legacy broad-client register.
+2. Prepare narrow help-write RPC/rollback scripts without switching application writes before remote application.
+3. Add static ownership, blocked-user, closed-thread, and message-cap tests for the RPC package.
 4. Apply and role-test pending RLS/RPC migrations when external access is available.
 5. Only then switch private album and help write paths to JWT clients.
