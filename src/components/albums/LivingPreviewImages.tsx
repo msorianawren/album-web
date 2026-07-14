@@ -1,7 +1,4 @@
-"use client";
-
 import Image from "next/image";
-import { useEffect, useMemo, useState } from "react";
 import { shouldBypassNextImageOptimization } from "@/lib/media/display-url";
 
 interface LivingPreviewImagesProps {
@@ -17,30 +14,19 @@ export function LivingPreviewImages({
   sizes,
   imageClassName = "",
 }: LivingPreviewImagesProps) {
-  const [activeIndex, setActiveIndex] = useState(0);
-  const [failedSources, setFailedSources] = useState<Set<string>>(() => new Set());
-
-  const usableImages = useMemo(
-    () => images.filter((src) => src && !failedSources.has(src)),
-    [failedSources, images],
-  );
-
-  useEffect(() => {
-    if (usableImages.length <= 1) return;
-
-    const media = window.matchMedia("(prefers-reduced-motion: reduce)");
-    if (media.matches) return;
-
-    const timer = window.setInterval(() => {
-      setActiveIndex((current) => (current + 1) % usableImages.length);
-    }, 3200);
-
-    return () => window.clearInterval(timer);
-  }, [usableImages.length]);
+  const usableImages = images.filter(Boolean).slice(0, 4);
 
   if (!usableImages.length) return null;
 
-  const currentIndex = activeIndex % usableImages.length;
+  const animationDuration = `${Math.max(usableImages.length, 1) * 3.2}s`;
+  const countClass =
+    usableImages.length === 1
+      ? "living-preview-count-1"
+      : usableImages.length === 2
+        ? "living-preview-count-2"
+        : usableImages.length === 3
+          ? "living-preview-count-3"
+          : "living-preview-count-4";
 
   return (
     <>
@@ -51,20 +37,13 @@ export function LivingPreviewImages({
           alt={index === 0 ? `${title} animated album preview` : ""}
           fill
           sizes={sizes}
-          className={`absolute inset-0 object-cover transition-[opacity,transform,filter] duration-700 ease-out ${imageClassName}`}
+          className={`living-preview-image absolute inset-0 object-cover ${countClass} ${imageClassName}`}
           unoptimized={shouldBypassNextImageOptimization(src)}
           loading="eager"
           style={{
-            opacity: index === currentIndex ? 1 : 0,
-            transform: index === currentIndex ? "scale(1.045)" : "scale(1.075)",
-            zIndex: index === currentIndex ? 2 : 1,
-          }}
-          onError={() => {
-            setFailedSources((current) => {
-              const next = new Set(current);
-              next.add(src);
-              return next;
-            });
+            animationDelay: `${index * 3.2}s`,
+            animationDuration,
+            opacity: index === 0 ? 1 : undefined,
           }}
         />
       ))}
