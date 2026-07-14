@@ -190,8 +190,9 @@ canvas {
 .living-preview-image {
   opacity: 0;
   transform: scale(1.04) translate3d(0, 0, 0);
-  animation: living-preview-fade-4 12.8s ease-in-out infinite;
+  animation: living-preview-fade-4 23.2s linear infinite;
   will-change: opacity, transform;
+  backface-visibility: hidden;
 }
 
 .living-preview-frame .living-preview-image:only-child {
@@ -221,12 +222,12 @@ canvas {
 
 @keyframes living-preview-fade-4 {
   0%,
-  24.5% {
+  19% {
     opacity: 1;
     transform: scale(1.045) translate3d(0, 0, 0);
   }
-  25.5%,
-  99% {
+  25%,
+  94% {
     opacity: 0;
     transform: scale(1.095) translate3d(-1.5%, -1%, 0);
   }
@@ -251,12 +252,12 @@ canvas {
 
 @keyframes living-preview-fade-3 {
   0%,
-  32.5% {
+  25% {
     opacity: 1;
     transform: scale(1.045) translate3d(0, 0, 0);
   }
-  34%,
-  98.5% {
+  33.333%,
+  91.667% {
     opacity: 0;
     transform: scale(1.095) translate3d(-1.5%, -1%, 0);
   }
@@ -268,12 +269,12 @@ canvas {
 
 @keyframes living-preview-fade-2 {
   0%,
-  49% {
+  42% {
     opacity: 1;
     transform: scale(1.045) translate3d(0, 0, 0);
   }
-  51%,
-  98% {
+  50%,
+  92% {
     opacity: 0;
     transform: scale(1.095) translate3d(-1.5%, -1%, 0);
   }

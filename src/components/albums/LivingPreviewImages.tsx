@@ -8,6 +8,8 @@ interface LivingPreviewImagesProps {
   imageClassName?: string;
 }
 
+const SLIDE_DURATION_SECONDS = 5.8;
+
 export function LivingPreviewImages({
   images,
   title,
@@ -18,7 +20,8 @@ export function LivingPreviewImages({
 
   if (!usableImages.length) return null;
 
-  const animationDuration = `${Math.max(usableImages.length, 1) * 3.2}s`;
+  const cycleDuration = Math.max(usableImages.length, 1) * SLIDE_DURATION_SECONDS;
+  const animationDuration = `${cycleDuration}s`;
   const countClass =
     usableImages.length === 1
       ? "living-preview-count-1"
@@ -39,11 +42,10 @@ export function LivingPreviewImages({
           sizes={sizes}
           className={`living-preview-image absolute inset-0 object-cover ${countClass} ${imageClassName}`}
           unoptimized={shouldBypassNextImageOptimization(src)}
-          loading="eager"
+          loading="lazy"
           style={{
-            animationDelay: `${index * 3.2}s`,
+            animationDelay: `${index * SLIDE_DURATION_SECONDS - cycleDuration * 2}s`,
             animationDuration,
-            opacity: index === 0 ? 1 : undefined,
           }}
         />
       ))}
