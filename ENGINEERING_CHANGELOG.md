@@ -324,3 +324,8 @@
 - Performance impact: Request latency no longer includes Sharp processing; derivative work is bounded and retryable. Album storage uses an aggregate RPC rather than loading every row.
 - Operational impact: Reprocess and orphan cleanup default to dry-run; no production R2 object was moved or deleted.
 - Test performed: lint pass with 0 errors and 11 existing warnings; typecheck pass; 58/58 tests pass; production build pass with 49 static pages.
+
+## 2026-07-15 - Milestone 6 implementation checkpoint
+
+- Commit: `28049a7 feat(media): add asynchronous image processing pipeline`
+- Result: implementation and local verification complete; migration, private-bucket runtime smoke, and worker scheduling remain deliberately unapplied.

@@ -3,7 +3,7 @@
 - Status: IN_PROGRESS
 - Updated: 2026-07-15
 - Repository branch: `engineering/production-platform-overhaul`
-- Latest pushed checkpoint: `86ee8ca394665cffc30cde46c74ae39609a3d757`
+- Latest verified checkpoint: `28049a7 feat(media): add asynchronous image processing pipeline` (push pending at time of record)
 - Current milestone: Milestone 6 - Asynchronous image processing (`IMPLEMENTED_NOT_MIGRATED`); Milestone 4 remains independently `IN_PROGRESS - IMPLEMENTED_NOT_MIGRATED`
 - Current subtask: Verify the additive queue migration and bounded worker flow after Milestone 4 private-bucket prerequisites are available
 - Completed milestones: Milestone 0, Milestone 1, Milestone 2, Milestone 3, and Milestone 5

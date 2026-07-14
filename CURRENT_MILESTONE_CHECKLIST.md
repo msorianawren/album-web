@@ -141,6 +141,7 @@
 - [x] Add dry-run-first reprocess and non-destructive orphan-cleanup commands.
 - [x] Add an additive migration and database-only rollback; no production R2 mutation was run.
 - [v] Verify processor and architecture tests locally.
+- [c] Commit the verified Milestone 6 implementation checkpoint (`28049a7`).
 - [~] Apply migration and run a bounded end-to-end worker smoke after Milestone 4 prerequisites are complete.
 - [~] Milestone 6 status: IN_PROGRESS - IMPLEMENTED_NOT_MIGRATED.
 
