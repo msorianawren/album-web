@@ -3,7 +3,7 @@
 - Status: IN_PROGRESS
 - Updated: 2026-07-14 23:45:00 +07:00
 - Repository branch: `engineering/production-platform-overhaul`
-- Current HEAD: `350a875` (help JWT/RPC application cutover; private JWT/RLS cutover pending checkpoint commit)
+- Latest implementation checkpoint: `89b2688 refactor(authz): enforce private reads with user RLS`
 - Current milestone: Milestone 3 - Supabase client and authorization boundaries
 - Current subtask: Verify and checkpoint the private album/media JWT/RLS cutover; authenticated role fixtures remain blocked
 - Completed milestones: Milestone 0, Milestone 1, Milestone 2
@@ -18,7 +18,7 @@
 - Build result: PASS - Next.js 16.2.10 compiled and generated all listed routes (48 static generation units)
 - Known failures: In-app browser runtime initialization remains unavailable; authenticated grant/revoke/blocked and cross-user help runtime flows are not claimed
 - Unresolved blockers: Authenticated user/admin fixtures are unavailable; R2 bucket prefix privacy is not independently verified; destructive database and irreversible R2 changes require explicit coordination
-- Exact next action: Run final lint/typecheck/tests/build, update reports with results, and commit the Milestone 3 checkpoint without merging or starting Milestone 4
+- Exact next action: Obtain isolated authenticated fixtures and execute no-grant/selected/global/revoked/blocked plus cross-user help runtime tests; do not start Milestone 4
 - Inspect first: `src/lib/albums.ts`, private album/media routes, `AUTHORIZATION_ROLE_MATRIX.md`, and `SUPABASE_BOUNDARY_REPORT.md`
 
 ## Program Rules

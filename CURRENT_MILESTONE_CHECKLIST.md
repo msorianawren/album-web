@@ -86,6 +86,7 @@
 - [v] Verify guest private detail returns locked, zero media, and safe cover only.
 - [v] Add static no-grant/selected/global/revoked/blocked and cross-user help denial coverage.
 - [v] Remove broad service-role reads from album repository, media download, public About/Landing reads, and slug checks; inventory 37 transitional imports.
-- [~] Verify and commit the complete Milestone 3 boundary migration (authenticated role fixtures remain blocked; milestone stays in progress).
+- [c] Commit the private JWT/RLS read checkpoint (`89b2688`).
+- [~] Verify the complete Milestone 3 boundary migration (authenticated role fixtures remain blocked; milestone stays in progress).
 
 Legend: `[ ]` not started, `[~]` in progress, `[x]` implemented, `[v]` verified, `[c]` committed, `[b]` blocked.

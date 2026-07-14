@@ -10,7 +10,7 @@ Upgrade album-web into a production-grade, privacy-sensitive digital asset manag
 - Branch: `engineering/production-platform-overhaul`
 - Baseline commit: `f82cb5eb0e78f9ea4b5aa9c34d6a20a69cfead2d`
 - Current milestone: 3 - Supabase client and authorization boundaries
-- Completed checkpoint: `350a875 refactor(help): use authenticated write RPCs`
+- Completed checkpoint: `89b2688 refactor(authz): enforce private reads with user RLS`
 - Current subtask: Final verification and checkpoint for private album/media JWT/RLS reads.
 - Public rows use anon/RLS; authorized private previews, detail media, ZIP checks, single downloads, and private comments use request JWT/RLS. Authenticated role fixtures remain unavailable.
 
@@ -78,8 +78,8 @@ Then read `AGENTS.md`, `ENGINEERING_PROGRAM_STATE.md`, this file, `CURRENT_MILES
 
 ## Next Five Actions
 
-1. Run the final private-read lint/typecheck/test/build gate and commit the checkpoint.
-2. Obtain isolated authenticated fixtures for no-grant, selected, global, revoked, blocked, and cross-user help runtime tests.
+1. Obtain isolated authenticated fixtures for no-grant, selected, global, revoked, blocked, and cross-user help runtime tests.
+2. Execute and record those role tests against the applied migrations.
 3. Migrate the remaining Studio/user route families listed in `SUPABASE_BOUNDARY_REPORT.md` behind explicit clients.
 4. Complete Milestone 3 acceptance only after those authenticated role tests pass.
 5. Do not begin Milestone 4 until Milestone 3 is verified complete.
