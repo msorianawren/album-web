@@ -28,8 +28,9 @@ const nextConfig: NextConfig = {
       form-action 'self';
 
       script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com;
-      style-src 'self' 'unsafe-inline';
-      font-src 'self' data:;
+      style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+      style-src-elem 'self' 'unsafe-inline' https://fonts.googleapis.com;
+      font-src 'self' data: https://fonts.gstatic.com;
 
       connect-src 'self'
         https://www.orianawren.com

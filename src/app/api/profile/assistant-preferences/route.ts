@@ -51,16 +51,33 @@ export async function PATCH(request: NextRequest) {
     const preferences = normalizeAssistantPreferences(body);
     const profile = await getUserProfile(userId);
     const metadata = mergeAssistantPreferencesIntoMetadata(profile?.metadata, preferences);
+    const email = session.email ?? profile?.email;
+
+    if (!email) {
+      return apiError("INVALID_INPUT", "A verified account email is required.", 400);
+    }
 
     const { data, error } = await supabase
       .from("user_profiles")
-      .update({ metadata })
-      .eq("user_id", userId)
+      .upsert(
+        {
+          user_id: userId,
+          email,
+          display_name: session.displayName ?? profile?.display_name ?? null,
+          avatar_url: session.avatarUrl ?? profile?.avatar_url ?? null,
+          provider: profile?.provider ?? "google",
+          last_seen_at: new Date().toISOString(),
+          metadata,
+        },
+        { onConflict: "user_id" },
+      )
       .select("metadata")
       .single();
 
     if (error) {
-      return apiError("SERVER_ERROR", error.message, 500);
+      return apiError("SERVER_ERROR", "Assistant preferences could not be saved.", 500, {
+        code: error.code,
+      });
     }
 
     return apiSuccess(

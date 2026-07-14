@@ -89,7 +89,11 @@ export function AudioUXProvider({
     }
 
     audioUX.setAmbientVolume(ambientVolume);
-    audioUX.playAmbient(targetSound);
+    void audioUX.playAmbient(targetSound).catch((error) => {
+      if (process.env.NODE_ENV !== "production") {
+        console.warn("Optional ambient audio failed to start.", error);
+      }
+    });
     
     return () => {};
   }, [soundEnabled, ambientSound, ambientVolume, defaultAmbient, isReady]);

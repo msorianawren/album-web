@@ -61,23 +61,29 @@ export function useAssistantPreferences({
     setError(null);
     writeAssistantPreferencesToStorage(nextPreferences);
 
-    if (userId) {
-      const response = await fetch("/api/profile/assistant-preferences", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(nextPreferences),
-      });
+    try {
+      if (userId) {
+        const response = await fetch("/api/profile/assistant-preferences", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(nextPreferences),
+        });
 
-      const payload = await response.json().catch(() => null);
-      if (!response.ok || !payload?.success) {
-        const message =
-          typeof payload?.message === "string"
-            ? payload.message
-            : "Assistant preferences could not be saved.";
-        setSaveState("error");
-        setError(message);
-        return false;
+        const payload = await response.json().catch(() => null);
+        if (!response.ok || !payload?.success) {
+          const message =
+            typeof payload?.message === "string"
+              ? payload.message
+              : "Assistant preferences could not be saved.";
+          setSaveState("error");
+          setError(message);
+          return false;
+        }
       }
+    } catch {
+      setSaveState("error");
+      setError("Network error while saving assistant preferences.");
+      return false;
     }
 
     setPreferences(nextPreferences);

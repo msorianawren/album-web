@@ -35,7 +35,11 @@ class AudioUXSystem {
 
   public resume() {
     if (this.context && this.context.state === "suspended") {
-      this.context.resume();
+      void this.context.resume().catch((error) => {
+        if (process.env.NODE_ENV !== "production") {
+          console.warn("Audio resume was blocked by the browser.", error);
+        }
+      });
     }
   }
 
@@ -166,9 +170,47 @@ class AudioUXSystem {
     osc.stop(now + 0.35);
   }
 
-  private audioCache = new Map<string, Promise<AudioBuffer>>();
+  private audioCache = new Map<string, Promise<AudioBuffer | null>>();
   private currentPlayingType: string | null = null;
   private ambientVolume = 0.5;
+
+  private getAmbientUrl(type: AmbientSoundType) {
+    const urls: Partial<Record<AmbientSoundType, string>> = {
+      piano: "/audio/piano.mp3",
+      pad: "/audio/pad.mp3",
+      cave: "/audio/cave.mp3",
+      harp: "/audio/harp.mp3",
+      rain: "/audio/rain.mp3",
+      drone: "/audio/drone.mp3",
+      sweden: "/audio/sweden.mp3",
+      wethands: "/audio/wethands.mp3",
+      miceonvenus: "/audio/miceonvenus.mp3",
+    };
+    return urls[type] ?? null;
+  }
+
+  private loadAmbientBuffer(url: string) {
+    if (this.audioCache.has(url)) return this.audioCache.get(url)!;
+
+    const promise = fetch(url)
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`Audio asset returned ${response.status}`);
+        }
+        return response.arrayBuffer();
+      })
+      .then((buffer) => this.context!.decodeAudioData(buffer))
+      .catch((error) => {
+        this.audioCache.delete(url);
+        if (process.env.NODE_ENV !== "production") {
+          console.warn("Optional ambient audio could not be loaded.", { url, error });
+        }
+        return null;
+      });
+
+    this.audioCache.set(url, promise);
+    return promise;
+  }
 
   public setAmbientVolume(vol: number) {
     this.ambientVolume = vol;
@@ -180,30 +222,20 @@ class AudioUXSystem {
 
   public preloadAmbient() {
     if (!this.context) return;
-    const minecraftUrls: Record<string, string> = {
-      "piano": "/audio/piano.mp3",
-      "pad": "/audio/pad.mp3",
-      "cave": "/audio/cave.mp3",
-      "harp": "/audio/harp.mp3",
-      "rain": "/audio/rain.mp3",
-      "drone": "/audio/drone.mp3",
-      "sweden": "/audio/sweden.mp3",
-      "wethands": "/audio/wethands.mp3",
-      "miceonvenus": "/audio/miceonvenus.mp3"
-    };
-    // Preload them in background so switching is instant
-    Object.values(minecraftUrls).forEach(url => {
-      if (!this.audioCache.has(url)) {
-        const promise = fetch(url)
-          .then(res => res.arrayBuffer())
-          .then(buf => this.context!.decodeAudioData(buf))
-          .catch(e => {
-            console.warn("Failed to preload", url, e);
-            this.audioCache.delete(url);
-            throw e;
-          });
-        this.audioCache.set(url, promise);
-      }
+    const ambientTypes: AmbientSoundType[] = [
+      "piano",
+      "pad",
+      "cave",
+      "harp",
+      "rain",
+      "drone",
+      "sweden",
+      "wethands",
+      "miceonvenus",
+    ];
+    ambientTypes.forEach((type) => {
+      const url = this.getAmbientUrl(type);
+      if (url) void this.loadAmbientBuffer(url);
     });
   }
 
@@ -246,18 +278,6 @@ class AudioUXSystem {
     this.stopAmbient();
     this.currentPlayingType = type;
 
-    const minecraftUrls: Record<string, string> = {
-      "piano": "/audio/piano.mp3",
-      "pad": "/audio/pad.mp3",
-      "cave": "/audio/cave.mp3",
-      "harp": "/audio/harp.mp3",
-      "rain": "/audio/rain.mp3",
-      "drone": "/audio/drone.mp3",
-      "sweden": "/audio/sweden.mp3",
-      "wethands": "/audio/wethands.mp3",
-      "miceonvenus": "/audio/miceonvenus.mp3"
-    };
-    
     // Minecraft tracks have long empty intros/outros. Trim them.
     const trackOffsets: Record<string, { start: number, end: number }> = {
       "piano": { start: 2, end: 4 }, // Key
@@ -271,7 +291,7 @@ class AudioUXSystem {
       "miceonvenus": { start: 2, end: 4 } // Mice on Venus
     };
 
-    const url = minecraftUrls[type];
+    const url = this.getAmbientUrl(type);
     if (url) {
       // Pre-fetch the rest in background since they are clearly interacting with audio
       this.preloadAmbient();
@@ -287,19 +307,12 @@ class AudioUXSystem {
       const currentGain = gain;
 
       try {
-        let bufferPromise = this.audioCache.get(url);
-        if (!bufferPromise) {
-          bufferPromise = fetch(url)
-            .then(res => res.arrayBuffer())
-            .then(buf => this.context!.decodeAudioData(buf))
-            .catch(e => {
-              this.audioCache.delete(url);
-              throw e;
-            });
-          this.audioCache.set(url, bufferPromise);
+        const buffer = await this.loadAmbientBuffer(url);
+
+        if (!buffer) {
+          this.stopAmbient();
+          return;
         }
-        
-        const buffer = await bufferPromise;
 
         if (!this.ambientNodes || this.ambientNodes.gain !== currentGain) return;
 
@@ -319,7 +332,9 @@ class AudioUXSystem {
 
         this.ambientNodes.noiseBuffers.push(source);
       } catch (e) {
-        console.warn("Failed to decode/play background audio", e);
+        if (process.env.NODE_ENV !== "production") {
+          console.warn("Failed to play optional background audio", e);
+        }
         this.currentPlayingType = null;
       }
     }

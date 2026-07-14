@@ -21,8 +21,14 @@ interface UIPreferences {
   setBgCustomUrlOverride: (hasCustom: boolean) => void;
 }
 
+function reportPreferenceStorageIssue(action: string, error: unknown) {
+  if (process.env.NODE_ENV !== "production") {
+    console.warn(`UI preference storage ${action} failed.`, error);
+  }
+}
+
 export function useUIPreferences(): UIPreferences {
-  const [soundEnabled, setSoundEnabledState] = useState(true);
+  const [soundEnabled, setSoundEnabledState] = useState(false);
   const [clickSound, setClickSoundState] = useState<ClickSoundType>("auto");
   const [ambientSound, setAmbientSoundState] = useState<AmbientSoundType>("auto");
   const [ambientVolume, setAmbientVolumeState] = useState<number>(0.5);
@@ -49,7 +55,9 @@ export function useUIPreferences(): UIPreferences {
 
         const storedCustomUrl = localStorage.getItem("ui_has_custom_bg");
         if (storedCustomUrl) setBgCustomUrlOverrideState(storedCustomUrl === "true");
-      } catch {}
+      } catch (error) {
+        reportPreferenceStorageIssue("read", error);
+      }
     }, 0);
     return () => window.clearTimeout(timer);
   }, []);
@@ -61,7 +69,9 @@ export function useUIPreferences(): UIPreferences {
     try {
       localStorage.setItem("ui_sound_enabled", enabled.toString());
       dispatchCustomEvent();
-    } catch {}
+    } catch (error) {
+      reportPreferenceStorageIssue("write sound setting", error);
+    }
   };
 
   const setClickSound = (sound: ClickSoundType) => {
@@ -69,7 +79,9 @@ export function useUIPreferences(): UIPreferences {
     try {
       localStorage.setItem("ui_click_sound", sound);
       dispatchCustomEvent();
-    } catch {}
+    } catch (error) {
+      reportPreferenceStorageIssue("write click sound", error);
+    }
   };
 
   const setAmbientSound = (sound: AmbientSoundType) => {
@@ -77,7 +89,9 @@ export function useUIPreferences(): UIPreferences {
     try {
       localStorage.setItem("ui_ambient_sound", sound);
       dispatchCustomEvent();
-    } catch {}
+    } catch (error) {
+      reportPreferenceStorageIssue("write ambient sound", error);
+    }
   };
 
   const setAmbientVolume = (val: number) => {
@@ -85,7 +99,9 @@ export function useUIPreferences(): UIPreferences {
     try {
       localStorage.setItem("ui_ambient_volume", val.toString());
       dispatchCustomEvent();
-    } catch {}
+    } catch (error) {
+      reportPreferenceStorageIssue("write ambient volume", error);
+    }
   };
 
   const setBgThemeOverride = (theme: BgThemeType) => {
@@ -93,7 +109,9 @@ export function useUIPreferences(): UIPreferences {
     try {
       localStorage.setItem("ui_bg_theme", theme);
       dispatchCustomEvent();
-    } catch {}
+    } catch (error) {
+      reportPreferenceStorageIssue("write background theme", error);
+    }
   };
 
   const setBgCustomUrlOverride = (hasCustom: boolean) => {
@@ -101,7 +119,9 @@ export function useUIPreferences(): UIPreferences {
     try {
       localStorage.setItem("ui_has_custom_bg", hasCustom.toString());
       dispatchCustomEvent();
-    } catch {}
+    } catch (error) {
+      reportPreferenceStorageIssue("write custom background flag", error);
+    }
   };
 
   useEffect(() => {
@@ -133,7 +153,9 @@ export function useUIPreferences(): UIPreferences {
         
         const storedCustomUrl = localStorage.getItem("ui_has_custom_bg");
         if (storedCustomUrl) setBgCustomUrlOverrideState(storedCustomUrl === "true");
-      } catch {}
+      } catch (error) {
+        reportPreferenceStorageIssue("sync", error);
+      }
     };
 
     window.addEventListener("storage", handleStorage);
