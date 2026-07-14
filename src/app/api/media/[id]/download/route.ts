@@ -8,8 +8,12 @@ import { enforceRateLimit } from "@/lib/security-rate-limit";
 import { getSiteSettings } from "@/lib/site-settings";
 import { createPublicServerClient } from "@/lib/db/public";
 import { createAuthenticatedUserClient } from "@/lib/db/user";
+import { authorizePrivateMediaAsset } from "@/lib/private-media";
+import { getR2ObjectStream } from "@/lib/r2";
 
 export const runtime = "nodejs";
+
+const MEDIA_DOWNLOAD_SELECT = "id,album_id,media_type,title,original_filename,mime_type,download_allowed,original_download_allowed,url,thumbnail_url,medium_url,poster_url";
 
 interface MediaDownloadProps {
   params: Promise<{ id: string }>;
@@ -38,7 +42,7 @@ export async function GET(request: NextRequest, { params }: MediaDownloadProps) 
 
     const { data: media, error } = await readClient
       .from("media")
-      .select("*")
+      .select(MEDIA_DOWNLOAD_SELECT)
       .eq("id", id)
       .single();
 
@@ -66,14 +70,39 @@ export async function GET(request: NextRequest, { params }: MediaDownloadProps) 
           ? media.medium_url ?? media.thumbnail_url ?? media.url
           : media.url;
 
-    const upstream = await fetch(sourceUrl);
-    if (!upstream.ok) return apiError("NOT_FOUND", "Source file not found.", 404);
+    const privateVariant =
+      session.isAdmin && settings.allow_original_downloads && media.original_download_allowed
+        ? "original"
+        : media.media_type === "image"
+          ? "medium"
+          : "display";
+    let body: BodyInit | null;
+    let contentLength: number | undefined;
+    let contentType: string;
+    let extensionSource = sourceUrl;
 
-    const contentType =
-      media.media_type === "image" && sourceUrl !== media.url
-        ? "image/webp"
-        : media.mime_type ?? upstream.headers.get("content-type") ?? "application/octet-stream";
-    const extension = extensionFromUrlOrMime(sourceUrl, contentType);
+    if (album.status === "private") {
+      const asset = await authorizePrivateMediaAsset(request, media.id, privateVariant);
+      if (!asset) return apiError("NOT_FOUND", "Media not found.", 404);
+      const object = await getR2ObjectStream({
+        key: asset.objectKey,
+        bucketRole: asset.bucketRole,
+      });
+      body = object.body;
+      contentLength = object.contentLength;
+      contentType = object.contentType ?? asset.contentType ?? media.mime_type ?? "application/octet-stream";
+      extensionSource = asset.objectKey;
+    } else {
+      const upstream = await fetch(sourceUrl);
+      if (!upstream.ok) return apiError("NOT_FOUND", "Source file not found.", 404);
+      body = upstream.body;
+      contentLength = Number(upstream.headers.get("content-length") ?? 0) || undefined;
+      contentType =
+        media.media_type === "image" && sourceUrl !== media.url
+          ? "image/webp"
+          : media.mime_type ?? upstream.headers.get("content-type") ?? "application/octet-stream";
+    }
+    const extension = extensionFromUrlOrMime(extensionSource, contentType);
     const filename = `${safeFilename(album?.title ?? "album")}-${safeFilename(
       media.title ?? media.original_filename ?? media.id,
     )}.${extension}`;
@@ -100,12 +129,16 @@ export async function GET(request: NextRequest, { params }: MediaDownloadProps) 
       metadata: { variant: sourceUrl === media.url ? "source" : "public-processed" },
     });
 
-    return new Response(upstream.body, {
-      headers: {
+    const headers = new Headers({
         "Content-Type": contentType,
         "Content-Disposition": `attachment; filename="${filename}"`,
         "Cache-Control": "private, no-store",
-      },
+        "X-Content-Type-Options": "nosniff",
+      });
+    if (contentLength !== undefined) headers.set("Content-Length", String(contentLength));
+
+    return new Response(body, {
+      headers,
     });
   } catch (error) {
     return toServerError(error);

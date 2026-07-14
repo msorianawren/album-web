@@ -14,6 +14,11 @@ import {
 } from "@/lib/app-failure";
 import type { Album, AlbumDetail, AlbumPreviewItem, AlbumStatus, Media } from "@/lib/types";
 import { parseMediaSortMode, sortMedia, type MediaSortMode } from "@/lib/media-sort";
+import {
+  PRIVATE_MEDIA_SAFE_SELECT,
+  projectPrivateMediaForClient,
+  projectPrivatePreviewForClient,
+} from "@/lib/private-media";
 
 import type { PublicSession } from "@/lib/types";
 
@@ -257,17 +262,21 @@ async function getPreviewRows(
   client: SupabaseClient,
   albumIds: string[],
   operation: string,
+  privateDelivery = false,
 ) {
   if (!albumIds.length) return [];
+  const select = privateDelivery
+    ? "id,album_id,media_type,title,sort_order,created_at"
+    : "id,album_id,media_type,title,url,thumbnail_url,medium_url,poster_url,sort_order,created_at";
   const { data, error } = await client
     .from("media")
-    .select("id,album_id,media_type,title,url,thumbnail_url,medium_url,poster_url,sort_order,created_at")
+    .select(select)
     .in("album_id", albumIds)
     .is("deleted_at", null)
     .order("sort_order", { ascending: true })
     .order("created_at", { ascending: true });
 
-  return resolveQueryRows(data, error, operation) as UnknownRow[];
+  return resolveQueryRows(data, error, operation) as unknown as UnknownRow[];
 }
 
 async function attachAlbumPreviews(
@@ -388,25 +397,36 @@ async function attachAlbumPreviews(
   const [publicPreviewRows, privatePreviewRows] = await Promise.all([
     getPreviewRows(publicClient, publicAlbumIds, "albums.public_previews"),
     userClient
-      ? getPreviewRows(userClient, authorizedPrivateAlbumIds, "albums.private_previews")
+      ? getPreviewRows(userClient, authorizedPrivateAlbumIds, "albums.private_previews", true)
       : Promise.resolve([]),
   ]);
   const previewRows = [...publicPreviewRows, ...privatePreviewRows];
+  const authorizedPrivateAlbumIdSet = new Set(authorizedPrivateAlbumIds);
 
   const previewMap = new Map<string, AlbumPreviewItem[]>();
   for (const row of previewRows as UnknownRow[]) {
     const albumId = String(row.album_id);
     const current = previewMap.get(albumId) ?? [];
     if (current.length >= 4) continue;
-    current.push(previewItemFromMedia(row));
+    current.push(
+      authorizedPrivateAlbumIdSet.has(albumId)
+        ? projectPrivatePreviewForClient({
+            id: String(row.id),
+            mediaType: row.media_type === "video" ? "video" : "image",
+            title: typeof row.title === "string" ? row.title : null,
+          })
+        : previewItemFromMedia(row),
+    );
     previewMap.set(albumId, current);
   }
 
   return albums.map((album) => {
     const isApproved = requestMap.get(album.id) === "approved";
     const canReadPrivate = (isAdmin && !session?.isBlocked) || isApproved;
-    if (album.status === "private" && !canReadPrivate) {
-      album.cover_url = album.safe_preview_url ?? null;
+    if (album.status === "private") {
+      album.cover_url = canReadPrivate
+        ? previewMap.get(album.id)?.[0]?.thumbnail_url ?? album.safe_preview_url ?? null
+        : album.safe_preview_url ?? null;
     }
     return {
       ...album,
@@ -553,9 +573,10 @@ export async function getAlbum(
     }
 
     const mediaClient = album.status === "private" ? userClient! : publicClient;
+    const mediaSelect = album.status === "private" ? PRIVATE_MEDIA_SAFE_SELECT : "*";
     const { data: mediaRows, error: mediaError } = await mediaClient
       .from("media")
-      .select("*")
+      .select(mediaSelect)
       .eq("album_id", album.id)
       .is("deleted_at", null)
       .order("sort_order", { ascending: true })
@@ -565,16 +586,26 @@ export async function getAlbum(
     if (mediaError) throw mediaError;
 
     const media = await attachMediaEngagementCounts(
-      (mediaRows ?? []).map((row) => normalizeMedia(row)),
+      (mediaRows ?? []).map((row) => normalizeMedia(row as unknown as UnknownRow)),
       mediaClient,
     );
     const sortMode = parseMediaSortMode(options.sort, parseMediaSortMode(album.default_media_sort, "smart"));
     const sortedMedia = sortMedia(media, sortMode, `${album.id}:${sortMode}`);
+    const deliveredMedia =
+      album.status === "private"
+        ? sortedMedia.map(projectPrivateMediaForClient)
+        : sortedMedia;
+    const privateCover = album.status === "private"
+      ? deliveredMedia.find((item) => item.id === album.cover_media_id || item.is_cover) ?? deliveredMedia[0]
+      : null;
 
     return {
       ...album,
-      media: sortedMedia,
-      preview_items: sortedMedia.slice(0, 4).map((item) => ({
+      cover_url: album.status === "private"
+        ? privateCover?.thumbnail_url ?? album.safe_preview_url ?? null
+        : album.cover_url,
+      media: deliveredMedia,
+      preview_items: deliveredMedia.slice(0, 4).map((item) => ({
         id: item.id,
         media_type: item.media_type,
         title: item.title,

@@ -39,6 +39,17 @@ export function getR2Bucket() {
   return bucket;
 }
 
+export type R2BucketRole = "public" | "private";
+
+export function getR2BucketForRole(role: R2BucketRole) {
+  if (role === "private") {
+    const bucket = process.env.R2_PRIVATE_BUCKET_NAME;
+    if (!bucket) throw new Error("Missing R2_PRIVATE_BUCKET_NAME.");
+    return bucket;
+  }
+  return getR2Bucket();
+}
+
 export function getPublicUrl(key: string) {
   const publicUrl = process.env.R2_PUBLIC_URL;
   if (!publicUrl) return key;
@@ -110,11 +121,14 @@ export async function getPresignedPutUrl({
   });
 }
 
-export async function getR2Object(key: string): Promise<Buffer> {
+export async function getR2Object(
+  key: string,
+  bucketRole: R2BucketRole = "public",
+): Promise<Buffer> {
   const response = await withStorageFailure("r2.get_object", () =>
     r2.send(
       new GetObjectCommand({
-        Bucket: getR2Bucket(),
+        Bucket: getR2BucketForRole(bucketRole),
         Key: key,
       }),
     ),
@@ -124,4 +138,34 @@ export async function getR2Object(key: string): Promise<Buffer> {
   }
   const bytes = await response.Body.transformToByteArray();
   return Buffer.from(bytes);
+}
+
+export async function getR2ObjectStream({
+  key,
+  bucketRole = "public",
+  range,
+}: {
+  key: string;
+  bucketRole?: R2BucketRole;
+  range?: string;
+}) {
+  const response = await withStorageFailure("r2.get_object_stream", () =>
+    r2.send(
+      new GetObjectCommand({
+        Bucket: getR2BucketForRole(bucketRole),
+        Key: key,
+        Range: range,
+      }),
+    ),
+  );
+  if (!response.Body) {
+    throw createStorageFailure(new Error("Empty response body from R2"), "r2.get_object_stream");
+  }
+
+  return {
+    body: response.Body.transformToWebStream(),
+    contentLength: response.ContentLength,
+    contentRange: response.ContentRange,
+    contentType: response.ContentType,
+  };
 }

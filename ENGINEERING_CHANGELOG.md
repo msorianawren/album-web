@@ -1,5 +1,13 @@
 # Engineering Changelog
 
+## 2026-07-14 - Milestone 4 private-media foundation
+
+- Closed Milestone 3 as implemented and locally verified; moved live role fixtures to the required pre-merge authorization checklist.
+- Added centralized private media authorization, browser-safe projections, and an authenticated streaming gateway with byte-range support.
+- Removed private object-key values and permanent R2 URLs from album payloads and routed private single/ZIP downloads through the same boundary.
+- Added an additive server-only asset manifest migration, rollback, architecture inventory, and focused tests.
+- No production R2 object was moved or deleted, and production was not deployed.
+
 ## 2026-07-14 16:54:59 +07:00 - Program initialization
 
 - Milestone: 0

@@ -10,6 +10,8 @@ import { apiError, toServerError } from "@/lib/errors";
 import { extensionFromUrlOrMime, safeFilename, sanitizeZipPathSegment } from "@/lib/filenames";
 import { enforceRateLimit } from "@/lib/security-rate-limit";
 import { getSiteSettings } from "@/lib/site-settings";
+import { authorizePrivateMediaAsset } from "@/lib/private-media";
+import { getR2Object } from "@/lib/r2";
 
 export const runtime = "nodejs";
 const maxZipImages = 100;
@@ -87,6 +89,7 @@ export async function GET(request: NextRequest, { params }: AlbumDownloadProps) 
     for (const [index, image] of images.entries()) {
       const canDownloadOriginal = session.isAdmin || (settings.allow_original_downloads && image.original_download_allowed);
       let sourceUrl = image.medium_url ?? image.thumbnail_url;
+      const privateVariant = canDownloadOriginal ? "original" : "medium";
 
       if (canDownloadOriginal) {
         sourceUrl = image.url;
@@ -98,14 +101,26 @@ export async function GET(request: NextRequest, { params }: AlbumDownloadProps) 
         }
       }
 
-      const response = await fetch(sourceUrl!);
-      if (!response.ok) continue;
-      const length = Number(response.headers.get("content-length") ?? 0);
-      if (length && length > maxZipSourceBytes) continue;
-      let fileData: ArrayBuffer | Buffer = await response.arrayBuffer();
+      let fileData: ArrayBuffer | Buffer;
+      let sourceForExtension = sourceUrl ?? image.id;
+      let sourceMime = "image/webp";
+      if (album.status === "private") {
+        const asset = await authorizePrivateMediaAsset(request, image.id, privateVariant);
+        if (!asset) continue;
+        fileData = await getR2Object(asset.objectKey, asset.bucketRole);
+        sourceForExtension = asset.objectKey;
+        sourceMime = asset.contentType ?? image.mime_type ?? sourceMime;
+      } else {
+        const response = await fetch(sourceUrl!);
+        if (!response.ok) continue;
+        const length = Number(response.headers.get("content-length") ?? 0);
+        if (length && length > maxZipSourceBytes) continue;
+        fileData = await response.arrayBuffer();
+        sourceMime = response.headers.get("content-type") ?? sourceMime;
+      }
       if (fileData.byteLength > maxZipSourceBytes) continue;
       
-      let extension = extensionFromUrlOrMime(sourceUrl, "image/webp");
+      let extension = extensionFromUrlOrMime(sourceForExtension, sourceMime);
       const baseName = `${String(index + 1).padStart(2, "0")}-${safeFilename(image.title ?? image.original_filename ?? image.id)}`;
       let finalFilename = `${baseName}.${extension}`;
 

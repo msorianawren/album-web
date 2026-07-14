@@ -1,25 +1,25 @@
 # Engineering Program State
 
 - Status: IN_PROGRESS
-- Updated: 2026-07-14 23:45:00 +07:00
+- Updated: 2026-07-14
 - Repository branch: `engineering/production-platform-overhaul`
 - Latest implementation checkpoint: `89b2688 refactor(authz): enforce private reads with user RLS`
-- Current milestone: Milestone 3 - Supabase client and authorization boundaries
-- Current subtask: Verify and checkpoint the private album/media JWT/RLS cutover; authenticated role fixtures remain blocked
-- Completed milestones: Milestone 0, Milestone 1, Milestone 2
-- Files changed in current milestone: prior checkpoints plus help RPC cutover, private album/media/ZIP/single-download JWT reads, guarded media/content admin mutations, tests, reports, and engineering state files
-- Migrations created: private album RLS (`202607141830`) and user help write RPCs (`202607142115`), each with an additive rollback
+- Current milestone: Milestone 4 - True private-media architecture
+- Current subtask: Verify the authenticated gateway and additive private-asset manifest before any R2 copy or activation
+- Completed milestones: Milestone 0, Milestone 1, Milestone 2, Milestone 3 (implemented and locally verified)
+- Files changed in current milestone: private media authorization/projection, authenticated streaming gateway, private download/ZIP delivery, manifest migration/rollback, tests, architecture report, and engineering state files
+- Migrations created: prior authorization migrations plus additive private media manifest (`202607142330`) with rollback
 - Migrations applied locally: No - Supabase CLI and `psql` are unavailable in this workspace
 - Migrations applied remotely: `202607141000_unified_help_chat.sql`, `202607141830_private_album_rls.sql`, and `202607142115_user_help_write_rpcs.sql` reported successful by the user; not independently role-tested from this workspace
 - Commands already run: prior milestone checks; feature-branch push/hash verification; help RPC cutover gates; private JWT/RLS typecheck, tests, lint, and guest locked-album runtime check
 - Lint result: PASS WITH WARNINGS - 0 errors, 11 existing warnings
 - Typecheck result: PASS
-- Test result: PASS - 34 unit/static authorization tests after the latest changes; guest private album is locked with zero media and safe cover; authenticated role fixtures remain unavailable
-- Build result: PASS - Next.js 16.2.10 compiled and generated all listed routes (48 static generation units)
-- Known failures: In-app browser runtime initialization remains unavailable; authenticated grant/revoke/blocked and cross-user help runtime flows are not claimed
-- Unresolved blockers: Authenticated user/admin fixtures are unavailable; R2 bucket prefix privacy is not independently verified; destructive database and irreversible R2 changes require explicit coordination
-- Exact next action: Obtain isolated authenticated fixtures and execute no-grant/selected/global/revoked/blocked plus cross-user help runtime tests; do not start Milestone 4
-- Inspect first: `src/lib/albums.ts`, private album/media routes, `AUTHORIZATION_ROLE_MATRIX.md`, and `SUPABASE_BOUNDARY_REPORT.md`
+- Test result: PASS - 40/40 after the initial Milestone 4 private-media checkpoint
+- Build result: PASS - Next.js 16.2.10 compiled and generated all routes, including the authenticated private-media gateway (48 static generation units)
+- Known failures: Legacy private derivatives remain publicly retrievable by permanent URL until copied to a non-public bucket and activated
+- Unresolved blockers: None for Milestone 4 development; live role-matrix fixtures remain a tracked pre-merge gate
+- Exact next action: Run full local checks, apply the additive manifest in a controlled environment, then execute inventory dry-run without moving or deleting R2 objects
+- Inspect first: `PRIVATE_MEDIA_ARCHITECTURE_REPORT.md`, `src/lib/private-media.ts`, and `src/app/api/media/[id]/content/route.ts`
 
 ## Program Rules
 

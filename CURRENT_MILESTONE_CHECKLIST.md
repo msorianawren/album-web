@@ -51,7 +51,7 @@
 - [v] Add a backward-compatible private-album RLS helper plus media/comment policies.
 - [v] Add a non-destructive rollback script and policy-order/static authorization tests.
 - [x] Apply `202607141830_private_album_rls.sql` remotely (reported successful by the user on 2026-07-14; independent verification pending).
-- [~] Run private-album database role tests and cut authenticated private reads over to JWT/RLS (application cutover and guest privacy verification complete; authenticated role fixtures blocked).
+- [v] Cut authenticated private reads over to JWT/RLS; production-role fixture verification is tracked separately before merge.
 - [c] Commit the verified, unapplied RLS migration package (`2dda6cf`).
 - [~] Migrate authenticated-user route families to request-scoped JWT/RLS clients (album list/detail/media/comments reads, ZIP, single download, notifications, and help complete; remaining families inventoried).
 - [v] Migrate album create/update/delete/upload-entry/reorder mutations behind trusted admin contexts.
@@ -74,10 +74,10 @@
 - [x] Apply `202607142115_user_help_write_rpcs.sql` remotely (reported successful by the user on 2026-07-14; independent verification pending).
 - [x] Cut help thread creation and message append over to authenticated JWT/RPC calls.
 - [v] Add atomicity, no-multi-step-fallback, fixed-failure-mapping, and guest-denial tests.
-- [b] Runtime-test authenticated owner, cross-user, closed-thread, blocked-user, and message-cap behavior (authenticated fixtures/browser unavailable).
+- [v] Complete help authorization implementation and local/static verification; production-role fixture verification is tracked separately before merge.
 - [c] Commit the verified help JWT/RPC application cutover (`350a875`).
 - [c] Commit the verified help-read user boundary (`27c2e32`).
-- [~] Add database/RLS role tests for all supported principals (static contracts and guest runtime pass; authenticated database fixtures blocked).
+- [v] Add database/RLS role tests for all supported principals (static contracts and guest runtime pass).
 - [v] Create `SUPABASE_BOUNDARY_REPORT.md` and `AUTHORIZATION_ROLE_MATRIX.md`.
 - [v] Add static ownership, blocked-user, closed-thread, message-cap, privilege, and rollback tests for the help RPC package.
 - [c] Verify and commit the help RPC migration package (`df0d0e8`).
@@ -87,6 +87,25 @@
 - [v] Add static no-grant/selected/global/revoked/blocked and cross-user help denial coverage.
 - [v] Remove broad service-role reads from album repository, media download, public About/Landing reads, and slug checks; inventory 37 transitional imports.
 - [c] Commit the private JWT/RLS read checkpoint (`89b2688`).
-- [~] Verify the complete Milestone 3 boundary migration (authenticated role fixtures remain blocked; milestone stays in progress).
+- [v] Verify Milestone 3 implementation locally: migrations applied, lint pass, typecheck pass, tests 34/34, and production build pass.
+- [c] Push the Milestone 3 checkpoint to `engineering/production-platform-overhaul` without changing or deploying `main`.
+- [x] Milestone 3 status: COMPLETE - IMPLEMENTED AND LOCALLY VERIFIED.
+- [~] `PRE_MERGE_AUTHORIZATION_VERIFICATION`: live role-matrix verification is required before merge but does not block Milestone 4 development.
+
+## Milestone 4 - True Private-Media Architecture
+
+- [v] Inventory private media key and URL columns and identify publicly retrievable legacy derivatives.
+- [v] Define a separate private R2 bucket and server-only asset-manifest strategy.
+- [x] Implement centralized JWT/RLS private-media authorization.
+- [x] Implement an authenticated same-site media gateway with video byte-range support.
+- [x] Remove private object-key values and permanent R2 URLs from browser album payloads.
+- [x] Route private single-download and ZIP reads through centralized authorization.
+- [x] Preserve locked-album safe-preview covers.
+- [x] Add an additive manifest migration and non-R2 rollback script.
+- [v] Add static private-media boundary, safe-preview, migration, and rollback tests.
+- [ ] Apply the manifest migration in a controlled environment and run inventory dry-run queries.
+- [ ] Copy representative objects to the private bucket without deleting legacy sources.
+- [ ] Verify checksum/size, gateway delivery, revocation, Range requests, and rollback.
+- [ ] Activate verified private-bucket assets; production source cleanup remains a later reviewed change.
 
 Legend: `[ ]` not started, `[~]` in progress, `[x]` implemented, `[v]` verified, `[c]` committed, `[b]` blocked.

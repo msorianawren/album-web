@@ -9,17 +9,17 @@ Upgrade album-web into a production-grade, privacy-sensitive digital asset manag
 - Status: IN_PROGRESS
 - Branch: `engineering/production-platform-overhaul`
 - Baseline commit: `f82cb5eb0e78f9ea4b5aa9c34d6a20a69cfead2d`
-- Current milestone: 3 - Supabase client and authorization boundaries
-- Completed checkpoint: `89b2688 refactor(authz): enforce private reads with user RLS`
-- Current subtask: Final verification and checkpoint for private album/media JWT/RLS reads.
-- Public rows use anon/RLS; authorized private previews, detail media, ZIP checks, single downloads, and private comments use request JWT/RLS. Authenticated role fixtures remain unavailable.
+- Current milestone: 4 - True private-media architecture
+- Completed milestone: 3 - implemented and locally verified; 34/34 tests passed and the feature branch was pushed without deploying production
+- Current subtask: Validate the authenticated private-media gateway and server-only asset manifest before any R2 copy or activation.
+- Live role-matrix fixture checks are tracked in `PRE_MERGE_AUTHORIZATION_VERIFICATION.md` and must pass before merge, but do not block Milestone 4 development.
 
 ## Important Constraints
 
 - Private media protection, RLS, authentication, access revocation, help conversations, Studio content, and public URLs must be preserved.
 - Public administrator identity is always `Oriana Wren`; founder identity must not reach normal users.
 - Do not edit `.env` files or log secrets, signed URL query strings, session data, phone numbers, private keys, or message bodies.
-- Destructive database migrations, irreversible R2 moves, and non-rollbackable authorization changes require external coordination.
+- No production R2 object may be moved or deleted until inventory dry-run, copy verification, and rollback have passed.
 
 ## Decisions
 
@@ -34,6 +34,7 @@ Upgrade album-web into a production-grade, privacy-sensitive digital asset manag
 - Authenticated private-media JWT reads now rely on the remotely applied `202607141830_private_album_rls.sql`; rollback requires reverting application cutover before removing the additive policy/function.
 - Help create/append cannot be naively switched: Companion handoff writes an internal system note and append must atomically update thread state while enforcing the 10-message cap. Use a narrow RPC migration rather than broad user update rights.
 - Help create/append now call the applied RPC package; static/guest checks pass and authenticated role verification remains explicitly blocked.
+- Private browser payloads use same-site gateway URLs and redact object-key values. A server-only manifest is the target source of truth; its compatibility fallback remains server-only until the additive migration is applied.
 
 ## Rejected Approaches
 
@@ -78,8 +79,8 @@ Then read `AGENTS.md`, `ENGINEERING_PROGRAM_STATE.md`, this file, `CURRENT_MILES
 
 ## Next Five Actions
 
-1. Obtain isolated authenticated fixtures for no-grant, selected, global, revoked, blocked, and cross-user help runtime tests.
-2. Execute and record those role tests against the applied migrations.
-3. Migrate the remaining Studio/user route families listed in `SUPABASE_BOUNDARY_REPORT.md` behind explicit clients.
-4. Complete Milestone 3 acceptance only after those authenticated role tests pass.
-5. Do not begin Milestone 4 until Milestone 3 is verified complete.
+1. Run lint, typecheck, all tests, and production build for the gateway checkpoint.
+2. Apply `202607142330_private_media_manifest.sql` in a controlled environment and run inventory queries only.
+3. Configure a non-public private R2 bucket without editing tracked environment files.
+4. Copy and verify representative objects; do not delete legacy sources.
+5. Test authorized, revoked, blocked, Range, single-download, ZIP, safe-preview, and rollback behavior before activation.
