@@ -121,14 +121,25 @@ test("notification routes use request-scoped JWT clients and never the broad cli
   }
 });
 
-test("user help reads pass a request-scoped JWT client into the existing conversation service", () => {
+test("user help reads and writes pass a request-scoped JWT client into the conversation service", () => {
   const listRoute = read("src/app/api/help/threads/route.ts");
   const detailRoute = read("src/app/api/help/threads/[id]/messages/route.ts");
   const service = read("src/lib/help-chat.ts");
   assert.equal(listRoute.includes("listUserHelpThreads(session, client, page)"), true);
   assert.equal(detailRoute.includes("getUserHelpThread(session, client"), true);
+  assert.equal(listRoute.includes("createHelpThread({ session, client"), true);
+  assert.equal(detailRoute.includes("appendUserHelpMessage({ session, client"), true);
   assert.match(service, /listUserHelpThreads\([\s\S]*client: SupabaseClient/);
   assert.match(service, /getUserHelpThread\([\s\S]*client: SupabaseClient/);
+  assert.match(service, /client\s*\.rpc\("create_user_help_thread"/);
+  assert.match(service, /client\s*\.rpc\("append_user_help_message"/);
+  const userWriteSection = service.slice(
+    service.indexOf("export async function createHelpThread"),
+    service.indexOf("export async function listAdminHelpThreads"),
+  );
+  assert.equal(userWriteSection.includes('.from("help_threads").insert'), false);
+  assert.equal(userWriteSection.includes('.from("help_messages").insert'), false);
+  assert.equal(userWriteSection.includes('.from("help_threads").update'), false);
   assert.equal(service.includes('row.sender_type === "admin" ? "Oriana Wren"'), true);
 });
 

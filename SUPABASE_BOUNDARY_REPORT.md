@@ -111,7 +111,7 @@ Other files mentioning `SUPABASE_SERVICE_ROLE_KEY` are primarily health/config d
 ## Next Actions
 
 1. Apply and role-test the pending private-album migration.
-2. Apply and role-test the help create/append RPC migration, then move writes to JWT/RPC.
+2. Role-test the applied help create/append RPCs; application writes now use JWT/RPC, but authenticated verification remains pending.
 3. Migrate comments/likes/preferences as independent user route families.
 4. Migrate remaining Studio families behind trusted admin contexts.
 5. Remove `src/lib/supabase.ts` only when the remaining import count reaches zero.

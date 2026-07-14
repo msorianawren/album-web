@@ -269,3 +269,14 @@
 - Security impact: No runtime change in this checkpoint; prevents treating unverified role behavior as production-guaranteed.
 - Performance impact: None.
 - Test performed: Repository migration inventory and current commit/state consistency review; remote database execution was not independently observed.
+
+## 2026-07-14 22:55:00 +07:00 - Milestone 3 help JWT/RPC cutover
+
+- Milestone: 3
+- Files: user help routes, `src/lib/help-chat.ts`, authorization/RPC tests, reports, engineering state files
+- Reason: Use the remotely applied atomic RPCs instead of multi-statement service-role writes.
+- Behavior before: User create/append helpers inserted and updated help rows separately through the broad service client.
+- Behavior after: Routes require a request JWT client and each user write calls one authenticated RPC; identity comes from `auth.uid()`, and public failure responses are fixed by provider code rather than raw messages.
+- Security impact: Cross-user ownership and blocked/status/cap checks move to the database boundary; user write code no longer accepts caller identity or bypasses RLS.
+- Performance impact: Each user write reduces multiple database round trips to one RPC, excluding best-effort notification/audit side effects.
+- Test performed: 31 unit/static tests, lint with no errors and 14 unchanged warnings, TypeScript pass, production build pass, and guest create/append `401`; authenticated role tests remain blocked.

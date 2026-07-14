@@ -72,7 +72,10 @@
 - [v] Migrate user help thread/message list reads to request-scoped JWT/RLS clients.
 - [v] Prepare atomic authenticated RPCs and rollback for help create/append writes.
 - [x] Apply `202607142115_user_help_write_rpcs.sql` remotely (reported successful by the user on 2026-07-14; independent verification pending).
-- [~] Role-test the help RPCs, then cut application writes over to the JWT/RPC path.
+- [x] Cut help thread creation and message append over to authenticated JWT/RPC calls.
+- [v] Add atomicity, no-multi-step-fallback, fixed-failure-mapping, and guest-denial tests.
+- [b] Runtime-test authenticated owner, cross-user, closed-thread, blocked-user, and message-cap behavior (authenticated fixtures/browser unavailable).
+- [~] Commit the verified help JWT/RPC application cutover.
 - [c] Commit the verified help-read user boundary (`27c2e32`).
 - [ ] Add database/RLS role tests for all supported principals.
 - [v] Create `SUPABASE_BOUNDARY_REPORT.md` and `AUTHORIZATION_ROLE_MATRIX.md`.

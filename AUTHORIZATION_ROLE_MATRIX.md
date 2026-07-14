@@ -45,7 +45,7 @@ Revocation must prevent issuance of new private media access immediately. Any al
 | Private album list/detail | verified runtime session | transitional trusted path | application grant decision | pending RLS migration/cutover |
 | Notification read/update | verified runtime session/JWT | user JWT | recipient `auth.uid()` policies | implemented, authenticated test blocked |
 | Help list/detail | verified runtime session/JWT | user JWT | owner `auth.uid()` policies | implemented, authenticated test blocked |
-| Help create/append | verified session | transitional trusted path | application owner/cap checks | RPC package prepared; application/role verification blocked |
+| Help create/append | verified session/JWT | user JWT RPC | RPC owner/blocked/status/cap checks | implemented; authenticated role verification blocked |
 | Album mutations | non-blocked admin session | trusted admin | route validation plus admin context | implemented, admin test blocked |
 | Cron maintenance | exact bearer secret | trusted worker | purpose-labelled context | implemented, valid-secret test blocked |
 

@@ -60,3 +60,19 @@ test("help RPC rollback removes only the additive functions", () => {
   assert.equal(rollback.includes("drop table"), false);
   assert.equal(rollback.includes("drop policy"), false);
 });
+
+test("help RPC failures use fixed public status mappings", () => {
+  const service = readFileSync(join(process.cwd(), "src/lib/help-chat.ts"), "utf8");
+  for (const [code, status] of [
+    ["PT400", 400],
+    ["PT401", 401],
+    ["PT403", 403],
+    ["PT404", 404],
+    ["PT409", 409],
+    ["PT429", 429],
+  ]) {
+    assert.match(service, new RegExp(`case "${code}":[\\s\\S]*?status: ${status}`));
+  }
+  assert.match(service, /default:[\s\S]*status: 503/);
+  assert.equal(service.includes("error.message"), false);
+});
