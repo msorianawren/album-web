@@ -1,5 +1,6 @@
 import Image from "next/image";
 import { Lock } from "lucide-react";
+import { shouldBypassNextImageOptimization } from "@/lib/media/display-url";
 import type { AlbumDetail } from "@/lib/types";
 
 export function LockedAlbumState({ album }: { album: AlbumDetail }) {
@@ -13,6 +14,7 @@ export function LockedAlbumState({ album }: { album: AlbumDetail }) {
             fill
             sizes="(min-width: 1024px) 45vw, 100vw"
             className="object-cover"
+            unoptimized={shouldBypassNextImageOptimization(album.cover_url)}
           />
         ) : (
           <div className="flex h-full w-full items-center justify-center">

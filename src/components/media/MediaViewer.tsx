@@ -8,6 +8,7 @@ import { DownloadButton } from "@/components/media/DownloadButton";
 import { MediaLikeButton } from "@/components/media/MediaLikeButton";
 import { Button } from "@/components/ui/Button";
 import { ORIANA_MEDIA_VIEWER_STATE_EVENT } from "@/lib/assistant/runtime-events";
+import { getMediaDisplayUrls } from "@/lib/media/display-url";
 import type { Media } from "@/lib/types";
 import { useAlbumViewMemory } from "@/hooks/useAlbumViewMemory";
 
@@ -49,7 +50,8 @@ export function MediaViewer({
   const isImageLoading = item?.media_type === "image" && !loadedImages[item.id];
   const imageWidth = item?.width ?? 1600;
   const imageHeight = item?.height ?? 1200;
-  const imageSource = item?.medium_url ?? item?.url ?? "";
+  const imageDisplay = item ? getMediaDisplayUrls(item) : null;
+  const imageSource = imageDisplay?.viewerSrc ?? "";
 
   const resetZoom = () => {
     setScale(1);
@@ -292,7 +294,7 @@ export function MediaViewer({
               {item.media_type === "image" ? (
                 <Image
                   src={imageSource}
-                  alt={item.title ?? item.original_filename ?? "Album image"}
+                  alt={imageDisplay?.alt ?? "Album image"}
                   width={imageWidth}
                   height={imageHeight}
                   sizes="100vw"
@@ -342,6 +344,9 @@ export function MediaViewer({
                 {media.length > 1 && (
                   <div className="hidden min-w-0 flex-1 gap-2 overflow-x-auto sm:flex sm:justify-end">
                     {media.map((thumb, index) => (
+                      (() => {
+                        const thumbDisplay = getMediaDisplayUrls(thumb);
+                        return (
                       <button
                         key={thumb.id}
                         type="button"
@@ -352,7 +357,7 @@ export function MediaViewer({
                       >
                         {thumb.media_type === "image" ? (
                           <Image
-                            src={thumb.thumbnail_url ?? thumb.url}
+                            src={thumbDisplay.cardSrc}
                             alt=""
                             fill
                             sizes="64px"
@@ -361,12 +366,14 @@ export function MediaViewer({
                           />
                         ) : (
                           <video
-                            src={thumb.url}
+                            src={thumbDisplay.viewerSrc}
                             className="h-full w-full object-cover"
                             preload="metadata"
                           />
                         )}
                       </button>
+                        );
+                      })()
                     ))}
                   </div>
                 )}

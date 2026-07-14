@@ -4,6 +4,7 @@ import { DownloadButton } from "@/components/media/DownloadButton";
 import { AlbumStatusBadge } from "@/components/ui/Badge";
 import { ShareButton } from "@/components/ui/ShareButton";
 import { AlbumMemoryHint } from "@/components/albums/AlbumMemoryHint";
+import { getMediaDisplayUrls, shouldBypassNextImageOptimization } from "@/lib/media/display-url";
 import type { AlbumDetail } from "@/lib/types";
 import { formatMediaCount } from "@/lib/utils";
 import type { AppDictionary } from "@/lib/i18n";
@@ -18,7 +19,7 @@ export function AlbumHeader({ album, dict }: AlbumHeaderProps) {
     ...(album.media ?? [])
       .filter((item) => item.media_type === "image")
       .slice(0, 4)
-      .map((item) => item.medium_url ?? item.thumbnail_url ?? item.url),
+      .map((item) => getMediaDisplayUrls(item).cardSrc),
     album.cover_url,
   ].filter((value, index, values): value is string => Boolean(value) && values.indexOf(value) === index).slice(0, 4);
 
@@ -34,6 +35,7 @@ export function AlbumHeader({ album, dict }: AlbumHeaderProps) {
               fill
               sizes="(min-width: 1024px) 45vw, 100vw"
               className="living-preview-image object-cover grayscale-[15%] transition-all duration-[3s]"
+              unoptimized={shouldBypassNextImageOptimization(src)}
               style={{
                 animationDelay: `${index * 3.2}s`,
                 opacity: index === 0 ? 1 : undefined,

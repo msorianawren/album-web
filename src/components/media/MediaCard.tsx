@@ -1,7 +1,9 @@
 import Image from "next/image";
 import { Play } from "lucide-react";
+import { useState } from "react";
 import { DownloadButton } from "@/components/media/DownloadButton";
 import { MediaLikeButton } from "@/components/media/MediaLikeButton";
+import { getMediaDisplayUrls, shouldBypassNextImageOptimization } from "@/lib/media/display-url";
 import type { Media } from "@/lib/types";
 
 interface MediaCardProps {
@@ -19,9 +21,21 @@ export function MediaCard({
   protectAssets = false,
   onOpen,
 }: MediaCardProps) {
+  const [failedSrc, setFailedSrc] = useState<string | null>(null);
   const aspectRatio =
     media.width && media.height ? `${media.width} / ${media.height}` : "4 / 3";
-  const previewUrl = media.thumbnail_url ?? media.poster_url ?? media.medium_url ?? media.url;
+  const display = getMediaDisplayUrls(media);
+  const previewUrl = display.cardSrc;
+  const imageFailed = failedSrc === previewUrl;
+
+  const fallback = (
+    <div className="flex h-full w-full flex-col items-center justify-center gap-2 bg-surface-secondary px-6 text-center">
+      <span className="text-[0.62rem] font-semibold uppercase tracking-[0.24em] text-text-secondary">
+        Image unavailable
+      </span>
+      <span className="line-clamp-2 text-sm text-text-secondary/70">{display.alt}</span>
+    </div>
+  );
 
   return (
     <div
@@ -35,25 +49,29 @@ export function MediaCard({
         data-media-index={index}
         aria-label={`Open ${media.title ?? media.original_filename ?? "media"}`}
       >
-        {media.media_type === "image" ? (
+        {imageFailed ? fallback : media.media_type === "image" ? (
           <Image
             src={previewUrl}
-            alt={media.title ?? media.original_filename ?? "Album image"}
+            alt={display.alt}
             fill
             sizes="(min-width: 1024px) 25vw, (min-width: 768px) 33vw, (min-width: 640px) 50vw, 100vw"
             className="object-cover transition duration-300 ease-out group-hover:scale-[1.05]"
+            unoptimized={shouldBypassNextImageOptimization(previewUrl)}
             draggable={!protectAssets}
+            onError={() => setFailedSrc(previewUrl)}
           />
         ) : (
           <>
             {previewUrl ? (
               <Image
                 src={previewUrl}
-                alt={media.title ?? "Video poster"}
+                alt={display.alt}
                 fill
                 sizes="(min-width: 1024px) 25vw, (min-width: 768px) 33vw, (min-width: 640px) 50vw, 100vw"
                 className="object-cover transition duration-300 ease-out group-hover:scale-[1.05]"
+                unoptimized={shouldBypassNextImageOptimization(previewUrl)}
                 draggable={!protectAssets}
+                onError={() => setFailedSrc(previewUrl)}
               />
             ) : (
               <div className="h-full w-full bg-surface" />

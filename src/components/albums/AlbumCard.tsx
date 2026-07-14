@@ -8,6 +8,7 @@ import type { Album } from "@/lib/types";
 import { formatMediaCount } from "@/lib/utils";
 import { ScrollReveal } from "@/components/ui/ScrollReveal";
 import { useAlbumViewMemory } from "@/hooks/useAlbumViewMemory";
+import { getMediaDisplayUrls, shouldBypassNextImageOptimization } from "@/lib/media/display-url";
 import type { AppDictionary } from "@/lib/i18n";
 
 interface AlbumCardProps {
@@ -23,7 +24,7 @@ export function AlbumCard({ album, dict, locale = "en" }: AlbumCardProps) {
     : [
         ...previewItems
           .filter((item) => item.media_type === "image")
-          .map((item) => item.thumbnail_url ?? item.medium_url ?? item.url)
+          .map((item) => getMediaDisplayUrls(item).cardSrc)
           .filter(Boolean),
         album.cover_url,
       ].filter((value, index, values): value is string => Boolean(value) && values.indexOf(value) === index).slice(0, 4);
@@ -49,6 +50,7 @@ export function AlbumCard({ album, dict, locale = "en" }: AlbumCardProps) {
                 fill
                 sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
                 className="living-preview-image object-cover grayscale-[15%] group-hover:grayscale-0 transition-all duration-700"
+                unoptimized={shouldBypassNextImageOptimization(src)}
                 style={{
                   animationDelay: `${index * 3.2}s`,
                   opacity: index === 0 ? 1 : undefined,
