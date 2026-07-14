@@ -412,7 +412,7 @@ export function AlbumEditor({ album, settings }: { album: AlbumDetail; settings:
                     animationDelay: `${index * 3.2}s`,
                     opacity: index === 0 ? 1 : undefined,
                   }}
-                  loading={index === 0 ? "eager" : "lazy"}
+                  loading="eager"
                 />
               ))
             ) : (

@@ -51,6 +51,7 @@ export function AlbumCard({ album, dict, locale = "en" }: AlbumCardProps) {
                 sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
                 className="living-preview-image object-cover grayscale-[15%] group-hover:grayscale-0 transition-all duration-700"
                 unoptimized={shouldBypassNextImageOptimization(src)}
+                loading="eager"
                 style={{
                   animationDelay: `${index * 3.2}s`,
                   opacity: index === 0 ? 1 : undefined,
