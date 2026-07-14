@@ -1,10 +1,12 @@
 import type { Metadata, Viewport } from "next";
 import { OAuthHashHandler } from "@/components/auth/OAuthHashHandler";
+import { OrianaCompanionRuntime } from "@/components/assistant/OrianaCompanionRuntime";
 import { AudioUXProvider } from "@/components/ui/AudioUXProvider";
 import { ToastProvider } from "@/components/ui/ToastProvider";
 import "./globals.css";
 import "@/components/assistant/assistant-pet.css";
 
+import { getPublicSession } from "@/lib/auth";
 import { getSiteSettings } from "@/lib/site-settings";
 
 function stringSetting(value: unknown, fallback: string) {
@@ -49,7 +51,10 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const settings = await getSiteSettings();
+  const [settings, session] = await Promise.all([
+    getSiteSettings(),
+    getPublicSession(),
+  ]);
   return (
     <html lang="en" className="h-full antialiased" suppressHydrationWarning>
       <head>
@@ -70,6 +75,7 @@ export default async function RootLayout({
         <ToastProvider>
           <OAuthHashHandler />
           {children}
+          <OrianaCompanionRuntime session={session} />
         </ToastProvider>
       </body>
     </html>

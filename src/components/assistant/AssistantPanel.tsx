@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Bell, HelpCircle, Lock, MessageSquare, ShieldCheck, X } from "lucide-react";
 import { AssistantPet } from "@/components/assistant/AssistantPet";
 import {
@@ -69,6 +70,26 @@ export function AssistantPanel({
   const [notificationCount, setNotificationCount] = useState<number | null>(null);
   const [handoffMessage, setHandoffMessage] = useState<AssistantMessage | null>(null);
   const [locale] = useState(detectBrowserLocale);
+  const panelRef = useRef<HTMLElement>(null);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
+
+  useEffect(() => {
+    if (!open) return;
+
+    previousFocusRef.current =
+      document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    window.setTimeout(() => panelRef.current?.focus(), 0);
+
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") onClose();
+    }
+
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      previousFocusRef.current?.focus();
+    };
+  }, [onClose, open]);
 
   useEffect(() => {
     if (!open) return;
@@ -143,23 +164,34 @@ export function AssistantPanel({
     window.location.href = "/contact";
   }
 
-  if (!open || preferences.mode === "off") return null;
+  const portalTarget = typeof document === "undefined" ? null : document.body;
 
-  return (
-    <div className="fixed inset-0 z-[80]" role="dialog" aria-modal="true" aria-label="Oriana Companion">
+  if (!portalTarget || !open || preferences.mode === "off") return null;
+
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[100] flex items-end justify-center p-0 sm:items-center sm:justify-end sm:p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Oriana Companion"
+      data-testid="oriana-companion-overlay"
+    >
       <button
         type="button"
         aria-label="Close Oriana Companion"
-        className="absolute inset-0 bg-text-primary/35 backdrop-blur-sm"
+        className="absolute inset-0 bg-text-primary/45 backdrop-blur-md"
         onClick={onClose}
       />
       <section
+        ref={panelRef}
+        tabIndex={-1}
+        data-testid="oriana-companion-panel"
         className={cn(
-          "absolute bottom-0 left-0 right-0 max-h-[88vh] overflow-hidden rounded-t-[2rem] border border-border bg-surface shadow-2xl shadow-text-primary/25",
-          "sm:bottom-5 sm:left-auto sm:right-5 sm:top-5 sm:w-[min(27rem,calc(100vw-2.5rem))] sm:max-h-none sm:rounded-[2rem]",
+          "relative z-10 flex w-full max-h-[min(88dvh,720px)] flex-col overflow-hidden rounded-t-[2rem] border border-border bg-surface shadow-2xl shadow-text-primary/25 outline-none",
+          "sm:h-[min(720px,calc(100dvh-32px))] sm:w-[min(420px,calc(100vw-32px))] sm:rounded-[2rem]",
         )}
       >
-        <div className="flex h-full max-h-[88vh] flex-col sm:max-h-[calc(100vh-2.5rem)]">
+        <div className="flex min-h-0 flex-1 flex-col">
           <header className="border-b border-border bg-background/55 p-4">
             <div className="flex items-start justify-between gap-4">
               <div className="flex min-w-0 items-center gap-3">
@@ -197,7 +229,7 @@ export function AssistantPanel({
           <div className="min-h-0 flex-1 space-y-5 overflow-y-auto p-4">
             <div className="rounded-[1.3rem] border border-border bg-background/70 p-4">
               <p className="text-sm leading-relaxed text-text-secondary">
-                Hi, I can help with albums, private access, downloads, messages, and notifications.
+                I can help with albums, private access, downloads, messages, and notifications.
               </p>
               <div className="mt-4 grid grid-cols-2 gap-2 text-xs text-text-secondary">
                 <span className="inline-flex items-center gap-2">
@@ -267,6 +299,7 @@ export function AssistantPanel({
           </footer>
         </div>
       </section>
-    </div>
+    </div>,
+    portalTarget,
   );
 }

@@ -7,6 +7,7 @@ import { useEffect, useState, useRef } from "react";
 import { DownloadButton } from "@/components/media/DownloadButton";
 import { MediaLikeButton } from "@/components/media/MediaLikeButton";
 import { Button } from "@/components/ui/Button";
+import { ORIANA_MEDIA_VIEWER_STATE_EVENT } from "@/lib/assistant/runtime-events";
 import type { Media } from "@/lib/types";
 import { useAlbumViewMemory } from "@/hooks/useAlbumViewMemory";
 
@@ -119,6 +120,20 @@ export function MediaViewer({
     if (!item) return;
     document.body.style.overflow = "hidden";
     return () => { document.body.style.overflow = ""; };
+  }, [item]);
+
+  useEffect(() => {
+    if (item) {
+      document.body.dataset.orianaMediaViewerOpen = "true";
+    } else {
+      delete document.body.dataset.orianaMediaViewerOpen;
+    }
+    window.dispatchEvent(new Event(ORIANA_MEDIA_VIEWER_STATE_EVENT));
+
+    return () => {
+      delete document.body.dataset.orianaMediaViewerOpen;
+      window.dispatchEvent(new Event(ORIANA_MEDIA_VIEWER_STATE_EVENT));
+    };
   }, [item]);
 
   useEffect(() => {
