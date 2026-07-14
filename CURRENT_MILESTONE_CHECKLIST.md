@@ -60,6 +60,8 @@
 - [c] Commit the verified cron worker boundary (`de15980`).
 - [v] Migrate notification count/list/read/dismiss routes to request-scoped JWT/RLS clients.
 - [c] Commit the verified notification user boundary (`098214b`).
+- [v] Migrate public comment reads to anon/RLS and comment moderation item mutations to a guarded admin client.
+- [~] Commit the verified comment read/moderation boundary.
 - [v] Migrate user help thread/message list reads to request-scoped JWT/RLS clients.
 - [v] Prepare atomic authenticated RPCs and rollback for help create/append writes.
 - [b] Apply and role-test `202607142115_user_help_write_rpcs.sql`, then cut application writes over to the JWT/RPC path.

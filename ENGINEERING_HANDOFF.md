@@ -10,8 +10,8 @@ Upgrade album-web into a production-grade, privacy-sensitive digital asset manag
 - Branch: `engineering/production-platform-overhaul`
 - Baseline commit: `f82cb5eb0e78f9ea4b5aa9c34d6a20a69cfead2d`
 - Current milestone: 3 - Supabase client and authorization boundaries
-- Completed checkpoint: `ca4da1c docs(auth): record Supabase boundary migration status`
-- Current subtask: Verify and commit transactional user help-write RPCs while application writes remain on the guarded transitional path.
+- Completed checkpoint: `df0d0e8 security(help): add atomic user write RPCs`
+- Current subtask: Commit public comment reads through anon/RLS and comment moderation through the guarded admin boundary.
 - Public album rows and public/updating media now use the anon client; authenticated private access and admin/worker route migrations remain.
 
 ## Important Constraints
@@ -78,8 +78,8 @@ Then read `AGENTS.md`, `ENGINEERING_PROGRAM_STATE.md`, this file, `CURRENT_MILES
 
 ## Next Five Actions
 
-1. Commit the verified, unapplied help-write RPC/rollback package.
-2. Migrate a low-risk authenticated route family such as assistant preferences to JWT/RLS if its policies support the operation.
-3. Continue guarded Studio route-family migration independently.
+1. Commit the verified public comment read and guarded comment moderation boundary.
+2. Continue guarded Studio/admin route-family migration independently.
+3. Design narrow user-write RPCs for preferences/comments/likes only where current RLS cannot preserve behavior.
 4. Apply and role-test pending RLS/RPC migrations when external access is available.
 5. Only then switch private album and help write paths to JWT clients.

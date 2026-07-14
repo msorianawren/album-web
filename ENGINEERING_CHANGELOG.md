@@ -208,3 +208,20 @@
 - Security impact: The prepared boundary removes caller-controlled identity and anonymous execution. No production authorization claim is made before database role verification.
 - Performance impact: One transactional RPC will replace multiple network round trips after cutover; row locking is limited to the target thread during append.
 - Test performed: 27 unit/static tests, lint with no errors and 14 unchanged warnings, TypeScript pass; SQL execution remains BLOCKED_EXTERNAL.
+
+## 2026-07-14 - Milestone 3 help-write RPC checkpoint
+
+- Milestone: 3
+- Commit: `df0d0e8 security(help): add atomic user write RPCs`
+- Result: COMPLETE - additive migration package verified and committed; remote application and application cutover remain blocked.
+
+## 2026-07-14 21:35:00 +07:00 - Milestone 3 comment read and moderation boundary
+
+- Milestone: 3
+- Files: `src/app/api/comments/route.ts`, `src/app/api/comments/[id]/route.ts`, boundary tests, reports, engineering state files
+- Reason: Stop public comment reads and admin comment moderation from sharing an eagerly constructed broad service-role path.
+- Behavior before: Public comment GET and guarded admin moderation used the module-wide service client; item IDs were not UUID-validated and raw provider messages could reach some 500 responses.
+- Behavior after: Public comment GET uses anon/RLS, authenticated admin reads/mutations use a guarded trusted client, item IDs are UUID-validated, and migrated data failures use safe classification. User comment creation remains unchanged pending a purpose-built write boundary.
+- Security impact: Public reads no longer bypass RLS and the item moderation route cannot construct a trusted client before the admin guard succeeds.
+- Performance impact: Query shape and limits are unchanged.
+- Test performed: 28 unit/static tests, lint with no errors and 14 unchanged warnings, TypeScript pass, production build pass with 49 routes, public GET `200`, and guest PATCH/DELETE `403`.

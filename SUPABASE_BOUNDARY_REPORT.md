@@ -30,6 +30,7 @@ The service-role constructor for new code lives in `src/lib/db/trusted-service.t
 | Log retention and access auto-approval cron | IMPLEMENTED_NOT_VERIFIED for valid scheduled invocation | fail-closed trusted worker client |
 | Notification count/list/read/dismiss | IMPLEMENTED_NOT_VERIFIED for authenticated user | request JWT/RLS; guest denial verified |
 | Help thread/message list reads | IMPLEMENTED_NOT_VERIFIED for authenticated user | request JWT/RLS; guest denial verified |
+| Public comment list and admin comment-item moderation | IMPLEMENTED_NOT_VERIFIED for authenticated admin | anon/RLS reads; guarded admin mutations; guest HTTP verified |
 
 ## Database Work
 
@@ -58,7 +59,7 @@ The private RLS and help RPC migrations are **not applied locally or remotely**.
 
 ## Remaining Legacy Surface
 
-There are 47 tracked source files still importing `@/lib/supabase`. They are intentionally not hidden by re-exporting the new trusted client under the old name.
+There are 46 tracked source files still importing `@/lib/supabase`. They are intentionally not hidden by re-exporting the new trusted client under the old name.
 
 | Class | Representative modules | Required next boundary |
 |---|---|---|
@@ -92,6 +93,7 @@ Other files mentioning `SUPABASE_SERVICE_ROLE_KEY` are primarily health/config d
 - Production build: pass; 49 routes generated.
 - Local public album list/detail and locked-private privacy checks: pass.
 - Guest notification/help denial checks: pass.
+- Public comment GET and guest comment PATCH/DELETE checks: pass.
 - Missing/invalid cron secret checks: pass.
 - Authenticated user/admin and valid-worker fixtures: BLOCKED_EXTERNAL.
 - SQL execution and database role tests: BLOCKED_EXTERNAL.

@@ -50,6 +50,17 @@ test("album admin mutations use a guarded trusted database instead of the broad 
   }
 });
 
+test("comment moderation uses guarded admin clients and public comment reads use RLS", () => {
+  const collectionRoute = read("src/app/api/comments/route.ts");
+  const itemRoute = read("src/app/api/comments/[id]/route.ts");
+  assert.equal(collectionRoute.includes("createPublicServerClient()"), true);
+  assert.equal(collectionRoute.includes("database?.client ?? createPublicServerClient()"), true);
+  assert.equal(collectionRoute.includes("getTrustedAdminDatabase(request)"), true);
+  assert.equal(itemRoute.includes("@/lib/supabase"), false);
+  assert.equal(itemRoute.includes("getTrustedAdminDatabase(request)"), true);
+  assert.equal(itemRoute.includes("commentIdSchema.safeParse"), true);
+});
+
 test("cron routes require a trusted worker database and do not import the broad client", () => {
   for (const path of [
     "src/app/api/cron/prune-logs/route.ts",

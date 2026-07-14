@@ -1,7 +1,8 @@
 import { NextRequest } from "next/server";
-import { requireAdmin, requireUser } from "@/lib/auth";
+import { requireUser } from "@/lib/auth";
 import { getAlbum } from "@/lib/albums";
 import { logAuditEvent } from "@/lib/audit";
+import { classifyDataFailure } from "@/lib/app-failure";
 import {
   getCommentIpHash,
   hasDuplicateRecentComment,
@@ -9,6 +10,8 @@ import {
 } from "@/lib/comment-security";
 import { commentBlockReason, findBlockedCommentKeywords } from "@/lib/comment-filter";
 import { apiError, apiSuccess, toServerError } from "@/lib/errors";
+import { getTrustedAdminDatabase } from "@/lib/db/admin";
+import { createPublicServerClient } from "@/lib/db/public";
 import { enforceRateLimit } from "@/lib/security-rate-limit";
 import { getSiteSettings } from "@/lib/site-settings";
 import { supabase } from "@/lib/supabase";
@@ -19,13 +22,15 @@ export async function GET(request: NextRequest) {
   const mediaId = request.nextUrl.searchParams.get("mediaId");
   if (!albumId) return apiError("INVALID_INPUT", "albumId is required.", 400);
 
-  const session = await requireAdmin(request);
+  const database = await getTrustedAdminDatabase(request);
+  const session = database?.session ?? null;
   const album = await getAlbum(albumId, { isAdmin: Boolean(session?.isAdmin) });
 
   if (!album) return apiError("NOT_FOUND", "Album not found.", 404);
   if (album.locked) return apiSuccess({ comments: [] });
 
-  let query = supabase
+  const readClient = database?.client ?? createPublicServerClient();
+  let query = readClient
     .from("comments")
     .select("*")
     .eq("album_id", album.id)
@@ -37,7 +42,13 @@ export async function GET(request: NextRequest) {
 
   const { data, error } = await query;
 
-  if (error) return apiError("SERVER_ERROR", error.message, 500);
+  if (error) {
+    return toServerError(
+      classifyDataFailure(error, "comments.list"),
+      request,
+      "api.comments.list",
+    );
+  }
   return apiSuccess({ comments: data ?? [] });
 }
 
@@ -234,10 +245,11 @@ export async function POST(request: NextRequest) {
 }
 
 export async function PATCH(request: NextRequest) {
-  const session = await requireAdmin(request);
-  if (!session) {
+  const database = await getTrustedAdminDatabase(request);
+  if (!database) {
     return apiError("FORBIDDEN", "Only the admin can moderate comments.", 403);
   }
+  const { client } = database;
 
   const body = await request.json();
   const id = String(body.id ?? "");
@@ -245,13 +257,19 @@ export async function PATCH(request: NextRequest) {
 
   if (!id) return apiError("INVALID_INPUT", "id is required.", 400);
 
-  const { data, error } = await supabase
+  const { data, error } = await client
     .from("comments")
     .update({ is_hidden: isHidden })
     .eq("id", id)
     .select("*")
     .single();
 
-  if (error) return apiError("SERVER_ERROR", error.message, 500);
+  if (error) {
+    return toServerError(
+      classifyDataFailure(error, "comments.admin_visibility"),
+      request,
+      "api.comments.moderate",
+    );
+  }
   return apiSuccess({ comment: data });
 }
