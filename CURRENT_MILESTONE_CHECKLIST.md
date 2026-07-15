@@ -107,11 +107,13 @@
 - [v] Inventory 13 private albums, 366 media rows, and 1,830 asset variants; all source objects exist and all remain publicly reachable.
 - [x] Reconcile linked migration history and verify the manifest migration is applied remotely; the safe push dry-run now proposes only `202607150000`.
 - [x] Backfill 1,830 manifest rows idempotently with no duplicate rows or object deletion.
-- [b] Configure `R2_PRIVATE_BUCKET_NAME` and provision a non-public R2 bucket before object copy.
-- [ ] Copy representative objects to the private bucket without deleting legacy sources.
-- [ ] Verify checksum/size, gateway delivery, revocation, Range requests, and rollback.
-- [ ] Activate verified private-bucket assets; production source cleanup remains a later reviewed change.
-- [~] Milestone 4 status: IN_PROGRESS - IMPLEMENTED_NOT_MIGRATED.
+- [x] Configure `R2_PRIVATE_BUCKET_NAME` and provision a non-public R2 bucket.
+- [x] Copy and verify all 1,830 asset variants with bounded, resumable processing and zero failures.
+- [x] Activate all verified private-bucket assets and retain authenticated gateway delivery.
+- [x] Retire 1,085 unique legacy public source objects only after private size verification; zero remained reachable through public cache.
+- [x] Rehearse rollback by restoring all 1,085 public sources from private copies, then re-copy, re-activate, and re-retire them.
+- [x] Fix resumability so `rollback_required` rows are reverified instead of being skipped by stale local checkpoints.
+- [x] Milestone 4 status: COMPLETE - PRIVATE STORAGE OPERATIONAL AND ROLLBACK VERIFIED.
 
 ## Milestone 5 - Media URL Model and Display Reliability
 

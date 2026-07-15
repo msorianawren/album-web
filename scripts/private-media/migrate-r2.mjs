@@ -3,6 +3,7 @@ import {
   copyObject,
   createStorageClient,
   createTrustedDatabase,
+  fetchAll,
   hasFlag,
   headObject,
   inventoryPath,
@@ -49,11 +50,23 @@ const storage = createStorageClient();
 const checkpointPath = join(checkpointDirectory, "migrate-r2.json");
 const checkpoint = await readJson(checkpointPath, { assets: {} });
 const results = { ...(checkpoint.assets || {}) };
-const pending = candidates.filter((asset) => results[asset.id]?.status !== "cutover_ready");
+const manifestRows = await fetchAll((from, to) =>
+  database
+    .from("private_media_assets")
+    .select("media_id,variant,migration_state")
+    .order("id", { ascending: true })
+    .range(from, to),
+);
+const manifestState = new Map(
+  manifestRows.map((row) => [`${row.media_id}:${row.variant}`, row.migration_state]),
+);
+const pending = candidates.filter((asset) =>
+  !["cutover_ready", "active"].includes(manifestState.get(`${asset.mediaId}:${asset.variant}`)),
+);
 
 await runBounded(
   pending,
-  3,
+  6,
   async (asset) => {
     try {
       const source = await withRetry(() => headObject(storage, publicBucket(), asset.currentKey));

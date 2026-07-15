@@ -57,6 +57,7 @@ The application compatibility fallback reads legacy keys server-side only until 
 - `npm run private-media:backfill-manifest` is dry-run; add `-- --apply` after the migration exists.
 - `npm run private-media:migrate-r2 -- --dry-run` plans copy work; `-- --apply` copies with bounded concurrency and never deletes sources.
 - `npm run private-media:activate -- --dry-run` verifies cutover readiness.
+- `npm run private-media:retire-public-sources -- --dry-run` verifies reversible public-source retirement; apply requires explicit acknowledgement.
 - `npm run private-media:rollback-cutover -- --dry-run` rehearses manifest rollback without changing rows or objects.
 
 Detailed inventory artifacts are local and ignored by Git because they contain storage keys and legacy URL fields.
@@ -68,5 +69,8 @@ Detailed inventory artifacts are local and ignored by Git because they contain s
 - A linked push dry-run proposes only `202607150000_async_image_processing.sql`; it was not applied because Milestone 4 must finish first.
 - Inventory verified 13 private albums, 366 media rows, 1,830 manifest variants, zero missing source objects, and 1,830 publicly reachable legacy variants.
 - Manifest dry-run prepared 1,830 rows and the apply pass checkpointed all 1,830 rows without deleting storage objects.
-- R2 copy dry-run prepared 1,830 candidates and performed no copy because `R2_PRIVATE_BUCKET_NAME` is not configured.
-- The current R2 credentials are bucket-scoped and cannot list or provision a second bucket. Private-bucket provisioning and configuration are therefore the remaining external gate before copy-only migration.
+- A non-public destination bucket was configured and all 1,830 variants copied, size/checksum verified, and activated with zero failures.
+- The 1,830 manifest variants resolve to 1,085 unique legacy public objects. All 1,085 were retired after verifying a reversible private copy; zero remained reachable through the configured public domain/cache.
+- Rollback restored all 1,085 legacy objects from private copies and returned 1,830 manifest rows to authenticated legacy delivery. Re-copy, re-activation, and final retirement then completed successfully.
+- The copy command now treats manifest state as authoritative, so `rollback_required` rows are reverified even when a local checkpoint previously recorded them as ready.
+- Milestone 4 status: `COMPLETE - PRIVATE STORAGE OPERATIONAL AND ROLLBACK VERIFIED`.

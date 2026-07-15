@@ -2,6 +2,7 @@ import nextEnv from "@next/env";
 import { createClient } from "@supabase/supabase-js";
 import {
   CopyObjectCommand,
+  DeleteObjectCommand,
   HeadObjectCommand,
   S3Client,
 } from "@aws-sdk/client-s3";
@@ -190,6 +191,10 @@ export async function copyObject(storage, sourceBucket, sourceKey, destinationBu
     CopySource: encodedSource,
     MetadataDirective: "COPY",
   }));
+}
+
+export async function deleteObject(storage, bucket, key) {
+  await storage.send(new DeleteObjectCommand({ Bucket: bucket, Key: key }));
 }
 
 export function safeErrorCode(error) {

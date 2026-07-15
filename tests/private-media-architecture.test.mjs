@@ -18,6 +18,7 @@ const inventoryScript = read("scripts/private-media/inventory.mjs");
 const backfillScript = read("scripts/private-media/backfill-manifest.mjs");
 const copyScript = read("scripts/private-media/migrate-r2.mjs");
 const activationScript = read("scripts/private-media/activate.mjs");
+const retirementScript = read("scripts/private-media/retire-public-sources.mjs");
 const rollbackScript = read("scripts/private-media/rollback-cutover.mjs");
 
 test("private browser payloads use authenticated same-site delivery and redact object keys", () => {
@@ -132,13 +133,27 @@ test("migration commands are dry-run by default, resumable, and never delete sou
   assert.match(copyScript, /const apply = hasFlag\("--apply"\) && !hasFlag\("--dry-run"\)/);
   assert.match(copyScript, /runBounded/);
   assert.match(copyScript, /withRetry/);
+  assert.match(copyScript, /!\["cutover_ready", "active"\]\.includes/);
   assert.doesNotMatch(copyScript, /DeleteObject|deleteObject|deleteObjects/);
 });
 
 test("activation requires cutover-ready rows and rollback preserves both object copies", () => {
   assert.match(activationScript, /migration_state", "cutover_ready"/);
+  assert.match(activationScript, /runBounded\(/);
   assert.match(activationScript, /bucket_role: "private"/);
   assert.match(rollbackScript, /migration_state: "rollback_required"/);
+  assert.match(rollbackScript, /copyObject\(/);
+  assert.match(rollbackScript, /legacy source restoration failed verification/);
   assert.match(rollbackScript, /Copied private objects and legacy source objects were preserved/);
   assert.doesNotMatch(`${activationScript}\n${rollbackScript}`, /DeleteObject|deleteObject|deleteObjects/);
+});
+
+test("public source retirement is explicit, reversible, and protects non-private media", () => {
+  assert.match(retirementScript, /--acknowledge-reversible-retirement/);
+  assert.match(retirementScript, /neq\("albums\.status", "private"\)/);
+  assert.match(retirementScript, /album\.status === "private" \? null : publicObjectKey\(album\.cover_url\)/);
+  assert.match(retirementScript, /private destination failed size verification/);
+  assert.match(retirementScript, /deleteObject\(/);
+  assert.match(retirementScript, /isPubliclyReachable/);
+  assert.doesNotMatch(retirementScript, /migration_state:\s*"deleted"/);
 });

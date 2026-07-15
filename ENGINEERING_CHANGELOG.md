@@ -329,3 +329,12 @@
 
 - Commit: `28049a7 feat(media): add asynchronous image processing pipeline`
 - Result: implementation and local verification complete; migration, private-bucket runtime smoke, and worker scheduling remain deliberately unapplied.
+
+## 2026-07-15 - Milestone 4 private-media cutover
+
+- Milestone: 4 (`COMPLETE`)
+- Files: resumable R2 migration/activation/retirement/rollback commands, compatibility migration, private-media tests, and engineering state
+- Reason: Finish the operational private-media migration and ensure legacy public URLs stop returning private bytes without losing rollback capability.
+- Behavior after: 1,830 manifest variants prefer verified private objects; 1,085 unique public sources are absent; rollback restores missing sources from private copies before reverting manifest state; stale copy checkpoints cannot skip rolled-back rows.
+- Security impact: Permanent public delivery of migrated private media is removed while the authenticated JWT/RLS gateway remains the only browser delivery path.
+- Operational verification: copy and activation completed with zero failures; public retirement reported zero cache-reachable sources; rollback copy-back, re-copy, re-activation, and final retirement all completed successfully.

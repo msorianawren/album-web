@@ -14,6 +14,7 @@
     "private-media:backfill-manifest": "node scripts/private-media/backfill-manifest.mjs",
     "private-media:migrate-r2": "node scripts/private-media/migrate-r2.mjs",
     "private-media:activate": "node scripts/private-media/activate.mjs",
+    "private-media:retire-public-sources": "node scripts/private-media/retire-public-sources.mjs",
     "private-media:rollback-cutover": "node scripts/private-media/rollback-cutover.mjs",
     "media:reprocess": "node scripts/media-processing/reprocess.mjs",
     "media:orphan-cleanup": "node scripts/media-processing/orphan-cleanup.mjs"

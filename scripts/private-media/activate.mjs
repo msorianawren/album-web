@@ -6,6 +6,7 @@ import {
   headObject,
   privateBucket,
   publicBucket,
+  runBounded,
 } from "./common.mjs";
 
 const apply = hasFlag("--apply") && !hasFlag("--dry-run");
@@ -39,16 +40,21 @@ const rows = await fetchAll((from, to) =>
 );
 
 const verified = [];
-for (const row of rows) {
-  const [source, destination] = await Promise.all([
-    headObject(storage, publicBucket(), row.legacy_object_key),
-    headObject(storage, destinationBucket, row.intended_private_key),
-  ]);
-  if (!source.exists || !destination.exists || source.size !== destination.size) {
-    throw new Error("Activation preflight failed; source or verified private copy is unavailable.");
-  }
-  verified.push(row);
-}
+await runBounded(
+  rows,
+  6,
+  async (row) => {
+    const [source, destination] = await Promise.all([
+      headObject(storage, publicBucket(), row.legacy_object_key),
+      headObject(storage, destinationBucket, row.intended_private_key),
+    ]);
+    if (!source.exists || !destination.exists || source.size !== destination.size) {
+      throw new Error("Activation preflight failed; source or verified private copy is unavailable.");
+    }
+    return row;
+  },
+  async (chunk) => verified.push(...chunk),
+);
 
 if (!apply) {
   console.log(`Dry run: ${verified.length} cutover-ready assets verified; no manifest rows activated.`);
