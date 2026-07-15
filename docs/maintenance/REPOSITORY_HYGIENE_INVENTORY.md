@@ -44,3 +44,21 @@ cleanup action, or used as a measure of application complexity.
 - Applied Supabase migrations stay at their exact paths and filenames.
 - Production assets stay in place until a separately approved asset migration
   has a dry-run, copy verification, and rollback rehearsal.
+
+## Retired One-Off Root Artifacts
+
+The following files were removed from the current source tree after confirming
+they are not imported by application code, referenced by `package.json`, or
+used by the deployment configuration. Their Git history remains available and
+the removal can be reverted as one commit if a legitimate maintenance use is
+identified.
+
+- Supabase diagnostic and mutation scripts: `check_tables.ts`, `debug_messages.ts`,
+  `debug_query.ts`, `debug_users.ts`, `dump.ts`, `test-db.mjs`, and
+  `test_insert.ts`.
+- Stale one-off generators: `run_migration.ts`, `seed-translations.js`,
+  `fetch-music.js`, and `download-mp3s.js`.
+- Generated/manual artifacts: `albums_dump.json`, `album.zip`, and `verify.py`.
+
+Future diagnostics must be named by purpose, live under `scripts/diagnostics/`,
+default to read-only behavior, and never hard-code user data or mutation inputs.
