@@ -153,6 +153,7 @@
 - [x] Clean every canary album, media row, job, manifest row, staging object, and derivative.
 - [x] Trigger bounded background processing after uploads and retain the authenticated cron worker as recovery.
 - [x] Run reprocess and orphan-cleanup commands in dry-run with zero candidates after cleanup.
+- [c] Commit and push the operational Milestone 6 completion and authorization gate (`d1402e2`).
 - [x] Milestone 6 status: COMPLETE - MIGRATED AND END-TO-END VERIFIED.
 
 Legend: `[ ]` not started, `[~]` in progress, `[x]` implemented, `[v]` verified, `[c]` committed, `[b]` blocked.

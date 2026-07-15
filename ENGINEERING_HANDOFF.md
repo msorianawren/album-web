@@ -7,11 +7,11 @@ Upgrade album-web into a production-grade, privacy-sensitive digital asset manag
 ## Current State
 
 - Status: IN_PROGRESS
-- Branch: `engineering/production-platform-overhaul`
+- Branch: `main` after merging `engineering/production-platform-overhaul`
 - Baseline commit: `f82cb5eb0e78f9ea4b5aa9c34d6a20a69cfead2d`
 - Current milestone: final merge gate; Milestones 0 through 6 are complete
 - Completed milestone: 3 - implemented and locally verified; 34/34 tests passed and the feature branch was pushed without deploying production
-- Current subtask: checkpoint the verified Milestone 6 and merge the feature branch to `main`.
+- Current subtask: verify the Vercel production deployment and scheduled media-recovery configuration.
 - Independent Milestone 5 is complete and locally verified. `src/lib/media/delivery.ts` is now the only media URL-selection policy for application surfaces; see `MEDIA_DELIVERY_MODEL_REPORT.md`.
 - Milestone 6 private staging, durable queue, upload-triggered background worker, retry recovery, and remote canaries are complete. See `ASYNC_IMAGE_PROCESSING_REPORT.md`.
 - Live role-matrix fixture checks passed against remote JWT/RLS/RPC boundaries; evidence and cleanup are recorded in `PRE_MERGE_AUTHORIZATION_VERIFICATION.md`.

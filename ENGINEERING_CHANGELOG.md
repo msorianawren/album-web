@@ -355,3 +355,11 @@
 - Evidence: `npm run authz:verify-remote` exercised two existing private albums and their ready media through five ephemeral authenticated users.
 - Cleanup: test conversations and grants were deleted before the temporary auth users; a follow-up query found zero fixture profiles.
 - Security impact: the pre-merge authorization condition is satisfied without persisting credentials, sessions, private keys, object paths, or personal data.
+
+## 2026-07-15 - Milestones 0-6 main merge
+
+- Feature checkpoint: `d1402e2c3e411752fc7e802ff7c1443d92fe14cc`.
+- Merge commit: `2db71d902a393bfe1286bd48a92277575808a8dd`.
+- Verification: merge tree exactly matched the verified feature tree; no conflict resolution changed production code.
+- Gate: lint passed with 0 errors and 11 existing warnings, typecheck passed, 59/59 tests passed, production build passed, and remote authorization fixtures passed with complete cleanup.
+- Deployment impact: pushing `main` triggers the connected production deployment; scheduled recovery still requires the deployment-level `CRON_SECRET` while upload-triggered processing works independently.
