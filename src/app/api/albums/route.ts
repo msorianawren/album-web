@@ -5,15 +5,15 @@ import { classifyDataFailure } from "@/lib/app-failure";
 import { getTrustedAdminDatabase } from "@/lib/db/admin";
 import { createAuthenticatedUserClient } from "@/lib/db/user";
 import { apiError, apiSuccess, toServerError } from "@/lib/errors";
-import { getAlbums } from "@/lib/albums";
+import { getAlbumPage } from "@/lib/albums";
 import { enforceRateLimit } from "@/lib/security-rate-limit";
 import { getSiteSettings } from "@/lib/site-settings";
 import { slugify } from "@/lib/utils";
-import { albumCreateSchema, searchParamsSchema } from "@/lib/validators";
+import { albumCreateSchema, albumPageQuerySchema } from "@/lib/validators";
 
 export async function GET(request: NextRequest) {
   try {
-    const parsed = searchParamsSchema.safeParse(
+    const parsed = albumPageQuerySchema.safeParse(
       Object.fromEntries(request.nextUrl.searchParams),
     );
 
@@ -23,8 +23,12 @@ export async function GET(request: NextRequest) {
 
     const session = await getPublicSession(request);
     const userClient = session.userId ? await createAuthenticatedUserClient(request) : null;
-    const albums = await getAlbums({ ...parsed.data, session, userClient });
-    return apiSuccess({ albums });
+    if (!parsed.data.status) {
+      return apiError("INVALID_INPUT", "A single album status is required for cursor pagination.", 400);
+    }
+
+    const page = await getAlbumPage({ ...parsed.data, status: parsed.data.status, session, userClient });
+    return apiSuccess({ page }, { headers: { "Cache-Control": "private, no-store" } });
   } catch (error) {
     return toServerError(error, request, "api.albums.list");
   }

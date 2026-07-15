@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { AlbumList } from "@/components/albums/AlbumList";
 import { AppHeader } from "@/components/AppHeader";
-import { getAlbums } from "@/lib/albums";
+import { getAlbumSections } from "@/lib/albums";
 import { getLandingPage } from "@/lib/landing";
 import { NatureAnimatedBackground } from "@/components/landing/NatureAnimatedBackground";
 
@@ -9,6 +9,7 @@ interface AlbumsPageProps {
   searchParams: Promise<{
     q?: string;
     status?: "public" | "updating" | "private";
+    limit?: string;
   }>;
 }
 
@@ -24,6 +25,7 @@ import { AccessRequestModal } from "@/components/albums/AccessRequestModal";
 
 import { cookies } from "next/headers";
 import { getDictionary } from "@/lib/getDictionary";
+import { albumPageQuerySchema } from "@/lib/validators";
 
 export default async function AlbumsPage({ searchParams }: AlbumsPageProps) {
   const session = await getPublicSession();
@@ -34,8 +36,18 @@ export default async function AlbumsPage({ searchParams }: AlbumsPageProps) {
   const dict = await getDictionary(locale);
 
   const filters = await searchParams;
-  const [albums, landing] = await Promise.all([
-    getAlbums({ ...filters, session, userClient }),
+  const parsedFilters = albumPageQuerySchema.safeParse(filters);
+  const browseQuery = parsedFilters.success
+    ? parsedFilters.data
+    : { q: "", status: undefined, limit: 24 };
+  const [sections, landing] = await Promise.all([
+    getAlbumSections({
+      q: browseQuery.q,
+      status: browseQuery.status,
+      limit: browseQuery.limit,
+      session,
+      userClient,
+    }),
     getLandingPage()
   ]);
 
@@ -56,7 +68,13 @@ export default async function AlbumsPage({ searchParams }: AlbumsPageProps) {
           </p>
         </div>
       </section>
-      <AlbumList albums={albums} dict={dict} locale={locale} />
+      <AlbumList
+        key={`${browseQuery.q}|${browseQuery.status ?? "all"}|${browseQuery.limit}`}
+        sections={sections}
+        query={{ q: browseQuery.q, status: browseQuery.status, limit: browseQuery.limit }}
+        dict={dict}
+        locale={locale}
+      />
       <AccessRequestModal />
     </main>
   );

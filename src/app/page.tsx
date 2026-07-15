@@ -12,7 +12,7 @@ import { HomeMediaGallery } from "@/components/landing/HomeMediaGallery";
 import { HomeCollaborators } from "@/components/landing/HomeCollaborators";
 
 import { getLandingPage } from "@/lib/landing";
-import { getAlbums } from "@/lib/albums";
+import { getFeaturedAlbums } from "@/lib/albums";
 import { getAboutProfile } from "@/lib/about";
 import { getSiteSettings } from "@/lib/site-settings";
 
@@ -26,7 +26,7 @@ export default async function Home() {
   const [landing, profile, albums, settings] = await Promise.all([
     getLandingPage(),
     getAboutProfile(),
-    getAlbums(),
+    getFeaturedAlbums(4),
     getSiteSettings(),
   ]);
 

@@ -70,3 +70,8 @@ export const searchParamsSchema = z.object({
   q: z.string().trim().max(120).optional().default(""),
   status: z.enum(albumStatuses).optional(),
 });
+
+export const albumPageQuerySchema = searchParamsSchema.extend({
+  cursor: z.string().trim().min(1).max(512).optional(),
+  limit: z.coerce.number().int().min(1).max(96).optional().default(24),
+});

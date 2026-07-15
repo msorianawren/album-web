@@ -29,16 +29,17 @@ test("trusted service-role constructor has only explicit admin and worker import
   assert.deepEqual(new Set(importers), allowed);
 });
 
-test("album repository separates public reads from authenticated private JWT/RLS reads", () => {
+test("album repository uses the card-safe pagination RPC and JWT/RLS private reads", () => {
   const source = read("src/lib/albums.ts");
-  assert.match(source, /let builder = publicClient\s*\.from\("albums"\)/);
+  assert.match(source, /client\.rpc\("list_album_summaries"/);
+  assert.match(source, /const client = userClient \?\? createPublicServerClient\(\)/);
   assert.match(source, /let albumQuery = publicClient\s*\.from\("albums"\)/);
   assert.match(source, /album\.status === "private" \? userClient! : publicClient/);
   assert.match(source, /userClient!\.rpc\(\s*"can_access_private_album"/);
-  assert.match(source, /getPreviewRows\(publicClient, publicAlbumIds/);
-  assert.match(source, /getPreviewRows\(userClient, authorizedPrivateAlbumIds/);
+  assert.match(source, /projectPrivatePreviewForClient/);
+  assert.doesNotMatch(source, /getPreviewRows/);
   assert.equal(source.includes("@/lib/supabase"), false);
-  assert.equal(source.includes("getPreviewRows(supabase"), false);
+  assert.equal(source.includes("SUPABASE_SERVICE_ROLE_KEY"), false);
 });
 
 test("album request handlers pass authenticated JWT clients to private reads", () => {

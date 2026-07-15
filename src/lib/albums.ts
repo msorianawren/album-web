@@ -25,12 +25,38 @@ import type { PublicSession } from "@/lib/types";
 
 type UnknownRow = Record<string, unknown>;
 
-interface AlbumQuery {
+export interface AlbumQuery {
   q?: string;
   status?: AlbumStatus;
   session?: PublicSession | null;
   userClient?: SupabaseClient | null;
 }
+
+export interface AlbumPage extends AlbumQuery {
+  status: AlbumStatus;
+  albums: Album[];
+  nextCursor: string | null;
+  hasMore: boolean;
+}
+
+export type AlbumSections = Partial<Record<AlbumStatus, AlbumPage>>;
+
+export interface AlbumPageQuery extends AlbumQuery {
+  status: AlbumStatus;
+  cursor?: string;
+  limit?: number;
+}
+
+export interface AlbumSectionsQuery extends AlbumQuery {
+  limit?: number;
+  cursors?: Partial<Record<AlbumStatus, string | undefined>>;
+}
+
+type AlbumCursor = {
+  sort: number;
+  createdAt: string;
+  id: string;
+};
 
 function toNullableNumber(value: unknown) {
   const number = Number(value);
@@ -63,6 +89,15 @@ export function normalizeAlbum(row: UnknownRow): Album {
         : "public";
 
   const safePreviewUrl = resolveAssetUrl(row.safe_preview_url);
+  const accessRequestStatus =
+    typeof row.access_request_status === "string"
+      ? row.access_request_status as Album["access_request_status"]
+      : null;
+  const previewItems = Array.isArray(row.preview_items)
+    ? row.preview_items
+      .filter((item): item is UnknownRow => Boolean(item) && typeof item === "object")
+      .map(previewItemFromMedia)
+    : [];
 
   return {
     id: String(row.id),
@@ -75,6 +110,7 @@ export function normalizeAlbum(row: UnknownRow): Album {
     cover_media_id:
       typeof row.cover_media_id === "string" ? row.cover_media_id : null,
     safe_preview_url: safePreviewUrl,
+    access_request_status: accessRequestStatus,
     photo_count: Number(row.photo_count ?? 0),
     video_count: Number(row.video_count ?? 0),
     media_count: Number(row.media_count ?? row.photo_count ?? 0),
@@ -90,7 +126,7 @@ export function normalizeAlbum(row: UnknownRow): Album {
     created_at: String(row.created_at ?? new Date().toISOString()),
     updated_at:
       typeof row.updated_at === "string" ? row.updated_at : undefined,
-    preview_items: [],
+    preview_items: previewItems,
   };
 }
 
@@ -213,47 +249,6 @@ export async function checkAlbumAccess(
   return result.allowed;
 }
 
-function filterSampleAlbums(
-  sampleAlbums: AlbumDetail[],
-  { q, status, session }: AlbumQuery,
-) {
-  const search = q?.toLowerCase().trim();
-  const isAdmin = session?.isAdmin ?? false;
-  return sampleAlbums.filter((album) => {
-    const matchesStatus = status ? album.status === status : true;
-    const matchesSearch = search
-      ? `${album.title} ${album.description ?? ""}`.toLowerCase().includes(search)
-      : true;
-    return matchesStatus && matchesSearch;
-  }).map((album) => {
-    if (album.status === "private" && !isAdmin) {
-      return {
-        ...album,
-        preview_items: [],
-        cover_url: null,
-      };
-    }
-    return {
-      ...album,
-      preview_items: album.media.slice(0, 4).map((item) => ({
-        id: item.id,
-        media_type: item.media_type,
-        title: item.title,
-        url: item.url,
-        thumbnail_url: item.thumbnail_url,
-        medium_url: item.medium_url,
-        poster_url: item.poster_url,
-      })),
-    };
-  });
-}
-
-async function getDemoAlbums(query: AlbumQuery) {
-  if (!albumDemoFixturesEnabled()) return null;
-  const { sampleAlbums } = await import("@/lib/sample-data");
-  return filterSampleAlbums(sampleAlbums, query);
-}
-
 async function getDemoAlbum(slugOrId: string, isAdmin: boolean) {
   if (!albumDemoFixturesEnabled()) return null;
   const { sampleAlbums } = await import("@/lib/sample-data");
@@ -267,255 +262,107 @@ async function getDemoAlbum(slugOrId: string, isAdmin: boolean) {
   return sample;
 }
 
-async function getPreviewRows(
-  client: SupabaseClient,
-  albumIds: string[],
-  operation: string,
-  privateDelivery = false,
-) {
-  if (!albumIds.length) return [];
-  const select = privateDelivery
-    ? "id,album_id,media_type,title,sort_order,created_at"
-    : "id,album_id,media_type,title,url,thumbnail_url,medium_url,poster_url,sort_order,created_at";
-  const { data, error } = await client
-    .from("media")
-    .select(select)
-    .in("album_id", albumIds)
-    .is("deleted_at", null)
-    .order("sort_order", { ascending: true })
-    .order("created_at", { ascending: true });
-
-  return resolveQueryRows(data, error, operation) as unknown as UnknownRow[];
-}
-
-async function attachAlbumPreviews(
-  albums: Album[],
-  session?: PublicSession | null,
-  userClient?: SupabaseClient | null,
-) {
-  const isAdmin = session?.isAdmin ?? false;
-  const requestMap = new Map<string, NonNullable<Album["access_request_status"]>>();
-  const privateAlbumIds = albums.filter((album) => album.status === "private").map((album) => album.id);
-
-  if (isAdmin && !session?.isBlocked) {
-    privateAlbumIds.forEach((albumId) => requestMap.set(albumId, "approved"));
-  } else if (session?.userId && !session.isBlocked && userClient && privateAlbumIds.length) {
-    const [grantResult, requestResult, inviteResult] = await Promise.all([
-      userClient
-        .from("album_access_grants")
-        .select("id,album_id,scope,status,revoked_at,granted_at,updated_at,created_at"),
-      userClient
-        .from("album_access_requests")
-        .select("album_id,requested_album_ids,scope,status,created_at")
-        .eq("requester_user_id", session.userId)
-        .order("created_at", { ascending: false }),
-      userClient
-        .from("album_invites")
-        .select("album_id,is_global")
-        .eq("email", session.email ?? ""),
-    ]);
-
-    const grants = resolveQueryRows(grantResult.data, grantResult.error, "albums.own_grants");
-    const requests = resolveQueryRows(requestResult.data, requestResult.error, "albums.own_requests");
-    const invites = resolveQueryRows(inviteResult.data, inviteResult.error, "albums.own_invites");
-    const grantTimestamp = (row: UnknownRow) => String(
-      row.revoked_at ?? row.granted_at ?? row.updated_at ?? row.created_at ?? "",
-    );
-    const newestGrant = (rows: UnknownRow[]) => [...rows].sort(
-      (left, right) => grantTimestamp(right).localeCompare(grantTimestamp(left)) ||
-        String(right.id ?? "").localeCompare(String(left.id ?? "")),
-    )[0];
-    const globalGrant = newestGrant(
-      (grants as UnknownRow[]).filter((grant) => grant.scope === "all_private"),
-    );
-    const hasGlobalInvite = (invites as UnknownRow[]).some((invite) => invite.is_global === true);
-
-    for (const albumId of privateAlbumIds) {
-      const selectedGrant = newestGrant(
-        (grants as UnknownRow[]).filter(
-          (grant) => grant.scope === "selected_albums" && grant.album_id === albumId,
-        ),
-      );
-      if (selectedGrant?.status === "revoked") {
-        requestMap.set(albumId, "revoked");
-        continue;
-      }
-      if (selectedGrant?.status === "active") {
-        requestMap.set(albumId, "approved");
-        continue;
-      }
-      if (globalGrant?.status === "revoked") {
-        requestMap.set(albumId, "revoked");
-        continue;
-      }
-      if (globalGrant?.status === "active") {
-        requestMap.set(albumId, "approved");
-        continue;
-      }
-      if (
-        hasGlobalInvite ||
-        (invites as UnknownRow[]).some((invite) => invite.album_id === albumId)
-      ) {
-        requestMap.set(albumId, "approved");
-        continue;
-      }
-
-      const applicableRequests = (requests as UnknownRow[]).filter((request) =>
-        request.scope === "all_private" ||
-        request.album_id === albumId ||
-        (Array.isArray(request.requested_album_ids) && request.requested_album_ids.includes(albumId)),
-      );
-      const approvedRequest = applicableRequests.find((request) =>
-        request.status === "approved" || request.status === "auto_approved",
-      );
-      const requestStatus = approvedRequest?.status ?? applicableRequests[0]?.status;
-      if (typeof requestStatus === "string") {
-        requestMap.set(
-          albumId,
-          requestStatus === "auto_approved" ? "approved" : requestStatus as NonNullable<Album["access_request_status"]>,
-        );
-      }
-    }
-  }
-
-  const publicAlbumIds = albums
-    .filter((album) => album.status !== "private")
-    .map((album) => album.id);
-  const authorizedPrivateAlbumIds = albums
-    .filter((album) =>
-      album.status === "private" &&
-      ((isAdmin && !session?.isBlocked) || requestMap.get(album.id) === "approved"),
-    )
-    .map((album) => album.id);
-  const eligibleAlbumIds = [...publicAlbumIds, ...authorizedPrivateAlbumIds];
-
-  if (!eligibleAlbumIds.length) {
-    return albums.map(a => {
-      const canReadPrivate = (isAdmin && !session?.isBlocked) || requestMap.get(a.id) === "approved";
-      if (a.status === "private" && !canReadPrivate) {
-        a.cover_url = a.safe_preview_url ?? null;
-      }
-      return {
-        ...a,
-        access_request_status: requestMap.get(a.id) as Album["access_request_status"] ?? null,
-      };
-    });
-  }
-
-  const publicClient = createPublicServerClient();
-  const [publicPreviewRows, privatePreviewRows] = await Promise.all([
-    getPreviewRows(publicClient, publicAlbumIds, "albums.public_previews"),
-    userClient
-      ? getPreviewRows(userClient, authorizedPrivateAlbumIds, "albums.private_previews", true)
-      : Promise.resolve([]),
-  ]);
-  const previewRows = [...publicPreviewRows, ...privatePreviewRows];
-  const authorizedPrivateAlbumIdSet = new Set(authorizedPrivateAlbumIds);
-
-  const previewMap = new Map<string, AlbumPreviewItem[]>();
-  for (const row of previewRows as UnknownRow[]) {
-    const albumId = String(row.album_id);
-    const current = previewMap.get(albumId) ?? [];
-    if (current.length >= 4) continue;
-    current.push(
-      authorizedPrivateAlbumIdSet.has(albumId)
-        ? projectPrivatePreviewForClient({
-            id: String(row.id),
-            mediaType: row.media_type === "video" ? "video" : "image",
-            title: typeof row.title === "string" ? row.title : null,
-          })
-        : previewItemFromMedia(row),
-    );
-    previewMap.set(albumId, current);
-  }
-
-  return albums.map((album) => {
-    const isApproved = requestMap.get(album.id) === "approved";
-    const canReadPrivate = (isAdmin && !session?.isBlocked) || isApproved;
-    if (album.status === "private") {
-      const privatePreview = previewMap.get(album.id)?.[0];
-      album.cover_url = canReadPrivate
-        ? privatePreview
-          ? getMediaDeliveryDescriptor(privatePreview, {
-              albumStatus: "private",
-              isAuthorized: true,
-            }).card.src ?? album.safe_preview_url ?? null
-          : album.safe_preview_url ?? null
-        : album.safe_preview_url ?? null;
-    }
-    return {
-      ...album,
-      access_request_status: requestMap.get(album.id) as Album["access_request_status"] ?? null,
-      preview_items: (album.status !== "private" || canReadPrivate) ? (previewMap.get(album.id) ?? []) : [],
-    };
-  });
-}
-
-export async function getAlbums(query: AlbumQuery = {}): Promise<Album[]> {
-  noStore();
+function decodeAlbumCursor(cursor: string | undefined): AlbumCursor | null {
+  if (!cursor || cursor.length > 512) return null;
 
   try {
-    const session = query.session ?? await getPublicSession();
-    const userClient = query.userClient ?? (
-      session?.userId && !session.isBlocked ? await createAuthenticatedUserClient() : null
-    );
-    const publicClient = createPublicServerClient();
-    let builder = publicClient
-      .from("albums")
-      .select("*")
-      .is("deleted_at", null);
-
-    if (query.status) {
-      builder = builder.eq("status", query.status);
-      if (query.status === "public") builder = builder.order("public_sort_order", { ascending: true, nullsFirst: false });
-      else if (query.status === "private") builder = builder.order("private_sort_order", { ascending: true, nullsFirst: false });
-      else if (query.status === "updating") builder = builder.order("updating_sort_order", { ascending: true, nullsFirst: false });
+    const parsed = JSON.parse(Buffer.from(cursor, "base64url").toString("utf8")) as Partial<AlbumCursor>;
+    const sort = parsed.sort;
+    const createdAt = typeof parsed.createdAt === "string" ? new Date(parsed.createdAt) : null;
+    if (
+      typeof sort !== "number" ||
+      !Number.isInteger(sort) ||
+      !createdAt ||
+      Number.isNaN(createdAt.getTime()) ||
+      typeof parsed.id !== "string" ||
+      !isUuid(parsed.id)
+    ) {
+      return null;
     }
-    
-    builder = builder.order("created_at", { ascending: false });
-
-    if (query.q) {
-      const q = `%${query.q}%`;
-      builder = builder.or(`title.ilike.${q},description.ilike.${q}`);
-    }
-
-    const { data, error } = await builder;
-    const rows = resolveQueryRows(data, error, "albums.list");
-    if (!rows.length) {
-      return (await getDemoAlbums({ ...query, session })) ?? [];
-    }
-
-    let parsedAlbums = rows.map((row) => normalizeAlbum(row));
-    
-    if (!query.status) {
-      const getFallbackTime = (a: Album) => new Date(a.created_at).getTime();
-      const publicAlbums = parsedAlbums.filter(a => a.status === "public").sort((a, b) => {
-        if (a.public_sort_order != null && b.public_sort_order != null) return a.public_sort_order - b.public_sort_order;
-        if (a.public_sort_order != null) return -1;
-        if (b.public_sort_order != null) return 1;
-        return getFallbackTime(b) - getFallbackTime(a);
-      });
-      const updatingAlbums = parsedAlbums.filter(a => a.status === "updating").sort((a, b) => {
-        if (a.updating_sort_order != null && b.updating_sort_order != null) return a.updating_sort_order - b.updating_sort_order;
-        if (a.updating_sort_order != null) return -1;
-        if (b.updating_sort_order != null) return 1;
-        return getFallbackTime(b) - getFallbackTime(a);
-      });
-      const privateAlbums = parsedAlbums.filter(a => a.status === "private").sort((a, b) => {
-        if (a.private_sort_order != null && b.private_sort_order != null) return a.private_sort_order - b.private_sort_order;
-        if (a.private_sort_order != null) return -1;
-        if (b.private_sort_order != null) return 1;
-        return getFallbackTime(b) - getFallbackTime(a);
-      });
-      parsedAlbums = [...publicAlbums, ...updatingAlbums, ...privateAlbums];
-    }
-
-    return attachAlbumPreviews(parsedAlbums, session, userClient);
-  } catch (error) {
-    const demoAlbums = await getDemoAlbums(query);
-    if (demoAlbums) return demoAlbums;
-    throw reportAppFailure(classifyDataFailure(error, "albums.list"));
+    return { sort, createdAt: createdAt.toISOString(), id: parsed.id };
+  } catch {
+    return null;
   }
+}
+
+function encodeAlbumCursor(row: UnknownRow) {
+  const sort = toNullableInteger(row.pagination_sort_order);
+  const createdAt = typeof row.created_at === "string" ? row.created_at : null;
+  const id = typeof row.id === "string" ? row.id : null;
+  if (!createdAt || !id || !isUuid(id)) return null;
+  return Buffer.from(JSON.stringify({ sort, createdAt, id }), "utf8").toString("base64url");
+}
+
+function normalizePageLimit(limit: number | undefined) {
+  const requested = typeof limit === "number" && Number.isFinite(limit) ? limit : 24;
+  return Math.min(Math.max(Math.trunc(requested), 1), 96);
+}
+
+export async function getAlbumPage(query: AlbumPageQuery): Promise<AlbumPage> {
+  noStore();
+  const session = query.session ?? await getPublicSession();
+  const userClient = query.userClient ?? (
+    session?.userId && !session.isBlocked ? await createAuthenticatedUserClient() : null
+  );
+  const client = userClient ?? createPublicServerClient();
+  const limit = normalizePageLimit(query.limit);
+  const cursor = decodeAlbumCursor(query.cursor);
+
+  const { data, error } = await client.rpc("list_album_summaries", {
+    p_status: query.status,
+    p_query: query.q?.trim() || null,
+    p_limit: limit,
+    p_cursor_sort: cursor?.sort ?? null,
+    p_cursor_created_at: cursor?.createdAt ?? null,
+    p_cursor_id: cursor?.id ?? null,
+  });
+  const rows = resolveQueryRows(data, error, "albums.list_page") as UnknownRow[];
+  const hasMore = rows.length > limit;
+  const pageRows = hasMore ? rows.slice(0, limit) : rows;
+  const lastRow = pageRows.at(-1);
+  const albums = pageRows.map(normalizeAlbum).map((album) => (
+    album.status === "private" && album.access_request_status === "approved"
+      ? {
+          ...album,
+          preview_items: (album.preview_items ?? []).map((item) =>
+            projectPrivatePreviewForClient({
+              id: item.id,
+              mediaType: item.media_type,
+              title: item.title,
+            }),
+          ),
+        }
+      : album
+  ));
+
+  return {
+    status: query.status,
+    albums,
+    nextCursor: hasMore && lastRow ? encodeAlbumCursor(lastRow) : null,
+    hasMore,
+  };
+}
+
+export async function getAlbumSections(
+  query: AlbumSectionsQuery = {},
+): Promise<AlbumSections> {
+  const statuses: AlbumStatus[] = query.status ? [query.status] : ["public", "updating", "private"];
+  const entries = await Promise.all(
+    statuses.map(async (status) => [
+      status,
+      await getAlbumPage({
+        ...query,
+        status,
+        cursor: query.cursors?.[status],
+      }),
+    ] as const),
+  );
+  return Object.fromEntries(entries) as AlbumSections;
+}
+
+export async function getFeaturedAlbums(limit = 4) {
+  const page = await getAlbumPage({ status: "public", limit });
+  return page.albums;
 }
 
 export async function getAlbum(
