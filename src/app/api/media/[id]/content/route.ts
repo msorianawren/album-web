@@ -44,6 +44,12 @@ export async function GET(request: NextRequest, { params }: PrivateMediaContentP
       "Vary": "Cookie, Authorization, Range",
       "X-Content-Type-Options": "nosniff",
     });
+    if (process.env.NODE_ENV !== "production" || process.env.ORIANA_MEDIA_DEBUG_HEADERS === "1") {
+      headers.set(
+        "X-Oriana-Media-Result",
+        asset.deliverySource === "private_manifest" ? "manifest" : "legacy-fallback",
+      );
+    }
     if (object.contentLength !== undefined) headers.set("Content-Length", String(object.contentLength));
     if (object.contentRange) headers.set("Content-Range", object.contentRange);
 

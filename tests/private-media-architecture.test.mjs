@@ -41,12 +41,14 @@ test("gateway authorizes before R2 streaming and never constructs a public URL",
   assert.doesNotMatch(gateway, /getPublicUrl|R2_PUBLIC_URL|objectKey.*json/i);
   assert.match(gateway, /private, no-store/);
   assert.match(gateway, /Content-Range/);
+  assert.match(gateway, /X-Oriana-Media-Result/);
+  assert.match(gateway, /NODE_ENV !== "production"/);
 });
 
 test("trusted manifest lookup is isolated behind the JWT/RLS media decision", () => {
   assert.match(
     boundary,
-    /authorizePrivateMediaAsset[\s\S]*createAuthenticatedUserClient\(request\)[\s\S]*getPrivateAssetRecord/,
+    /authorizePrivateMediaAsset[\s\S]*createAuthenticatedUserClient\(request\)[\s\S]*can_access_private_album[\s\S]*getPrivateAssetRecord/,
   );
   assert.match(trustedDelivery, /createTrustedServiceRoleClient/);
   assert.doesNotMatch(gateway, /createTrustedServiceRoleClient|SERVICE_ROLE/);
@@ -96,6 +98,17 @@ test("dual-read policy activates only verified cutover state and retains legacy 
     contentType: "image/webp",
     fallbackObjectKey: "albums/a/images/m/medium.webp",
   });
+});
+
+test("private gateway verifies objects and keeps legacy fallback behind authorization", () => {
+  assert.match(boundary, /tryHeadR2Object/);
+  assert.match(boundary, /deliverySource: "private_manifest"/);
+  assert.match(boundary, /deliverySource: "legacy_gateway_fallback"/);
+  assert.match(boundary, /function keyFromPublicUrl/);
+  assert.match(boundary, /R2_PUBLIC_URL/);
+  assert.match(boundary, /if \(variant === "original"\) return \["original"\]/);
+  assert.doesNotMatch(boundary, /if \(variant === "original"\) return \["original", "display"\]/);
+  assert.match(boundary, /can_access_private_album[\s\S]*if \(accessError \|\| canAccess !== true\) return null[\s\S]*getPrivateAssetRecord/);
 });
 
 test("single byte range parser accepts valid video ranges and rejects malformed or multi ranges", () => {

@@ -1,0 +1,2 @@
+-- Intentionally non-destructive: restoring the CURRENT_ROLE name collision
+-- would deny all legitimate privileged access. Keep the corrected function.

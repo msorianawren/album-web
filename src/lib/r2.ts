@@ -145,6 +145,38 @@ export async function headR2Object(
   };
 }
 
+export async function tryHeadR2Object(
+  key: string,
+  bucketRole: R2BucketRole = "public",
+) {
+  try {
+    return {
+      exists: true as const,
+      ...(await headR2Object(key, bucketRole)),
+    };
+  } catch (error) {
+    const cause = error instanceof Error && "cause" in error ? error.cause : error;
+    const status = typeof cause === "object" && cause && "$metadata" in cause
+      ? (cause as { $metadata?: { httpStatusCode?: number } }).$metadata?.httpStatusCode
+      : undefined;
+    const name = typeof cause === "object" && cause && "name" in cause
+      ? String((cause as { name?: unknown }).name)
+      : "";
+    const code = typeof cause === "object" && cause && "Code" in cause
+      ? String((cause as { Code?: unknown }).Code)
+      : "";
+    if (status === 404 || name === "NotFound" || code === "NoSuchKey") {
+      return {
+        exists: false as const,
+        contentLength: null,
+        contentType: null,
+        etag: null,
+      };
+    }
+    throw error;
+  }
+}
+
 export async function getR2Object(
   key: string,
   bucketRole: R2BucketRole = "public",
