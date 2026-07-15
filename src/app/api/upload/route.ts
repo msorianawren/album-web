@@ -4,6 +4,7 @@ import { logAuditEvent } from "@/lib/audit";
 import { apiError, apiSuccess, toServerError } from "@/lib/errors";
 import { uploadMediaFile } from "@/lib/media";
 import { enqueueImageBuffer } from "@/lib/media/processing-jobs";
+import { scheduleQueuedImageProcessing } from "@/lib/media/schedule-processing";
 import { enforceRateLimit } from "@/lib/security-rate-limit";
 import { getSiteSettings } from "@/lib/site-settings";
 import { validateUploadFile } from "@/lib/upload-validation";
@@ -73,6 +74,7 @@ export async function POST(request: NextRequest) {
 
     const uploaded = [];
     const failed = [];
+    let queuedImages = 0;
 
     for (const file of files) {
       const buffer = Buffer.from(await file.arrayBuffer());
@@ -108,6 +110,7 @@ export async function POST(request: NextRequest) {
             buffer,
           });
           uploaded.push({ id: queued.mediaId, processing_status: queued.status });
+          queuedImages += 1;
         } else {
           uploaded.push(await uploadMediaFile({
             client,
@@ -166,6 +169,8 @@ export async function POST(request: NextRequest) {
         })),
       },
     });
+
+    if (queuedImages > 0) scheduleQueuedImageProcessing(client, Math.min(queuedImages, 4));
 
     return apiSuccess({ media: uploaded, failed }, { status: failed.length ? 207 : 201 });
   } catch (error) {

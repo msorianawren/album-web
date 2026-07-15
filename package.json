@@ -17,7 +17,10 @@
     "private-media:retire-public-sources": "node scripts/private-media/retire-public-sources.mjs",
     "private-media:rollback-cutover": "node scripts/private-media/rollback-cutover.mjs",
     "media:reprocess": "node scripts/media-processing/reprocess.mjs",
-    "media:orphan-cleanup": "node scripts/media-processing/orphan-cleanup.mjs"
+    "media:orphan-cleanup": "node scripts/media-processing/orphan-cleanup.mjs",
+    "media:classify-existing": "node scripts/media-processing/classify-existing.mjs",
+    "media:canary": "node scripts/media-processing/canary.mjs",
+    "authz:verify-remote": "node scripts/authorization/verify-role-matrix.mjs"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1079.0",

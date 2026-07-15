@@ -4,6 +4,7 @@ import { logAuditEvent } from "@/lib/audit";
 import { apiError, apiSuccess, toServerError } from "@/lib/errors";
 import { completeUploadFile } from "@/lib/media";
 import { verifyAndQueueImageUpload } from "@/lib/media/processing-jobs";
+import { scheduleQueuedImageProcessing } from "@/lib/media/schedule-processing";
 import { getSiteSettings } from "@/lib/site-settings";
 import { validateUploadMetadata } from "@/lib/upload-validation";
 
@@ -28,6 +29,7 @@ export async function POST(request: NextRequest) {
     if (job.error) throw job.error;
     if (job.data) {
       const queued = await verifyAndQueueImageUpload(client, mediaId);
+      scheduleQueuedImageProcessing(client, 2);
       await logAuditEvent({
         request,
         session,

@@ -156,6 +156,13 @@ export async function processQueuedImageJobs(
         result: completionResult,
       });
       if (complete.error) throw complete.error;
+      const staleManifest = await client
+        .from("private_media_assets")
+        .delete()
+        .eq("media_id", job.media_id)
+        .eq("bucket_role", "public")
+        .eq("migration_state", "discovered");
+      if (staleManifest.error) throw staleManifest.error;
       summary.ready += 1;
     } catch (error) {
       const quarantine = error instanceof MediaQuarantineError;

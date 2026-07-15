@@ -323,7 +323,7 @@
 - Security impact: Magic bytes and decoded formats must agree, dimensions/pixels are capped, public derivatives contain no metadata, private URL payloads remain same-site, and non-ready rows are denied by RLS and delivery selection.
 - Performance impact: Request latency no longer includes Sharp processing; derivative work is bounded and retryable. Album storage uses an aggregate RPC rather than loading every row.
 - Operational impact: Reprocess and orphan cleanup default to dry-run; no production R2 object was moved or deleted.
-- Test performed: lint pass with 0 errors and 11 existing warnings; typecheck pass; 58/58 tests pass; production build pass with 49 static pages.
+- Test performed: lint pass with 0 errors and 11 existing warnings; typecheck pass; 59/59 tests pass; production build pass with 49 static pages.
 
 ## 2026-07-15 - Milestone 6 implementation checkpoint
 
@@ -338,3 +338,20 @@
 - Behavior after: 1,830 manifest variants prefer verified private objects; 1,085 unique public sources are absent; rollback restores missing sources from private copies before reverting manifest state; stale copy checkpoints cannot skip rolled-back rows.
 - Security impact: Permanent public delivery of migrated private media is removed while the authenticated JWT/RLS gateway remains the only browser delivery path.
 - Operational verification: copy and activation completed with zero failures; public retirement reported zero cache-reachable sources; rollback copy-back, re-copy, re-activation, and final retirement all completed successfully.
+
+## 2026-07-15 - Milestone 6 operational completion
+
+- Milestone: 6 (`COMPLETE`)
+- Files: processing compatibility migrations, existing-media classifier, remote canary/cleanup tooling, manifest hygiene, upload-triggered scheduler, tests, and reports
+- Reason: Apply the durable image queue and verify real worker behavior without leaving production test data or exposing private derivatives.
+- Behavior after: Working legacy media stays ready, new image uploads schedule bounded background processing, retries remain durable, and private image manifests contain only verified delivery variants.
+- Security impact: Invalid and oversized bytes quarantine without publishing; terminal failures retain empty delivery fields; anonymous queue reads remain denied; private outputs stay in the private bucket.
+- Operational verification: public/private/EXIF/duplicate canaries reached ready, two hostile inputs quarantined, missing source retried four times then failed unpublished, idempotent reprocessing produced no duplicate job/key, and cleanup removed every canary row/object.
+
+## 2026-07-15 - Pre-merge authorization verification
+
+- Scope: remote JWT/RLS/RPC role matrix required before merging the production overhaul branch.
+- Behavior verified: no-grant denied; selected grant limited to its album; all-private grant allowed; revoked and blocked users denied; cross-user help reads returned no rows and append failed closed.
+- Evidence: `npm run authz:verify-remote` exercised two existing private albums and their ready media through five ephemeral authenticated users.
+- Cleanup: test conversations and grants were deleted before the temporary auth users; a follow-up query found zero fixture profiles.
+- Security impact: the pre-merge authorization condition is satisfied without persisting credentials, sessions, private keys, object paths, or personal data.

@@ -68,7 +68,12 @@ test("async processing migration and routes keep sources private and unfinished 
   const presign = read("src/app/api/upload/presign/route.ts");
   const completion = read("src/app/api/upload/complete/route.ts");
   const worker = read("src/app/api/cron/process-media/route.ts");
+  const processingJobs = read("src/lib/media/processing-jobs.ts");
+  const scheduler = read("src/lib/media/schedule-processing.ts");
+  const upload = read("src/app/api/upload/route.ts");
+  const manifestSync = read("supabase/migrations/202607150020_fix_private_image_manifest_sync.sql");
   const orphanCleanup = read("scripts/media-processing/orphan-cleanup.mjs");
+  const vercel = read("vercel.json");
   for (const state of ["uploaded", "queued", "processing", "ready", "failed", "quarantined", "deleting", "deleted"]) {
     assert.match(migration, new RegExp(`'${state}'`));
   }
@@ -79,6 +84,15 @@ test("async processing migration and routes keep sources private and unfinished 
   assert.doesNotMatch(presign, /sourceKey:\s*reservation\.sourceKey/);
   assert.match(completion, /verifyAndQueueImageUpload/);
   assert.match(worker, /getTrustedWorkerDatabase\(request, "media-processing"\)/);
+  assert.match(scheduler, /after\(async \(\) =>/);
+  assert.match(scheduler, /processQueuedImageJobs\(client, batchSize\)/);
+  assert.match(scheduler, /reportAppFailure\(toAppFailure/);
+  assert.match(upload, /scheduleQueuedImageProcessing/);
+  assert.match(completion, /scheduleQueuedImageProcessing/);
+  assert.match(vercel, /\/api\/cron\/process-media\?batch=10/);
+  assert.match(processingJobs, /eq\("migration_state", "discovered"\)/);
+  assert.match(manifestSync, /media_row\.media_type = 'image'/);
+  assert.match(manifestSync, /manifest\.variant in \('poster', 'original'\)/);
   assert.doesNotMatch(orphanCleanup, /DeleteObject|deleteR2|\.delete\(/);
   assert.match(orphanCleanup, /No R2 object was deleted/);
 });

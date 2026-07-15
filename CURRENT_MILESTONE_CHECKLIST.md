@@ -90,7 +90,7 @@
 - [v] Verify Milestone 3 implementation locally: migrations applied, lint pass, typecheck pass, tests 34/34, and production build pass.
 - [c] Push the Milestone 3 checkpoint to `engineering/production-platform-overhaul` without changing or deploying `main`.
 - [x] Milestone 3 status: COMPLETE - IMPLEMENTED AND LOCALLY VERIFIED.
-- [~] `PRE_MERGE_AUTHORIZATION_VERIFICATION`: live role-matrix verification is required before merge but does not block Milestone 4 development.
+- [v] `PRE_MERGE_AUTHORIZATION_VERIFICATION`: remote JWT/RLS/RPC role-matrix verification passed for no-grant, selected, global, revoked, blocked, and cross-user help access; all temporary fixtures were removed.
 
 ## Milestone 4 - True Private-Media Architecture
 
@@ -142,10 +142,17 @@
 - [x] Add lease recovery, deterministic keys, retry backoff, and atomic completion.
 - [x] Prevent non-ready rows from public/private RLS and delivery selection.
 - [x] Add dry-run-first reprocess and non-destructive orphan-cleanup commands.
-- [x] Add an additive migration and database-only rollback; no production R2 mutation was run.
+- [x] Apply and verify the additive processing migration plus compatibility backfills through `202607150020`.
 - [v] Verify processor and architecture tests locally.
 - [c] Commit the verified Milestone 6 implementation checkpoint (`28049a7`).
-- [~] Apply migration and run a bounded end-to-end worker smoke after Milestone 4 prerequisites are complete.
-- [~] Milestone 6 status: IN_PROGRESS - IMPLEMENTED_NOT_MIGRATED.
+- [x] Classify existing media without unpublishing 1,165 working legacy images; preserve 3 working legacy videos as `ready`.
+- [x] Run real public/private/EXIF worker canaries and verify WebP derivatives, hashes, BlurHash, private manifest delivery, and duplicate detection.
+- [x] Verify oversized and invalid inputs quarantine without publishing.
+- [x] Verify missing-source retry reaches terminal failure after four attempts without publishing.
+- [x] Reprocess the same job and verify deterministic keys/hash with no duplicate job.
+- [x] Clean every canary album, media row, job, manifest row, staging object, and derivative.
+- [x] Trigger bounded background processing after uploads and retain the authenticated cron worker as recovery.
+- [x] Run reprocess and orphan-cleanup commands in dry-run with zero candidates after cleanup.
+- [x] Milestone 6 status: COMPLETE - MIGRATED AND END-TO-END VERIFIED.
 
 Legend: `[ ]` not started, `[~]` in progress, `[x]` implemented, `[v]` verified, `[c]` committed, `[b]` blocked.

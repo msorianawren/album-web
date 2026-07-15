@@ -9,12 +9,12 @@ Upgrade album-web into a production-grade, privacy-sensitive digital asset manag
 - Status: IN_PROGRESS
 - Branch: `engineering/production-platform-overhaul`
 - Baseline commit: `f82cb5eb0e78f9ea4b5aa9c34d6a20a69cfead2d`
-- Current milestone: 6 - Asynchronous image processing (`IMPLEMENTED_NOT_MIGRATED`); Milestone 4 is complete
+- Current milestone: final merge gate; Milestones 0 through 6 are complete
 - Completed milestone: 3 - implemented and locally verified; 34/34 tests passed and the feature branch was pushed without deploying production
-- Current subtask: Apply the compatibility and processing migrations, classify existing media, and run controlled worker canaries.
+- Current subtask: checkpoint the verified Milestone 6 and merge the feature branch to `main`.
 - Independent Milestone 5 is complete and locally verified. `src/lib/media/delivery.ts` is now the only media URL-selection policy for application surfaces; see `MEDIA_DELIVERY_MODEL_REPORT.md`.
-- Milestone 6 replaces every active synchronous image upload path with private staging and a durable trusted-worker queue. See `ASYNC_IMAGE_PROCESSING_REPORT.md`.
-- Live role-matrix fixture checks are tracked in `PRE_MERGE_AUTHORIZATION_VERIFICATION.md` and must pass before merge, but do not block Milestone 4 development.
+- Milestone 6 private staging, durable queue, upload-triggered background worker, retry recovery, and remote canaries are complete. See `ASYNC_IMAGE_PROCESSING_REPORT.md`.
+- Live role-matrix fixture checks passed against remote JWT/RLS/RPC boundaries; evidence and cleanup are recorded in `PRE_MERGE_AUTHORIZATION_VERIFICATION.md`.
 
 ## Important Constraints
 
@@ -35,10 +35,10 @@ Upgrade album-web into a production-grade, privacy-sensitive digital asset manag
 - Existing broad-client imports remain a documented transition path until each route family has been migrated and tested.
 - Authenticated private-media JWT reads now rely on the remotely applied `202607141830_private_album_rls.sql`; rollback requires reverting application cutover before removing the additive policy/function.
 - Help create/append cannot be naively switched: Companion handoff writes an internal system note and append must atomically update thread state while enforcing the 10-message cap. Use a narrow RPC migration rather than broad user update rights.
-- Help create/append now call the applied RPC package; static/guest checks pass and authenticated role verification remains explicitly blocked.
-- Private browser payloads use same-site gateway URLs and redact object-key values. A server-only manifest is the target source of truth; its compatibility fallback remains server-only until the additive migration is applied.
-- Local inventory found 13 private albums, 366 media rows, and 1,830 valid source variants; all 1,830 are still publicly reachable. No object was copied, moved, or deleted.
-- Supabase CLI is linked to the configured project. Remote migration history is reconciled through `202607142330`; a linked push dry-run now proposes only the intentionally deferred Milestone 6 migration `202607150000`.
+- Help create/append call the applied RPC package; authenticated owner and cross-user denial checks pass remotely.
+- Private browser payloads use same-site gateway URLs and redact object-key values. The server-only manifest is active in the non-public bucket.
+- Initial inventory found 13 private albums, 366 media rows, and 1,830 variants. All 1,085 unique legacy public objects were later retired with verified copy-back rollback.
+- Supabase CLI is linked to the configured project. Remote migration history is applied through `202607150020`.
 - The private manifest contains 1,830 active variants in the non-public bucket. All 1,085 unique public legacy sources were reversibly retired and no public cache path remained reachable. Rollback copy-back and final re-cutover were exercised end to end.
 - Media card/viewer/download selection is centralized. UI fallback cycles through trusted candidates without showing native broken-image states, and public download fetches reject HTML/JSON responses masquerading as media.
 - Image jobs use deterministic versioned derivative keys, private staging, state-gated RLS, atomic completion, bounded claims, lease recovery, and retry backoff. Cleanup tooling does not delete R2 objects.
@@ -64,13 +64,13 @@ Then read `AGENTS.md`, `ENGINEERING_PROGRAM_STATE.md`, this file, `CURRENT_MILES
 
 - Next.js 16 App Router with 22 page files and 60 API route files.
 - A broad service-role Supabase client is the default server client.
-- Public and private-prefix R2 objects currently share one client/bucket abstraction.
-- Public image processing is synchronous; video processing is pending without a trusted worker.
+- Public and private media now use explicit bucket roles and authenticated private delivery.
+- Image processing is asynchronous and durable; trusted video processing remains a later milestone.
 - Album list/detail queries silently fall back to sample data on empty/error paths.
 - Help threads reuse one system, paginate user data, cap consecutive messages, and normalize admin identity.
 - Tracked migrations define 21 primary application tables, 9 SQL functions, 11 triggers, RLS policies, and indexes for album/media/access/help/notification paths; no views were found.
 - Auth return paths use validated relative paths in short-lived `httpOnly` flow cookies; the proxy duplicates some redirect/session helpers.
-- Presigned upload completion has no durable reservation, HEAD, checksum, or trusted video probe.
+- Presigned image completion has durable reservation, HEAD verification, queue state, and trusted processing; trusted video probing remains pending.
 - Notifications use an unread count query and latest-20 list with no-store behavior.
 
 ## Known Production Risks

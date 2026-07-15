@@ -2,7 +2,7 @@
 
 ## Status
 
-Milestone 6 is implemented and locally verified but its additive migration has not been applied. Milestone 4 remains `IN_PROGRESS - IMPLEMENTED_NOT_MIGRATED` and is still a runtime prerequisite for private-bucket delivery.
+Milestone 6 is `COMPLETE - MIGRATED AND END-TO-END VERIFIED`. Milestone 4 private storage is operational and all processing migrations through `202607150020` are applied remotely.
 
 ## Architecture
 
@@ -20,18 +20,22 @@ Private source keys exist only in the service-role job table. Private derivative
 
 - `npm run media:reprocess` is dry-run by default; `-- --apply` atomically requeues selected jobs.
 - `npm run media:orphan-cleanup` inventories stale sources by default. `-- --apply` only marks reversible `deleting` state and never deletes R2 bytes.
-- Source and derivative writes use deterministic versioned keys. This milestone performs no production copy, move, or delete.
+- `npm run media:classify-existing` reports legacy readiness and processing gaps without mutating working media.
+- `npm run media:canary` supports controlled setup, verification, idempotency, terminal-failure, and cleanup operations.
+- Upload completion schedules a bounded `after()` worker pass; the secret-protected cron route remains the recovery path for retries and expired leases.
+- Source and derivative writes use deterministic versioned keys. Canary objects were fully removed after verification.
 
 ## Deployment Order
 
-1. Complete the Milestone 4 private bucket and manifest prerequisites.
-2. Apply `202607150000_async_image_processing.sql`.
-3. Configure the trusted worker schedule for `/api/cron/process-media`.
-4. Run one bounded image through staging, processing, public/private delivery, retry, and quarantine checks.
-5. Keep the rollback SQL available; it changes database behavior only and does not touch R2.
+1. Keep `CRON_SECRET` configured in the deployment environment for scheduled recovery calls.
+2. Monitor failed/quarantined job counts and invoke dry-run reprocess/orphan reports before mutation.
+3. Keep rollback SQL available; it changes database behavior only and does not touch R2.
 
 ## Verification
 
 - Magic-byte, decoded-format, orientation, derivative, metadata stripping, BlurHash, hash, AVIF, and dimension tests are automated.
-- Static tests verify queue RLS, ready-only publication, private staging, trusted worker authorization, and non-destructive cleanup.
-- Lint passes with 0 errors and 11 existing warnings; typecheck passes; 58/58 tests pass; the Next.js 16.2.10 production build passes with 49 static pages generated.
+- Static tests verify queue RLS, ready-only publication, private staging, trusted worker authorization, non-destructive cleanup, manifest hygiene, and upload-triggered background processing.
+- Remote RLS verification confirms anonymous access to `media_processing_jobs` is denied.
+- Existing-media classification: 1,168 ready, 1,165 legacy images eligible for optional reprocessing, zero missing derivatives/failed metadata/quarantined candidates/queued-without-job.
+- Canary result: 3 ready, 2 quarantined, 1 retried to terminal failure; private manifest had 6 verified derivatives; idempotent rerun produced zero duplicate jobs; cleanup left zero canary jobs.
+- Final repository gate: lint passed with 0 errors and 11 existing warnings, typecheck passed, 59/59 tests passed, and the Next.js 16.2.10 production build generated all 49 static pages.
