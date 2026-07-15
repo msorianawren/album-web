@@ -1,36 +1,65 @@
 import { NextRequest } from "next/server";
-import { requireAdmin } from "@/lib/auth";
+import { z } from "zod";
 import { logAuditEvent } from "@/lib/audit";
+import { classifyDataFailure } from "@/lib/app-failure";
+import { getTrustedAdminDatabase } from "@/lib/db/admin";
 import { apiError, apiSuccess, toServerError } from "@/lib/errors";
-import { getAdminProfile } from "@/lib/role-management";
-import { supabase } from "@/lib/supabase";
 import { createAccountBlockedNotification, createAccountUnblockedNotification } from "@/lib/notifications";
 
 interface AdminUserRouteProps {
   params: Promise<{ id: string }>;
 }
 
+export const dynamic = "force-dynamic";
+const noStore = { "Cache-Control": "no-store" };
+const userIdSchema = z.string().uuid();
+const userBlockSchema = z.object({
+  is_blocked: z.boolean(),
+  blocked_reason: z.string().trim().max(500).optional().nullable(),
+}).strict();
+
 export async function PATCH(request: NextRequest, { params }: AdminUserRouteProps) {
-  const session = await requireAdmin(request);
-  if (!session) {
+  const database = await getTrustedAdminDatabase(request);
+  if (!database) {
     return apiError("FORBIDDEN", "Only the admin can manage users.", 403);
   }
+  const { session, client } = database;
 
   try {
-    const { id } = await params;
-    const body = await request.json();
-    const isBlocked = Boolean(body.is_blocked);
+    const idResult = userIdSchema.safeParse((await params).id);
+    if (!idResult.success) {
+      return apiError("INVALID_INPUT", "Invalid user ID.", 400);
+    }
+    const id = idResult.data;
+    const bodyResult = userBlockSchema.safeParse(await request.json().catch(() => null));
+    if (!bodyResult.success) {
+      return apiError("INVALID_INPUT", "A valid block state is required.", 400);
+    }
+    const isBlocked = bodyResult.data.is_blocked;
     const reason =
-      typeof body.blocked_reason === "string" && body.blocked_reason.trim()
-        ? body.blocked_reason.trim()
+      bodyResult.data.blocked_reason
+        ? bodyResult.data.blocked_reason
         : "Your behavior on this website has not been in good faith.";
 
     if (session.userId === id && isBlocked) {
       return apiError("INVALID_INPUT", "The admin account cannot block itself.", 400);
     }
 
-    const targetProfile = await getAdminProfile(id);
-    if (targetProfile?.role === "founder" && session.userId !== id) {
+    const { data: targetData, error: targetError } = await client
+      .from("user_profiles")
+      .select("*")
+      .eq("user_id", id)
+      .maybeSingle();
+    if (targetError) {
+      throw classifyDataFailure(targetError, "users.admin_target_read");
+    }
+    if (!targetData) {
+      return apiError("NOT_FOUND", "User profile not found.", 404);
+    }
+    const targetIsFounder =
+      targetData.role === "founder" ||
+      (Boolean(process.env.DEFAULT_OWNER_ID) && targetData.user_id === process.env.DEFAULT_OWNER_ID);
+    if (targetIsFounder && session.userId !== id) {
       await logAuditEvent({
         request,
         session,
@@ -46,7 +75,7 @@ export async function PATCH(request: NextRequest, { params }: AdminUserRouteProp
       return apiError("FORBIDDEN", "Founder account cannot be restricted by another admin.", 403);
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await client
       .from("user_profiles")
       .update({
         is_blocked: isBlocked,
@@ -58,8 +87,11 @@ export async function PATCH(request: NextRequest, { params }: AdminUserRouteProp
       .select("*")
       .single();
 
-    if (error || !data) {
-      return apiError("NOT_FOUND", error?.message ?? "User profile not found.", 404);
+    if (error) {
+      throw classifyDataFailure(error, "users.admin_block_update");
+    }
+    if (!data) {
+      return apiError("NOT_FOUND", "User profile not found.", 404);
     }
 
     await logAuditEvent({
@@ -86,7 +118,7 @@ export async function PATCH(request: NextRequest, { params }: AdminUserRouteProp
       });
     }
 
-    return apiSuccess({ user: data });
+    return apiSuccess({ user: data }, { headers: noStore });
   } catch (error) {
     return toServerError(error);
   }

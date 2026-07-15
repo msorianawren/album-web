@@ -1,0 +1,2 @@
+-- Intentionally non-destructive: these compatibility columns may contain user data.
+-- Application rollback does not require removing them.

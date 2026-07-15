@@ -1,0 +1,1 @@
+-- Intentionally non-destructive. Restored working-video state must not be reverted.

@@ -1,6 +1,7 @@
 import "server-only";
 
 import type { NextRequest } from "next/server";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
 import { createAdminNotification, createUserNotification } from "@/lib/notifications";
 import { logAuditEvent } from "@/lib/audit";
@@ -32,6 +33,34 @@ export type PublicHelpThread = {
   created_at: string;
 };
 
+export type HelpWriteFailure = {
+  status: number;
+  message: string;
+};
+
+export function classifyHelpWriteFailure(error: unknown): HelpWriteFailure {
+  const code =
+    error && typeof error === "object" && "code" in error
+      ? String((error as { code?: unknown }).code ?? "")
+      : "";
+  switch (code) {
+    case "PT400":
+      return { status: 400, message: "Please enter a valid message." };
+    case "PT401":
+      return { status: 401, message: "Sign in is required to send a message." };
+    case "PT403":
+      return { status: 403, message: "You cannot send messages from this account." };
+    case "PT404":
+      return { status: 404, message: "Conversation not found." };
+    case "PT409":
+      return { status: 409, message: "This conversation is closed." };
+    case "PT429":
+      return { status: 429, message: "Please wait for Oriana Wren before sending more messages." };
+    default:
+      return { status: 503, message: "Messages are temporarily unavailable. Please try again." };
+  }
+}
+
 function preview(value: string) {
   return value.replace(/\s+/g, " ").trim().slice(0, 200);
 }
@@ -59,11 +88,22 @@ function asPublicThread(row: Record<string, unknown>): PublicHelpThread {
   };
 }
 
-export async function listUserHelpThreads(session: PublicSession, page = 1) {
+function requireRpcRow(value: unknown): Record<string, unknown> {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("Invalid help RPC response.");
+  }
+  return value as Record<string, unknown>;
+}
+
+export async function listUserHelpThreads(
+  session: PublicSession,
+  client: SupabaseClient,
+  page = 1,
+) {
   if (!session.userId) throw new Error("Unauthorized");
   const safePage = Math.max(1, page);
   const from = (safePage - 1) * HELP_PAGE_SIZE;
-  const { data, count, error } = await supabase
+  const { data, count, error } = await client
     .from("help_threads")
     .select("id, source, status, subject, last_message_at, created_at", { count: "exact" })
     .eq("owner_user_id", session.userId)
@@ -73,9 +113,14 @@ export async function listUserHelpThreads(session: PublicSession, page = 1) {
   return { threads: (data ?? []).map(asPublicThread), total: count ?? 0, page: safePage, pageSize: HELP_PAGE_SIZE };
 }
 
-export async function getUserHelpThread(session: PublicSession, threadId: string, page = 1) {
+export async function getUserHelpThread(
+  session: PublicSession,
+  client: SupabaseClient,
+  threadId: string,
+  page = 1,
+) {
   if (!session.userId) throw new Error("Unauthorized");
-  const { data: thread, error: threadError } = await supabase
+  const { data: thread, error: threadError } = await client
     .from("help_threads")
     .select("id, source, status, subject, last_message_at, created_at")
     .eq("id", threadId)
@@ -85,7 +130,7 @@ export async function getUserHelpThread(session: PublicSession, threadId: string
   if (!thread) return null;
   const safePage = Math.max(1, page);
   const from = (safePage - 1) * HELP_PAGE_SIZE;
-  const { data, count, error } = await supabase
+  const { data, count, error } = await client
     .from("help_messages")
     .select("id, thread_id, sender_type, public_sender_name, public_sender_avatar_url, body, created_at", { count: "exact" })
     .eq("thread_id", threadId)
@@ -96,62 +141,37 @@ export async function getUserHelpThread(session: PublicSession, threadId: string
   return { thread: asPublicThread(thread), messages: (data ?? []).map(asPublicMessage).reverse(), total: count ?? 0, page: safePage, pageSize: HELP_PAGE_SIZE };
 }
 
-export async function createHelpThread({ session, source, subject, body, request, assistantIntent }: { session: PublicSession; source: HelpSource; subject?: string; body: string; request?: NextRequest; assistantIntent?: string }) {
+export async function createHelpThread({ session, client, source, subject, body, request, assistantIntent }: { session: PublicSession; client: SupabaseClient; source: HelpSource; subject?: string; body: string; request?: NextRequest; assistantIntent?: string }) {
   if (!session.userId || session.isBlocked) throw new Error("Unauthorized");
-  const now = new Date().toISOString();
-  const { data: thread, error } = await supabase.from("help_threads").insert({
-    owner_user_id: session.userId,
-    owner_email: session.email,
-    owner_name: session.displayName,
-    source,
-    subject: subject?.trim().slice(0, 200) || null,
-    status: "waiting_admin",
-    last_message_at: now,
-    last_user_message_at: now,
-  }).select("id, source, status, subject, last_message_at, created_at").single();
+  const { data: thread, error } = await client
+    .rpc("create_user_help_thread", {
+      p_source: source,
+      p_subject: subject?.trim() || null,
+      p_body: body,
+      p_assistant_intent: assistantIntent?.trim() || null,
+    })
+    .single();
   if (error) throw error;
-  const { error: messageError } = await supabase.from("help_messages").insert({
-    thread_id: thread.id,
-    sender_type: "user",
-    sender_user_id: session.userId,
-    public_sender_name: session.displayName || "Visitor",
-    public_sender_avatar_url: null,
-    body,
-    body_preview: preview(body),
-  });
-  if (messageError) throw messageError;
-  if (assistantIntent) {
-    await supabase.from("help_messages").insert({
-      thread_id: thread.id,
-      sender_type: "system",
-      public_sender_name: "Oriana Companion",
-      body: "Question came from Oriana Companion.",
-      body_preview: "Assistant handoff",
-      metadata: { intent: assistantIntent.slice(0, 80) },
-      is_internal_note: true,
-    });
-  }
-  await createAdminNotification({ type: "admin_new_message", title: "New help conversation", body: "A visitor is waiting for Oriana Wren.", targetUrl: "/studio/messages", metadata: { thread_id: thread.id, source }, request, actorSession: session });
-  await logAuditEvent({ request, session, action: "help_thread_created", targetType: "help_thread", targetId: thread.id, metadata: { source } });
-  return asPublicThread(thread);
+  const threadRow = requireRpcRow(thread);
+  const threadId = String(threadRow.id);
+  await createAdminNotification({ type: "admin_new_message", title: "New help conversation", body: "A visitor is waiting for Oriana Wren.", targetUrl: "/studio/messages", metadata: { thread_id: threadId, source }, request, actorSession: session });
+  await logAuditEvent({ request, session, action: "help_thread_created", targetType: "help_thread", targetId: threadId, metadata: { source } });
+  return asPublicThread(threadRow);
 }
 
-export async function appendUserHelpMessage({ session, threadId, body, request }: { session: PublicSession; threadId: string; body: string; request?: NextRequest }) {
+export async function appendUserHelpMessage({ session, client, threadId, body, request }: { session: PublicSession; client: SupabaseClient; threadId: string; body: string; request?: NextRequest }) {
   if (!session.userId || session.isBlocked) throw new Error("Unauthorized");
-  const { data: thread, error: threadError } = await supabase.from("help_threads").select("id, status").eq("id", threadId).eq("owner_user_id", session.userId).maybeSingle();
-  if (threadError) throw threadError;
-  if (!thread) throw new Error("Not found");
-  if (["closed", "archived", "blocked"].includes(thread.status)) throw new Error("This conversation is closed.");
-  const { data: recent, error: recentError } = await supabase.from("help_messages").select("sender_type").eq("thread_id", threadId).eq("is_internal_note", false).order("created_at", { ascending: false }).limit(HELP_MESSAGE_LIMIT);
-  if (recentError) throw recentError;
-  if ((recent ?? []).length === HELP_MESSAGE_LIMIT && recent!.every((item) => item.sender_type === "user")) throw new Error("Please wait for Oriana Wren before sending more messages.");
-  const now = new Date().toISOString();
-  const { data, error } = await supabase.from("help_messages").insert({ thread_id: threadId, sender_type: "user", sender_user_id: session.userId, public_sender_name: session.displayName || "Visitor", body, body_preview: preview(body) }).select("id, thread_id, sender_type, public_sender_name, public_sender_avatar_url, body, created_at").single();
+  const { data, error } = await client
+    .rpc("append_user_help_message", {
+      p_thread_id: threadId,
+      p_body: body,
+    })
+    .single();
   if (error) throw error;
-  await supabase.from("help_threads").update({ status: "waiting_admin", last_message_at: now, last_user_message_at: now, updated_at: now }).eq("id", threadId);
+  const messageRow = requireRpcRow(data);
   await createAdminNotification({ type: "admin_new_message", title: "New help reply", body: "A visitor replied to a help conversation.", targetUrl: "/studio/messages", metadata: { thread_id: threadId }, request, actorSession: session });
   await logAuditEvent({ request, session, action: "help_message_sent", targetType: "help_thread", targetId: threadId, metadata: {} });
-  return asPublicMessage(data);
+  return asPublicMessage(messageRow);
 }
 
 export async function listAdminHelpThreads({ page = 1, status, source, query }: { page?: number; status?: HelpStatus; source?: HelpSource; query?: string }) {

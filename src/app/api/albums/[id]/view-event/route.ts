@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getPublicSession } from "@/lib/auth";
 import { getAlbum } from "@/lib/albums";
+import { createAuthenticatedUserClient } from "@/lib/db/user";
 import { recordUserAlbumActivity } from "@/lib/user-activity";
 import { enforceRateLimit } from "@/lib/security-rate-limit";
 import { apiError, toServerError } from "@/lib/errors";
@@ -35,7 +36,8 @@ export async function POST(request: NextRequest, { params }: ViewEventParams) {
     }
 
     // Check if album is actually accessible to this user
-    const album = await getAlbum(id, { isAdmin: session.isAdmin });
+    const userClient = await createAuthenticatedUserClient(request);
+    const album = await getAlbum(id, { isAdmin: session.isAdmin, userClient });
     if (!album) {
       return apiError("NOT_FOUND", "Album not found", 404);
     }

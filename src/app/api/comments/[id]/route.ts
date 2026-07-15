@@ -1,29 +1,37 @@
 import { NextRequest } from "next/server";
-import { requireAdmin } from "@/lib/auth";
+import { z } from "zod";
 import { logAuditEvent } from "@/lib/audit";
+import { classifyDataFailure } from "@/lib/app-failure";
+import { getTrustedAdminDatabase } from "@/lib/db/admin";
 import { apiError, apiSuccess, toServerError } from "@/lib/errors";
 import { getSiteSettings } from "@/lib/site-settings";
-import { supabase } from "@/lib/supabase";
 
 interface CommentRouteProps {
   params: Promise<{ id: string }>;
 }
 
+const commentIdSchema = z.string().uuid();
+
 export async function PATCH(request: NextRequest, { params }: CommentRouteProps) {
-  const session = await requireAdmin(request);
-  if (!session) {
+  const database = await getTrustedAdminDatabase(request);
+  if (!database) {
     return apiError("FORBIDDEN", "Only the admin can moderate comments.", 403);
   }
+  const { session, client } = database;
 
   try {
-    const { id } = await params;
+    const idResult = commentIdSchema.safeParse((await params).id);
+    if (!idResult.success) {
+      return apiError("INVALID_INPUT", "Invalid comment id.", 400);
+    }
+    const id = idResult.data;
     const body = await request.json().catch(() => ({}));
 
     if (typeof body.is_hidden !== "boolean") {
       return apiError("INVALID_INPUT", "is_hidden must be true or false.", 400);
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await client
       .from("comments")
       .update({
         is_hidden: body.is_hidden,
@@ -34,7 +42,9 @@ export async function PATCH(request: NextRequest, { params }: CommentRouteProps)
       .select("*")
       .single();
 
-    if (error) return apiError("SERVER_ERROR", error.message, 500);
+    if (error) {
+      throw classifyDataFailure(error, "comments.admin_visibility");
+    }
     await logAuditEvent({
       request,
       session,
@@ -49,15 +59,20 @@ export async function PATCH(request: NextRequest, { params }: CommentRouteProps)
 }
 
 export async function DELETE(request: NextRequest, { params }: CommentRouteProps) {
-  const session = await requireAdmin(request);
-  if (!session) {
+  const database = await getTrustedAdminDatabase(request);
+  if (!database) {
     return apiError("FORBIDDEN", "Only the admin can delete comments.", 403);
   }
+  const { session, client } = database;
 
-  const { id } = await params;
+  const idResult = commentIdSchema.safeParse((await params).id);
+  if (!idResult.success) {
+    return apiError("INVALID_INPUT", "Invalid comment id.", 400);
+  }
+  const id = idResult.data;
   const settings = await getSiteSettings();
   if (settings.enable_soft_delete) {
-    const { error } = await supabase
+    const { error } = await client
       .from("comments")
       .update({
         is_hidden: true,
@@ -68,7 +83,13 @@ export async function DELETE(request: NextRequest, { params }: CommentRouteProps
       })
       .eq("id", id);
 
-    if (error) return apiError("SERVER_ERROR", error.message, 500);
+    if (error) {
+      return toServerError(
+        classifyDataFailure(error, "comments.admin_soft_delete"),
+        request,
+        "api.comments.delete",
+      );
+    }
     await logAuditEvent({
       request,
       session,
@@ -79,9 +100,15 @@ export async function DELETE(request: NextRequest, { params }: CommentRouteProps
     return apiSuccess({ deleted: true, softDeleted: true });
   }
 
-  const { error } = await supabase.from("comments").delete().eq("id", id);
+  const { error } = await client.from("comments").delete().eq("id", id);
 
-  if (error) return apiError("SERVER_ERROR", error.message, 500);
+  if (error) {
+    return toServerError(
+      classifyDataFailure(error, "comments.admin_delete"),
+      request,
+      "api.comments.delete",
+    );
+  }
   await logAuditEvent({
     request,
     session,

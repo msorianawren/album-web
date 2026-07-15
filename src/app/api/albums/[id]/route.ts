@@ -1,12 +1,14 @@
 import { NextRequest } from "next/server";
 import { getAlbum } from "@/lib/albums";
-import { requireAdmin } from "@/lib/auth";
+import { getPublicSession } from "@/lib/auth";
 import { logAuditEvent } from "@/lib/audit";
+import { classifyDataFailure } from "@/lib/app-failure";
+import { getTrustedAdminDatabase } from "@/lib/db/admin";
+import { createAuthenticatedUserClient } from "@/lib/db/user";
 import { apiError, apiSuccess, toServerError } from "@/lib/errors";
 import { deleteR2Objects } from "@/lib/r2";
 import { enforceRateLimit } from "@/lib/security-rate-limit";
 import { getSiteSettings } from "@/lib/site-settings";
-import { supabase } from "@/lib/supabase";
 import { albumUpdateSchema } from "@/lib/validators";
 
 interface AlbumRouteProps {
@@ -14,19 +16,28 @@ interface AlbumRouteProps {
 }
 
 export async function GET(request: NextRequest, { params }: AlbumRouteProps) {
-  const { id } = await params;
-  const session = await requireAdmin(request);
-  const album = await getAlbum(id, { isAdmin: Boolean(session?.isAdmin) });
+  try {
+    const { id } = await params;
+    const session = await getPublicSession(request);
+    const userClient = session?.userId ? await createAuthenticatedUserClient(request) : null;
+    const album = await getAlbum(id, {
+      isAdmin: session.isAdmin,
+      userClient,
+    });
 
-  if (!album) return apiError("NOT_FOUND", "Album not found.", 404);
-  return apiSuccess({ album });
+    if (!album) return apiError("NOT_FOUND", "Album not found.", 404);
+    return apiSuccess({ album });
+  } catch (error) {
+    return toServerError(error, request, "api.albums.detail");
+  }
 }
 
 export async function PATCH(request: NextRequest, { params }: AlbumRouteProps) {
-  const session = await requireAdmin(request);
-  if (!session) {
+  const database = await getTrustedAdminDatabase(request);
+  if (!database) {
     return apiError("FORBIDDEN", "Only the admin can update albums.", 403);
   }
+  const { session, client } = database;
 
   try {
     const { id } = await params;
@@ -60,19 +71,19 @@ export async function PATCH(request: NextRequest, { params }: AlbumRouteProps) {
 
     let data;
     if (Object.keys(otherFields).length > 0) {
-      const { data: updatedData, error } = await supabase
+      const { data: updatedData, error } = await client
         .from("albums")
         .update(otherFields)
         .eq("id", id)
         .select("*")
         .single();
       
-      if (error) return apiError("SERVER_ERROR", error.message, 500);
+      if (error) throw classifyDataFailure(error, "albums.admin_update");
       data = updatedData;
     }
 
     if (status) {
-      const { error } = await supabase.rpc("change_album_status", {
+      const { error } = await client.rpc("change_album_status", {
         p_album_id: id,
         p_new_status: status,
         p_user_id: session.userId,
@@ -80,7 +91,7 @@ export async function PATCH(request: NextRequest, { params }: AlbumRouteProps) {
       if (error) return apiError("SERVER_ERROR", "Failed to update album status and ordering", 500);
       
       // Refetch to get the latest row with new order
-      const { data: finalData } = await supabase.from("albums").select("*").eq("id", id).single();
+      const { data: finalData } = await client.from("albums").select("*").eq("id", id).single();
       data = finalData;
     }
 
@@ -100,10 +111,11 @@ export async function PATCH(request: NextRequest, { params }: AlbumRouteProps) {
 }
 
 export async function DELETE(request: NextRequest, { params }: AlbumRouteProps) {
-  const session = await requireAdmin(request);
-  if (!session) {
+  const database = await getTrustedAdminDatabase(request);
+  if (!database) {
     return apiError("FORBIDDEN", "Only the admin can delete albums.", 403);
   }
+  const { session, client } = database;
 
   const { id } = await params;
   const settings = await getSiteSettings();
@@ -122,7 +134,7 @@ export async function DELETE(request: NextRequest, { params }: AlbumRouteProps) 
   }
 
   if (settings.enable_soft_delete) {
-    const { error } = await supabase
+    const { error } = await client
       .from("albums")
       .update({
         deleted_at: new Date().toISOString(),
@@ -132,7 +144,13 @@ export async function DELETE(request: NextRequest, { params }: AlbumRouteProps) 
       })
       .eq("id", id);
 
-    if (error) return apiError("SERVER_ERROR", error.message, 500);
+    if (error) {
+      return toServerError(
+        classifyDataFailure(error, "albums.admin_soft_delete"),
+        request,
+        "api.albums.delete",
+      );
+    }
     await logAuditEvent({
       request,
       session,
@@ -144,15 +162,27 @@ export async function DELETE(request: NextRequest, { params }: AlbumRouteProps) 
     return apiSuccess({ deleted: true, softDeleted: true });
   }
 
-  const { data: mediaRows, error: mediaError } = await supabase
+  const { data: mediaRows, error: mediaError } = await client
     .from("media")
     .select("r2_key,thumbnail_r2_key,medium_r2_key,poster_r2_key")
     .eq("album_id", id);
 
-  if (mediaError) return apiError("SERVER_ERROR", mediaError.message, 500);
+  if (mediaError) {
+    return toServerError(
+      classifyDataFailure(mediaError, "albums.admin_delete_media_list"),
+      request,
+      "api.albums.delete",
+    );
+  }
 
-  const { error } = await supabase.from("albums").delete().eq("id", id);
-  if (error) return apiError("SERVER_ERROR", error.message, 500);
+  const { error } = await client.from("albums").delete().eq("id", id);
+  if (error) {
+    return toServerError(
+      classifyDataFailure(error, "albums.admin_delete"),
+      request,
+      "api.albums.delete",
+    );
+  }
 
   try {
     await deleteR2Objects(

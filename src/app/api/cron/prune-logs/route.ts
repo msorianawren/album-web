@@ -1,48 +1,47 @@
 import { NextRequest } from "next/server";
-import { supabase } from "@/lib/supabase";
+import { classifyDataFailure } from "@/lib/app-failure";
+import { getTrustedWorkerDatabase } from "@/lib/db/worker";
 import { apiError, apiSuccess, toServerError } from "@/lib/errors";
 import { getSiteSettings } from "@/lib/site-settings";
 
 export async function GET(request: NextRequest) {
-  // Protect the cron endpoint. Vercel sets an Authorization header with a Bearer token matching CRON_SECRET.
-  const authHeader = request.headers.get("authorization");
-  const expectedAuth = `Bearer ${process.env.CRON_SECRET}`;
-
-  if (process.env.VERCEL_ENV === "production" && authHeader !== expectedAuth) {
+  const database = getTrustedWorkerDatabase(request, "log-retention");
+  if (!database) {
     return apiError("UNAUTHENTICATED", "Invalid cron secret.", 401);
   }
+  const { client } = database;
 
   try {
     const settings = await getSiteSettings();
 
     // 1. Delete audit logs older than 6 days
     const logCutoffDate = new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString();
-    const { count: logCount, error: logError } = await supabase
+    const { count: logCount, error: logError } = await client
       .from("audit_logs")
       .delete({ count: "exact" })
       .lt("created_at", logCutoffDate);
 
-    if (logError) throw new Error(logError.message);
+    if (logError) throw classifyDataFailure(logError, "cron.prune_audit_logs");
 
     // 2. Delete spam contact messages
     const spamCutoffDate = new Date(Date.now() - settings.spam_retention_days * 24 * 60 * 60 * 1000).toISOString();
-    const { count: spamCount, error: spamError } = await supabase
+    const { count: spamCount, error: spamError } = await client
       .from("contact_messages")
       .delete({ count: "exact" })
       .eq("status", "spam")
       .lt("created_at", spamCutoffDate);
 
-    if (spamError) throw new Error(spamError.message);
+    if (spamError) throw classifyDataFailure(spamError, "cron.prune_spam_messages");
 
     // 3. Delete deleted contact messages
     const deletedCutoffDate = new Date(Date.now() - settings.deleted_message_retention_days * 24 * 60 * 60 * 1000).toISOString();
-    const { count: deletedCount, error: deletedError } = await supabase
+    const { count: deletedCount, error: deletedError } = await client
       .from("contact_messages")
       .delete({ count: "exact" })
       .eq("status", "deleted")
       .lt("deleted_at", deletedCutoffDate);
 
-    if (deletedError) throw new Error(deletedError.message);
+    if (deletedError) throw classifyDataFailure(deletedError, "cron.prune_deleted_messages");
 
     return apiSuccess({ 
       deleted_logs: logCount ?? 0, 
@@ -51,6 +50,6 @@ export async function GET(request: NextRequest) {
       status: "Pruning complete" 
     });
   } catch (error) {
-    return toServerError(error);
+    return toServerError(error, request, "api.cron.prune_logs");
   }
 }

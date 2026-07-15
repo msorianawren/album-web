@@ -855,10 +855,13 @@ export function SettingsCenter({
             <NumberField label="Max files per upload" value={settings.max_upload_files_per_batch} min={1} max={100} onChange={(value) => update("max_upload_files_per_batch", value)} />
             <NumberField label="Max album storage MB" value={settings.max_album_storage_mb} min={100} max={100000} onChange={(value) => update("max_album_storage_mb", value)} />
             <NumberField label="Max image pixels" value={settings.max_image_pixels} min={1000000} max={100000000} onChange={(value) => update("max_image_pixels", value)} />
+            <NumberField label="Max image edge (pixels)" value={settings.max_image_dimension} min={1024} max={50000} onChange={(value) => update("max_image_dimension", value)} />
           </div>
           <Toggle label="Enable image uploads" checked={settings.enable_image_uploads} onChange={(value) => update("enable_image_uploads", value)} />
           <Toggle label="Enable video uploads" checked={settings.enable_video_uploads} onChange={(value) => update("enable_video_uploads", value)} />
           <Toggle label="Strip image metadata before publishing" checked={settings.strip_image_metadata} onChange={(value) => update("strip_image_metadata", value)} />
+          <Toggle label="Preserve safe capture date" checked={settings.preserve_image_capture_date} onChange={(value) => update("preserve_image_capture_date", value)} />
+          <Toggle label="Generate AVIF derivatives" checked={settings.generate_avif_derivatives} onChange={(value) => update("generate_avif_derivatives", value)} />
           <Toggle label="Store private raw originals when possible" checked={settings.store_private_originals} onChange={(value) => update("store_private_originals", value)} />
           <Toggle label="Auto-set first uploaded image as cover" checked={settings.auto_set_first_image_as_cover} onChange={(value) => update("auto_set_first_image_as_cover", value)} />
           <Toggle label="Show video posters" checked={settings.show_video_posters} onChange={(value) => update("show_video_posters", value)} />

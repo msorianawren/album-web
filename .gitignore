@@ -44,3 +44,10 @@ supabase/.temp/
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# local private-media migration artifacts (contain storage inventory metadata)
+/PRIVATE_MEDIA_INVENTORY.json
+/PRIVATE_MEDIA_INVENTORY_REPORT.md
+/PRIVATE_MEDIA_R2_MIGRATION_REPORT.md
+/.private-media-checkpoints/
+/MEDIA_PROCESSING_CANARY.json

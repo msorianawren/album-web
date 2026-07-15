@@ -1,12 +1,15 @@
 import { NextRequest } from "next/server";
-import { getPublicSession, requireAdmin } from "@/lib/auth";
+import { getPublicSession } from "@/lib/auth";
 import { logAuditEvent } from "@/lib/audit";
+import { classifyDataFailure } from "@/lib/app-failure";
+import { getTrustedAdminDatabase } from "@/lib/db/admin";
+import { createAuthenticatedUserClient } from "@/lib/db/user";
 import { apiError, apiSuccess, toServerError } from "@/lib/errors";
 import { uploadMediaFile } from "@/lib/media";
+import { enqueueImageBuffer } from "@/lib/media/processing-jobs";
 import { getAlbum } from "@/lib/albums";
 import { enforceRateLimit } from "@/lib/security-rate-limit";
 import { getSiteSettings } from "@/lib/site-settings";
-import { supabase } from "@/lib/supabase";
 import { validateUploadFile } from "@/lib/upload-validation";
 import { mediaSortModes, parseMediaSortMode } from "@/lib/media-sort";
 
@@ -17,33 +20,43 @@ interface ImagesRouteProps {
 }
 
 export async function GET(request: NextRequest, { params }: ImagesRouteProps) {
-  const { id } = await params;
-  const session = await getPublicSession(request);
-  const rawSort = request.nextUrl.searchParams.get("sort");
-  if (rawSort && !mediaSortModes.some((mode) => mode === rawSort)) {
-    return apiError("INVALID_INPUT", "Unsupported sort mode.", 400);
-  }
-  const sort = parseMediaSortMode(rawSort, "smart");
-  const album = await getAlbum(id, { isAdmin: Boolean(session?.isAdmin), sort });
+  try {
+    const { id } = await params;
+    const session = await getPublicSession(request);
+    const userClient = session.userId ? await createAuthenticatedUserClient(request) : null;
+    const rawSort = request.nextUrl.searchParams.get("sort");
+    if (rawSort && !mediaSortModes.some((mode) => mode === rawSort)) {
+      return apiError("INVALID_INPUT", "Unsupported sort mode.", 400);
+    }
+    const sort = parseMediaSortMode(rawSort, "smart");
+    const album = await getAlbum(id, {
+      isAdmin: Boolean(session?.isAdmin),
+      sort,
+      userClient,
+    });
 
-  if (!album) return apiError("NOT_FOUND", "Album not found.", 404);
-  if (album.locked) return apiSuccess({ media: [] });
-  return apiSuccess({
-    media: album.media,
-    sort,
-    download_allowed: album.download_allowed,
-  });
+    if (!album) return apiError("NOT_FOUND", "Album not found.", 404);
+    if (album.locked) return apiSuccess({ media: [] });
+    return apiSuccess({
+      media: album.media,
+      sort,
+      download_allowed: album.download_allowed,
+    });
+  } catch (error) {
+    return toServerError(error, request, "api.albums.media.list");
+  }
 }
 
 export async function POST(request: NextRequest, { params }: ImagesRouteProps) {
-  const session = await requireAdmin(request);
-  if (!session) {
+  const database = await getTrustedAdminDatabase(request);
+  if (!database) {
     return apiError("FORBIDDEN", "Only the admin can upload media.", 403);
   }
+  const { session, client } = database;
 
   try {
     const { id: albumId } = await params;
-    const settings = await getSiteSettings();
+    const settings = await getSiteSettings(client);
     const rate = await enforceRateLimit({
       request,
       session,
@@ -73,14 +86,9 @@ export async function POST(request: NextRequest, { params }: ImagesRouteProps) {
       );
     }
 
-    const { data: existingMedia } = await supabase
-      .from("media")
-      .select("file_size")
-      .eq("album_id", albumId);
-    const currentAlbumBytes = (existingMedia ?? []).reduce(
-      (sum, item) => sum + Number(item.file_size ?? 0),
-      0,
-    );
+    const storage = await client.rpc("get_album_storage_bytes", { target_album_id: albumId });
+    if (storage.error) throw classifyDataFailure(storage.error, "media.admin_storage_usage");
+    const currentAlbumBytes = Number(storage.data ?? 0);
     const incomingBytes = files.reduce((sum, file) => sum + file.size, 0);
     if (currentAlbumBytes + incomingBytes > settings.max_album_storage_mb * 1024 * 1024) {
       return apiError("PAYLOAD_TOO_LARGE", "This upload would exceed the album storage limit.", 413);
@@ -113,15 +121,25 @@ export async function POST(request: NextRequest, { params }: ImagesRouteProps) {
       }
 
       try {
-        media.push(
-          await uploadMediaFile({
+        if (validation.value.mediaType === "image") {
+          const queued = await enqueueImageBuffer({
+            client,
+            albumId,
+            fileName: validation.value.safeName,
+            mimeType: file.type,
+            buffer,
+          });
+          media.push({ id: queued.mediaId, processing_status: queued.status });
+        } else {
+          media.push(await uploadMediaFile({
+            client,
             albumId,
             fileName: validation.value.safeName,
             mimeType: file.type,
             buffer,
             settings,
-          }),
-        );
+          }));
+        }
       } catch (error) {
         failed.push({
           fileName: file.name,

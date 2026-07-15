@@ -1,12 +1,11 @@
 import { NextRequest } from "next/server";
-import { getPublicSession } from "@/lib/auth";
+import { getTrustedAdminDatabase } from "@/lib/db/admin";
 import { apiError, apiSuccess, toServerError } from "@/lib/errors";
-import { supabase } from "@/lib/supabase";
 
 export async function GET(request: NextRequest) {
-  const session = await getPublicSession();
-  if (!session) {
-    return apiError("UNAUTHENTICATED", "Not authorized.", 401);
+  const database = await getTrustedAdminDatabase(request);
+  if (!database) {
+    return apiError("FORBIDDEN", "Only the admin can check album slugs.", 403);
   }
 
   try {
@@ -18,7 +17,7 @@ export async function GET(request: NextRequest) {
       return apiError("INVALID_INPUT", "Slug is required.", 400);
     }
 
-    let query = supabase.from("albums").select("id").eq("slug", slug).limit(1);
+    let query = database.client.from("albums").select("id").eq("slug", slug).limit(1);
 
     if (excludeId) {
       query = query.neq("id", excludeId);

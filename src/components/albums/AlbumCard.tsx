@@ -8,7 +8,11 @@ import { formatMediaCount } from "@/lib/utils";
 import { ScrollReveal } from "@/components/ui/ScrollReveal";
 import { useAlbumViewMemory } from "@/hooks/useAlbumViewMemory";
 import { LivingPreviewImages } from "@/components/albums/LivingPreviewImages";
-import { getMediaDisplayUrls } from "@/lib/media/display-url";
+import {
+  createMediaDeliveryTarget,
+  getMediaDeliveryDescriptor,
+  type MediaDeliveryTarget,
+} from "@/lib/media/delivery";
 import type { AppDictionary } from "@/lib/i18n";
 
 interface AlbumCardProps {
@@ -19,16 +23,28 @@ interface AlbumCardProps {
 
 export function AlbumCard({ album, dict, locale = "en" }: AlbumCardProps) {
   const previewItems = album.preview_items ?? [];
-  const previewImages = album.status === "private" 
-    ? [album.safe_preview_url].filter(Boolean) as string[]
+  const hasAuthorizedPrivatePreviews = album.status === "private" && previewItems.length > 0;
+  const previewImages: MediaDeliveryTarget[] = album.status === "private"
+    ? hasAuthorizedPrivatePreviews
+      ? [
+          ...previewItems
+            .filter((item) => item.media_type === "image")
+            .map((item) => getMediaDeliveryDescriptor(item, {
+              albumStatus: "private",
+              isAuthorized: true,
+            }).card),
+          createMediaDeliveryTarget(album.cover_url),
+        ].filter((target, index, values) => Boolean(target.src) && values.findIndex((value) => value.src === target.src) === index).slice(0, 4)
+      : [createMediaDeliveryTarget(album.safe_preview_url, "safe-preview")].filter((target) => Boolean(target.src))
     : [
         ...previewItems
           .filter((item) => item.media_type === "image")
-          .map((item) => getMediaDisplayUrls(item).cardSrc)
-          .filter(Boolean),
-        album.cover_url,
-      ].filter((value, index, values): value is string => Boolean(value) && values.indexOf(value) === index).slice(0, 4);
-  const videoPreview = album.status !== "private" && previewItems.find((item) => item.media_type === "video");
+          .map((item) => getMediaDeliveryDescriptor(item, { albumStatus: album.status }).card),
+        createMediaDeliveryTarget(album.cover_url),
+      ].filter((target, index, values) => Boolean(target.src) && values.findIndex((value) => value.src === target.src) === index).slice(0, 4);
+  const videoPreview = (album.status !== "private" || hasAuthorizedPrivatePreviews)
+    ? previewItems.find((item) => item.media_type === "video")
+    : null;
 
   const { getAlbumViewState } = useAlbumViewMemory();
   const viewState = getAlbumViewState(album.id);

@@ -1,0 +1,2 @@
+-- Application rollback is data preserving. Active private variants are unaffected.
+-- Reapply 202607142330 only if the legacy discovery behavior is explicitly required.

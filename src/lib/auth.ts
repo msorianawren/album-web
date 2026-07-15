@@ -1,7 +1,9 @@
-import { cookies, headers } from "next/headers";
+import { cookies } from "next/headers";
 import type { NextRequest } from "next/server";
 import type { User } from "@supabase/supabase-js";
-import { createAnonSupabase, supabase } from "@/lib/supabase";
+import { getAccessTokenFromRuntime } from "@/lib/auth-token";
+import { createPublicServerClient } from "@/lib/db/public";
+import { supabase } from "@/lib/supabase";
 import type { PublicSession, UserProfile, UserRole } from "@/lib/types";
 
 function getAdminId() {
@@ -33,44 +35,12 @@ function getUserProvider(user: User) {
   return typeof provider === "string" && provider.trim() ? provider : "google";
 }
 
-function extractTokenFromCookieValue(value: string) {
-  if (!value) return null;
-
-  try {
-    const parsed = JSON.parse(value);
-    if (typeof parsed?.access_token === "string") return parsed.access_token;
-  } catch {
-    // Supabase stores some cookie values as raw tokens and others as JSON.
-  }
-
-  return value.startsWith("eyJ") ? value : null;
-}
-
-async function getBearerTokenFromRuntime(request?: NextRequest) {
-  const authHeader = request
-    ? request.headers.get("authorization")
-    : (await headers()).get("authorization");
-
-  if (authHeader?.startsWith("Bearer ")) {
-    return authHeader.slice("Bearer ".length);
-  }
-
-  const cookieStore = request ? request.cookies : await cookies();
-  const tokenCookie =
-    cookieStore.get("sb-access-token") ??
-    cookieStore
-      .getAll()
-      .find((cookie) => cookie.name.startsWith("sb-") && cookie.name.endsWith("-auth-token"));
-
-  return tokenCookie ? extractTokenFromCookieValue(tokenCookie.value) : null;
-}
-
 export async function getCurrentUser(request?: NextRequest): Promise<User | null> {
-  const token = await getBearerTokenFromRuntime(request);
+  const token = await getAccessTokenFromRuntime(request);
   if (!token) return null;
 
   try {
-    const supabase = createAnonSupabase();
+    const supabase = createPublicServerClient();
     const { data, error } = await supabase.auth.getUser(token);
     if (error) return null;
     return data.user;

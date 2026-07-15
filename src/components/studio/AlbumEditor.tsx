@@ -19,6 +19,8 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
 import { LivingPreviewImages } from "@/components/albums/LivingPreviewImages";
+import { ReliableMediaImage } from "@/components/media/ReliableMediaImage";
+import { createMediaDeliveryTarget, getMediaDeliveryDescriptor } from "@/lib/media/delivery";
 import { mediaSortLabels, mediaSortModes, parseMediaSortMode } from "@/lib/media-sort";
 import type { AlbumDetail, AlbumStatus, Media, SiteSettings, TranslationMap } from "@/lib/types";
 import { formatBytes, slugify } from "@/lib/utils";
@@ -27,10 +29,6 @@ import { useUploadQueue } from "@/hooks/useUploadQueue";
 import { UnifiedUploadPanel } from "./uploads/UnifiedUploadPanel";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useToast } from "@/hooks/useToast";
-
-function mediaPreviewUrl(item: Media) {
-  return item.thumbnail_url ?? item.poster_url ?? item.medium_url ?? item.url;
-}
 
 export function AlbumEditor({ album, settings }: { album: AlbumDetail; settings: SiteSettings }) {
   const [title, setTitle] = useState(album.title);
@@ -128,10 +126,10 @@ export function AlbumEditor({ album, settings }: { album: AlbumDetail; settings:
         ...media
           .filter((item) => item.media_type === "image")
           .slice(0, 4)
-          .map((item) => item.medium_url ?? item.thumbnail_url ?? item.url),
-        coverUrl,
-      ].filter((value, index, values): value is string => Boolean(value) && values.indexOf(value) === index).slice(0, 4),
-    [coverUrl, media],
+          .map((item) => getMediaDeliveryDescriptor(item, { albumStatus: status }).viewer),
+        createMediaDeliveryTarget(coverUrl),
+      ].filter((target, index, values) => Boolean(target.src) && values.findIndex((value) => value.src === target.src) === index).slice(0, 4),
+    [coverUrl, media, status],
   );
 
   // Unified upload hook handles lifecycle and cleanup
@@ -174,7 +172,7 @@ export function AlbumEditor({ album, settings }: { album: AlbumDetail; settings:
       toast.error(payload.message ?? "Preview update failed.");
       return;
     }
-    setCoverUrl(payload.data.media.thumbnail_url ?? payload.data.media.poster_url ?? payload.data.media.url);
+    setCoverUrl(getMediaDeliveryDescriptor(payload.data.media, { albumStatus: status }).card.src ?? "");
     setMedia((current) => current.map((mediaItem) => ({ ...mediaItem, is_cover: mediaItem.id === item.id })));
     toast.success("Animated preview fallback updated.");
   }
@@ -459,12 +457,24 @@ export function AlbumEditor({ album, settings }: { album: AlbumDetail; settings:
           <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {media.map((item, index) => (
               <article key={item.id} className="overflow-hidden rounded-[1.2rem] border border-border bg-background/60">
-                <div className="aspect-[4/3] bg-surface-secondary">
+                <div className="relative aspect-[4/3] bg-surface-secondary">
                   {item.media_type === "image" ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={mediaPreviewUrl(item)} alt={item.title ?? item.original_filename ?? "Album media"} className="h-full w-full object-cover" loading="lazy" />
+                    <ReliableMediaImage
+                      target={getMediaDeliveryDescriptor(item, { albumStatus: status }).card}
+                      alt={getMediaDeliveryDescriptor(item, { albumStatus: status }).alt}
+                      fill
+                      sizes="(min-width: 1280px) 33vw, (min-width: 640px) 50vw, 100vw"
+                      loading="lazy"
+                      className="object-cover transition-opacity duration-150"
+                    />
                   ) : (
-                    <video src={item.url} poster={item.poster_url ?? undefined} className="h-full w-full object-cover" preload="metadata" controls />
+                    <video
+                      src={getMediaDeliveryDescriptor(item, { albumStatus: status }).viewer.src ?? undefined}
+                      poster={getMediaDeliveryDescriptor(item, { albumStatus: status }).card.src ?? undefined}
+                      className="h-full w-full object-cover"
+                      preload="metadata"
+                      controls
+                    />
                   )}
                 </div>
                 <div className="p-4">

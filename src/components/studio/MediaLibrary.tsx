@@ -4,14 +4,19 @@ import { useMemo, useState } from "react";
 import { Copy, Eye, Grid2X2, List, Play, Search, Star, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { ReliableMediaImage } from "@/components/media/ReliableMediaImage";
+import { getMediaDeliveryDescriptor } from "@/lib/media/delivery";
 import type { Album, MediaType, StudioMediaItem } from "@/lib/types";
 import { formatBytes } from "@/lib/utils";
 
 type ViewMode = "grid" | "table";
 type TypeFilter = "all" | MediaType;
 
-function previewUrl(item: StudioMediaItem) {
-  return item.thumbnail_url ?? item.poster_url ?? item.medium_url ?? item.url;
+function mediaDelivery(item: StudioMediaItem) {
+  return getMediaDeliveryDescriptor(item, {
+    albumStatus: item.album_status === "private" ? "private" : "public",
+    isAuthorized: true,
+  });
 }
 
 export function MediaLibrary({
@@ -220,11 +225,17 @@ export function MediaLibrary({
                   aria-label={`Select ${item.title ?? item.original_filename ?? "media"}`}
                 />
                 {item.media_type === "image" ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={previewUrl(item)} alt={item.title ?? item.original_filename ?? "Media"} loading="lazy" className="h-full w-full object-cover" />
+                  <ReliableMediaImage
+                    target={mediaDelivery(item).card}
+                    alt={mediaDelivery(item).alt}
+                    fill
+                    sizes="(min-width: 1280px) 25vw, (min-width: 640px) 50vw, 100vw"
+                    loading="lazy"
+                    className="object-cover transition-opacity duration-150"
+                  />
                 ) : (
                   <div className="relative h-full w-full">
-                    <video src={item.url} poster={item.poster_url ?? undefined} className="h-full w-full object-cover" preload="metadata" />
+                    <video src={mediaDelivery(item).viewer.src ?? undefined} poster={mediaDelivery(item).card.src ?? undefined} className="h-full w-full object-cover" preload="metadata" />
                     <Play className="absolute left-1/2 top-1/2 h-10 w-10 -translate-x-1/2 -translate-y-1/2 rounded-full bg-lightbox-control p-2 text-accent-foreground" />
                   </div>
                 )}
@@ -296,10 +307,19 @@ export function MediaLibrary({
             </Button>
             <div className="flex min-h-[22rem] items-center justify-center bg-black">
               {previewItem.media_type === "image" ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={previewItem.medium_url ?? previewItem.url} alt={previewItem.title ?? previewItem.original_filename ?? "Media preview"} className="max-h-[calc(100vh-4rem)] w-full object-contain" />
+                <div className="relative flex h-[min(70vh,54rem)] w-full items-center justify-center">
+                  <ReliableMediaImage
+                    target={mediaDelivery(previewItem).viewer}
+                    alt={mediaDelivery(previewItem).alt}
+                    width={mediaDelivery(previewItem).width}
+                    height={mediaDelivery(previewItem).height}
+                    sizes="(min-width: 768px) calc(100vw - 20rem), 100vw"
+                    priority
+                    className="max-h-full max-w-full object-contain transition-opacity duration-150"
+                  />
+                </div>
               ) : (
-                <video src={previewItem.url} poster={previewItem.poster_url ?? undefined} controls className="max-h-[calc(100vh-4rem)] w-full object-contain" />
+                <video src={mediaDelivery(previewItem).viewer.src ?? undefined} poster={mediaDelivery(previewItem).card.src ?? undefined} controls className="max-h-[calc(100vh-4rem)] w-full object-contain" />
               )}
             </div>
             <aside className="min-w-0 overflow-y-auto p-5">

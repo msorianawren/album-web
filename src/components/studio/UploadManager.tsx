@@ -3,6 +3,8 @@
 import { useMemo, useState } from "react";
 import { UploadCloud } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { ReliableMediaImage } from "@/components/media/ReliableMediaImage";
+import { getMediaDeliveryDescriptor } from "@/lib/media/delivery";
 import type { Album, SiteSettings, StudioMediaItem } from "@/lib/types";
 import { formatBytes } from "@/lib/utils";
 import { useUploadQueue } from "@/hooks/useUploadQueue";
@@ -109,11 +111,14 @@ export function UploadManager({
           <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
             {recent.slice(0, 12).map((item) => (
               <article key={item.id} className="rounded-[1.1rem] border border-border bg-background/60 p-4 flex gap-3">
-                <div className="h-12 w-12 shrink-0 bg-surface-secondary rounded overflow-hidden">
-                   {item.media_type === "image" && (
-                     // eslint-disable-next-line @next/next/no-img-element
-                     <img src={item.thumbnail_url ?? item.url} alt="" className="h-full w-full object-cover" />
-                   )}
+                <div className="relative h-12 w-12 shrink-0 bg-surface-secondary rounded overflow-hidden">
+                   <ReliableMediaImage
+                     target={getMediaDeliveryDescriptor(item, { albumStatus: item.album_status === "private" ? "private" : "public" }).card}
+                     alt=""
+                     fill
+                     sizes="48px"
+                     className="object-cover transition-opacity duration-150"
+                   />
                 </div>
                 <div className="min-w-0">
                    <p className="truncate font-semibold text-text-primary text-sm">{item.title ?? item.original_filename ?? "Untitled"}</p>

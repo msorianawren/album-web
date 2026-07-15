@@ -93,13 +93,13 @@ export async function getStudioComments(limit = 200): Promise<StudioCommentItem[
 export async function getStudioUsersAndLogs() {
   noStore();
   const [{ users, count }, { data: logs, count: countLogs }, roleLogs] = await Promise.all([
-    listAdminUsers("", 1, 30, "all"),
+    listAdminUsers(supabase, "", 1, 30, "all"),
     supabase
       .from("audit_logs")
       .select("*", { count: "exact" })
       .order("created_at", { ascending: false })
       .limit(30),
-    getRoleAuditLogs(30),
+    getRoleAuditLogs(supabase, 30),
   ]);
 
   return {

@@ -3,12 +3,18 @@ import JSZip from "jszip";
 import sharp from "sharp";
 import { getAlbum } from "@/lib/albums";
 import { getPublicSession } from "@/lib/auth";
+import { createAuthenticatedUserClient } from "@/lib/db/user";
 import { logAuditEvent } from "@/lib/audit";
 import { recordUserAlbumActivity } from "@/lib/user-activity";
 import { apiError, toServerError } from "@/lib/errors";
 import { extensionFromUrlOrMime, safeFilename, sanitizeZipPathSegment } from "@/lib/filenames";
 import { enforceRateLimit } from "@/lib/security-rate-limit";
 import { getSiteSettings } from "@/lib/site-settings";
+import { authorizePrivateMediaAsset, readAuthorizedPrivateMedia } from "@/lib/private-media";
+import {
+  getMediaDeliveryDescriptor,
+  isExpectedMediaContentType,
+} from "@/lib/media/delivery";
 
 export const runtime = "nodejs";
 const maxZipImages = 100;
@@ -22,6 +28,7 @@ export async function GET(request: NextRequest, { params }: AlbumDownloadProps) 
   try {
     const { id } = await params;
     const session = await getPublicSession(request);
+    const userClient = session.userId ? await createAuthenticatedUserClient(request) : null;
     const settings = await getSiteSettings();
     const rate = await enforceRateLimit({
       request,
@@ -37,7 +44,7 @@ export async function GET(request: NextRequest, { params }: AlbumDownloadProps) 
       return apiError("RATE_LIMITED", "Too many download requests. Please wait before trying again.", 429);
     }
 
-    const album = await getAlbum(id, { isAdmin: session.isAdmin });
+    const album = await getAlbum(id, { isAdmin: session.isAdmin, userClient });
 
     if (!album) return apiError("NOT_FOUND", "Album not found.", 404);
     if (!settings.allow_public_downloads && !session.isAdmin) {
@@ -84,26 +91,52 @@ export async function GET(request: NextRequest, { params }: AlbumDownloadProps) 
 
     for (const [index, image] of images.entries()) {
       const canDownloadOriginal = session.isAdmin || (settings.allow_original_downloads && image.original_download_allowed);
-      let sourceUrl = image.medium_url ?? image.thumbnail_url;
+      const privateVariant = canDownloadOriginal ? "original" : "medium";
+      const delivery = getMediaDeliveryDescriptor(image, {
+        albumStatus: album.status,
+        isAuthorized: true,
+        downloadAllowed: true,
+        originalDownloadAllowed: canDownloadOriginal,
+      });
+      const sourceTarget = canDownloadOriginal ? delivery.originalDownload : delivery.download;
+      const sourceUrl = sourceTarget.src;
+      if (!sourceUrl && album.status !== "private") continue;
 
-      if (canDownloadOriginal) {
-        sourceUrl = image.url;
-      } else if (!sourceUrl) {
-        if (image.metadata_stripped) {
-          sourceUrl = image.url;
-        } else {
-          continue;
+      let fileData: ArrayBuffer | Buffer;
+      let sourceForExtension = sourceUrl ?? image.id;
+      let sourceMime = "image/webp";
+      if (album.status === "private") {
+        const asset = await authorizePrivateMediaAsset(request, image.id, privateVariant);
+        if (!asset) continue;
+        fileData = await readAuthorizedPrivateMedia(asset);
+        sourceForExtension = asset.objectKey;
+        sourceMime = asset.contentType ?? image.mime_type ?? sourceMime;
+      } else {
+        let selectedResponse: Response | null = null;
+        let selectedSource = sourceUrl!;
+        for (const candidate of sourceTarget.candidates) {
+          const response = await fetch(candidate.src);
+          const contentType = response.headers.get("content-type");
+          const length = Number(response.headers.get("content-length") ?? 0);
+          if (
+            response.ok &&
+            (!length || length <= maxZipSourceBytes) &&
+            isExpectedMediaContentType(contentType, candidate.expectedContentType)
+          ) {
+            selectedResponse = response;
+            selectedSource = candidate.src;
+            break;
+          }
+          await response.body?.cancel();
         }
+        if (!selectedResponse) continue;
+        fileData = await selectedResponse.arrayBuffer();
+        sourceMime = selectedResponse.headers.get("content-type")!.split(";", 1)[0];
+        sourceForExtension = selectedSource;
       }
-
-      const response = await fetch(sourceUrl!);
-      if (!response.ok) continue;
-      const length = Number(response.headers.get("content-length") ?? 0);
-      if (length && length > maxZipSourceBytes) continue;
-      let fileData: ArrayBuffer | Buffer = await response.arrayBuffer();
       if (fileData.byteLength > maxZipSourceBytes) continue;
       
-      let extension = extensionFromUrlOrMime(sourceUrl, "image/webp");
+      let extension = extensionFromUrlOrMime(sourceForExtension, sourceMime);
       const baseName = `${String(index + 1).padStart(2, "0")}-${safeFilename(image.title ?? image.original_filename ?? image.id)}`;
       let finalFilename = `${baseName}.${extension}`;
 
