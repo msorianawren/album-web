@@ -372,6 +372,9 @@ export async function getSystemHealth(session?: PublicSession) {
       R2_ACCESS_KEY_ID: Boolean(process.env.R2_ACCESS_KEY_ID),
       R2_SECRET_ACCESS_KEY: Boolean(process.env.R2_SECRET_ACCESS_KEY),
       R2_BUCKET_NAME: Boolean(process.env.R2_BUCKET_NAME),
+      R2_PRIVATE_BUCKET_NAME: Boolean(process.env.R2_PRIVATE_BUCKET_NAME),
+      R2_PRIVATE_ACCESS_KEY_ID: Boolean(process.env.R2_PRIVATE_ACCESS_KEY_ID),
+      R2_PRIVATE_SECRET_ACCESS_KEY: Boolean(process.env.R2_PRIVATE_SECRET_ACCESS_KEY),
       R2_PUBLIC_URL: Boolean(process.env.R2_PUBLIC_URL),
     },
     currentAdmin: session

@@ -11,6 +11,7 @@ const read = (path) => readFileSync(join(process.cwd(), path), "utf8");
 const gateway = read("src/app/api/media/[id]/content/route.ts");
 const repository = read("src/lib/albums.ts");
 const boundary = read("src/lib/private-media.ts");
+const r2Boundary = read("src/lib/r2.ts");
 const trustedDelivery = read("src/lib/db/private-media-delivery.ts");
 const migration = read("supabase/migrations/202607142330_private_media_manifest.sql");
 const rollback = read("supabase/rollbacks/202607142330_private_media_manifest_rollback.sql");
@@ -109,6 +110,14 @@ test("private gateway verifies objects and keeps legacy fallback behind authoriz
   assert.match(boundary, /if \(variant === "original"\) return \["original"\]/);
   assert.doesNotMatch(boundary, /if \(variant === "original"\) return \["original", "display"\]/);
   assert.match(boundary, /can_access_private_album[\s\S]*if \(accessError \|\| canAccess !== true\) return null[\s\S]*getPrivateAssetRecord/);
+});
+
+test("private R2 delivery can use isolated credentials instead of duplicate public keys", () => {
+  assert.match(r2Boundary, /R2_PRIVATE_ACCESS_KEY_ID/);
+  assert.match(r2Boundary, /R2_PRIVATE_SECRET_ACCESS_KEY/);
+  assert.match(r2Boundary, /function getR2ClientForRole/);
+  assert.match(r2Boundary, /role === "private"[\s\S]*privateR2/);
+  assert.match(r2Boundary, /getR2ClientForRole\(bucketRole\)\.send/);
 });
 
 test("single byte range parser accepts valid video ranges and rejects malformed or multi ranges", () => {

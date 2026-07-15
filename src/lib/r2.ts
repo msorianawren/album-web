@@ -12,6 +12,9 @@ import { createStorageFailure } from "@/lib/app-failure";
 const accountId = process.env.R2_ACCOUNT_ID;
 const accessKeyId = process.env.R2_ACCESS_KEY_ID;
 const secretAccessKey = process.env.R2_SECRET_ACCESS_KEY;
+const privateAccountId = process.env.R2_PRIVATE_ACCOUNT_ID ?? accountId;
+const privateAccessKeyId = process.env.R2_PRIVATE_ACCESS_KEY_ID ?? accessKeyId;
+const privateSecretAccessKey = process.env.R2_PRIVATE_SECRET_ACCESS_KEY ?? secretAccessKey;
 
 if (!accountId || !accessKeyId || !secretAccessKey) {
   throw new Error("Missing Cloudflare R2 environment variables.");
@@ -25,6 +28,18 @@ export const r2 = new S3Client({
     secretAccessKey,
   },
 });
+
+const privateR2 =
+  privateAccountId && privateAccessKeyId && privateSecretAccessKey
+    ? new S3Client({
+        region: "auto",
+        endpoint: `https://${privateAccountId}.r2.cloudflarestorage.com`,
+        credentials: {
+          accessKeyId: privateAccessKeyId,
+          secretAccessKey: privateSecretAccessKey,
+        },
+      })
+    : null;
 
 async function withStorageFailure<T>(operation: string, task: () => Promise<T>) {
   try {
@@ -51,6 +66,14 @@ export function getR2BucketForRole(role: R2BucketRole) {
   return getR2Bucket();
 }
 
+function getR2ClientForRole(role: R2BucketRole) {
+  if (role === "private") {
+    if (!privateR2) throw new Error("Missing private Cloudflare R2 environment variables.");
+    return privateR2;
+  }
+  return r2;
+}
+
 export function getPublicUrl(key: string) {
   const publicUrl = process.env.R2_PUBLIC_URL;
   if (!publicUrl) return key;
@@ -71,7 +94,7 @@ export async function putR2Object({
   bucketRole?: R2BucketRole;
 }) {
   await withStorageFailure("r2.put_object", () =>
-    r2.send(
+    getR2ClientForRole(bucketRole).send(
       new PutObjectCommand({
         Bucket: getR2BucketForRole(bucketRole),
         Key: key,
@@ -122,7 +145,7 @@ export async function getPresignedPutUrl({
       Key: key,
       ContentType: contentType,
     });
-    return getSignedUrl(r2, command, { expiresIn });
+    return getSignedUrl(getR2ClientForRole(bucketRole), command, { expiresIn });
   });
 }
 
@@ -131,7 +154,7 @@ export async function headR2Object(
   bucketRole: R2BucketRole = "public",
 ) {
   const response = await withStorageFailure("r2.head_object", () =>
-    r2.send(
+    getR2ClientForRole(bucketRole).send(
       new HeadObjectCommand({
         Bucket: getR2BucketForRole(bucketRole),
         Key: key,
@@ -182,7 +205,7 @@ export async function getR2Object(
   bucketRole: R2BucketRole = "public",
 ): Promise<Buffer> {
   const response = await withStorageFailure("r2.get_object", () =>
-    r2.send(
+    getR2ClientForRole(bucketRole).send(
       new GetObjectCommand({
         Bucket: getR2BucketForRole(bucketRole),
         Key: key,
@@ -206,7 +229,7 @@ export async function getR2ObjectStream({
   range?: string;
 }) {
   const response = await withStorageFailure("r2.get_object_stream", () =>
-    r2.send(
+    getR2ClientForRole(bucketRole).send(
       new GetObjectCommand({
         Bucket: getR2BucketForRole(bucketRole),
         Key: key,
