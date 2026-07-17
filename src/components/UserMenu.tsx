@@ -185,6 +185,21 @@ export function UserMenu({ session, dict }: UserMenuProps) {
             {dict?.nav?.profile || "My Profile & Rules"}
           </Link>
 
+          {session.userId ? (
+            <Link
+              href="/games"
+              className="flex w-full items-center justify-between gap-3 rounded-[1rem] px-3 py-3 text-left text-sm font-medium text-text-primary transition hover:bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <span className="inline-flex items-center gap-3">
+                <Sparkles className="h-4 w-4 text-muted-accent" aria-hidden="true" />
+                Wren Feathers
+              </span>
+              <span className="rounded-full border border-border bg-background px-2 py-0.5 text-xs font-semibold tabular-nums text-text-secondary">
+                {session.wrenFeathers ?? 0}
+              </span>
+            </Link>
+          ) : null}
+
           {canOpenAssistant ? (
             <button
               type="button"

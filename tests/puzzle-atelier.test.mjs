@@ -97,6 +97,17 @@ test("puzzle completion never displays a zero-reward success state after verific
   );
 });
 
+test("reward migration qualifies output names and the avatar menu exposes the earned total", () => {
+  const migration = read("supabase/migrations/202607171100_fix_puzzle_reward_function.sql");
+  const auth = read("src/lib/auth.ts");
+  const userMenu = read("src/components/UserMenu.tsx");
+  assert.match(migration, /profile\.total_feathers/);
+  assert.match(migration, /result\.completion_count/);
+  assert.match(auth, /wrenFeathers: Number\(puzzleProfile\.data\?\.total_feathers \?\? 0\)/);
+  assert.match(userMenu, /Wren Feathers/);
+  assert.match(userMenu, /session\.wrenFeathers \?\? 0/);
+});
+
 test("games dictionaries and guest storage stay localized and versioned", () => {
   const english = JSON.parse(read("src/dictionaries/en.json"));
   const vietnamese = JSON.parse(read("src/dictionaries/vi.json"));

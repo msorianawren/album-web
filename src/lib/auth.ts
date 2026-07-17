@@ -101,7 +101,16 @@ export async function upsertUserProfile(user: User): Promise<UserProfile | null>
 
 export async function getPublicSession(request?: NextRequest): Promise<PublicSession> {
   const user = await getCurrentUser(request);
-  const profile = user ? await upsertUserProfile(user) : null;
+  const [profile, puzzleProfile] = user
+    ? await Promise.all([
+        upsertUserProfile(user),
+        supabase
+          .from("puzzle_user_profiles")
+          .select("total_feathers")
+          .eq("user_id", user.id)
+          .maybeSingle(),
+      ])
+    : [null, { data: null, error: null }];
   const role = user ? getEffectiveRole(user.id, profile) : "guest";
 
   return {
@@ -114,6 +123,7 @@ export async function getPublicSession(request?: NextRequest): Promise<PublicSes
     isFounder: role === "founder",
     isBlocked: Boolean(profile?.is_blocked),
     blockedReason: profile?.blocked_reason ?? null,
+    wrenFeathers: Number(puzzleProfile.data?.total_feathers ?? 0),
   };
 }
 

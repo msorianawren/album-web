@@ -271,6 +271,7 @@ export interface PublicSession {
   isFounder: boolean;
   isBlocked: boolean;
   blockedReason: string | null;
+  wrenFeathers?: number;
 }
 
 export interface LandingPageContent {
