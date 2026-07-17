@@ -6,6 +6,7 @@ import { Feather, Lock } from "lucide-react";
 import { ReliableMediaImage } from "@/components/media/ReliableMediaImage";
 import { createMediaDeliveryTarget } from "@/lib/media/delivery";
 import type { AlbumDetail } from "@/lib/types";
+import { getEffectiveFeatherPrice } from "@/lib/wren-feathers";
 
 export function LockedAlbumState({
   album,
@@ -19,7 +20,7 @@ export function LockedAlbumState({
   const router = useRouter();
   const [purchasing, setPurchasing] = useState(false);
   const [purchaseMessage, setPurchaseMessage] = useState<string | null>(null);
-  const price = album.feather_price ?? defaultFeatherPrice;
+  const price = getEffectiveFeatherPrice(album.feather_price, defaultFeatherPrice);
   const canPurchase = album.status === "private" && album.feather_purchase_enabled !== false;
 
   async function purchaseAccess() {

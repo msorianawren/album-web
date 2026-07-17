@@ -15,6 +15,7 @@ import {
   type MediaDeliveryTarget,
 } from "@/lib/media/delivery";
 import type { AppDictionary } from "@/lib/i18n";
+import { DEFAULT_PRIVATE_ALBUM_FEATHER_PRICE, getEffectiveFeatherPrice } from "@/lib/wren-feathers";
 
 interface AlbumCardProps {
   album: Album;
@@ -49,7 +50,10 @@ export function AlbumCard({ album, dict, locale = "en" }: AlbumCardProps) {
   const canPurchaseWithFeathers = album.status === "private"
     && album.feather_purchase_enabled !== false
     && album.access_request_status !== "approved";
-  const featherPrice = album.effective_feather_price ?? album.feather_price;
+  const featherPrice = getEffectiveFeatherPrice(
+    album.effective_feather_price ?? album.feather_price,
+    DEFAULT_PRIVATE_ALBUM_FEATHER_PRICE,
+  );
 
   const { getAlbumViewState } = useAlbumViewMemory();
   const viewState = getAlbumViewState(album.id);

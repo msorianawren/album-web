@@ -9,6 +9,7 @@ const route = read("src/app/api/albums/[id]/feather-purchase/route.ts");
 const lockedState = read("src/components/albums/LockedAlbumState.tsx");
 const albumCard = read("src/components/albums/AlbumCard.tsx");
 const pricingMigration = read("supabase/migrations/202607171230_album_summary_feather_pricing.sql");
+const featherPrices = read("src/lib/wren-feathers.ts");
 const studioForm = read("src/components/studio/AlbumForm.tsx");
 const studioEditor = read("src/components/studio/AlbumEditor.tsx");
 const settings = read("src/lib/site-settings.ts");
@@ -58,7 +59,7 @@ test("Studio owns pricing controls and locked albums keep request and purchase p
     assert.match(source, /min=\{1\}/);
     assert.match(source, /max=\{100000\}/);
   }
-  assert.match(settings, /private_album_default_feather_price: 150/);
+  assert.match(settings, /private_album_default_feather_price: DEFAULT_PRIVATE_ALBUM_FEATHER_PRICE/);
   assert.match(settings, /private_album_default_feather_price: z\.number\(\)\.int\(\)\.min\(1\)\.max\(100000\)/);
   assert.match(lockedState, /Request Private Access/);
   assert.match(lockedState, /Unlock for \$\{price\} Feathers/);
@@ -70,6 +71,13 @@ test("album cards receive the server-resolved Feather price without exposing pri
   assert.match(pricingMigration, /coalesce\(a\.feather_price, settings\.private_album_default_feather_price\)/i);
   assert.match(pricingMigration, /when a\.status = 'private' then jsonb_build_object\([\s\S]*'id', m\.id[\s\S]*'title', m\.title/i);
   assert.match(albumCard, /Unlock with \{featherPrice\} Wren Feathers/);
+});
+
+test("invalid Feather prices never reach locked purchase UI", () => {
+  assert.match(featherPrices, /DEFAULT_PRIVATE_ALBUM_FEATHER_PRICE = 150/);
+  assert.match(featherPrices, /price >= MIN_FEATHER_PRICE/);
+  assert.match(featherPrices, /price <= MAX_FEATHER_PRICE/);
+  assert.match(lockedState, /getEffectiveFeatherPrice\(album\.feather_price, defaultFeatherPrice\)/);
 });
 
 test("protected likes and comments resolve media back to the centrally authorized album", () => {

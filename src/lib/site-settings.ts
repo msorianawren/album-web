@@ -4,6 +4,7 @@ import { albumStatuses } from "@/lib/config";
 import { supabase } from "@/lib/supabase";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { SiteSettings } from "@/lib/types";
+import { DEFAULT_PRIVATE_ALBUM_FEATHER_PRICE, normalizeFeatherPrice } from "@/lib/wren-feathers";
 
 export const defaultSiteSettings: SiteSettings = {
   id: "default",
@@ -14,7 +15,7 @@ export const defaultSiteSettings: SiteSettings = {
   site_favicon_url: null,
   contact_email: "ms.orianawren@gmail.com",
   default_album_status: "private",
-  private_album_default_feather_price: 150,
+  private_album_default_feather_price: DEFAULT_PRIVATE_ALBUM_FEATHER_PRICE,
   allow_public_comments: true,
   allow_public_likes: true,
   allow_public_downloads: true,
@@ -216,6 +217,7 @@ export function normalizeSiteSettings(value: Partial<SiteSettings> | null | unde
   return {
     ...defaultSiteSettings,
     ...(value ?? {}),
+    private_album_default_feather_price: normalizeFeatherPrice(value?.private_album_default_feather_price),
     contact_email: value?.contact_email || defaultSiteSettings.contact_email,
     id: "default",
   };
