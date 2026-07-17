@@ -111,6 +111,7 @@ export function normalizeAlbum(row: UnknownRow): Album {
       typeof row.cover_media_id === "string" ? row.cover_media_id : null,
     feather_purchase_enabled: row.feather_purchase_enabled !== false,
     feather_price: toNullableNumber(row.feather_price),
+    effective_feather_price: toNullableNumber(row.effective_feather_price),
     safe_preview_url: safePreviewUrl,
     access_request_status: accessRequestStatus,
     photo_count: Number(row.photo_count ?? 0),

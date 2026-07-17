@@ -24,6 +24,7 @@ export interface Album {
   cover_media_id: string | null;
   feather_purchase_enabled?: boolean;
   feather_price?: number | null;
+  effective_feather_price?: number | null;
   safe_preview_url?: string | null;
   access_request_status?: "pending" | "approved" | "rejected" | "denied" | "auto_approved" | "cancelled" | "needs_manual_review" | "revoked" | null;
   photo_count: number;

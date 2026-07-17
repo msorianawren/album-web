@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Heart, Lock, MessageCircle, RefreshCw } from "lucide-react";
+import { Feather, Heart, Lock, MessageCircle, RefreshCw } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import type { Album } from "@/lib/types";
 import { formatMediaCount } from "@/lib/utils";
@@ -46,6 +46,10 @@ export function AlbumCard({ album, dict, locale = "en" }: AlbumCardProps) {
   const videoPreview = (album.status !== "private" || hasAuthorizedPrivatePreviews)
     ? previewItems.find((item) => item.media_type === "video")
     : null;
+  const canPurchaseWithFeathers = album.status === "private"
+    && album.feather_purchase_enabled !== false
+    && album.access_request_status !== "approved";
+  const featherPrice = album.effective_feather_price ?? album.feather_price;
 
   const { getAlbumViewState } = useAlbumViewMemory();
   const viewState = getAlbumViewState(album.id);
@@ -178,6 +182,12 @@ export function AlbumCard({ album, dict, locale = "en" }: AlbumCardProps) {
               {dict?.albums?.request_access || "Request private access"}
             </button>
           )}
+          {canPurchaseWithFeathers && featherPrice ? (
+            <p className="mt-3 inline-flex items-center gap-1.5 text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-text-secondary">
+              <Feather className="h-3.5 w-3.5" aria-hidden="true" />
+              Unlock with {featherPrice} Wren Feathers
+            </p>
+          ) : null}
         </div>
       )}
       </Link>

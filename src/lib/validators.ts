@@ -9,12 +9,25 @@ export const slugSchema = z
   .max(140)
   .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/);
 
+const albumTranslationsSchema = z
+  .record(
+    z.string().trim().min(2).max(16),
+    z.object({
+      title: z.string().trim().max(albumLimits.title).optional(),
+      description: z.string().trim().max(albumLimits.description).optional(),
+    }),
+  )
+  .refine((value) => Object.keys(value).length <= 20, {
+    message: "Too many album translations.",
+  });
+
 export const albumCreateSchema = z.object({
   title: z.string().trim().min(1).max(albumLimits.title),
   slug: slugSchema.optional(),
   description: z.string().trim().max(albumLimits.description).optional().nullable(),
   status: z.enum(albumStatuses).default("public"),
   cover_url: z.string().url().optional().nullable(),
+  translations: albumTranslationsSchema.optional(),
   feather_purchase_enabled: z.boolean().optional(),
   feather_price: z.number().int().min(1).max(100000).optional().nullable(),
 });

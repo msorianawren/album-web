@@ -7,6 +7,8 @@ const read = (path) => readFileSync(join(process.cwd(), path), "utf8");
 const migration = read("supabase/migrations/202607171200_feather_album_purchases.sql");
 const route = read("src/app/api/albums/[id]/feather-purchase/route.ts");
 const lockedState = read("src/components/albums/LockedAlbumState.tsx");
+const albumCard = read("src/components/albums/AlbumCard.tsx");
+const pricingMigration = read("supabase/migrations/202607171230_album_summary_feather_pricing.sql");
 const studioForm = read("src/components/studio/AlbumForm.tsx");
 const studioEditor = read("src/components/studio/AlbumEditor.tsx");
 const settings = read("src/lib/site-settings.ts");
@@ -61,6 +63,13 @@ test("Studio owns pricing controls and locked albums keep request and purchase p
   assert.match(lockedState, /Request Private Access/);
   assert.match(lockedState, /Unlock for \$\{price\} Feathers/);
   assert.match(lockedState, /album\.access_request_status !== "approved"[\s\S]*canPurchase/);
+});
+
+test("album cards receive the server-resolved Feather price without exposing private media", () => {
+  assert.match(pricingMigration, /effective_feather_price integer/i);
+  assert.match(pricingMigration, /coalesce\(a\.feather_price, settings\.private_album_default_feather_price\)/i);
+  assert.match(pricingMigration, /when a\.status = 'private' then jsonb_build_object\([\s\S]*'id', m\.id[\s\S]*'title', m\.title/i);
+  assert.match(albumCard, /Unlock with \{featherPrice\} Wren Feathers/);
 });
 
 test("protected likes and comments resolve media back to the centrally authorized album", () => {
