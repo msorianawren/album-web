@@ -12,7 +12,8 @@ type ChallengeRow = Record<string, unknown>;
 export function isPuzzleSchemaUnavailable(error: unknown) {
   if (!error || typeof error !== "object") return false;
   const value = error as { code?: unknown; message?: unknown };
-  return value.code === "42P01" || value.code === "PGRST205" || (typeof value.message === "string" && value.message.includes("puzzle_challenges"));
+  const message = typeof value.message === "string" ? value.message : "";
+  return value.code === "42P01" || value.code === "PGRST205" || /puzzle_(challenges|attempts|user_results|user_profiles|user_badges)/.test(message);
 }
 
 function asModes(value: unknown): PuzzleMode[] {

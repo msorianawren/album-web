@@ -106,3 +106,11 @@ test("puzzle APIs enforce server-side access and Studio only exposes public albu
   assert.match(studioRoute, /\.eq\("albums\.status", "public"\)/);
   assert.match(studioRoute, /Only ready public album images may be used for a puzzle/);
 });
+
+test("games page treats any missing Puzzle Atelier relation as a migration-ready state", () => {
+  const puzzleServer = read("src/lib/puzzles/server.ts");
+  const gamesPage = read("src/app/games/page.tsx");
+  assert.match(puzzleServer, /puzzle_\(challenges\|attempts\|user_results\|user_profiles\|user_badges\)/);
+  assert.match(gamesPage, /isPuzzleSchemaUnavailable\(error\)/);
+  assert.match(gamesPage, /unavailable = true/);
+});
