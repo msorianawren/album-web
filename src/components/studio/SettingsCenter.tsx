@@ -839,7 +839,9 @@ export function SettingsCenter({
             <Select label="Default status" value={settings.default_album_status} onChange={(value) => update("default_album_status", value as AlbumStatus)} options={["public", "updating", "private"]} />
             <Select label="Default sort order" value={settings.default_sort_order} onChange={(value) => update("default_sort_order", value as SiteSettings["default_sort_order"])} options={["newest", "oldest", "title"]} />
             <NumberField label="Albums per page" value={settings.albums_per_page} min={6} max={100} onChange={(value) => update("albums_per_page", value)} />
+            <NumberField label="Default Wren Feather price" value={settings.private_album_default_feather_price} min={1} max={100000} onChange={(value) => update("private_album_default_feather_price", value)} />
           </div>
+          <p className="text-sm leading-6 text-text-secondary">Private albums inherit this price when no album-specific price is set. Feathers are earned in puzzles and are never sold or transferable.</p>
           <Toggle label="Default comments enabled" checked={settings.allow_public_comments} onChange={(value) => update("allow_public_comments", value)} />
           <Toggle label="Default likes enabled" checked={settings.allow_public_likes} onChange={(value) => update("allow_public_likes", value)} />
           <Toggle label="Default downloads enabled" checked={settings.allow_public_downloads} onChange={(value) => update("allow_public_downloads", value)} />

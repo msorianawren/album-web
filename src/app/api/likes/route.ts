@@ -23,6 +23,23 @@ async function getLikeCount(client: SupabaseClient, albumId?: string | null, med
   return count ?? 0;
 }
 
+async function resolveLikeAlbumId(
+  client: SupabaseClient,
+  albumId?: string | null,
+  mediaId?: string | null,
+) {
+  if (!mediaId) return albumId ?? null;
+  const { data, error } = await client
+    .from("media")
+    .select("album_id")
+    .eq("id", mediaId)
+    .is("deleted_at", null)
+    .maybeSingle();
+  if (error || !data?.album_id) return null;
+  if (albumId && albumId !== data.album_id) return null;
+  return String(data.album_id);
+}
+
 export async function GET(request: NextRequest) {
   const session = await getPublicSession(request);
   const userClient = session.userId ? await createAuthenticatedUserClient(request) : null;
@@ -38,11 +55,17 @@ export async function GET(request: NextRequest) {
     return apiError("INVALID_INPUT", "albumId or mediaId is required.", 400);
   }
 
-  const count = await getLikeCount(readClient, albumId, mediaId);
+  const targetAlbumId = await resolveLikeAlbumId(readClient, albumId, mediaId);
+  if (!targetAlbumId) return apiError("NOT_FOUND", "Like target not found.", 404);
+  const album = await getAlbum(targetAlbumId, { isAdmin: session.isAdmin, userClient });
+  if (!album) return apiError("NOT_FOUND", "Album not found.", 404);
+  if (album.locked) return apiError("FORBIDDEN", "Private album.", 403);
+
+  const count = await getLikeCount(readClient, targetAlbumId, mediaId);
   let liked = false;
 
   if (clientId || session.userId) {
-    let query = likeTargetQuery(readClient, albumId, mediaId).limit(1);
+    let query = likeTargetQuery(readClient, targetAlbumId, mediaId).limit(1);
     query = session.userId
       ? query.or(`user_id.eq.${session.userId},client_id.eq.${clientId ?? session.userId}`)
       : query.eq("client_id", clientId);
@@ -88,14 +111,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (parsed.data.albumId) {
-      const album = await getAlbum(parsed.data.albumId, {
-        isAdmin: session.isAdmin,
-        userClient,
-      });
-      if (!album) return apiError("NOT_FOUND", "Album not found.", 404);
-      if (album.locked) return apiError("FORBIDDEN", "Private album.", 403);
-    }
+    const targetAlbumId = await resolveLikeAlbumId(readClient, parsed.data.albumId, parsed.data.mediaId);
+    if (!targetAlbumId) return apiError("NOT_FOUND", "Like target not found.", 404);
+    const album = await getAlbum(targetAlbumId, { isAdmin: session.isAdmin, userClient });
+    if (!album) return apiError("NOT_FOUND", "Album not found.", 404);
+    if (album.locked) return apiError("FORBIDDEN", "Private album.", 403);
 
     const clientId =
       parsed.data.clientId ??
@@ -103,7 +123,7 @@ export async function POST(request: NextRequest) {
       session.userId ??
       "anonymous";
 
-    let existingQuery = likeTargetQuery(readClient, parsed.data.albumId, parsed.data.mediaId).limit(1);
+    let existingQuery = likeTargetQuery(readClient, targetAlbumId, parsed.data.mediaId).limit(1);
     existingQuery = session.userId
       ? existingQuery.or(`user_id.eq.${session.userId},client_id.eq.${clientId}`)
       : existingQuery.eq("client_id", clientId);
@@ -119,7 +139,7 @@ export async function POST(request: NextRequest) {
       liked = false;
     } else {
       const { error } = await supabase.from("likes").insert({
-        album_id: parsed.data.albumId,
+        album_id: targetAlbumId,
         media_id: parsed.data.mediaId,
         client_id: clientId,
         user_id: session.userId,
@@ -127,7 +147,7 @@ export async function POST(request: NextRequest) {
       if (error) return apiError("SERVER_ERROR", error.message, 500);
     }
 
-    const count = await getLikeCount(readClient, parsed.data.albumId, parsed.data.mediaId);
+    const count = await getLikeCount(readClient, targetAlbumId, parsed.data.mediaId);
     return apiSuccess({ count, liked });
   } catch (error) {
     return toServerError(error);

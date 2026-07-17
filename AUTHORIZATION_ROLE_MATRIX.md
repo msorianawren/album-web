@@ -27,13 +27,14 @@ The target database helper and `src/lib/authorization/role-matrix.ts` use this o
 1. no authenticated principal: deny;
 2. blocked account: deny;
 3. admin/founder trusted context: allow;
-4. latest selected-album revoke: deny;
-5. latest selected-album active grant: allow;
-6. latest all-private revoke: deny fallback/global access;
-7. latest all-private active grant: allow;
-8. matching legacy invite: allow during migration window;
-9. approved/auto-approved applicable request: allow;
-10. pending, denied, or no entitlement: deny.
+4. active Feather purchase: allow permanently for that album;
+5. latest selected-album revoke: deny manual grant/fallback access only;
+6. latest selected-album active grant: allow;
+7. latest all-private revoke: deny fallback/global access;
+8. latest all-private active grant: allow;
+9. matching legacy invite: allow during migration window;
+10. approved/auto-approved applicable request: allow;
+11. pending, denied, or no entitlement: deny.
 
 Revocation must prevent issuance of new private media access immediately. Any already-issued future signed URL remains valid only until its short expiry; that delivery mechanism is handled in Milestone 4.
 
@@ -42,7 +43,7 @@ Revocation must prevent issuance of new private media access immediately. Any al
 | Action | Session source | Database client | RLS/final guard | Current status |
 |---|---|---|---|---|
 | Public album list/detail | optional runtime session | anon | public album/media policies | implemented/local verified |
-| Private album list/detail | verified runtime session/JWT | user JWT | `can_access_private_album` plus media RLS | implemented; guest verified, authenticated fixtures blocked |
+| Private album list/detail | verified runtime session/JWT | user JWT | `can_access_private_album` plus media RLS; active Feather purchase precedes manual grant/revoke decisions | implemented; guest verified, authenticated fixtures blocked |
 | Private album ZIP/single media read | verified runtime session/JWT | user JWT or anon | media select RLS plus product download policy | implemented; authenticated fixtures blocked |
 | Notification read/update | verified runtime session/JWT | user JWT | recipient `auth.uid()` policies | implemented, authenticated test blocked |
 | Help list/detail | verified runtime session/JWT | user JWT | owner `auth.uid()` policies | implemented, authenticated test blocked |

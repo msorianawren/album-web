@@ -15,6 +15,8 @@ export const albumCreateSchema = z.object({
   description: z.string().trim().max(albumLimits.description).optional().nullable(),
   status: z.enum(albumStatuses).default("public"),
   cover_url: z.string().url().optional().nullable(),
+  feather_purchase_enabled: z.boolean().optional(),
+  feather_price: z.number().int().min(1).max(100000).optional().nullable(),
 });
 
 export const albumUpdateSchema = albumCreateSchema

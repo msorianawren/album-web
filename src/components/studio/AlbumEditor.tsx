@@ -36,6 +36,8 @@ export function AlbumEditor({ album, settings }: { album: AlbumDetail; settings:
   const [description, setDescription] = useState(album.description ?? "");
   const [status, setStatus] = useState<AlbumStatus>(album.status);
   const [coverUrl, setCoverUrl] = useState(album.cover_url ?? "");
+  const [featherPurchaseEnabled, setFeatherPurchaseEnabled] = useState(album.feather_purchase_enabled !== false);
+  const [featherPrice, setFeatherPrice] = useState(album.feather_price?.toString() ?? "");
   const [defaultMediaSort, setDefaultMediaSort] = useState(parseMediaSortMode(album.default_media_sort, "smart"));
   const [translations, setTranslations] = useState<TranslationMap>(album.translations || {});
   const [activeLocale, setActiveLocale] = useState("en");
@@ -148,6 +150,8 @@ export function AlbumEditor({ album, settings }: { album: AlbumDetail; settings:
         cover_url: coverUrl || null,
         default_media_sort: defaultMediaSort,
         translations,
+        feather_purchase_enabled: featherPurchaseEnabled,
+        feather_price: featherPrice ? Number(featherPrice) : null,
       }),
     });
     const payload = await response.json();
@@ -349,6 +353,30 @@ export function AlbumEditor({ album, settings }: { album: AlbumDetail; settings:
               <span className="text-sm font-medium text-text-primary">Animated preview fallback URL</span>
               <Input value={coverUrl} onChange={(event) => setCoverUrl(event.target.value)} placeholder="Fallback image URL" />
             </label>
+            <fieldset className="grid gap-2 rounded-2xl border border-border bg-background/55 p-4 lg:col-span-2" disabled={status !== "private"}>
+              <label className="flex items-center gap-3 text-sm font-medium text-text-primary">
+                <input
+                  type="checkbox"
+                  checked={featherPurchaseEnabled}
+                  onChange={(event) => setFeatherPurchaseEnabled(event.target.checked)}
+                  className="h-4 w-4 accent-[var(--accent)]"
+                />
+                Allow permanent Wren Feather unlocks
+              </label>
+              <label className="grid max-w-sm gap-2">
+                <span className="text-sm font-medium text-text-primary">Feather price</span>
+                <Input
+                  type="number"
+                  min={1}
+                  max={100000}
+                  value={featherPrice}
+                  onChange={(event) => setFeatherPrice(event.target.value)}
+                  placeholder={`Global default: ${settings.private_album_default_feather_price}`}
+                  disabled={!featherPurchaseEnabled || status !== "private"}
+                />
+              </label>
+              <span className="text-xs leading-5 text-text-secondary">Leave empty to inherit the global default. Public and updating albums keep this configuration but cannot be purchased.</span>
+            </fieldset>
             <label className="grid gap-2 lg:col-span-2">
               <span className="text-sm font-medium text-text-primary">Default gallery sort</span>
               <select

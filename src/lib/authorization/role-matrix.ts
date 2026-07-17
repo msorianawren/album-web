@@ -11,6 +11,7 @@ export type PrivateAlbumEntitlement =
   | "pending"
   | "denied"
   | "revoked"
+  | "feather_purchase"
   | "selected_album"
   | "all_private";
 
@@ -23,6 +24,7 @@ export type PrivateAlbumAccessReason =
   | "missing_grant"
   | "selected_album_grant"
   | "all_private_grant"
+  | "feather_purchase"
   | "trusted_admin"
   | "trusted_worker";
 
@@ -42,6 +44,9 @@ export function decidePrivateAlbumAccess(
   }
   if (principal === "worker") return { allowed: true, reason: "trusted_worker" };
 
+  if (entitlement === "feather_purchase") {
+    return { allowed: true, reason: "feather_purchase" };
+  }
   if (entitlement === "revoked") return { allowed: false, reason: "revoked" };
   if (entitlement === "denied") return { allowed: false, reason: "denied" };
   if (entitlement === "pending") return { allowed: false, reason: "pending" };

@@ -108,7 +108,7 @@ function gameAnswer(intent: AssistantIntent, locale: AssistantLocale): Assistant
     return {
       ...common,
       title: vi ? "Wren Feathers và huy hiệu" : "Wren Feathers and badges",
-      answer: vi ? "Phần thưởng được xác minh ở máy chủ sau khi hoàn thành. Thời gian và số bước đạt mục tiêu có thể tăng thưởng; chơi lại không tạo phần thưởng trùng lặp." : "Rewards are verified by the server after completion. Target time and moves can increase the reward; replays cannot create duplicate rewards.",
+      answer: vi ? "Phần thưởng được xác minh ở máy chủ sau khi hoàn thành. Thời gian và số bước đạt mục tiêu có thể tăng thưởng; chơi lại không tạo phần thưởng trùng lặp. Wren Feathers là phần thưởng miễn phí, không chuyển nhượng và có thể mở khóa vĩnh viễn album riêng tư khi album cho phép." : "Rewards are verified by the server after completion. Target time and moves can increase the reward; replays cannot create duplicate rewards. Wren Feathers are free, non-transferable rewards that can permanently unlock a private album when that album allows it.",
       quickActions: [{ id: "games", label: vi ? "Xem thử thách" : "Browse challenges", question: "Open the puzzle games", href: "/games" }],
     };
   }

@@ -81,6 +81,8 @@ export async function POST(request: NextRequest) {
         description: parsed.data.description,
         status,
         cover_url: parsed.data.cover_url,
+        feather_purchase_enabled: parsed.data.feather_purchase_enabled ?? true,
+        feather_price: parsed.data.feather_price ?? null,
       })
       .select("*")
       .single();

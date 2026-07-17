@@ -20,6 +20,8 @@ export function AlbumForm({ defaultStatus = "private", settings }: { defaultStat
   const [description, setDescription] = useState("");
   const [status, setStatus] = useState<AlbumStatus>(defaultStatus);
   const [coverUrl, setCoverUrl] = useState("");
+  const [featherPurchaseEnabled, setFeatherPurchaseEnabled] = useState(true);
+  const [featherPrice, setFeatherPrice] = useState("");
   const [slugTouched, setSlugTouched] = useState(false);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
@@ -91,6 +93,8 @@ export function AlbumForm({ defaultStatus = "private", settings }: { defaultStat
         description: description || null,
         status,
         cover_url: coverUrl || null,
+        feather_purchase_enabled: featherPurchaseEnabled,
+        feather_price: featherPrice ? Number(featherPrice) : null,
       }),
     });
     
@@ -177,6 +181,32 @@ export function AlbumForm({ defaultStatus = "private", settings }: { defaultStat
           Downloads only when public
         </label>
       </div>
+      <fieldset className="grid gap-4 rounded-[1.1rem] border border-border bg-background/55 p-4 sm:grid-cols-[1fr_14rem]" disabled={status !== "private"}>
+        <label className="flex items-center gap-3 text-sm font-medium text-text-primary">
+          <input
+            type="checkbox"
+            checked={featherPurchaseEnabled}
+            onChange={(event) => setFeatherPurchaseEnabled(event.target.checked)}
+            className="h-4 w-4 accent-[var(--accent)]"
+          />
+          Allow permanent Wren Feather unlocks
+        </label>
+        <label className="grid gap-2">
+          <span className="text-sm font-medium text-text-primary">Feather price</span>
+          <Input
+            type="number"
+            min={1}
+            max={100000}
+            value={featherPrice}
+            onChange={(event) => setFeatherPrice(event.target.value)}
+            placeholder={`Global default: ${settings.private_album_default_feather_price}`}
+            disabled={!featherPurchaseEnabled || status !== "private"}
+          />
+        </label>
+        <p className="sm:col-span-2 text-xs leading-5 text-text-secondary">
+          Leave the price empty to inherit the global private-album default. This setting is only available while the album is private.
+        </p>
+      </fieldset>
       <div className="mt-2 border-t border-border pt-6">
         <UnifiedUploadPanel
           queue={queue}

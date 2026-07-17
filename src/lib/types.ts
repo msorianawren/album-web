@@ -22,6 +22,8 @@ export interface Album {
   status: AlbumStatus;
   cover_url: string | null;
   cover_media_id: string | null;
+  feather_purchase_enabled?: boolean;
+  feather_price?: number | null;
   safe_preview_url?: string | null;
   access_request_status?: "pending" | "approved" | "rejected" | "denied" | "auto_approved" | "cancelled" | "needs_manual_review" | "revoked" | null;
   photo_count: number;
@@ -313,6 +315,7 @@ export interface SiteSettings {
   site_favicon_url: string | null;
   contact_email: string | null;
   default_album_status: AlbumStatus;
+  private_album_default_feather_price: number;
   allow_public_comments: boolean;
   allow_public_likes: boolean;
   allow_public_downloads: boolean;

@@ -1,9 +1,45 @@
-import { Lock } from "lucide-react";
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { Feather, Lock } from "lucide-react";
 import { ReliableMediaImage } from "@/components/media/ReliableMediaImage";
 import { createMediaDeliveryTarget } from "@/lib/media/delivery";
 import type { AlbumDetail } from "@/lib/types";
 
-export function LockedAlbumState({ album }: { album: AlbumDetail }) {
+export function LockedAlbumState({
+  album,
+  wrenFeathers,
+  defaultFeatherPrice,
+}: {
+  album: AlbumDetail;
+  wrenFeathers: number;
+  defaultFeatherPrice: number;
+}) {
+  const router = useRouter();
+  const [purchasing, setPurchasing] = useState(false);
+  const [purchaseMessage, setPurchaseMessage] = useState<string | null>(null);
+  const price = album.feather_price ?? defaultFeatherPrice;
+  const canPurchase = album.status === "private" && album.feather_purchase_enabled !== false;
+
+  async function purchaseAccess() {
+    setPurchasing(true);
+    setPurchaseMessage(null);
+    try {
+      const response = await fetch(`/api/albums/${album.id}/feather-purchase`, { method: "POST" });
+      const payload = await response.json().catch(() => null);
+      if (!response.ok || !payload?.success) {
+        setPurchaseMessage(payload?.message ?? "Could not complete the Feather unlock.");
+        return;
+      }
+      router.refresh();
+    } catch {
+      setPurchaseMessage("Could not complete the Feather unlock. Please try again.");
+    } finally {
+      setPurchasing(false);
+    }
+  }
+
   return (
     <section className="mx-auto grid w-full max-w-[1440px] gap-8 px-4 pb-20 pt-6 sm:px-8 lg:grid-cols-[0.9fr_1.1fr] lg:px-12">
       <div className="relative aspect-[4/3] overflow-hidden rounded-[2rem] bg-surface">
@@ -45,17 +81,37 @@ export function LockedAlbumState({ album }: { album: AlbumDetail }) {
           <div className="mt-8 inline-flex self-start items-center gap-2 rounded-full border border-red-500/30 bg-red-500/10 px-4 py-2 text-sm font-semibold uppercase tracking-wider text-red-600 dark:text-red-400">
             Access Not Approved
           </div>
-        ) : (
-          <button 
-            className="mt-8 self-start inline-flex items-center justify-center gap-2 rounded-full bg-accent px-6 py-3 text-sm font-semibold uppercase tracking-wider text-accent-foreground transition hover:-translate-y-0.5"
-            onClick={(e) => {
-              e.preventDefault();
+        ) : null}
+        {album.access_request_status !== "approved" && album.access_request_status !== "pending" && album.access_request_status !== "rejected" ? (
+          <div className="mt-8 flex flex-wrap gap-3">
+            <button
+              type="button"
+              className="inline-flex items-center justify-center gap-2 rounded-full bg-accent px-6 py-3 text-sm font-semibold uppercase tracking-wider text-accent-foreground transition hover:-translate-y-0.5"
+              onClick={() => {
               document.dispatchEvent(new CustomEvent("open-access-request", { detail: album }));
-            }}
+              }}
+            >
+              Request Private Access
+            </button>
+          </div>
+        ) : null}
+        {canPurchase ? (
+          <button
+            type="button"
+            onClick={purchaseAccess}
+            disabled={purchasing || wrenFeathers < price}
+            className="mt-3 inline-flex self-start items-center justify-center gap-2 rounded-full border border-border bg-background px-6 py-3 text-sm font-semibold uppercase tracking-wider text-text-primary transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-55"
           >
-            Request Private Access
+            <Feather className="h-4 w-4" aria-hidden="true" />
+            {purchasing ? "Unlocking..." : `Unlock for ${price} Feathers`}
           </button>
-        )}
+        ) : null}
+        {canPurchase ? (
+          <p className="mt-4 text-sm text-text-secondary" aria-live="polite">
+            Balance: {wrenFeathers} Wren Feathers{wrenFeathers < price ? ` - ${price - wrenFeathers} more needed` : ""}.
+          </p>
+        ) : null}
+        {purchaseMessage ? <p className="mt-3 text-sm text-red-600" role="alert">{purchaseMessage}</p> : null}
       </div>
     </section>
   );

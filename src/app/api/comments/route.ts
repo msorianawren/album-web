@@ -1,4 +1,5 @@
 import { NextRequest } from "next/server";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { getPublicSession, requireUser } from "@/lib/auth";
 import { getAlbum } from "@/lib/albums";
 import { logAuditEvent } from "@/lib/audit";
@@ -18,6 +19,22 @@ import { getSiteSettings } from "@/lib/site-settings";
 import { supabase } from "@/lib/supabase";
 import { commentCreateSchema } from "@/lib/validators";
 
+async function mediaBelongsToAlbum(
+  albumId: string,
+  mediaId: string | null | undefined,
+  client: SupabaseClient,
+) {
+  if (!mediaId) return true;
+  const { data, error } = await client
+    .from("media")
+    .select("album_id")
+    .eq("id", mediaId)
+    .eq("album_id", albumId)
+    .is("deleted_at", null)
+    .maybeSingle();
+  return !error && Boolean(data);
+}
+
 export async function GET(request: NextRequest) {
   const albumId = request.nextUrl.searchParams.get("albumId");
   const mediaId = request.nextUrl.searchParams.get("mediaId");
@@ -35,6 +52,9 @@ export async function GET(request: NextRequest) {
   if (album.locked) return apiSuccess({ comments: [] });
 
   const readClient = userClient ?? createPublicServerClient();
+  if (!(await mediaBelongsToAlbum(album.id, mediaId, readClient))) {
+    return apiError("NOT_FOUND", "Media not found.", 404);
+  }
   let query = readClient
     .from("comments")
     .select("*")
@@ -75,6 +95,9 @@ export async function POST(request: NextRequest) {
     }
 
     const userClient = await createAuthenticatedUserClient(request);
+    if (!userClient) {
+      return apiError("UNAUTHENTICATED", "Login with Google is required to comment.", 401);
+    }
     const album = await getAlbum(parsed.data.albumId, {
       isAdmin: session.isAdmin,
       userClient,
@@ -82,6 +105,9 @@ export async function POST(request: NextRequest) {
     if (!album) return apiError("NOT_FOUND", "Album not found.", 404);
     if (album.locked) {
       return apiError("FORBIDDEN", "Private albums do not accept public comments.", 403);
+    }
+    if (!(await mediaBelongsToAlbum(album.id, parsed.data.mediaId, userClient))) {
+      return apiError("NOT_FOUND", "Media not found.", 404);
     }
 
     const settings = await getSiteSettings();

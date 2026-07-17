@@ -117,7 +117,11 @@ export default async function AlbumPage({ params }: AlbumPageProps) {
       <AlbumViewTracker albumId={album.id} slug={album.slug} locked={album.locked} />
       <AlbumHeader album={localizedAlbum} dict={dict} />
       {album.locked ? (
-        <LockedAlbumState album={album} />
+        <LockedAlbumState
+          album={album}
+          wrenFeathers={session.wrenFeathers ?? 0}
+          defaultFeatherPrice={settings.private_album_default_feather_price}
+        />
       ) : (
         <>
           {album.status === "updating" ? <UpdatingNotice /> : null}
