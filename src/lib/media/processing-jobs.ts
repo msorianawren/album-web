@@ -42,17 +42,20 @@ export async function reserveImageProcessingUpload({
   fileName,
   mimeType,
   size,
+  mediaId = randomUUID(),
+  idempotencyKey,
 }: {
   client: SupabaseClient;
   albumId: string;
   fileName: string;
   mimeType: string;
   size: number;
+  mediaId?: string;
+  idempotencyKey?: string;
 }): Promise<UploadReservation> {
-  const mediaId = randomUUID();
   const safeName = safeFilename(fileName, "upload");
   const sourceKey = `staging/media/${mediaId}/source.${extensionFromMime(mimeType)}`;
-  const idempotencyKey = createHash("sha256")
+  const derivedIdempotencyKey = idempotencyKey ?? createHash("sha256")
     .update(`${mediaId}:${albumId}:${sourceKey}:${size}`)
     .digest("hex");
   const result = await client.rpc("register_media_processing_upload", {
@@ -62,7 +65,7 @@ export async function reserveImageProcessingUpload({
     source_mime: mimeType,
     source_name: safeName,
     source_bytes: size,
-    target_idempotency_key: idempotencyKey,
+    target_idempotency_key: derivedIdempotencyKey,
   });
   if (result.error) throw result.error;
   return { mediaId, sourceKey, safeName, mimeType, size };
