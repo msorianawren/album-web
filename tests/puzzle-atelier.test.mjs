@@ -84,6 +84,11 @@ test("puzzle migration keeps rewards atomic and direct account tables closed", (
   assert.match(migration, /primary key \(user_id, badge_key\)/i);
 });
 
+test("puzzle challenge media resolves its owning album relationship explicitly", () => {
+  const server = read("src/lib/puzzles/server.ts");
+  assert.match(server, /albums!media_album_id_fkey\(status\)/);
+});
+
 test("games dictionaries and guest storage stay localized and versioned", () => {
   const english = JSON.parse(read("src/dictionaries/en.json"));
   const vietnamese = JSON.parse(read("src/dictionaries/vi.json"));

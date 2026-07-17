@@ -58,7 +58,7 @@ function mapChallenge(row: ChallengeRow): PuzzleChallenge {
 async function rawChallenges(status?: "published" | "all") {
   let query = supabase
     .from("puzzle_challenges")
-    .select("*, media:source_media_id(id, media_type, url, thumbnail_url, medium_url, processing_status, security_status, albums(status))")
+    .select("*, media:source_media_id(id, media_type, url, thumbnail_url, medium_url, processing_status, security_status, albums!media_album_id_fkey(status))")
     .order("published_at", { ascending: false });
   if (status === "published") query = query.eq("status", "published");
   const { data, error } = await query;
