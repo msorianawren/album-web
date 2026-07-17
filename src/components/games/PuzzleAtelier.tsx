@@ -222,7 +222,6 @@ export function PuzzleAtelier({ initialChallenges, initialResults, signedIn, cop
       setResults((current) => ({ ...current, [resultId]: { bestTimeMs: finalElapsed, bestMoveCount: nextMoves, bestReward: value?.rewardEarned ?? 0, completionCount: value?.completionCount ?? 1 } }));
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Could not verify this puzzle.");
-      setCompletion({ rewardEarned: 0, totalFeathers: 0, completionCount: 0, moveCount: nextMoves, badges: [] });
     } finally {
       setIsFinalizing(false);
     }

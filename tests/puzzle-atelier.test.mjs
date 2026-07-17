@@ -89,6 +89,14 @@ test("puzzle challenge media resolves its owning album relationship explicitly",
   assert.match(server, /albums!media_album_id_fkey\(status\)/);
 });
 
+test("puzzle completion never displays a zero-reward success state after verification fails", () => {
+  const atelier = read("src/components/games/PuzzleAtelier.tsx");
+  assert.doesNotMatch(
+    atelier,
+    /catch \(error\) \{[\s\S]*?setCompletion\(\{ rewardEarned: 0,/,
+  );
+});
+
 test("games dictionaries and guest storage stay localized and versioned", () => {
   const english = JSON.parse(read("src/dictionaries/en.json"));
   const vietnamese = JSON.parse(read("src/dictionaries/vi.json"));
