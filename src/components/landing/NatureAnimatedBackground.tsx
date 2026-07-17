@@ -2,7 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import type { LandingBackgroundSettings } from "@/lib/types";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useUIPreferences } from "@/hooks/useUIPreferences";
 import { imageStore } from "@/lib/idb";
 
@@ -40,6 +40,9 @@ export function NatureAnimatedBackground({ config }: { config?: Partial<LandingB
   const pathname = usePathname();
   const [mounted, setMounted] = useState(false);
   const [particles, setParticles] = useState<NatureParticle[]>([]);
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
+  const [documentVisible, setDocumentVisible] = useState(true);
+  const customVideoRef = useRef<HTMLVideoElement>(null);
   const resolvedConfig = { ...defaultBackgroundSettings, ...config };
   
   const { bgThemeOverride, bgCustomUrlOverride } = useUIPreferences();
@@ -60,12 +63,32 @@ export function NatureAnimatedBackground({ config }: { config?: Partial<LandingB
   }, [bgCustomUrlOverride]);
 
   useEffect(() => {
+    const motionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const updateMotionPreference = () => setPrefersReducedMotion(motionQuery.matches);
+    const updateVisibility = () => setDocumentVisible(!document.hidden);
+
+    updateMotionPreference();
+    updateVisibility();
+    motionQuery.addEventListener("change", updateMotionPreference);
+    document.addEventListener("visibilitychange", updateVisibility);
+    return () => {
+      motionQuery.removeEventListener("change", updateMotionPreference);
+      document.removeEventListener("visibilitychange", updateVisibility);
+    };
+  }, []);
+
+  useEffect(() => {
     const timer = window.setTimeout(() => {
       setMounted(true);
 
       // Check if mobile and reduction is enabled
       const isMobile = window.innerWidth <= 768;
       const shouldReduce = isMobile && resolvedConfig.reduce_animations_on_mobile;
+
+      if (prefersReducedMotion) {
+        setParticles([]);
+        return;
+      }
 
       // Cap particles aggressively for performance
       let baseCount = Math.floor((resolvedConfig.density / 100) * 20) + 2;
@@ -105,7 +128,24 @@ export function NatureAnimatedBackground({ config }: { config?: Partial<LandingB
       root.style.setProperty("--preset-hover-bg", "rgba(200, 200, 200, 0.05)");
     }
     return () => window.clearTimeout(timer);
-  }, [resolvedConfig.density, resolvedConfig.reduce_animations_on_mobile, effectivePreset]);
+  }, [resolvedConfig.density, resolvedConfig.reduce_animations_on_mobile, effectivePreset, prefersReducedMotion]);
+
+  useEffect(() => {
+    const video = customVideoRef.current;
+    if (!video) return;
+
+    const syncPlayback = () => {
+      if (prefersReducedMotion || !documentVisible) {
+        video.pause();
+        return;
+      }
+      void video.play().catch(() => {});
+    };
+
+    syncPlayback();
+    video.addEventListener("canplay", syncPlayback);
+    return () => video.removeEventListener("canplay", syncPlayback);
+  }, [documentVisible, effectiveCustomUrl, prefersReducedMotion]);
 
   if (!mounted) return null;
   if (resolvedConfig.enabled === false || (resolvedConfig.enabled as unknown) === "false") return null;
@@ -127,6 +167,7 @@ export function NatureAnimatedBackground({ config }: { config?: Partial<LandingB
       <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden" aria-hidden="true" style={cssVars}>
       <style>{`
         .nature-container { opacity: var(--nature-opacity); transition: opacity 1s; }
+        .nature-paused .sakura-petal, .nature-paused .firefly, .nature-paused .snow-flake, .nature-paused .autumn-leaf, .nature-paused .mist-layer, .nature-paused .rain-drop { animation-play-state: paused !important; }
         .nature-layer { position: absolute; inset: -20%; will-change: transform; }
         
         @keyframes fall-sakura {
@@ -215,12 +256,12 @@ export function NatureAnimatedBackground({ config }: { config?: Partial<LandingB
         }
       `}</style>
 
-      <div className="nature-container absolute inset-0">
+      <div className={`nature-container absolute inset-0 ${documentVisible ? "" : "nature-paused"}`}>
         
         {effectiveCustomUrl && (
           <div className="absolute inset-0 opacity-20 dark:opacity-30">
             {effectiveCustomUrl.match(/\.(mp4|webm)$/i) || effectiveCustomUrl.startsWith("data:video") ? (
-              <video src={effectiveCustomUrl} autoPlay loop muted playsInline className="h-full w-full object-cover" />
+              <video ref={customVideoRef} src={effectiveCustomUrl} autoPlay={!prefersReducedMotion && documentVisible} loop muted playsInline className="h-full w-full object-cover" />
             ) : (
               <img src={effectiveCustomUrl} alt="" className="h-full w-full object-cover" />
             )}

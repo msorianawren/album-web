@@ -1,6 +1,7 @@
 import { ArrowRight, Camera, Sparkles } from "lucide-react";
 import type { LandingPageContent, SiteSettings } from "@/lib/types";
 import { ScrollReveal } from "@/components/ui/ScrollReveal";
+import { DepthSurface } from "@/components/ui/DepthSurface";
 import type { AppDictionary } from "@/lib/i18n";
 
 interface HomeHeroProps {
@@ -69,17 +70,19 @@ export function HomeHero({ landing, settings, locale = "en", dict }: HomeHeroPro
           </ScrollReveal>
           
           <ScrollReveal delay={0.2} className="relative z-0 order-1 lg:order-2">
-            <div className="relative w-full aspect-[3/4] overflow-hidden rounded-[2rem] bg-surface-secondary">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={landing.portrait_image_url} alt="" className="h-full w-full object-cover grayscale-[20%] hover:grayscale-0 transition-all duration-700" />
-              <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-transparent to-transparent opacity-80" />
-              <div className="absolute bottom-6 left-6 right-6 flex justify-between items-end border-t border-white/20 pt-4">
-                 <div>
-                   <p className="text-[0.65rem] uppercase tracking-[0.2em] text-white/70 mb-1">{dict?.landing?.featured_story || "Featured story"}</p>
-                   <p className="font-serif italic text-white text-xl">{featureTitle}</p>
-                 </div>
+            <DepthSurface glare className="aspect-[3/4] w-full">
+              <div className="relative h-full w-full overflow-hidden rounded-[2rem] bg-surface-secondary">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={landing.portrait_image_url} alt="" className="h-full w-full object-cover grayscale-[20%] transition-all duration-700 hover:grayscale-0" />
+                <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-transparent to-transparent opacity-80" />
+                <div className="absolute bottom-6 left-6 right-6 flex items-end justify-between border-t border-white/20 pt-4">
+                   <div>
+                     <p className="mb-1 text-[0.65rem] uppercase tracking-[0.2em] text-white/70">{dict?.landing?.featured_story || "Featured story"}</p>
+                     <p className="font-serif text-xl italic text-white">{featureTitle}</p>
+                   </div>
+                </div>
               </div>
-            </div>
+            </DepthSurface>
           </ScrollReveal>
         </div>
       </section>
@@ -116,9 +119,13 @@ export function HomeHero({ landing, settings, locale = "en", dict }: HomeHeroPro
       <section className="relative isolate overflow-hidden min-h-[90vh] flex flex-col justify-center">
         <div className="grid min-w-0 lg:grid-cols-2 h-full absolute inset-0">
           <div className="relative hidden lg:block h-full">
-             {/* eslint-disable-next-line @next/next/no-img-element */}
-             <img src={landing.hero_image_url} alt="" className="h-full w-full object-cover grayscale-[30%] opacity-90" />
-             <div className="absolute inset-0 bg-gradient-to-r from-transparent to-background" />
+             <DepthSurface glare className="h-full">
+               <div className="relative h-full overflow-hidden">
+                 {/* eslint-disable-next-line @next/next/no-img-element */}
+                 <img src={landing.hero_image_url} alt="" className="h-full w-full object-cover grayscale-[30%] opacity-90" />
+                 <div className="absolute inset-0 bg-gradient-to-r from-transparent to-background" />
+               </div>
+             </DepthSurface>
           </div>
           <div className="flex flex-col justify-center px-6 sm:px-16 lg:px-24 xl:px-32 relative z-10 bg-background/80 lg:bg-transparent pt-32 pb-20 lg:py-0">
              <ScrollReveal className="max-w-2xl">
@@ -202,31 +209,35 @@ export function HomeHero({ landing, settings, locale = "en", dict }: HomeHeroPro
           </div>
         </ScrollReveal>
 
-        <ScrollReveal delay={0.2} className="relative z-0 hidden lg:block animate-editorial-in-slow sm:min-h-[500px] lg:min-h-[680px]">
-          <div data-nature-surface="hero-frame" className="relative h-[28rem] overflow-hidden rounded-[1.6rem] border border-border bg-surface/50 shadow-2xl shadow-text-primary/10 sm:absolute sm:inset-x-10 sm:top-0 sm:h-[74%] sm:rounded-[2.2rem] lg:inset-x-0">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={landing.hero_image_url}
-              alt=""
-              className="hero-image-pan h-full w-full object-cover"
-            />
-            <div className="absolute inset-0 bg-[linear-gradient(180deg,transparent_42%,rgba(0,0,0,0.42))]" />
-            <div className="absolute bottom-4 left-4 right-4 flex items-end justify-between gap-3 text-white sm:bottom-5 sm:left-5 sm:right-5 sm:items-center">
-              <div className="min-w-0">
-                <p className="text-xs font-semibold uppercase opacity-80">{dict?.landing?.featured_story || "Featured story"}</p>
-                <p className="mt-1 line-clamp-2 text-base font-semibold sm:text-lg">{featureTitle}</p>
+        <ScrollReveal delay={0.2} className="relative z-0 hidden animate-editorial-in-slow sm:min-h-[500px] lg:block lg:min-h-[680px]">
+          <DepthSurface glare strength="gentle" className="relative h-[28rem] sm:absolute sm:inset-x-10 sm:top-0 sm:h-[74%] lg:inset-x-0">
+            <div data-nature-surface="hero-frame" className="relative h-full overflow-hidden rounded-[1.6rem] border border-border bg-surface/50 shadow-2xl shadow-text-primary/10 sm:rounded-[2.2rem]">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={landing.hero_image_url}
+                alt=""
+                className="hero-image-pan h-full w-full object-cover"
+              />
+              <div className="absolute inset-0 bg-[linear-gradient(180deg,transparent_42%,rgba(0,0,0,0.42))]" />
+              <div className="absolute bottom-4 left-4 right-4 flex items-end justify-between gap-3 text-white sm:bottom-5 sm:left-5 sm:right-5 sm:items-center">
+                <div className="min-w-0">
+                  <p className="text-xs font-semibold uppercase opacity-80">{dict?.landing?.featured_story || "Featured story"}</p>
+                  <p className="mt-1 line-clamp-2 text-base font-semibold sm:text-lg">{featureTitle}</p>
+                </div>
               </div>
             </div>
-          </div>
+          </DepthSurface>
 
-          <div data-nature-surface="hero-frame" className="relative w-full overflow-hidden rounded-[1.4rem] border border-border bg-surface p-2 shadow-2xl shadow-text-primary/12 sm:absolute sm:bottom-0 sm:left-0 sm:w-[46%] sm:rounded-[1.6rem]">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={landing.portrait_image_url}
-              alt=""
-              className="aspect-[4/5] w-full rounded-[1.15rem] object-cover transition duration-700 hover:scale-[1.03]"
-            />
-          </div>
+          <DepthSurface strength="subtle" className="relative w-full sm:absolute sm:bottom-0 sm:left-0 sm:w-[46%]">
+            <div data-nature-surface="hero-frame" className="relative w-full overflow-hidden rounded-[1.4rem] border border-border bg-surface p-2 shadow-2xl shadow-text-primary/12 sm:rounded-[1.6rem]">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={landing.portrait_image_url}
+                alt=""
+                className="aspect-[4/5] w-full rounded-[1.15rem] object-cover transition duration-700 hover:scale-[1.03]"
+              />
+            </div>
+          </DepthSurface>
 
           <div className="relative w-full rounded-[1.4rem] border border-border bg-surface/90 p-3 shadow-2xl shadow-text-primary/10 backdrop-blur sm:absolute sm:bottom-8 sm:right-0 sm:w-[52%] sm:rounded-[1.6rem]">
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-[0.8fr_1fr]">

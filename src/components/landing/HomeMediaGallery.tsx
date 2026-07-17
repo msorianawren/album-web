@@ -1,6 +1,7 @@
 "use client";
 
 import type { LandingMediaItem, SiteSettings } from "@/lib/types";
+import { DepthSurface } from "@/components/ui/DepthSurface";
 
 export function HomeMediaGallery({ items, settings }: { items: LandingMediaItem[], settings?: SiteSettings }) {
   const displayItems = [...items].filter(i => i.enabled).sort((a, b) => a.order - b.order);
@@ -31,8 +32,8 @@ export function HomeMediaGallery({ items, settings }: { items: LandingMediaItem[
               style === "carousel" ? "min-w-[280px] md:min-w-[340px] snap-center shrink-0" : ""
             }`}
           >
-            <div className={`w-full overflow-hidden ${style === "masonry" ? "h-auto" : "aspect-[3/4]"}`}>
-              {item.type === "video" ? (
+            {item.type === "video" ? (
+              <div className={`w-full overflow-hidden ${style === "masonry" ? "h-auto" : "aspect-[3/4]"}`}>
                 <video
                   src={item.url}
                   poster={item.poster_url || undefined}
@@ -42,15 +43,19 @@ export function HomeMediaGallery({ items, settings }: { items: LandingMediaItem[
                   playsInline
                   className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.03]"
                 />
-              ) : (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={item.url}
-                  alt={item.alt || ""}
-                  className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.03]"
-                />
-              )}
-            </div>
+              </div>
+            ) : (
+              <DepthSurface className={`w-full ${style === "masonry" ? "h-auto" : "aspect-[3/4]"}`}>
+                <div className="h-full w-full overflow-hidden">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={item.url}
+                    alt={item.alt || ""}
+                    className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.03]"
+                  />
+                </div>
+              </DepthSurface>
+            )}
             {(item.title || item.caption) && (
               <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-background via-background/80 to-transparent p-6 pt-12 opacity-0 transition-opacity duration-500 group-hover:opacity-100">
                 {item.title && <h3 className="font-serif text-lg text-text-primary mb-1">{item.title}</h3>}

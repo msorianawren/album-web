@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/Badge";
 import type { Album } from "@/lib/types";
 import { formatMediaCount } from "@/lib/utils";
 import { ScrollReveal } from "@/components/ui/ScrollReveal";
+import { DepthSurface } from "@/components/ui/DepthSurface";
 import { useAlbumViewMemory } from "@/hooks/useAlbumViewMemory";
 import { LivingPreviewImages } from "@/components/albums/LivingPreviewImages";
 import {
@@ -55,8 +56,9 @@ export function AlbumCard({ album, dict, locale = "en" }: AlbumCardProps) {
         href={`/albums/${album.slug}`}
         className="group block min-w-0 rounded-[1.5rem] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
-        <div data-nature-surface="album-card" className="relative overflow-hidden rounded-[1.5rem] border border-border/40 bg-surface/30 p-2 shadow-sm transition duration-500 ease-out group-hover:-translate-y-1 group-hover:border-border/80 group-hover:bg-surface/60 group-hover:shadow-md">
-        <div className="living-preview-frame relative aspect-[3/4] overflow-hidden rounded-[1.2rem] bg-surface-secondary">
+        <div data-nature-surface="album-card" className="relative overflow-hidden rounded-[1.5rem] border border-border/40 bg-surface/30 p-2 shadow-sm transition duration-500 ease-out group-hover:border-border/80 group-hover:bg-surface/60 group-hover:shadow-md">
+        <DepthSurface glare className="living-preview-frame aspect-[3/4] w-full overflow-hidden rounded-[1.2rem] bg-surface-secondary">
+        <div className="relative h-full w-full overflow-hidden">
           {previewImages.length ? (
             <LivingPreviewImages
               images={previewImages}
@@ -129,6 +131,7 @@ export function AlbumCard({ album, dict, locale = "en" }: AlbumCardProps) {
             </p>
           </div>
         </div>
+        </DepthSurface>
       </div>
       <div className="mt-6 px-2 text-center md:text-left">
         <h3 className="font-serif text-2xl text-text-primary group-hover:text-accent transition-colors duration-300">
