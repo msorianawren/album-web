@@ -23,7 +23,8 @@
     "studio": "Studio",
     "settings": "Settings",
     "login": "Login",
-    "about": "About"
+    "about": "About",
+    "games": "Games"
   },
   "landing": {
     "premium_portfolio": "Premium model portfolio",
@@ -69,6 +70,37 @@
     "experience": "Experience",
     "education": "Education",
     "awards": "Awards & Recognition"
+  },
+  "games": {
+    "eyebrow": "Interactive editorial studies",
+    "title": "Oriana Puzzle Atelier",
+    "description": "A quiet collection of image puzzles. Play as a guest, or sign in to collect Wren Feathers and badges.",
+    "collection": "Collection",
+    "allCollections": "All collections",
+    "sliding": "Sliding",
+    "swap": "Swap",
+    "timer": "Timer",
+    "moves": "Moves",
+    "swaps": "Swaps",
+    "estimatedReward": "Estimated reward",
+    "personalBest": "Personal best",
+    "feathers": "Wren Feathers",
+    "newGame": "New game",
+    "restart": "Restart",
+    "viewReference": "View reference",
+    "back": "Back to collections",
+    "guestNotice": "Guests can play and save local bests. Sign in to claim Wren Feathers.",
+    "referenceTitle": "Reference image",
+    "imageUnavailable": "Reference image unavailable.",
+    "completed": "Puzzle completed",
+    "claimAfterSignIn": "Sign in to claim account Feathers.",
+    "newBadges": "New badges",
+    "playAgain": "Play again",
+    "nextPuzzle": "Next puzzle",
+    "share": "Share result",
+    "empty": "No published puzzle challenges yet.",
+    "offline": "Playing offline. Sign in again to claim Feathers.",
+    "unavailable": "Puzzle Atelier is being prepared. Please return shortly."
   },
   "contact_form": {
     "your_name": "Your Name",

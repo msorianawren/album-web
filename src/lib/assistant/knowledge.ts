@@ -14,7 +14,14 @@ export type AssistantQuickActionId =
   | "contact"
   | "notifications"
   | "phone_policy"
-  | "login";
+  | "login"
+  | "games"
+  | "game_sliding"
+  | "game_swap"
+  | "game_valid_moves"
+  | "game_rewards"
+  | "game_reference"
+  | "game_restart";
 
 export interface AssistantQuickAction {
   id: AssistantQuickActionId;
@@ -37,7 +44,8 @@ export type AssistantKnowledgeItem = {
     | "notifications"
     | "phone_policy"
     | "account"
-    | "troubleshooting";
+    | "troubleshooting"
+    | "games";
   title: string;
   questionPatterns: string[];
   answer: string;
@@ -46,7 +54,7 @@ export type AssistantKnowledgeItem = {
   requiresAuth?: boolean;
 };
 
-const quickActionCopy: Record<AssistantLocale, Record<AssistantQuickActionId, string>> = {
+const quickActionCopy: Record<AssistantLocale, Partial<Record<AssistantQuickActionId, string>>> = {
   en: {
     private_access: "Request private access",
     request_status: "Check request status",
@@ -55,6 +63,13 @@ const quickActionCopy: Record<AssistantLocale, Record<AssistantQuickActionId, st
     notifications: "Notifications",
     phone_policy: "Phone policy",
     login: "Sign in",
+    games: "Open Puzzle Atelier",
+    game_sliding: "How to play Sliding",
+    game_swap: "How to play Swap",
+    game_valid_moves: "Show valid moves",
+    game_rewards: "Explain rewards",
+    game_reference: "View reference image",
+    game_restart: "Restart puzzle",
   },
   vi: {
     private_access: "Xin quyền album riêng tư",
@@ -64,6 +79,13 @@ const quickActionCopy: Record<AssistantLocale, Record<AssistantQuickActionId, st
     notifications: "Thông báo",
     phone_policy: "Chính sách số điện thoại",
     login: "Đăng nhập",
+    games: "Mở Puzzle Atelier",
+    game_sliding: "Cách chơi Sliding",
+    game_swap: "Cách chơi Swap",
+    game_valid_moves: "Hiện nước đi hợp lệ",
+    game_rewards: "Giải thích phần thưởng",
+    game_reference: "Xem ảnh tham chiếu",
+    game_restart: "Chơi lại puzzle",
   },
   "zh-CN": {
     private_access: "申请私密访问",
@@ -139,7 +161,7 @@ const quickActionCopy: Record<AssistantLocale, Record<AssistantQuickActionId, st
   },
 };
 
-const quickActionQuestions: Record<AssistantLocale, Record<AssistantQuickActionId, string>> = {
+const quickActionQuestions: Record<AssistantLocale, Partial<Record<AssistantQuickActionId, string>>> = {
   en: {
     private_access: "How do I request private album access?",
     request_status: "How do I check my request status?",
@@ -148,6 +170,13 @@ const quickActionQuestions: Record<AssistantLocale, Record<AssistantQuickActionI
     notifications: "How do notifications work?",
     phone_policy: "Why is my phone number requested?",
     login: "How do I login?",
+    games: "Open the puzzle games",
+    game_sliding: "How do I play Sliding Puzzle?",
+    game_swap: "How do I play Swap Puzzle?",
+    game_valid_moves: "Show valid moves",
+    game_rewards: "How do Wren Feather rewards work?",
+    game_reference: "View the puzzle reference",
+    game_restart: "Restart this puzzle",
   },
   vi: {
     private_access: "Làm sao xin quyền album riêng tư?",
@@ -157,6 +186,13 @@ const quickActionQuestions: Record<AssistantLocale, Record<AssistantQuickActionI
     notifications: "Thông báo hoạt động thế nào?",
     phone_policy: "Vì sao cần số điện thoại?",
     login: "Đăng nhập thế nào?",
+    games: "Mở trò chơi puzzle",
+    game_sliding: "Sliding Puzzle chơi thế nào?",
+    game_swap: "Swap Puzzle chơi thế nào?",
+    game_valid_moves: "Hiện nước đi hợp lệ",
+    game_rewards: "Wren Feathers được tính thế nào?",
+    game_reference: "Xem ảnh tham chiếu puzzle",
+    game_restart: "Chơi lại puzzle này",
   },
   "zh-CN": {
     private_access: "如何申请私密相册访问？",
@@ -235,8 +271,8 @@ const quickActionQuestions: Record<AssistantLocale, Record<AssistantQuickActionI
 function qa(locale: AssistantLocale, id: AssistantQuickActionId, href?: string): AssistantQuickAction {
   return {
     id,
-    label: quickActionCopy[locale][id] ?? quickActionCopy.en[id],
-    question: quickActionQuestions[locale][id] ?? quickActionQuestions.en[id],
+    label: quickActionCopy[locale][id] ?? quickActionCopy.en[id] ?? id,
+    question: quickActionQuestions[locale][id] ?? quickActionQuestions.en[id] ?? id,
     ...(href ? { href } : {}),
   };
 }
@@ -252,13 +288,25 @@ export function getAssistantQuickActions(locale: AssistantLocale): AssistantQuic
   ];
 }
 
+export function getPuzzleAssistantQuickActions(locale: AssistantLocale): AssistantQuickAction[] {
+  return [
+    qa(locale, "game_sliding"),
+    qa(locale, "game_swap"),
+    qa(locale, "game_valid_moves"),
+    qa(locale, "game_rewards"),
+    qa(locale, "game_reference"),
+  ];
+}
+
 export const assistantQuickActions = getAssistantQuickActions(DEFAULT_ASSISTANT_LOCALE);
+
+type KnowledgeIntent = Exclude<AssistantIntent, "games_intro" | "games_sliding" | "games_swap" | "games_rewards" | "games_help">;
 
 type IntentTemplate = Omit<AssistantKnowledgeItem, "id" | "locale" | "quickActions"> & {
   quickActionIds?: Array<{ id: AssistantQuickActionId; href?: string }>;
 };
 
-const englishTemplates: Record<AssistantIntent, IntentTemplate> = {
+const englishTemplates: Record<KnowledgeIntent, IntentTemplate> = {
     private_access_help: {
       intent: "private_access_help",
       category: "private_access",
@@ -395,7 +443,7 @@ const englishTemplates: Record<AssistantIntent, IntentTemplate> = {
     },
   };
 
-const templates: Record<AssistantLocale, Record<AssistantIntent, IntentTemplate>> = {
+const templates: Record<AssistantLocale, Record<KnowledgeIntent, IntentTemplate>> = {
   en: englishTemplates,
   vi: {
     private_access_help: {
@@ -585,10 +633,10 @@ const templates: Record<AssistantLocale, Record<AssistantIntent, IntentTemplate>
 
 function makeTranslatedTemplates(
   locale: AssistantLocale,
-  overrides: Partial<Record<AssistantIntent, [answer: string, title: string]>>,
-): Record<AssistantIntent, IntentTemplate> {
-  const output = {} as Record<AssistantIntent, IntentTemplate>;
-  for (const [intent, template] of Object.entries(englishTemplates) as Array<[AssistantIntent, IntentTemplate]>) {
+  overrides: Partial<Record<KnowledgeIntent, [answer: string, title: string]>>,
+): Record<KnowledgeIntent, IntentTemplate> {
+  const output = {} as Record<KnowledgeIntent, IntentTemplate>;
+  for (const [intent, template] of Object.entries(englishTemplates) as Array<[KnowledgeIntent, IntentTemplate]>) {
     const override = overrides[intent];
     output[intent] = {
       ...template,
@@ -603,8 +651,8 @@ function makeTranslatedTemplates(
   return output;
 }
 
-function translatedPatterns(locale: AssistantLocale, intent: AssistantIntent) {
-  const shared: Partial<Record<AssistantIntent, string[]>> = {
+function translatedPatterns(locale: AssistantLocale, intent: KnowledgeIntent) {
+  const shared: Partial<Record<KnowledgeIntent, string[]>> = {
     private_access_help: ["private album", "akses album private", "album privé", "álbum privado", "非公開アルバム", "私密相册", "비공개 앨범"],
     phone_policy: ["phone", "nomor telepon", "telefono", "téléphone", "電話番号", "电话号码", "전화번호"],
     download_zip_help: ["zip", "download", "unduh zip", "télécharger zip", "descargar zip", "zip ダウンロード", "ZIP 下载"],

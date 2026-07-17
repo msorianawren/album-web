@@ -24,6 +24,7 @@ export async function AppHeader() {
   const navItems = [
     { href: "/", label: dict.nav.home || "Home" },
     { href: "/albums", label: dict.nav.albums },
+    { href: "/games", label: dict.nav.games || "Games" },
     { href: "/about", label: dict.nav.about },
     { href: "/contact", label: dict.nav.contact || "Contact Us" },
   ];

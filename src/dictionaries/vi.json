@@ -23,7 +23,8 @@
     "studio": "Studio",
     "settings": "Cài đặt",
     "login": "Đăng nhập",
-    "about": "Giới thiệu"
+    "about": "Giới thiệu",
+    "games": "Trò chơi"
   },
   "landing": {
     "premium_portfolio": "Hồ sơ người mẫu cao cấp",
@@ -69,6 +70,37 @@
     "experience": "Kinh nghiệm làm việc",
     "education": "Học vấn",
     "awards": "Giải thưởng & Công nhận"
+  },
+  "games": {
+    "eyebrow": "Thử nghiệm biên tập tương tác",
+    "title": "Oriana Puzzle Atelier",
+    "description": "Bộ sưu tập puzzle hình ảnh tinh tế. Chơi dưới dạng khách hoặc đăng nhập để nhận Wren Feathers và huy hiệu.",
+    "collection": "Bộ sưu tập",
+    "allCollections": "Tất cả bộ sưu tập",
+    "sliding": "Trượt ô",
+    "swap": "Đổi ô",
+    "timer": "Thời gian",
+    "moves": "Lượt di chuyển",
+    "swaps": "Lượt đổi",
+    "estimatedReward": "Phần thưởng dự kiến",
+    "personalBest": "Kỷ lục cá nhân",
+    "feathers": "Wren Feathers",
+    "newGame": "Ván mới",
+    "restart": "Chơi lại",
+    "viewReference": "Xem ảnh mẫu",
+    "back": "Quay lại bộ sưu tập",
+    "guestNotice": "Khách có thể chơi và lưu kỷ lục cục bộ. Hãy đăng nhập để nhận Wren Feathers.",
+    "referenceTitle": "Ảnh tham chiếu",
+    "imageUnavailable": "Không thể tải ảnh tham chiếu.",
+    "completed": "Hoàn thành puzzle",
+    "claimAfterSignIn": "Đăng nhập để nhận Wren Feathers vào tài khoản.",
+    "newBadges": "Huy hiệu mới",
+    "playAgain": "Chơi lại",
+    "nextPuzzle": "Puzzle tiếp theo",
+    "share": "Chia sẻ kết quả",
+    "empty": "Chưa có thử thách puzzle nào được xuất bản.",
+    "offline": "Đang chơi ngoại tuyến. Hãy đăng nhập lại để nhận Feathers.",
+    "unavailable": "Puzzle Atelier đang được chuẩn bị. Vui lòng quay lại sau."
   },
   "contact_form": {
     "your_name": "Tên của bạn",

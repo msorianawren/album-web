@@ -13,6 +13,11 @@ export type AssistantIntent =
   | "message_replies"
   | "notifications_help"
   | "account_blocked"
+  | "games_intro"
+  | "games_sliding"
+  | "games_swap"
+  | "games_rewards"
+  | "games_help"
   | "troubleshooting"
   | "unknown";
 
@@ -28,6 +33,31 @@ const intentRules: Array<{
   high: string[];
   medium: string[];
 }> = [
+  {
+    intent: "games_sliding",
+    high: ["sliding puzzle", "sliding game", "trá»£t Ã´", "truot o"],
+    medium: ["sliding", "puzzle trÆ°á»£t", "puzzle truot"],
+  },
+  {
+    intent: "games_swap",
+    high: ["swap puzzle", "swap game", "Ä‘á»•i Ã´", "doi o"],
+    medium: ["swap", "puzzle Ä‘á»•i", "puzzle doi"],
+  },
+  {
+    intent: "games_rewards",
+    high: ["wren feathers", "puzzle badge", "puzzle rewards", "pháº§n thÆ°á»Ÿng puzzle", "phan thuong puzzle", "huy hiá»‡u puzzle"],
+    medium: ["feathers", "badges", "huy hiá»‡u", "huy hieu"],
+  },
+  {
+    intent: "games_help",
+    high: ["i am stuck", "i'm stuck", "tÃ´i bá»‹ káº¹t", "toi bi ket", "show valid moves", "valid moves", "xem nÆ°á»›c Ä‘i há»£p lá»‡", "xem nuoc di hop le"],
+    medium: ["stuck", "bá»‹ káº¹t", "bi ket", "reference image", "áº£nh máº«u", "anh mau"],
+  },
+  {
+    intent: "games_intro",
+    high: ["oriana puzzle atelier", "games page", "puzzle games", "trÃ² chÆ¡i puzzle", "tro choi puzzle"],
+    medium: ["games", "game", "puzzle", "trÃ² chÆ¡i", "tro choi"],
+  },
   {
     intent: "select_private_albums",
     high: ["select multiple", "multiple private", "chon nhieu album", "chọn nhiều album", "nhieu album rieng tu", "nhiều album riêng tư"],

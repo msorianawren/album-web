@@ -1,5 +1,5 @@
 import "server-only";
-import { AppLocale } from "./i18n";
+import type { AppDictionary, AppLocale } from "./i18n";
 
 const dictionaries = {
   en: () => import("@/dictionaries/en.json").then((module) => module.default),
@@ -14,9 +14,9 @@ const dictionaries = {
   es: () => import("@/dictionaries/es.json").then((module) => module.default),
 };
 
-export const getDictionary = async (locale: string) => {
+export const getDictionary = async (locale: string): Promise<AppDictionary> => {
   if (!dictionaries[locale as AppLocale]) {
-    return dictionaries.en();
+    return dictionaries.en() as Promise<AppDictionary>;
   }
-  return dictionaries[locale as AppLocale]();
+  return dictionaries[locale as AppLocale]() as Promise<AppDictionary>;
 };

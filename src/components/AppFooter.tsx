@@ -14,6 +14,7 @@ export async function AppFooter() {
   const navLinks = [
     { href: "/", label: "Home" },
     { href: "/albums", label: "Albums" },
+    { href: "/games", label: "Games" },
     { href: "/about", label: "About" },
     { href: "/contact", label: "Contact" },
   ];

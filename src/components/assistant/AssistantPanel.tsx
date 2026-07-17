@@ -10,7 +10,7 @@ import {
   sanitizeAssistantQuestion,
   type AssistantAnswer,
 } from "@/lib/assistant/answer-engine";
-import { getAssistantQuickActions, type AssistantQuickAction } from "@/lib/assistant/knowledge";
+import { getAssistantQuickActions, getPuzzleAssistantQuickActions, type AssistantQuickAction } from "@/lib/assistant/knowledge";
 import {
   readSelectedAssistantLocale,
   type AssistantLocale,
@@ -75,7 +75,7 @@ export function AssistantPanel({
   const panelRef = useRef<HTMLElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
   const copy = getAssistantUICopy(locale);
-  const quickActions = getAssistantQuickActions(locale);
+  const quickActions = currentPath === "/games" ? getPuzzleAssistantQuickActions(locale) : getAssistantQuickActions(locale);
 
   useEffect(() => {
     if (!open) return;
@@ -143,6 +143,19 @@ export function AssistantPanel({
 
   function handleQuickAction(action: AssistantQuickAction) {
     writePanelMemory(action.id);
+    const gameActions: Record<string, string> = {
+      game_valid_moves: "valid-moves",
+      game_reference: "reference",
+      game_restart: "restart",
+    };
+    const gameAction = gameActions[action.id];
+    if (gameAction && currentPath === "/games") {
+      document.dispatchEvent(new CustomEvent("oriana-games-assist", { detail: { action: gameAction } }));
+    }
+    if (action.href && action.href.startsWith("/")) {
+      window.location.assign(action.href);
+      return;
+    }
     answer(action.question);
   }
 
