@@ -3,7 +3,7 @@
 import { useFrame, useThree } from "@react-three/fiber";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
-import type { ChimeAnchorSlot } from "@/lib/wind-chime-anchors";
+import type { ChimeAnchorRect, WindChimeMaterial } from "@/lib/wind-chime-anchors";
 import {
   advanceWindChime,
   applyWindChimeImpulse,
@@ -13,35 +13,36 @@ import {
 import { audioUX } from "@/lib/audio-ux";
 import { useUIPreferences } from "@/hooks/useUIPreferences";
 
-type AnchorRect = ChimeAnchorSlot & { left: number; top: number; widthPx: number; heightPx: number; visible: boolean };
 type ModelRefs = { group: THREE.Group; tubes: THREE.Group[] };
 type TubeMesh = { mesh: THREE.Object3D; slotId: string; tubeIndex: number };
 
-const tubeGeometries = new Map<number, THREE.ExtrudeGeometry>();
+const tubeGeometries = new Map<number, THREE.CylinderGeometry>();
 const tubeInteriorGeometries = new Map<number, THREE.CylinderGeometry>();
-const metalMaterials = [
-  new THREE.MeshStandardMaterial({ color: "#c9c3ba", metalness: 0.83, roughness: 0.27 }),
-  new THREE.MeshStandardMaterial({ color: "#b8a78e", metalness: 0.78, roughness: 0.32 }),
-  new THREE.MeshStandardMaterial({ color: "#9e9791", metalness: 0.9, roughness: 0.25 }),
-];
-const interiorMaterial = new THREE.MeshStandardMaterial({ color: "#332d2a", metalness: 0.42, roughness: 0.58, side: THREE.BackSide });
-const supportMaterial = new THREE.MeshStandardMaterial({ color: "#6f5845", roughness: 0.62, metalness: 0.12 });
-const cordMaterial = new THREE.MeshBasicMaterial({ color: "#867a6c", transparent: true, opacity: 0.7 });
+const tubeRims = new Map<number, THREE.TorusGeometry>();
+const metalMaterials: Record<WindChimeMaterial, THREE.MeshStandardMaterial[]> = {
+  silver: [
+    new THREE.MeshStandardMaterial({ color: "#c7c8c7", metalness: 0.78, roughness: 0.35 }),
+    new THREE.MeshStandardMaterial({ color: "#aeb4b7", metalness: 0.72, roughness: 0.4 }),
+  ],
+  champagne: [
+    new THREE.MeshStandardMaterial({ color: "#c9b79d", metalness: 0.68, roughness: 0.39 }),
+    new THREE.MeshStandardMaterial({ color: "#b7a284", metalness: 0.64, roughness: 0.43 }),
+  ],
+  bronze: [
+    new THREE.MeshStandardMaterial({ color: "#9a7457", metalness: 0.62, roughness: 0.44 }),
+    new THREE.MeshStandardMaterial({ color: "#7c5e49", metalness: 0.58, roughness: 0.47 }),
+  ],
+};
+const interiorMaterial = new THREE.MeshStandardMaterial({ color: "#504743", metalness: 0.32, roughness: 0.62, side: THREE.BackSide });
+const supportMaterial = new THREE.MeshStandardMaterial({ color: "#8a7867", roughness: 0.52, metalness: 0.3 });
+const clapperMaterial = new THREE.MeshStandardMaterial({ color: "#a7927b", roughness: 0.42, metalness: 0.42 });
+const cordMaterial = new THREE.MeshBasicMaterial({ color: "#9b8a79", transparent: true, opacity: 0.72 });
 
 function getTubeGeometry(length: number) {
   const key = Math.round(length * 100);
   const existing = tubeGeometries.get(key);
   if (existing) return existing;
-  const outer = 0.135;
-  const inner = 0.097;
-  const shape = new THREE.Shape();
-  shape.absarc(0, 0, outer, 0, Math.PI * 2, false);
-  const hole = new THREE.Path();
-  hole.absarc(0, 0, inner, 0, Math.PI * 2, true);
-  shape.holes.push(hole);
-  const geometry = new THREE.ExtrudeGeometry(shape, { depth: length, bevelEnabled: true, bevelThickness: 0.012, bevelSize: 0.009, bevelSegments: 1, curveSegments: 20 });
-  geometry.rotateX(Math.PI / 2);
-  geometry.translate(0, -length / 2, 0);
+  const geometry = new THREE.CylinderGeometry(0.075, 0.075, length, 28, 1, true);
   tubeGeometries.set(key, geometry);
   return geometry;
 }
@@ -50,8 +51,18 @@ function getTubeInterior(length: number) {
   const key = Math.round(length * 100);
   const existing = tubeInteriorGeometries.get(key);
   if (existing) return existing;
-  const geometry = new THREE.CylinderGeometry(0.098, 0.098, length, 20, 1, true);
+  const geometry = new THREE.CylinderGeometry(0.061, 0.061, length, 28, 1, true);
   tubeInteriorGeometries.set(key, geometry);
+  return geometry;
+}
+
+function getTubeRim(length: number) {
+  const key = Math.round(length * 100);
+  const existing = tubeRims.get(key);
+  if (existing) return existing;
+  const geometry = new THREE.TorusGeometry(0.068, 0.007, 7, 28);
+  geometry.rotateX(Math.PI / 2);
+  tubeRims.set(key, geometry);
   return geometry;
 }
 
@@ -61,7 +72,7 @@ function ChimeModel({
   onReady,
   registerTube,
 }: {
-  anchor: AnchorRect;
+  anchor: ChimeAnchorRect;
   position: THREE.Vector3;
   onReady: (slotId: string, refs: ModelRefs) => void;
   registerTube: (mesh: THREE.Object3D | null, slotId: string, tubeIndex: number) => void;
@@ -76,50 +87,52 @@ function ChimeModel({
   }, [anchor.id, onReady]);
 
   return (
-    <group ref={group} position={position} scale={0.34}>
-      <mesh position={[0, 0.08, 0]} rotation={[Math.PI / 2, 0, 0]} material={supportMaterial} castShadow>
-        <cylinderGeometry args={[0.72, 0.72, 0.12, 28]} />
+    <group ref={group} position={position} scale={anchor.scale} rotation={[0, anchor.side === "left" ? 0.16 : -0.16, 0]}>
+      <mesh position={[0, 0.08, 0]} material={supportMaterial} castShadow>
+        <cylinderGeometry args={[0.43, 0.43, 0.055, 32]} />
       </mesh>
-      <mesh position={[0, 0.19, 0]} material={supportMaterial}>
-        <sphereGeometry args={[0.075, 16, 10]} />
+      <mesh position={[0, 0.12, 0]} material={supportMaterial} rotation={[Math.PI / 2, 0, 0]}>
+        <torusGeometry args={[0.39, 0.012, 8, 32]} />
       </mesh>
       {lengths.map((length, index) => {
         const angle = index / tubeCount * Math.PI * 2;
-        const radius = 0.42;
+        const radius = 0.31;
         const x = Math.cos(angle) * radius;
         const z = Math.sin(angle) * radius;
         return (
-          <group key={`${anchor.id}-${index}`} ref={(node: THREE.Group | null) => { if (node) tubes.current[index] = node; }} position={[x, -0.06, z]}>
-            <mesh position={[0, -length / 2, 0]} material={cordMaterial}>
-              <cylinderGeometry args={[0.009, 0.009, length * 0.65, 6]} />
+          <group key={`${anchor.id}-${index}`} ref={(node: THREE.Group | null) => { if (node) tubes.current[index] = node; }} position={[x, -0.01, z]}>
+            <mesh position={[0, -length * 0.33, 0]} material={cordMaterial}>
+              <cylinderGeometry args={[0.006, 0.006, length * 0.66, 6]} />
             </mesh>
-            <group position={[0, -length * 0.66, 0]}>
+            <group position={[0, -length * 0.72, 0]}>
               <mesh
                 geometry={getTubeGeometry(length)}
-                material={metalMaterials[index % metalMaterials.length]}
+                material={metalMaterials[anchor.material][index % metalMaterials[anchor.material].length]}
                 castShadow
                 onUpdate={(mesh: THREE.Mesh) => { mesh.userData = { slotId: anchor.id, tubeIndex: index }; }}
                 ref={(mesh: THREE.Mesh | null) => registerTube(mesh, anchor.id, index)}
               />
               <mesh geometry={getTubeInterior(length)} material={interiorMaterial} />
+              <mesh geometry={getTubeRim(length)} material={metalMaterials[anchor.material][index % metalMaterials[anchor.material].length]} position={[0, length / 2, 0]} />
+              <mesh geometry={getTubeRim(length)} material={metalMaterials[anchor.material][index % metalMaterials[anchor.material].length]} position={[0, -length / 2, 0]} />
             </group>
           </group>
         );
       })}
-      <mesh position={[0, -0.98, 0]} material={supportMaterial} castShadow>
-        <sphereGeometry args={[0.16, 16, 12]} />
+      <mesh position={[0, -0.9, 0]} material={clapperMaterial} castShadow>
+        <sphereGeometry args={[0.095, 18, 14]} />
       </mesh>
-      <mesh position={[0, -1.74, 0]} material={cordMaterial}>
-        <cylinderGeometry args={[0.012, 0.012, 1.38, 6]} />
+      <mesh position={[0, -1.55, 0]} material={cordMaterial}>
+        <cylinderGeometry args={[0.008, 0.008, 1.18, 6]} />
       </mesh>
-      <mesh position={[0, -2.46, 0]} material={supportMaterial} rotation={[0, 0.25, 0]}>
-        <coneGeometry args={[0.32, 0.56, 4]} />
+      <mesh position={[0, -2.22, 0]} material={clapperMaterial} rotation={[0, 0.3, 0]}>
+        <coneGeometry args={[0.19, 0.42, 4]} />
       </mesh>
     </group>
   );
 }
 
-export function WindChimeScene({ anchors, reducedMotion }: { anchors: AnchorRect[]; reducedMotion: boolean }) {
+export function WindChimeScene({ anchors, reducedMotion }: { anchors: ChimeAnchorRect[]; reducedMotion: boolean }) {
   const { camera, size, viewport, invalidate } = useThree();
   const { soundEnabled } = useUIPreferences();
   const physical = useRef(new Map<string, WindChimeState>());
@@ -164,13 +177,22 @@ export function WindChimeScene({ anchors, reducedMotion }: { anchors: AnchorRect
       const detail = (event as CustomEvent<{ slotId: string }>).detail;
       if (detail?.slotId) impulse(detail.slotId, 0, 0.42, 0.2);
     };
+    const onHover = (event: Event) => {
+      const detail = (event as CustomEvent<{ slotId: string; velocityX: number; velocityY: number; entering: boolean }>).detail;
+      if (!detail?.slotId || reducedMotion) return;
+      const forceX = detail.entering ? 0.13 : detail.velocityX * 0.12;
+      const forceY = detail.entering ? 0.06 : detail.velocityY * 0.08;
+      if (Math.abs(forceX) + Math.abs(forceY) > 0.03) impulse(detail.slotId, 0, forceX, forceY);
+    };
     window.addEventListener("oriana-chime-pointer", onPointer);
     window.addEventListener("oriana-chime-impulse", onKeyboard);
+    window.addEventListener("oriana-chime-hover", onHover);
     return () => {
       window.removeEventListener("oriana-chime-pointer", onPointer);
       window.removeEventListener("oriana-chime-impulse", onKeyboard);
+      window.removeEventListener("oriana-chime-hover", onHover);
     };
-  }, [camera, impulse, size.height, size.width]);
+  }, [camera, impulse, reducedMotion, size.height, size.width]);
 
   useFrame((_, delta) => {
     let moving = false;
@@ -202,7 +224,7 @@ export function WindChimeScene({ anchors, reducedMotion }: { anchors: AnchorRect
   const positions = useMemo(() => anchors.map((anchor) => {
     const x = ((anchor.left + anchor.widthPx / 2) / size.width - 0.5) * viewport.width;
     const y = (0.5 - (anchor.top + anchor.heightPx / 2) / size.height) * viewport.height;
-    return { anchor, position: new THREE.Vector3(x, y, 0) };
+    return { anchor, position: new THREE.Vector3(x, y, anchor.depth) };
   }), [anchors, size.height, size.width, viewport.height, viewport.width]);
 
   return (

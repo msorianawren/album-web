@@ -12,7 +12,10 @@ import { getWindChimeAnchors } from "../src/lib/wind-chime-anchors.ts";
 
 test("wind chime anchors are deterministic and never use media data", () => {
   assert.deepEqual(getWindChimeAnchors("/"), getWindChimeAnchors("/"));
-  assert.equal(getWindChimeAnchors("/profile").length, 0);
+  assert.equal(getWindChimeAnchors("/").length, 6);
+  assert.equal(getWindChimeAnchors("/albums").length, 3);
+  assert.equal(getWindChimeAnchors("/about").length, 3);
+  assert.equal(getWindChimeAnchors("/profile").length, 1);
   assert.equal(getWindChimeAnchors("/studio").length, 0);
 });
 
@@ -37,6 +40,37 @@ test("public depth code excludes Studio and keeps the WebGL import lazy", async 
   assert.match(environment, /dynamic\(/);
   assert.doesNotMatch(studioLayout, /PublicDepthEnvironment|three|WindChime/);
   assert.match(audioProvider, /data-audio-ux-ignore/);
+});
+
+test("public canvas and decorative layers cannot intercept normal website interaction", async () => {
+  const [css, environment, interaction] = await Promise.all([
+    readFile(new URL("../src/app/globals.css", import.meta.url), "utf8"),
+    readFile(new URL("../src/components/environment/PublicDepthEnvironment.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../src/components/environment/chime-interaction.ts", import.meta.url), "utf8"),
+  ]);
+  assert.match(css, /\.public-chime-canvas,[\s\S]*\.public-chime-canvas canvas\s*\{\s*pointer-events:\s*none !important/s);
+  assert.match(css, /\.public-depth-environment\s*\{[\s\S]*pointer-events:\s*none/s);
+  assert.doesNotMatch(css, /\.public-chime-control\s*\{[^}]*\binset:\s*0/s);
+  assert.match(interaction, /a[\s\S]*button[\s\S]*input[\s\S]*\[role='dialog'\]/);
+  assert.match(environment, /isProtectedInteractiveTarget/);
+  assert.doesNotMatch(environment, /preventDefault|stopPropagation|stopImmediatePropagation|setPointerCapture/);
+});
+
+test("document anchors drive chime placement while pointer input only produces local impulses", async () => {
+  const [anchors, environment, scene, anchorHook] = await Promise.all([
+    readFile(new URL("../src/lib/wind-chime-anchors.ts", import.meta.url), "utf8"),
+    readFile(new URL("../src/components/environment/PublicDepthEnvironment.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../src/components/environment/WindChimeScene.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../src/components/environment/useChimeAnchorRects.ts", import.meta.url), "utf8"),
+  ]);
+  assert.match(anchors, /sectionIndex/);
+  assert.match(environment, /data-wind-chime-anchor/);
+  assert.match(anchorHook, /window\.addEventListener\("scroll", schedule/);
+  assert.match(anchorHook, /ResizeObserver/);
+  assert.match(anchorHook, /IntersectionObserver/);
+  assert.match(scene, /new THREE\.Vector3\(x, y, anchor\.depth\)/);
+  assert.match(environment, /oriana-chime-hover/);
+  assert.doesNotMatch(scene, /position\.set\([^)]*pointer|lerp\([^)]*pointer/i);
 });
 
 test("collision threshold and cooldown prevent repeated impact retriggers", () => {

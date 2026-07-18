@@ -7,6 +7,8 @@ import { getWindChimeAnchors } from "@/lib/wind-chime-anchors";
 import { useDepthEffects } from "@/hooks/useDepthEffects";
 import { ORIANA_MEDIA_VIEWER_STATE_EVENT } from "@/lib/assistant/runtime-events";
 import { getStoredLocale } from "@/lib/i18n";
+import { isChimeControlTarget, isOverlayInteractionActive, isProtectedInteractiveTarget } from "./chime-interaction";
+import { useChimeAnchorRects } from "./useChimeAnchorRects";
 
 const PublicChimeCanvas = dynamic(
   () => import("./PublicChimeCanvas").then((module) => module.PublicChimeCanvas),
@@ -49,16 +51,29 @@ function subscribeLocale() {
   return () => {};
 }
 
-export function PublicDepthEnvironment() {
-  const pathname = usePathname() ?? "/";
+function hitChime(rects: ReturnType<typeof useChimeAnchorRects>, x: number, y: number) {
+  return rects.find((rect) => x >= rect.left && x <= rect.left + rect.widthPx && y >= rect.top && y <= rect.top + rect.heightPx);
+}
+
+function selectVisibleChimes(rects: ReturnType<typeof useChimeAnchorRects>, enabled: boolean) {
+  if (!enabled) return [];
+  const viewportCenter = typeof window === "undefined" ? 0 : window.innerHeight / 2;
+  return rects
+    .filter((rect) => rect.visible)
+    .sort((left, right) => Math.abs(left.top + left.heightPx / 2 - viewportCenter) - Math.abs(right.top + right.heightPx / 2 - viewportCenter))
+    .slice(0, 1);
+}
+
+function PublicDepthEnvironmentContent({ pathname }: { pathname: string }) {
   const rootRef = useRef<HTMLDivElement>(null);
+  const activeRectsRef = useRef<ReturnType<typeof useChimeAnchorRects>>([]);
   const { mode } = useDepthEffects();
   const [enabled, setEnabled] = useState(true);
   const desktopChimes = useSyncExternalStore(subscribeDesktopChimes, getDesktopChimeSnapshot, () => false);
   const mediaViewerOpen = useSyncExternalStore(subscribeMediaViewer, getMediaViewerSnapshot, () => false);
   const locale = useSyncExternalStore(subscribeLocale, getStoredLocale, () => "en");
-  const isStudio = pathname.startsWith("/studio");
   const slots = useMemo(() => getWindChimeAnchors(pathname), [pathname]);
+  const rects = useChimeAnchorRects(slots);
 
   useEffect(() => {
     const update = () => setEnabled(supportsDepthEffects(mode));
@@ -68,19 +83,30 @@ export function PublicDepthEnvironment() {
     return () => motionQuery.removeEventListener("change", update);
   }, [mode]);
 
-  const showChimes = desktopChimes && mode !== "off" && !mediaViewerOpen;
+  const showChimes = enabled && desktopChimes && mode !== "off" && !mediaViewerOpen;
+  const activeRects = useMemo(
+    () => selectVisibleChimes(rects, showChimes),
+    [rects, showChimes],
+  );
   const chimeLabel = locale === "vi" ? "Nghe chuông gió" : "Play the wind chime";
 
   useEffect(() => {
-    if (isStudio || !supportsDepthEffects(mode)) return;
+    activeRectsRef.current = activeRects;
+  }, [activeRects]);
+
+  useEffect(() => {
+    if (!supportsDepthEffects(mode)) return;
     const root = rootRef.current;
     if (!root) return;
 
     const finePointer = window.matchMedia("(hover: hover) and (pointer: fine)");
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const shouldReduce = () => reducedMotion.matches || mode === "reduced";
     let visible = !document.hidden;
     let frame = 0;
-    let active = false;
+    let hoveredId: string | undefined;
+    let previousX = 0;
+    let previousY = 0;
     let targetX = 0;
     let targetY = 0;
     let currentX = 0;
@@ -89,43 +115,57 @@ export function PublicDepthEnvironment() {
     const settle = () => Math.abs(targetX - currentX) < 0.02 && Math.abs(targetY - currentY) < 0.02;
     const render = () => {
       frame = 0;
-      if (!visible || reducedMotion.matches || !finePointer.matches) return;
+      if (!visible || shouldReduce() || !finePointer.matches) return;
       currentX += (targetX - currentX) * 0.085;
       currentY += (targetY - currentY) * 0.085;
       root.style.setProperty("--public-depth-x", currentX.toFixed(3));
       root.style.setProperty("--public-depth-y", currentY.toFixed(3));
-      if (!settle() || active) {
-        root.style.willChange = "transform";
+      if (!settle()) {
         frame = window.requestAnimationFrame(render);
-      } else {
-        root.style.willChange = "";
       }
     };
     const requestFrame = () => {
       if (!frame) frame = window.requestAnimationFrame(render);
     };
-    const onPointerMove = (event: PointerEvent) => {
-      if (event.pointerType !== "mouse" || !finePointer.matches || reducedMotion.matches) return;
-      targetX = Math.max(-1, Math.min(1, event.clientX / window.innerWidth * 2 - 1));
-      targetY = Math.max(-1, Math.min(1, event.clientY / window.innerHeight * 2 - 1));
-      active = true;
-      requestFrame();
-    };
     const reset = () => {
-      active = false;
       targetX = 0;
       targetY = 0;
+      hoveredId = undefined;
       requestFrame();
     };
+    const canUseChime = (event: PointerEvent) => {
+      if (event.pointerType !== "mouse" || !finePointer.matches || shouldReduce() || isOverlayInteractionActive()) return false;
+      return isChimeControlTarget(event.target) || !isProtectedInteractiveTarget(event.target);
+    };
+    const onPointerMove = (event: PointerEvent) => {
+      if (event.pointerType !== "mouse" || !finePointer.matches || shouldReduce()) return;
+      targetX = Math.max(-1, Math.min(1, event.clientX / window.innerWidth * 2 - 1));
+      targetY = Math.max(-1, Math.min(1, event.clientY / window.innerHeight * 2 - 1));
+      requestFrame();
+      if (!canUseChime(event)) return;
+      const chime = hitChime(activeRectsRef.current, event.clientX, event.clientY);
+      if (!chime) {
+        hoveredId = undefined;
+        return;
+      }
+      const velocityX = Math.max(-1, Math.min(1, (event.clientX - previousX) / 42));
+      const velocityY = Math.max(-1, Math.min(1, (event.clientY - previousY) / 42));
+      const entering = hoveredId !== chime.id;
+      hoveredId = chime.id;
+      previousX = event.clientX;
+      previousY = event.clientY;
+      if (entering || Math.abs(velocityX) + Math.abs(velocityY) > 0.12) {
+        window.dispatchEvent(new CustomEvent("oriana-chime-hover", {
+          detail: { slotId: chime.id, x: event.clientX, y: event.clientY, velocityX, velocityY, entering },
+        }));
+      }
+    };
     const onPointerDown = (event: PointerEvent) => {
-      const anchors = Array.from(document.querySelectorAll<HTMLElement>("[data-chime-anchor]"));
-      const anchor = anchors.find((element) => {
-        const rect = element.getBoundingClientRect();
-        return event.clientX >= rect.left && event.clientX <= rect.right && event.clientY >= rect.top && event.clientY <= rect.bottom;
-      });
-      if (!anchor) return;
+      if (!canUseChime(event)) return;
+      const chime = hitChime(activeRectsRef.current, event.clientX, event.clientY);
+      if (!chime) return;
       window.dispatchEvent(new CustomEvent("oriana-chime-pointer", {
-        detail: { x: event.clientX, y: event.clientY, slotId: anchor.dataset.chimeAnchor },
+        detail: { x: event.clientX, y: event.clientY, slotId: chime.id },
       }));
     };
     const onVisibilityChange = () => {
@@ -133,13 +173,12 @@ export function PublicDepthEnvironment() {
       if (visible) requestFrame();
     };
     const onMediaChange = () => {
-      if (reducedMotion.matches || !finePointer.matches) reset();
+      if (shouldReduce() || !finePointer.matches) reset();
     };
 
     window.addEventListener("pointermove", onPointerMove, { passive: true });
     window.addEventListener("pointerdown", onPointerDown, { passive: true });
     window.addEventListener("blur", reset);
-    document.addEventListener("pointerleave", reset);
     document.addEventListener("visibilitychange", onVisibilityChange);
     finePointer.addEventListener("change", onMediaChange);
     reducedMotion.addEventListener("change", onMediaChange);
@@ -147,48 +186,47 @@ export function PublicDepthEnvironment() {
       window.removeEventListener("pointermove", onPointerMove);
       window.removeEventListener("pointerdown", onPointerDown);
       window.removeEventListener("blur", reset);
-      document.removeEventListener("pointerleave", reset);
       document.removeEventListener("visibilitychange", onVisibilityChange);
       finePointer.removeEventListener("change", onMediaChange);
       reducedMotion.removeEventListener("change", onMediaChange);
       if (frame) window.cancelAnimationFrame(frame);
-      root.style.willChange = "";
     };
-  }, [isStudio, mode]);
+  }, [mode]);
 
-  if (isStudio || !enabled) return null;
+  if (!enabled) return null;
 
   return (
     <>
       <div ref={rootRef} className="public-depth-environment" aria-hidden="true">
-      <div className="public-depth-plane public-depth-plane--far" aria-hidden="true" />
-      <div className="public-depth-plane public-depth-plane--middle" aria-hidden="true" />
-      <div className="public-depth-plane public-depth-plane--near" aria-hidden="true" />
+        <div className="public-depth-plane public-depth-plane--far" aria-hidden="true" />
+        <div className="public-depth-plane public-depth-plane--middle" aria-hidden="true" />
+        <div className="public-depth-plane public-depth-plane--near" aria-hidden="true" />
       </div>
-      {showChimes ? slots.map((slot) => (
+      {activeRects.map((rect) => (
         <button
-          key={slot.id}
+          key={rect.id}
           type="button"
-          data-chime-anchor={slot.id}
+          data-chime-control={rect.id}
+          data-wind-chime-anchor={rect.id}
           data-audio-ux-ignore
           className="public-chime-control"
-          style={{
-            left: `${slot.x}%`,
-            top: `${slot.y}%`,
-            width: `${slot.width}vw`,
-            height: `${slot.height}vh`,
-            transform: "translate(-50%, -50%)",
-          }}
+          style={{ left: `${rect.left}px`, top: `${rect.top}px`, width: `${rect.widthPx}px`, height: `${rect.heightPx}px` }}
           aria-label={chimeLabel}
           onClick={(event) => {
             if (event.detail !== 0) return;
-            window.dispatchEvent(new CustomEvent("oriana-chime-impulse", { detail: { slotId: slot.id } }));
+            window.dispatchEvent(new CustomEvent("oriana-chime-impulse", { detail: { slotId: rect.id } }));
           }}
         >
           <span className="sr-only">{chimeLabel}</span>
         </button>
-      )) : null}
-      {showChimes ? <PublicChimeCanvas slots={slots} reducedMotion={mode === "reduced"} /> : null}
+      ))}
+      {showChimes ? <PublicChimeCanvas rects={activeRects} reducedMotion={mode === "reduced"} /> : null}
     </>
   );
+}
+
+export function PublicDepthEnvironment() {
+  const pathname = usePathname() ?? "/";
+  if (pathname.startsWith("/studio")) return null;
+  return <PublicDepthEnvironmentContent pathname={pathname} />;
 }

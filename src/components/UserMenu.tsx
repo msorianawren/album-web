@@ -143,6 +143,7 @@ export function UserMenu({ session, dict }: UserMenuProps) {
       </button>
 
       <div
+        data-oriana-menu-open={open ? "true" : "false"}
         className={`fixed left-4 right-4 top-[5.25rem] z-50 max-h-[calc(100vh-6.5rem)] origin-top rounded-[1.4rem] border border-border bg-surface/95 p-3 shadow-2xl shadow-text-primary/20 backdrop-blur-xl transition duration-200 overflow-y-auto sm:absolute sm:left-auto sm:right-0 sm:top-14 sm:w-[min(20rem,calc(100vw-2rem))] sm:max-h-[calc(100vh-5rem)] sm:origin-top-right ${
           open
             ? "translate-y-0 scale-100 opacity-100"
