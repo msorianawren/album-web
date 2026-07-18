@@ -1,6 +1,7 @@
 import { getLandingPage } from "@/lib/landing";
 import { getPublicSession, getUserProfile } from "@/lib/auth";
 import { getAssistantPreferencesFromMetadata } from "@/lib/assistant/preferences";
+import { getEnvironmentPreferencesFromMetadata } from "@/lib/environment/preferences";
 import ProfileClient from "./ProfileClient";
 
 export const metadata = {
@@ -20,6 +21,7 @@ export default async function ProfilePage() {
       config={landing?.background_settings || {}}
       userId={session.userId}
       initialAssistantPreferences={getAssistantPreferencesFromMetadata(profile?.metadata)}
+      initialEnvironmentPreferences={getEnvironmentPreferencesFromMetadata(profile?.metadata)}
     />
   );
 }

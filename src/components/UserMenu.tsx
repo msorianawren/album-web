@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { LogIn, LogOut, Moon, Sparkles, Sun, UserRound, Shield, Layers3 } from "lucide-react";
+import { LogIn, LogOut, Moon, Sparkles, Sun, Sunrise, UserRound, Shield, Layers3 } from "lucide-react";
 import { AssistantPet } from "@/components/assistant/AssistantPet";
 import { Avatar } from "@/components/ui/Avatar";
 import { useStoredAssistantPreferences } from "@/hooks/useAssistantPreferences";
@@ -15,56 +15,20 @@ import {
 } from "@/lib/assistant/runtime-events";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { useDepthEffects, type DepthEffectsMode } from "@/hooks/useDepthEffects";
+import { useEnvironmentPreferences, useResolvedEnvironmentPhase } from "@/hooks/useEnvironmentPreferences";
 import type { PublicSession } from "@/lib/types";
 import type { AppDictionary } from "@/lib/i18n";
-
-type ThemeMode = "day" | "night" | "auto";
 
 interface UserMenuProps {
   session: PublicSession;
   dict?: AppDictionary;
 }
 
-const themeEvent = "album-theme-change";
-
-function getStoredTheme(): ThemeMode {
-  if (typeof window === "undefined") return "auto";
-  const stored = localStorage.getItem("album-theme");
-  if (stored === "day" || stored === "night") return stored;
-  return "auto";
-}
-
-function computeAutoTheme(): "day" | "night" {
-  const hour = new Date().getHours();
-  return (hour >= 6 && hour < 18) ? "day" : "night";
-}
-
-function subscribeTheme(callback: () => void) {
-  window.addEventListener("storage", callback);
-  window.addEventListener(themeEvent, callback);
-  
-  // Re-check auto theme every minute
-  const interval = setInterval(() => {
-    if (getStoredTheme() === "auto") {
-      syncThemeClass("auto");
-    }
-  }, 60000);
-  
-  return () => {
-    window.removeEventListener("storage", callback);
-    window.removeEventListener(themeEvent, callback);
-    clearInterval(interval);
-  };
-}
-
-function syncThemeClass(mode: ThemeMode) {
-  const isNight = mode === "night" || (mode === "auto" && computeAutoTheme() === "night");
-  document.documentElement.classList.toggle("theme-night", isNight);
-}
-
 export function UserMenu({ session, dict }: UserMenuProps) {
   const [open, setOpen] = useState(false);
-  const theme = useSyncExternalStore(subscribeTheme, getStoredTheme, () => "auto" as ThemeMode);
+  const { preferences: environmentPreferences, updatePreference: updateEnvironmentPreference } = useEnvironmentPreferences({ userId: session.userId });
+  const theme = environmentPreferences.phase;
+  useResolvedEnvironmentPhase(theme);
   const assistantPreferences = useStoredAssistantPreferences();
   const { mode: depthEffects, setMode: setDepthEffects } = useDepthEffects();
   const menuRef = useRef<HTMLDivElement>(null);
@@ -83,10 +47,6 @@ export function UserMenu({ session, dict }: UserMenuProps) {
         : (dict?.common?.guest || "Guest");
 
   const initialsName = useMemo(() => name || (dict?.common?.guest || "Guest"), [name, dict]);
-
-  useEffect(() => {
-    syncThemeClass(theme);
-  }, [theme]);
 
   useEffect(() => {
     function onPointerDown(event: PointerEvent) {
@@ -111,13 +71,8 @@ export function UserMenu({ session, dict }: UserMenuProps) {
   }
 
   function toggleTheme() {
-    let next: ThemeMode = "auto";
-    if (theme === "auto") next = "day";
-    else if (theme === "day") next = "night";
-    
-    localStorage.setItem("album-theme", next);
-    syncThemeClass(next);
-    window.dispatchEvent(new Event(themeEvent));
+    const modes = ["auto", "day", "sunset", "night"] as const;
+    updateEnvironmentPreference("phase", modes[(modes.indexOf(theme) + 1) % modes.length]);
   }
 
   function cycleDepthEffects() {
@@ -172,6 +127,7 @@ export function UserMenu({ session, dict }: UserMenuProps) {
               <span className="relative h-4 w-4 text-muted-accent" aria-hidden="true">
                 {theme === "night" && <Moon className="h-4 w-4" />}
                 {theme === "day" && <Sun className="h-4 w-4" />}
+                {theme === "sunset" && <Sunrise className="h-4 w-4" />}
                 {theme === "auto" && <span className="h-4 w-4 flex items-center justify-center font-serif text-[10px] uppercase font-bold border border-muted-accent rounded-full">A</span>}
               </span>
               {dict?.common?.theme_mode || "Theme mode"}

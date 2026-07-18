@@ -1,6 +1,7 @@
 "use client";
 
 import type { ClickSoundType, AmbientSoundType } from "@/hooks/useUIPreferences";
+import { CHIME_MATERIALS, type EnvironmentChimeMaterial } from "@/lib/environment/chime-materials";
 
 type WindowWithAudioFallback = Window & {
   webkitAudioContext?: typeof AudioContext;
@@ -179,11 +180,15 @@ class AudioUXSystem {
     frequency,
     velocity,
     pan,
+    material = "silver",
+    volume = 1,
   }: {
     tubeId: string;
     frequency: number;
     velocity: number;
     pan: number;
+    material?: EnvironmentChimeMaterial;
+    volume?: number;
   }) {
     if (!this.context || this.context.state !== "running" || velocity < 0.08) return;
     const now = this.context.currentTime;
@@ -203,10 +208,11 @@ class AudioUXSystem {
     }
 
     const source = this.context.createBufferSource();
-    source.buffer = this.getWindChimeBuffer(frequency);
+    source.buffer = this.getWindChimeBuffer(frequency, material);
+    source.detune.value = (Math.random() - .5) * 9;
     const gain = this.context.createGain();
     const voiceId = Date.now() + Math.random();
-    const level = Math.min(0.26, Math.max(0.025, velocity * 0.22));
+    const level = Math.min(.28, Math.max(.018, velocity * .22 * Math.max(0, Math.min(1, volume))));
     gain.gain.setValueAtTime(0.0001, now);
     gain.gain.exponentialRampToValueAtTime(level, now + 0.008);
     gain.gain.exponentialRampToValueAtTime(0.0001, now + 3.4);
@@ -231,7 +237,7 @@ class AudioUXSystem {
   }
 
   /** An explicit chime control is an intentional request for sound, independent of global UI clicks. */
-  public playWindChimePreview({ frequency, pan = 0 }: { frequency: number; pan?: number }) {
+  public playWindChimePreview({ frequency, pan = 0, material = "silver", volume = 1 }: { frequency: number; pan?: number; material?: EnvironmentChimeMaterial; volume?: number }) {
     this.init();
     if (!this.context) return;
 
@@ -240,6 +246,8 @@ class AudioUXSystem {
       frequency,
       velocity: 0.96,
       pan,
+      material,
+      volume,
     });
 
     if (this.context.state === "running") {
@@ -252,14 +260,14 @@ class AudioUXSystem {
     });
   }
 
-  public playWindChimeHarmony({ frequency, pan = 0 }: { frequency: number; pan?: number }) {
+  public playWindChimeHarmony({ frequency, pan = 0, material = "silver", volume = 1 }: { frequency: number; pan?: number; material?: EnvironmentChimeMaterial; volume?: number }) {
     this.init();
     if (!this.context) return;
 
     const play = () => {
-      this.playWindChimeImpact({ tubeId: `harmony-${Math.round(frequency)}`, frequency, velocity: 1, pan });
+      this.playWindChimeImpact({ tubeId: `harmony-${Math.round(frequency)}`, frequency, velocity: 1, pan, material, volume });
       window.setTimeout(() => {
-        this.playWindChimeImpact({ tubeId: `harmony-${Math.round(frequency)}-fifth`, frequency: frequency * 1.498, velocity: 0.64, pan: pan * 0.62 });
+        this.playWindChimeImpact({ tubeId: `harmony-${Math.round(frequency)}-fifth`, frequency: frequency * 1.498, velocity: 0.64, pan: pan * 0.62, material, volume });
       }, 92);
     };
 
@@ -297,27 +305,27 @@ class AudioUXSystem {
     return this.windChimeBus;
   }
 
-  private getWindChimeBuffer(frequency: number) {
+  private getWindChimeBuffer(frequency: number, material: EnvironmentChimeMaterial) {
     if (!this.context) throw new Error("Audio context unavailable");
-    const key = Math.round(frequency).toString();
+    const key = `${material}-${Math.round(frequency)}`;
     const cached = this.windChimeBuffers.get(key);
     if (cached) return cached;
-    const duration = 3.5;
+    const profile = CHIME_MATERIALS[material];
+    const duration = profile.decay + .25;
     const length = Math.floor(this.context.sampleRate * duration);
     const buffer = this.context.createBuffer(1, length, this.context.sampleRate);
     const samples = buffer.getChannelData(0);
-    const partials = [
-      { ratio: 0.5, decay: 2.95, gain: 0.14 },
-      { ratio: 1, decay: 2.65, gain: 0.5 },
-      { ratio: 2.71, decay: 2.1, gain: 0.3 },
-      { ratio: 4.08, decay: 1.42, gain: 0.18 },
-      { ratio: 5.43, decay: 0.88, gain: 0.1 },
-    ];
+    const partials = profile.partials.map((ratio, index) => ({
+      ratio,
+      decay: profile.decay / (1 + index * .27),
+      gain: (index === 0 ? .5 : .32 / index) * profile.brightness,
+    }));
     for (let index = 0; index < length; index += 1) {
       const time = index / this.context.sampleRate;
       const envelope = Math.min(1, time / 0.006);
       const shimmer = 1 + Math.sin(Math.PI * 2 * 0.72 * time) * 0.025;
-      const transient = time < 0.035 ? (Math.random() * 2 - 1) * (1 - time / 0.035) * 0.045 : 0;
+      const transientDuration = material === "bamboo" ? .055 : .035;
+      const transient = time < transientDuration ? (Math.random() * 2 - 1) * (1 - time / transientDuration) * (material === "bamboo" ? .11 : .045) : 0;
       samples[index] = (partials.reduce(
         (sum, partial) => sum + Math.sin(Math.PI * 2 * frequency * partial.ratio * time) * Math.exp(-time / partial.decay) * partial.gain,
         0,
@@ -325,6 +333,32 @@ class AudioUXSystem {
     }
     this.windChimeBuffers.set(key, buffer);
     return buffer;
+  }
+
+  public playBirdChirp({ pan = 0, brightness = 1 }: { pan?: number; brightness?: number } = {}) {
+    if (!this.context || this.context.state !== "running") return;
+    const now = this.context.currentTime;
+    const gain = this.context.createGain();
+    const oscillator = this.context.createOscillator();
+    const filter = this.context.createBiquadFilter();
+    oscillator.type = "sine";
+    oscillator.frequency.setValueAtTime(1750 * brightness, now);
+    oscillator.frequency.exponentialRampToValueAtTime(2450 * brightness, now + .055);
+    oscillator.frequency.exponentialRampToValueAtTime(1900 * brightness, now + .14);
+    filter.type = "bandpass";
+    filter.frequency.value = 2200;
+    filter.Q.value = 3.2;
+    gain.gain.setValueAtTime(.0001, now);
+    gain.gain.exponentialRampToValueAtTime(.028, now + .012);
+    gain.gain.exponentialRampToValueAtTime(.0001, now + .18);
+    oscillator.connect(filter);
+    filter.connect(gain);
+    const panner = this.context.createStereoPanner();
+    panner.pan.value = Math.max(-.8, Math.min(.8, pan));
+    gain.connect(panner);
+    panner.connect(this.context.destination);
+    oscillator.start(now);
+    oscillator.stop(now + .2);
   }
 
   private audioCache = new Map<string, Promise<AudioBuffer | null>>();

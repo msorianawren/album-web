@@ -4,6 +4,10 @@ import { useFrame, useThree } from "@react-three/fiber";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import type { ChimeAnchorRect, WindChimeMaterial } from "@/lib/wind-chime-anchors";
+import { CHIME_MATERIALS } from "@/lib/environment/chime-materials";
+import type { EnvironmentState } from "@/lib/environment/presets";
+import type { EnvironmentPreferences } from "@/lib/environment/preferences";
+import { automaticChimeRate, type WindRuntime } from "@/lib/environment/wind";
 import {
   advanceWindChime,
   applyWindChimeImpulse,
@@ -16,29 +20,23 @@ import { useUIPreferences } from "@/hooks/useUIPreferences";
 type ModelRefs = { group: THREE.Group; tubes: THREE.Group[] };
 type TubeMesh = { mesh: THREE.Object3D; slotId: string; tubeIndex: number };
 
-function getWorldPosition(anchor: ChimeAnchorRect, scrollY: number, size: { width: number; height: number }, viewport: { width: number; height: number }) {
+function setWorldPosition(target: THREE.Vector3, anchor: ChimeAnchorRect, scrollY: number, size: { width: number; height: number }, viewport: { width: number; height: number }) {
   const x = ((anchor.left + anchor.widthPx / 2) / size.width - 0.5) * viewport.width;
   const y = (0.5 - (anchor.top - scrollY + anchor.heightPx / 2) / size.height) * viewport.height;
-  return new THREE.Vector3(x, y, anchor.depth);
+  target.set(x, y, anchor.depth);
+  return target;
 }
 
 const tubeGeometries = new Map<number, THREE.CylinderGeometry>();
 const tubeInteriorGeometries = new Map<number, THREE.CylinderGeometry>();
 const tubeRims = new Map<number, THREE.TorusGeometry>();
-const metalMaterials: Record<WindChimeMaterial, THREE.MeshStandardMaterial[]> = {
-  silver: [
-    new THREE.MeshStandardMaterial({ color: "#ece9df", metalness: 0.9, roughness: 0.22 }),
-    new THREE.MeshStandardMaterial({ color: "#b9c1c4", metalness: 0.86, roughness: 0.27 }),
+const metalMaterials = Object.fromEntries(Object.entries(CHIME_MATERIALS).map(([material, profile]) => [
+  material,
+  [
+    new THREE.MeshStandardMaterial({ color: profile.color, metalness: profile.metalness, roughness: profile.roughness }),
+    new THREE.MeshStandardMaterial({ color: profile.secondary, metalness: profile.metalness, roughness: Math.min(1, profile.roughness + .07) }),
   ],
-  champagne: [
-    new THREE.MeshStandardMaterial({ color: "#e6d8bc", metalness: 0.84, roughness: 0.25 }),
-    new THREE.MeshStandardMaterial({ color: "#c7af82", metalness: 0.8, roughness: 0.3 }),
-  ],
-  bronze: [
-    new THREE.MeshStandardMaterial({ color: "#d8c4a4", metalness: 0.78, roughness: 0.3 }),
-    new THREE.MeshStandardMaterial({ color: "#ad9677", metalness: 0.74, roughness: 0.34 }),
-  ],
-};
+])) as Record<WindChimeMaterial, THREE.MeshStandardMaterial[]>;
 const interiorMaterial = new THREE.MeshStandardMaterial({ color: "#6e7373", metalness: 0.7, roughness: 0.4, side: THREE.BackSide });
 const supportMaterial = new THREE.MeshStandardMaterial({ color: "#d6c7ad", roughness: 0.26, metalness: 0.82 });
 const clapperMaterial = new THREE.MeshStandardMaterial({ color: "#dad7ce", roughness: 0.22, metalness: 0.88 });
@@ -93,7 +91,7 @@ function ChimeModel({
   }, [anchor.id, onReady]);
 
   return (
-    <group ref={group} position={position} scale={anchor.scale} rotation={[0, anchor.side === "left" ? 0.16 : -0.16, 0]}>
+    <group ref={group} visible={anchor.visible} position={position} scale={anchor.scale} rotation={[0, anchor.side === "left" ? 0.16 : -0.16, 0]}>
       <mesh position={[0, 0.075, 0]} material={supportMaterial} castShadow>
         <cylinderGeometry args={[0.32, 0.32, 0.032, 32]} />
       </mesh>
@@ -138,7 +136,21 @@ function ChimeModel({
   );
 }
 
-export function WindChimeScene({ anchors, reducedMotion }: { anchors: ChimeAnchorRect[]; reducedMotion: boolean }) {
+export function WindChimeScene({
+  anchors,
+  reducedMotion,
+  wind,
+  preferences,
+  state,
+  active,
+}: {
+  anchors: ChimeAnchorRect[];
+  reducedMotion: boolean;
+  wind: React.MutableRefObject<WindRuntime>;
+  preferences: EnvironmentPreferences;
+  state: EnvironmentState;
+  active: boolean;
+}) {
   const { camera, size, viewport, invalidate } = useThree();
   const { soundEnabled } = useUIPreferences();
   const physical = useRef(new Map<string, WindChimeState>());
@@ -147,6 +159,23 @@ export function WindChimeScene({ anchors, reducedMotion }: { anchors: ChimeAncho
   const raycaster = useRef(new THREE.Raycaster());
   const scrollY = useRef(typeof window === "undefined" ? 0 : window.scrollY);
   const [initialScrollY] = useState(() => typeof window === "undefined" ? 0 : window.scrollY);
+  const windAccumulator = useRef(0);
+  const nextAutomaticImpact = useRef(2.5);
+  const visibleAnchors = useMemo(() => anchors.filter((anchor) => anchor.visible), [anchors]);
+
+  useEffect(() => {
+    Object.entries(metalMaterials).forEach(([material, materials]) => {
+      const profile = CHIME_MATERIALS[material as WindChimeMaterial];
+      materials.forEach((surface, index) => {
+        surface.metalness = THREE.MathUtils.clamp(profile.metalness * state.chimeReflection, .15, 1);
+        surface.roughness = THREE.MathUtils.clamp(
+          profile.roughness + index * .07 - (state.chimeReflection - 1) * .12,
+          .12,
+          .88,
+        );
+      });
+    });
+  }, [state.chimeReflection]);
 
   useEffect(() => {
     const activeIds = new Set(anchors.map((anchor) => anchor.id));
@@ -197,6 +226,11 @@ export function WindChimeScene({ anchors, reducedMotion }: { anchors: ChimeAncho
       const tubeIndex = hit?.userData.tubeIndex ?? 0;
       const direction = raycaster.current.ray.direction;
       impulse(slotId, tubeIndex, direction.x * 0.9 || 0.45, -direction.y * 0.45 || 0.2);
+      const state = physical.current.get(slotId);
+      if (state && state.tubes.length > 1) {
+        impulse(slotId, (tubeIndex + 1) % state.tubes.length, direction.x * .28 || .14, -direction.y * .14 || .08);
+        impulse(slotId, (tubeIndex + state.tubes.length - 1) % state.tubes.length, direction.x * .2 || .1, -direction.y * .1 || .06);
+      }
     };
     const onKeyboard = (event: Event) => {
       const detail = (event as CustomEvent<{ slotId: string }>).detail;
@@ -227,12 +261,29 @@ export function WindChimeScene({ anchors, reducedMotion }: { anchors: ChimeAncho
     };
   }, [camera, impulse, reducedMotion, size.height, size.width]);
 
-  useFrame((_, delta) => {
+  useFrame(({ clock }, delta) => {
     let moving = false;
     anchors.forEach((anchor) => {
       const model = models.current.get(anchor.id);
-      if (model) model.group.position.copy(getWorldPosition(anchor, scrollY.current, size, viewport));
+      if (model) setWorldPosition(model.group.position, anchor, scrollY.current, size, viewport);
     });
+    if (active && !reducedMotion) {
+      windAccumulator.current += delta;
+      if (windAccumulator.current >= .18) {
+        windAccumulator.current = 0;
+        const field = wind.current.current;
+        visibleAnchors.forEach((anchor, index) => {
+          if (field.strength > .08) impulse(anchor.id, index % anchor.tubeCount, field.x * .075, field.y * .04 + field.gust * .025);
+        });
+      }
+      const autoRate = automaticChimeRate(preferences.windSpeed * state.wind, preferences.autoChimeFrequency);
+      if (autoRate > 0 && clock.elapsedTime >= nextAutomaticImpact.current) {
+        const index = Math.floor(clock.elapsedTime * 1.7) % Math.max(visibleAnchors.length, 1);
+        const anchor = visibleAnchors[index];
+        if (anchor) impulse(anchor.id, Math.floor(clock.elapsedTime * 2.3) % anchor.tubeCount, .18 + wind.current.current.gust * .22, .07);
+        nextAutomaticImpact.current = clock.elapsedTime + Math.max(2.8, 15 - autoRate * 11);
+      }
+    }
     physical.current.forEach((state, slotId) => {
       const impacts = advanceWindChime(state, reducedMotion ? Math.min(delta, 1 / 120) : delta);
       const model = models.current.get(slotId);
@@ -250,7 +301,14 @@ export function WindChimeScene({ anchors, reducedMotion }: { anchors: ChimeAncho
         if (soundEnabled) {
           const anchor = anchors.find((candidate) => candidate.id === slotId);
           const pan = anchor ? Math.max(-0.85, Math.min(0.85, (anchor.left + anchor.widthPx / 2) / size.width * 2 - 1)) : 0;
-          audioUX.playWindChimeImpact({ tubeId: `${slotId}-${impact.tubeIndex}`, frequency: (anchor?.tone ?? 587.33) * (1 + impact.tubeIndex * 0.062), velocity: impact.velocity, pan });
+          audioUX.playWindChimeImpact({
+            tubeId: `${slotId}-${impact.tubeIndex}`,
+            frequency: (anchor?.tone ?? 587.33) * (1 + impact.tubeIndex * .062),
+            velocity: impact.velocity,
+            pan,
+            material: anchor?.material ?? "silver",
+            volume: preferences.chimeVolume / 100,
+          });
         }
       });
       moving ||= !state.sleeping;
@@ -260,14 +318,11 @@ export function WindChimeScene({ anchors, reducedMotion }: { anchors: ChimeAncho
 
   const positions = useMemo(() => anchors.map((anchor) => ({
     anchor,
-    position: getWorldPosition(anchor, initialScrollY, size, viewport),
+    position: setWorldPosition(new THREE.Vector3(), anchor, initialScrollY, size, viewport),
   })), [anchors, initialScrollY, size, viewport]);
 
   return (
     <>
-      <hemisphereLight args={["#fff7e8", "#4b3e35", 1.05]} />
-      <directionalLight position={[3.5, 5.5, 6]} intensity={2.1} color="#fff1d8" />
-      <directionalLight position={[-4, 1, 4]} intensity={0.55} color="#b4c0d6" />
       {positions.map(({ anchor, position }) => (
         <ChimeModel
           key={anchor.id}

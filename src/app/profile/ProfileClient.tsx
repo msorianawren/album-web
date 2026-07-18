@@ -1,9 +1,10 @@
 "use client";
 
-import { Leaf, Volume2, VolumeX, BookOpen, Clock, ShieldCheck, HeartHandshake, EyeOff, ArrowLeft, Palette, RotateCcw, UploadCloud } from "lucide-react";
+import { Leaf, Volume2, VolumeX, BookOpen, Clock, ShieldCheck, HeartHandshake, EyeOff, ArrowLeft, ImageIcon, RotateCcw, UploadCloud } from "lucide-react";
 import { AssistantPreferencesPanel } from "@/components/assistant/AssistantPreferencesPanel";
+import { EnvironmentControlPanel } from "@/components/environment/EnvironmentControlPanel";
 import { useAlbumViewMemory } from "@/hooks/useAlbumViewMemory";
-import { useUIPreferences, ClickSoundType, AmbientSoundType, BgThemeType } from "@/hooks/useUIPreferences";
+import { useUIPreferences, ClickSoundType, AmbientSoundType } from "@/hooks/useUIPreferences";
 import { useToast } from "@/hooks/useToast";
 import { useRouter } from "next/navigation";
 import { useRef } from "react";
@@ -16,12 +17,14 @@ interface ProfileClientProps {
   config: LandingBackgroundSettings;
   userId?: string | null;
   initialAssistantPreferences?: unknown;
+  initialEnvironmentPreferences?: unknown;
 }
 
 export default function ProfileClient({
   config,
   userId,
   initialAssistantPreferences,
+  initialEnvironmentPreferences,
 }: ProfileClientProps) {
   const router = useRouter();
   const { toast } = useToast();
@@ -31,7 +34,6 @@ export default function ProfileClient({
     clickSound, setClickSound,
     ambientSound, setAmbientSound,
     ambientVolume, setAmbientVolume,
-    bgThemeOverride, setBgThemeOverride,
     bgCustomUrlOverride, setBgCustomUrlOverride
   } = useUIPreferences();
 
@@ -206,38 +208,23 @@ export default function ProfileClient({
           initialPreferences={initialAssistantPreferences}
         />
 
-        {/* Visual Theme Section */}
+        <EnvironmentControlPanel
+          userId={userId}
+          initialPreferences={initialEnvironmentPreferences}
+          artistPreset={config.preset}
+        />
+
+        {/* Custom background remains local and independent of the built-in environment. */}
         <section className="rounded-[1.4rem] border border-border bg-surface/60 backdrop-blur-xl p-6 shadow-xl shadow-text-primary/5">
           <div className="flex items-center gap-2 mb-6">
-            <Palette className="w-5 h-5 text-muted-accent" />
-            <h2 className="text-lg font-semibold">Visual Aesthetics</h2>
+            <ImageIcon className="w-5 h-5 text-muted-accent" />
+            <h2 className="text-lg font-semibold">Custom Background</h2>
           </div>
           
-          <div className="grid gap-8 md:grid-cols-2">
-            <div>
-              <label className="block text-sm font-medium text-text-primary mb-2">Preset Theme</label>
-              <p className="text-xs text-text-secondary mb-3">Overrides the global theme chosen by the artist.</p>
-              <select 
-                value={bgThemeOverride}
-                onChange={(e) => {
-                  setBgThemeOverride(e.target.value as BgThemeType);
-                  toast.success("Preset theme updated.");
-                }}
-                className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-muted-accent"
-              >
-                <option value="default">Default (Artist&apos;s Choice)</option>
-                <option value="sakura">Sakura (Cherry Blossoms)</option>
-                <option value="fireflies">Fireflies (Golden Glow)</option>
-                <option value="snow">Winter Snow</option>
-                <option value="autumn">Autumn Leaves</option>
-                <option value="mist">Morning Mist</option>
-                <option value="rain">Gentle Rain</option>
-              </select>
-            </div>
-
+          <div>
             <div>
               <label className="block text-sm font-medium text-text-primary mb-2">Custom Background Image</label>
-              <p className="text-xs text-text-secondary mb-3">Stored locally in your browser cache.</p>
+              <p className="text-xs text-text-secondary mb-3">Stored locally in your browser cache and used only as an optional override.</p>
               
               <div className="flex items-center gap-2">
                 <input 

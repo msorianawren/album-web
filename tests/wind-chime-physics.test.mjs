@@ -12,12 +12,12 @@ import { getWindChimeAnchors } from "../src/lib/wind-chime-anchors.ts";
 
 test("wind chime anchors are deterministic document locations", () => {
   assert.deepEqual(getWindChimeAnchors("/"), getWindChimeAnchors("/"));
-  assert.equal(getWindChimeAnchors("/").length, 2);
-  assert.equal(getWindChimeAnchors("/albums").length, 2);
-  assert.equal(getWindChimeAnchors("/about").length, 2);
-  assert.equal(getWindChimeAnchors("/profile").length, 1);
+  assert.equal(getWindChimeAnchors("/").length, 4);
+  assert.equal(getWindChimeAnchors("/albums").length, 4);
+  assert.equal(getWindChimeAnchors("/about").length, 4);
+  assert.equal(getWindChimeAnchors("/profile").length, 4);
   assert.equal(getWindChimeAnchors("/studio").length, 0);
-  assert.ok(getWindChimeAnchors("/").every((slot) => Number.isInteger(slot.sectionIndex) && slot.align > 0 && slot.align < 1));
+  assert.ok(getWindChimeAnchors("/").every((slot) => slot.selector.startsWith("[data-environment-anchor=") && slot.scale > 0));
 });
 
 test("two-axis impulse decays and remains bounded", () => {
@@ -37,7 +37,8 @@ test("public depth code excludes Studio and keeps the WebGL import lazy", async 
     readFile(new URL("../src/app/studio/layout.tsx", import.meta.url), "utf8"),
     readFile(new URL("../src/components/ui/AudioUXProvider.tsx", import.meta.url), "utf8"),
   ]);
-  assert.match(environment, /pathname\.startsWith\("\/studio"\)/);
+  assert.match(environment, /function isEnvironmentRoute/);
+  assert.doesNotMatch(environment, /pathname === "\/studio"/);
   assert.match(environment, /dynamic\(/);
   assert.doesNotMatch(studioLayout, /PublicDepthEnvironment|three|WindChime/);
   assert.match(audioProvider, /data-audio-ux-ignore/);
@@ -64,12 +65,14 @@ test("document anchors scroll smoothly while pointer input only produces local i
     readFile(new URL("../src/components/environment/WindChimeScene.tsx", import.meta.url), "utf8"),
     readFile(new URL("../src/components/environment/useChimeAnchorRects.ts", import.meta.url), "utf8"),
   ]);
-  assert.match(anchors, /sectionIndex/);
+  assert.doesNotMatch(anchors, /sectionIndex/);
+  assert.match(anchors, /data-environment-anchor='hero-right'/);
+  assert.match(anchors, /data-environment-anchor='footer-branch'/);
   assert.match(environment, /data-wind-chime-anchor/);
   assert.doesNotMatch(anchorHook, /window\.addEventListener\("scroll", schedule/);
   assert.match(anchorHook, /ResizeObserver/);
   assert.match(anchorHook, /getBoundingClientRect/);
-  assert.match(scene, /new THREE\.Vector3\(x, y, anchor\.depth\)/);
+  assert.match(scene, /target\.set\(x, y, anchor\.depth\)/);
   assert.match(scene, /window\.addEventListener\("scroll", onScroll/);
   assert.match(environment, /event\.clientY \+ window\.scrollY/);
   assert.match(environment, /oriana-chime-hover/);
@@ -84,11 +87,12 @@ test("collision threshold and cooldown prevent repeated impact retriggers", () =
   assert.equal(resolveWindChimeImpact(tube, 1), 0);
 });
 
-test("explicit chime controls initialize and play a preview without enabling global UI sounds", async () => {
-  const [environment, audio, scene] = await Promise.all([
+test("explicit chime controls initialize and play distinct material previews", async () => {
+  const [environment, audio, scene, materials] = await Promise.all([
     readFile(new URL("../src/components/environment/PublicDepthEnvironment.tsx", import.meta.url), "utf8"),
     readFile(new URL("../src/lib/audio-ux.ts", import.meta.url), "utf8"),
     readFile(new URL("../src/components/environment/WindChimeScene.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../src/lib/environment/chime-materials.ts", import.meta.url), "utf8"),
   ]);
   assert.match(environment, /audioUX\.playWindChimePreview/);
   assert.match(audio, /public playWindChimePreview/);
@@ -96,7 +100,11 @@ test("explicit chime controls initialize and play a preview without enabling glo
   assert.match(audio, /velocity: 0\.96/);
   assert.match(audio, /public playWindChimeHarmony/);
   assert.match(environment, /onDoubleClick/);
-  assert.match(scene, /metalness: 0\.9/);
+  assert.match(scene, /CHIME_MATERIALS/);
+  assert.match(materials, /silver:/);
+  assert.match(materials, /champagne:/);
+  assert.match(materials, /bronze:/);
+  assert.match(materials, /bamboo:/);
   assert.match(scene, /boxGeometry/);
   assert.doesNotMatch(scene, /coneGeometry/);
 });
