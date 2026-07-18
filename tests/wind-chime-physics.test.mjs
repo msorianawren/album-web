@@ -80,3 +80,18 @@ test("collision threshold and cooldown prevent repeated impact retriggers", () =
   assert.ok(resolveWindChimeImpact(tube, 1) > 0);
   assert.equal(resolveWindChimeImpact(tube, 1), 0);
 });
+
+test("explicit chime controls initialize and play a preview without enabling global UI sounds", async () => {
+  const [environment, audio, scene] = await Promise.all([
+    readFile(new URL("../src/components/environment/PublicDepthEnvironment.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../src/lib/audio-ux.ts", import.meta.url), "utf8"),
+    readFile(new URL("../src/components/environment/WindChimeScene.tsx", import.meta.url), "utf8"),
+  ]);
+  assert.match(environment, /audioUX\.playWindChimePreview/);
+  assert.match(audio, /public playWindChimePreview/);
+  assert.match(audio, /this\.init\(\)/);
+  assert.match(audio, /velocity: 0\.96/);
+  assert.match(scene, /metalness: 0\.9/);
+  assert.match(scene, /boxGeometry/);
+  assert.doesNotMatch(scene, /coneGeometry/);
+});

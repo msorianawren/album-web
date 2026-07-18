@@ -230,6 +230,28 @@ class AudioUXSystem {
     source.stop(now + 2);
   }
 
+  /** An explicit chime control is an intentional request for sound, independent of global UI clicks. */
+  public playWindChimePreview({ frequency, pan = 0 }: { frequency: number; pan?: number }) {
+    this.init();
+    if (!this.context) return;
+
+    const play = () => this.playWindChimeImpact({
+      tubeId: `preview-${Math.round(frequency)}`,
+      frequency,
+      velocity: 0.96,
+      pan,
+    });
+
+    if (this.context.state === "running") {
+      play();
+      return;
+    }
+
+    void this.context.resume().then(play).catch(() => {
+      // The browser may still block audio until a later explicit interaction.
+    });
+  }
+
   private ensureWindChimeBus() {
     if (!this.context) return null;
     if (this.windChimeBus) return this.windChimeBus;

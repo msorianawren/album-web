@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { getWindChimeAnchors } from "@/lib/wind-chime-anchors";
 import { useDepthEffects } from "@/hooks/useDepthEffects";
+import { audioUX } from "@/lib/audio-ux";
 import { ORIANA_MEDIA_VIEWER_STATE_EVENT } from "@/lib/assistant/runtime-events";
 import { getStoredLocale } from "@/lib/i18n";
 import { isChimeControlTarget, isOverlayInteractionActive, isProtectedInteractiveTarget } from "./chime-interaction";
@@ -213,6 +214,8 @@ function PublicDepthEnvironmentContent({ pathname }: { pathname: string }) {
           style={{ left: `${rect.left}px`, top: `${rect.top}px`, width: `${rect.widthPx}px`, height: `${rect.heightPx}px` }}
           aria-label={chimeLabel}
           onClick={(event) => {
+            const pan = Math.max(-0.65, Math.min(0.65, (rect.left + rect.widthPx / 2) / window.innerWidth * 2 - 1));
+            audioUX.playWindChimePreview({ frequency: rect.tone, pan });
             if (event.detail !== 0) return;
             window.dispatchEvent(new CustomEvent("oriana-chime-impulse", { detail: { slotId: rect.id } }));
           }}

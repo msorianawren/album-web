@@ -41,11 +41,13 @@ export function useChimeAnchorRects(slots: ChimeAnchorSlot[]) {
       frame = 0;
       const next = entries.map(([slot, element]) => {
         const rect = element.getBoundingClientRect();
-        const widthPx = Math.round(Math.min(184, Math.max(104, 86 + slot.scale * 150)));
-        const heightPx = Math.round(widthPx * 1.34);
-        const edgeInset = Math.min(104, Math.max(44, window.innerWidth * 0.075));
-        const centerX = slot.side === "left" ? Math.max(edgeInset, rect.left + edgeInset) : Math.min(window.innerWidth - edgeInset, rect.right - edgeInset);
-        const centerY = rect.top + rect.height * slot.align;
+        const widthPx = Math.round(Math.min(144, Math.max(82, 62 + slot.scale * 120)));
+        const heightPx = Math.round(widthPx * 1.42);
+        const edgeInset = Math.max(widthPx / 2 + 24, Math.min(104, window.innerWidth * 0.065));
+        const centerX = slot.side === "left" ? edgeInset : window.innerWidth - edgeInset;
+        const safeTop = heightPx / 2 + 32;
+        const safeBottom = window.innerHeight - heightPx / 2 - 32;
+        const centerY = Math.min(safeBottom, Math.max(safeTop, rect.top + rect.height * slot.align));
         return {
           ...slot,
           left: centerX - widthPx / 2,

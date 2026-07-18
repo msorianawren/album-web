@@ -21,28 +21,28 @@ const tubeInteriorGeometries = new Map<number, THREE.CylinderGeometry>();
 const tubeRims = new Map<number, THREE.TorusGeometry>();
 const metalMaterials: Record<WindChimeMaterial, THREE.MeshStandardMaterial[]> = {
   silver: [
-    new THREE.MeshStandardMaterial({ color: "#c7c8c7", metalness: 0.78, roughness: 0.35 }),
-    new THREE.MeshStandardMaterial({ color: "#aeb4b7", metalness: 0.72, roughness: 0.4 }),
+    new THREE.MeshStandardMaterial({ color: "#ece9df", metalness: 0.9, roughness: 0.22 }),
+    new THREE.MeshStandardMaterial({ color: "#b9c1c4", metalness: 0.86, roughness: 0.27 }),
   ],
   champagne: [
-    new THREE.MeshStandardMaterial({ color: "#c9b79d", metalness: 0.68, roughness: 0.39 }),
-    new THREE.MeshStandardMaterial({ color: "#b7a284", metalness: 0.64, roughness: 0.43 }),
+    new THREE.MeshStandardMaterial({ color: "#e6d8bc", metalness: 0.84, roughness: 0.25 }),
+    new THREE.MeshStandardMaterial({ color: "#c7af82", metalness: 0.8, roughness: 0.3 }),
   ],
   bronze: [
-    new THREE.MeshStandardMaterial({ color: "#9a7457", metalness: 0.62, roughness: 0.44 }),
-    new THREE.MeshStandardMaterial({ color: "#7c5e49", metalness: 0.58, roughness: 0.47 }),
+    new THREE.MeshStandardMaterial({ color: "#d8c4a4", metalness: 0.78, roughness: 0.3 }),
+    new THREE.MeshStandardMaterial({ color: "#ad9677", metalness: 0.74, roughness: 0.34 }),
   ],
 };
-const interiorMaterial = new THREE.MeshStandardMaterial({ color: "#504743", metalness: 0.32, roughness: 0.62, side: THREE.BackSide });
-const supportMaterial = new THREE.MeshStandardMaterial({ color: "#8a7867", roughness: 0.52, metalness: 0.3 });
-const clapperMaterial = new THREE.MeshStandardMaterial({ color: "#a7927b", roughness: 0.42, metalness: 0.42 });
-const cordMaterial = new THREE.MeshBasicMaterial({ color: "#9b8a79", transparent: true, opacity: 0.72 });
+const interiorMaterial = new THREE.MeshStandardMaterial({ color: "#6e7373", metalness: 0.7, roughness: 0.4, side: THREE.BackSide });
+const supportMaterial = new THREE.MeshStandardMaterial({ color: "#d6c7ad", roughness: 0.26, metalness: 0.82 });
+const clapperMaterial = new THREE.MeshStandardMaterial({ color: "#dad7ce", roughness: 0.22, metalness: 0.88 });
+const cordMaterial = new THREE.MeshBasicMaterial({ color: "#d8cbb5", transparent: true, opacity: 0.64 });
 
 function getTubeGeometry(length: number) {
   const key = Math.round(length * 100);
   const existing = tubeGeometries.get(key);
   if (existing) return existing;
-  const geometry = new THREE.CylinderGeometry(0.075, 0.075, length, 28, 1, true);
+  const geometry = new THREE.CylinderGeometry(0.052, 0.052, length, 28, 1, true);
   tubeGeometries.set(key, geometry);
   return geometry;
 }
@@ -51,7 +51,7 @@ function getTubeInterior(length: number) {
   const key = Math.round(length * 100);
   const existing = tubeInteriorGeometries.get(key);
   if (existing) return existing;
-  const geometry = new THREE.CylinderGeometry(0.061, 0.061, length, 28, 1, true);
+  const geometry = new THREE.CylinderGeometry(0.041, 0.041, length, 28, 1, true);
   tubeInteriorGeometries.set(key, geometry);
   return geometry;
 }
@@ -60,7 +60,7 @@ function getTubeRim(length: number) {
   const key = Math.round(length * 100);
   const existing = tubeRims.get(key);
   if (existing) return existing;
-  const geometry = new THREE.TorusGeometry(0.068, 0.007, 7, 28);
+  const geometry = new THREE.TorusGeometry(0.047, 0.005, 7, 28);
   geometry.rotateX(Math.PI / 2);
   tubeRims.set(key, geometry);
   return geometry;
@@ -80,7 +80,7 @@ function ChimeModel({
   const group = useRef<THREE.Group>(null);
   const tubes = useRef<THREE.Group[]>([]);
   const tubeCount = anchor.tubeCount;
-  const lengths = useMemo(() => Array.from({ length: tubeCount }, (_, index) => 1.2 + (tubeCount - index) * 0.11), [tubeCount]);
+  const lengths = useMemo(() => Array.from({ length: tubeCount }, (_, index) => 1.04 + (tubeCount - index) * 0.095), [tubeCount]);
 
   useEffect(() => {
     if (group.current) onReady(anchor.id, { group: group.current, tubes: tubes.current });
@@ -88,15 +88,15 @@ function ChimeModel({
 
   return (
     <group ref={group} position={position} scale={anchor.scale} rotation={[0, anchor.side === "left" ? 0.16 : -0.16, 0]}>
-      <mesh position={[0, 0.08, 0]} material={supportMaterial} castShadow>
-        <cylinderGeometry args={[0.43, 0.43, 0.055, 32]} />
+      <mesh position={[0, 0.075, 0]} material={supportMaterial} castShadow>
+        <cylinderGeometry args={[0.32, 0.32, 0.032, 32]} />
       </mesh>
-      <mesh position={[0, 0.12, 0]} material={supportMaterial} rotation={[Math.PI / 2, 0, 0]}>
-        <torusGeometry args={[0.39, 0.012, 8, 32]} />
+      <mesh position={[0, 0.098, 0]} material={supportMaterial} rotation={[Math.PI / 2, 0, 0]}>
+        <torusGeometry args={[0.29, 0.009, 8, 32]} />
       </mesh>
       {lengths.map((length, index) => {
         const angle = index / tubeCount * Math.PI * 2;
-        const radius = 0.31;
+        const radius = 0.24;
         const x = Math.cos(angle) * radius;
         const z = Math.sin(angle) * radius;
         return (
@@ -119,14 +119,14 @@ function ChimeModel({
           </group>
         );
       })}
-      <mesh position={[0, -0.9, 0]} material={clapperMaterial} castShadow>
-        <sphereGeometry args={[0.095, 18, 14]} />
+      <mesh position={[0, -0.76, 0]} material={clapperMaterial} castShadow>
+        <sphereGeometry args={[0.068, 18, 14]} />
       </mesh>
-      <mesh position={[0, -1.55, 0]} material={cordMaterial}>
-        <cylinderGeometry args={[0.008, 0.008, 1.18, 6]} />
+      <mesh position={[0, -1.3, 0]} material={cordMaterial}>
+        <cylinderGeometry args={[0.006, 0.006, 0.94, 6]} />
       </mesh>
-      <mesh position={[0, -2.22, 0]} material={clapperMaterial} rotation={[0, 0.3, 0]}>
-        <coneGeometry args={[0.19, 0.42, 4]} />
+      <mesh position={[0, -1.8, 0]} material={clapperMaterial} rotation={[0, 0.3, 0]}>
+        <boxGeometry args={[0.12, 0.28, 0.026]} />
       </mesh>
     </group>
   );
