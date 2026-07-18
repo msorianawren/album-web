@@ -10,13 +10,14 @@ import {
 } from "../src/lib/wind-chime-physics.ts";
 import { getWindChimeAnchors } from "../src/lib/wind-chime-anchors.ts";
 
-test("wind chime anchors are deterministic and never use media data", () => {
+test("wind chime anchors are deterministic and stay at fixed viewport locations", () => {
   assert.deepEqual(getWindChimeAnchors("/"), getWindChimeAnchors("/"));
-  assert.equal(getWindChimeAnchors("/").length, 6);
-  assert.equal(getWindChimeAnchors("/albums").length, 3);
-  assert.equal(getWindChimeAnchors("/about").length, 3);
+  assert.equal(getWindChimeAnchors("/").length, 2);
+  assert.equal(getWindChimeAnchors("/albums").length, 2);
+  assert.equal(getWindChimeAnchors("/about").length, 2);
   assert.equal(getWindChimeAnchors("/profile").length, 1);
   assert.equal(getWindChimeAnchors("/studio").length, 0);
+  assert.ok(getWindChimeAnchors("/").every((slot) => slot.viewportX > 0 && slot.viewportX < 1 && slot.viewportY > 0 && slot.viewportY < 1));
 });
 
 test("two-axis impulse decays and remains bounded", () => {
@@ -56,18 +57,17 @@ test("public canvas and decorative layers cannot intercept normal website intera
   assert.doesNotMatch(environment, /preventDefault|stopPropagation|stopImmediatePropagation|setPointerCapture/);
 });
 
-test("document anchors drive chime placement while pointer input only produces local impulses", async () => {
+test("fixed viewport anchors drive chime placement while pointer input only produces local impulses", async () => {
   const [anchors, environment, scene, anchorHook] = await Promise.all([
     readFile(new URL("../src/lib/wind-chime-anchors.ts", import.meta.url), "utf8"),
     readFile(new URL("../src/components/environment/PublicDepthEnvironment.tsx", import.meta.url), "utf8"),
     readFile(new URL("../src/components/environment/WindChimeScene.tsx", import.meta.url), "utf8"),
     readFile(new URL("../src/components/environment/useChimeAnchorRects.ts", import.meta.url), "utf8"),
   ]);
-  assert.match(anchors, /sectionIndex/);
+  assert.match(anchors, /viewportX/);
   assert.match(environment, /data-wind-chime-anchor/);
-  assert.match(anchorHook, /window\.addEventListener\("scroll", schedule/);
-  assert.match(anchorHook, /ResizeObserver/);
-  assert.match(anchorHook, /IntersectionObserver/);
+  assert.doesNotMatch(anchorHook, /window\.addEventListener\("scroll", schedule/);
+  assert.doesNotMatch(anchorHook, /ResizeObserver|IntersectionObserver|getBoundingClientRect/);
   assert.match(scene, /new THREE\.Vector3\(x, y, anchor\.depth\)/);
   assert.match(environment, /oriana-chime-hover/);
   assert.doesNotMatch(scene, /position\.set\([^)]*pointer|lerp\([^)]*pointer/i);
@@ -91,6 +91,8 @@ test("explicit chime controls initialize and play a preview without enabling glo
   assert.match(audio, /public playWindChimePreview/);
   assert.match(audio, /this\.init\(\)/);
   assert.match(audio, /velocity: 0\.96/);
+  assert.match(audio, /public playWindChimeHarmony/);
+  assert.match(environment, /onDoubleClick/);
   assert.match(scene, /metalness: 0\.9/);
   assert.match(scene, /boxGeometry/);
   assert.doesNotMatch(scene, /coneGeometry/);

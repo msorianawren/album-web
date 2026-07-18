@@ -52,17 +52,26 @@ function subscribeLocale() {
   return () => {};
 }
 
+function getChimeControlRect(rect: ReturnType<typeof useChimeAnchorRects>[number]) {
+  const width = Math.min(112, rect.widthPx * 0.56);
+  const height = Math.min(158, rect.heightPx * 0.72);
+  return {
+    left: rect.left + (rect.widthPx - width) / 2,
+    top: rect.top + 12,
+    width,
+    height,
+  };
+}
+
 function hitChime(rects: ReturnType<typeof useChimeAnchorRects>, x: number, y: number) {
-  return rects.find((rect) => x >= rect.left && x <= rect.left + rect.widthPx && y >= rect.top && y <= rect.top + rect.heightPx);
+  return rects.find((rect) => {
+    const control = getChimeControlRect(rect);
+    return x >= control.left && x <= control.left + control.width && y >= control.top && y <= control.top + control.height;
+  });
 }
 
 function selectVisibleChimes(rects: ReturnType<typeof useChimeAnchorRects>, enabled: boolean) {
-  if (!enabled) return [];
-  const viewportCenter = typeof window === "undefined" ? 0 : window.innerHeight / 2;
-  return rects
-    .filter((rect) => rect.visible)
-    .sort((left, right) => Math.abs(left.top + left.heightPx / 2 - viewportCenter) - Math.abs(right.top + right.heightPx / 2 - viewportCenter))
-    .slice(0, 1);
+  return enabled ? rects.filter((rect) => rect.visible) : [];
 }
 
 function PublicDepthEnvironmentContent({ pathname }: { pathname: string }) {
@@ -203,26 +212,33 @@ function PublicDepthEnvironmentContent({ pathname }: { pathname: string }) {
         <div className="public-depth-plane public-depth-plane--middle" aria-hidden="true" />
         <div className="public-depth-plane public-depth-plane--near" aria-hidden="true" />
       </div>
-      {activeRects.map((rect) => (
-        <button
-          key={rect.id}
-          type="button"
-          data-chime-control={rect.id}
-          data-wind-chime-anchor={rect.id}
-          data-audio-ux-ignore
-          className="public-chime-control"
-          style={{ left: `${rect.left}px`, top: `${rect.top}px`, width: `${rect.widthPx}px`, height: `${rect.heightPx}px` }}
-          aria-label={chimeLabel}
-          onClick={(event) => {
-            const pan = Math.max(-0.65, Math.min(0.65, (rect.left + rect.widthPx / 2) / window.innerWidth * 2 - 1));
-            audioUX.playWindChimePreview({ frequency: rect.tone, pan });
-            if (event.detail !== 0) return;
-            window.dispatchEvent(new CustomEvent("oriana-chime-impulse", { detail: { slotId: rect.id } }));
-          }}
-        >
-          <span className="sr-only">{chimeLabel}</span>
-        </button>
-      ))}
+      {activeRects.map((rect) => {
+        const control = getChimeControlRect(rect);
+        const pan = Math.max(-0.65, Math.min(0.65, (rect.left + rect.widthPx / 2) / window.innerWidth * 2 - 1));
+        return (
+          <button
+            key={rect.id}
+            type="button"
+            data-chime-control={rect.id}
+            data-wind-chime-anchor={rect.id}
+            data-audio-ux-ignore
+            className="public-chime-control"
+            style={{ left: `${control.left}px`, top: `${control.top}px`, width: `${control.width}px`, height: `${control.height}px` }}
+            aria-label={chimeLabel}
+            onClick={(event) => {
+              audioUX.playWindChimePreview({ frequency: rect.tone, pan });
+              if (event.detail !== 0) return;
+              window.dispatchEvent(new CustomEvent("oriana-chime-impulse", { detail: { slotId: rect.id } }));
+            }}
+            onDoubleClick={() => {
+              audioUX.playWindChimeHarmony({ frequency: rect.tone, pan });
+              window.dispatchEvent(new CustomEvent("oriana-chime-cascade", { detail: { slotId: rect.id } }));
+            }}
+          >
+            <span className="sr-only">{chimeLabel}</span>
+          </button>
+        );
+      })}
       {showChimes ? <PublicChimeCanvas rects={activeRects} reducedMotion={mode === "reduced"} /> : null}
     </>
   );

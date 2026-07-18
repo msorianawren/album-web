@@ -23,38 +23,26 @@ export function useChimeAnchorRects(slots: ChimeAnchorSlot[]) {
     if (slots.length === 0) {
       return;
     }
-    const sections = Array.from(document.querySelectorAll<HTMLElement>("main section"));
-    const entries = slots
-      .map((slot) => [slot, sections[slot.sectionIndex]] as const)
-      .filter((entry): entry is readonly [ChimeAnchorSlot, HTMLElement] => Boolean(entry[1]));
-    const visible = new Map(entries.map(([slot]) => [slot.id, false]));
-    const elementSlots = new Map<HTMLElement, ChimeAnchorSlot[]>();
     let frame = 0;
-
-    entries.forEach(([slot, element]) => {
-      const assigned = elementSlots.get(element) ?? [];
-      assigned.push(slot);
-      elementSlots.set(element, assigned);
-    });
 
     const refresh = () => {
       frame = 0;
-      const next = entries.map(([slot, element]) => {
-        const rect = element.getBoundingClientRect();
-        const widthPx = Math.round(Math.min(144, Math.max(82, 62 + slot.scale * 120)));
-        const heightPx = Math.round(widthPx * 1.42);
-        const edgeInset = Math.max(widthPx / 2 + 24, Math.min(104, window.innerWidth * 0.065));
-        const centerX = slot.side === "left" ? edgeInset : window.innerWidth - edgeInset;
+      const next = slots.map((slot) => {
+        const widthPx = Math.round(Math.min(218, Math.max(138, 84 + slot.scale * 188)));
+        const heightPx = Math.round(widthPx * 1.45);
+        const centerX = window.innerWidth * slot.viewportX;
         const safeTop = heightPx / 2 + 32;
         const safeBottom = window.innerHeight - heightPx / 2 - 32;
-        const centerY = Math.min(safeBottom, Math.max(safeTop, rect.top + rect.height * slot.align));
+        const safeLeft = widthPx / 2 + 24;
+        const safeRight = window.innerWidth - widthPx / 2 - 24;
+        const centerY = Math.min(safeBottom, Math.max(safeTop, window.innerHeight * slot.viewportY));
         return {
           ...slot,
-          left: centerX - widthPx / 2,
+          left: Math.min(safeRight, Math.max(safeLeft, centerX)) - widthPx / 2,
           top: centerY - heightPx / 2,
           widthPx,
           heightPx,
-          visible: visible.get(slot.id) ?? false,
+          visible: true,
         };
       });
       setRects((current) => sameRects(current, next) ? current : next);
@@ -62,27 +50,11 @@ export function useChimeAnchorRects(slots: ChimeAnchorSlot[]) {
     const schedule = () => {
       if (!frame) frame = window.requestAnimationFrame(refresh);
     };
-    const resizeObserver = new ResizeObserver(schedule);
-    const intersectionObserver = new IntersectionObserver((observed) => {
-      observed.forEach((entry) => {
-        elementSlots.get(entry.target as HTMLElement)?.forEach((slot) => visible.set(slot.id, entry.isIntersecting));
-      });
-      schedule();
-    }, { threshold: 0.02 });
-
-    entries.forEach(([, element]) => {
-      resizeObserver.observe(element);
-      intersectionObserver.observe(element);
-    });
-    window.addEventListener("scroll", schedule, { passive: true });
     window.addEventListener("resize", schedule, { passive: true });
     schedule();
 
     return () => {
       if (frame) window.cancelAnimationFrame(frame);
-      resizeObserver.disconnect();
-      intersectionObserver.disconnect();
-      window.removeEventListener("scroll", schedule);
       window.removeEventListener("resize", schedule);
     };
   }, [slots]);

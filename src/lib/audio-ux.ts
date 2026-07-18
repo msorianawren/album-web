@@ -206,10 +206,10 @@ class AudioUXSystem {
     source.buffer = this.getWindChimeBuffer(frequency);
     const gain = this.context.createGain();
     const voiceId = Date.now() + Math.random();
-    const level = Math.min(0.19, Math.max(0.02, velocity * 0.16));
+    const level = Math.min(0.26, Math.max(0.025, velocity * 0.22));
     gain.gain.setValueAtTime(0.0001, now);
     gain.gain.exponentialRampToValueAtTime(level, now + 0.008);
-    gain.gain.exponentialRampToValueAtTime(0.0001, now + 1.9);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 3.4);
     source.connect(gain);
     if ("createStereoPanner" in this.context) {
       const panner = this.context.createStereoPanner();
@@ -227,7 +227,7 @@ class AudioUXSystem {
       this.windChimeVoices.delete(voiceId);
     };
     source.start(now);
-    source.stop(now + 2);
+    source.stop(now + 3.5);
   }
 
   /** An explicit chime control is an intentional request for sound, independent of global UI clicks. */
@@ -252,6 +252,27 @@ class AudioUXSystem {
     });
   }
 
+  public playWindChimeHarmony({ frequency, pan = 0 }: { frequency: number; pan?: number }) {
+    this.init();
+    if (!this.context) return;
+
+    const play = () => {
+      this.playWindChimeImpact({ tubeId: `harmony-${Math.round(frequency)}`, frequency, velocity: 1, pan });
+      window.setTimeout(() => {
+        this.playWindChimeImpact({ tubeId: `harmony-${Math.round(frequency)}-fifth`, frequency: frequency * 1.498, velocity: 0.64, pan: pan * 0.62 });
+      }, 92);
+    };
+
+    if (this.context.state === "running") {
+      play();
+      return;
+    }
+
+    void this.context.resume().then(play).catch(() => {
+      // The browser may still block audio until a later explicit interaction.
+    });
+  }
+
   private ensureWindChimeBus() {
     if (!this.context) return null;
     if (this.windChimeBus) return this.windChimeBus;
@@ -261,12 +282,12 @@ class AudioUXSystem {
     const master = this.context.createGain();
     const compressor = this.context.createDynamicsCompressor();
     dry.gain.value = 0.86;
-    reverb.gain.value = 0.14;
-    master.gain.value = 0.72;
+    reverb.gain.value = 0.28;
+    master.gain.value = 0.88;
     compressor.threshold.value = -18;
     compressor.knee.value = 16;
     compressor.ratio.value = 8;
-    convolver.buffer = this.getReverbBuffer(1.2, 2.2);
+    convolver.buffer = this.getReverbBuffer(2.4, 2.7);
     dry.connect(master);
     reverb.connect(convolver);
     convolver.connect(master);
@@ -281,24 +302,26 @@ class AudioUXSystem {
     const key = Math.round(frequency).toString();
     const cached = this.windChimeBuffers.get(key);
     if (cached) return cached;
-    const duration = 2;
+    const duration = 3.5;
     const length = Math.floor(this.context.sampleRate * duration);
     const buffer = this.context.createBuffer(1, length, this.context.sampleRate);
     const samples = buffer.getChannelData(0);
     const partials = [
-      { ratio: 1, decay: 1.45, gain: 0.72 },
-      { ratio: 2.01, decay: 1.08, gain: 0.34 },
-      { ratio: 2.89, decay: 0.76, gain: 0.22 },
-      { ratio: 4.95, decay: 0.48, gain: 0.12 },
-      { ratio: 6.2, decay: 0.31, gain: 0.07 },
+      { ratio: 0.5, decay: 2.95, gain: 0.14 },
+      { ratio: 1, decay: 2.65, gain: 0.5 },
+      { ratio: 2.71, decay: 2.1, gain: 0.3 },
+      { ratio: 4.08, decay: 1.42, gain: 0.18 },
+      { ratio: 5.43, decay: 0.88, gain: 0.1 },
     ];
     for (let index = 0; index < length; index += 1) {
       const time = index / this.context.sampleRate;
       const envelope = Math.min(1, time / 0.006);
-      samples[index] = partials.reduce(
+      const shimmer = 1 + Math.sin(Math.PI * 2 * 0.72 * time) * 0.025;
+      const transient = time < 0.035 ? (Math.random() * 2 - 1) * (1 - time / 0.035) * 0.045 : 0;
+      samples[index] = (partials.reduce(
         (sum, partial) => sum + Math.sin(Math.PI * 2 * frequency * partial.ratio * time) * Math.exp(-time / partial.decay) * partial.gain,
         0,
-      ) * envelope * 0.55;
+      ) * shimmer + transient) * envelope * 0.58;
     }
     this.windChimeBuffers.set(key, buffer);
     return buffer;

@@ -87,7 +87,7 @@ function ChimeModel({
   }, [anchor.id, onReady]);
 
   return (
-    <group ref={group} position={position} scale={anchor.scale} rotation={[0, anchor.side === "left" ? 0.16 : -0.16, 0]}>
+    <group ref={group} position={position} scale={anchor.scale} rotation={[0, anchor.viewportX < 0.5 ? 0.16 : -0.16, 0]}>
       <mesh position={[0, 0.075, 0]} material={supportMaterial} castShadow>
         <cylinderGeometry args={[0.32, 0.32, 0.032, 32]} />
       </mesh>
@@ -184,13 +184,21 @@ export function WindChimeScene({ anchors, reducedMotion }: { anchors: ChimeAncho
       const forceY = detail.entering ? 0.06 : detail.velocityY * 0.08;
       if (Math.abs(forceX) + Math.abs(forceY) > 0.03) impulse(detail.slotId, 0, forceX, forceY);
     };
+    const onCascade = (event: Event) => {
+      const detail = (event as CustomEvent<{ slotId: string }>).detail;
+      const state = detail?.slotId ? physical.current.get(detail.slotId) : null;
+      if (!state || !detail?.slotId) return;
+      state.tubes.forEach((_, index) => impulse(detail.slotId, index, 0.42 - index * 0.035, 0.2));
+    };
     window.addEventListener("oriana-chime-pointer", onPointer);
     window.addEventListener("oriana-chime-impulse", onKeyboard);
     window.addEventListener("oriana-chime-hover", onHover);
+    window.addEventListener("oriana-chime-cascade", onCascade);
     return () => {
       window.removeEventListener("oriana-chime-pointer", onPointer);
       window.removeEventListener("oriana-chime-impulse", onKeyboard);
       window.removeEventListener("oriana-chime-hover", onHover);
+      window.removeEventListener("oriana-chime-cascade", onCascade);
     };
   }, [camera, impulse, reducedMotion, size.height, size.width]);
 
