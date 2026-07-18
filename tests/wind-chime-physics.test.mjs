@@ -10,14 +10,14 @@ import {
 } from "../src/lib/wind-chime-physics.ts";
 import { getWindChimeAnchors } from "../src/lib/wind-chime-anchors.ts";
 
-test("wind chime anchors are deterministic and stay at fixed viewport locations", () => {
+test("wind chime anchors are deterministic document locations", () => {
   assert.deepEqual(getWindChimeAnchors("/"), getWindChimeAnchors("/"));
   assert.equal(getWindChimeAnchors("/").length, 2);
   assert.equal(getWindChimeAnchors("/albums").length, 2);
   assert.equal(getWindChimeAnchors("/about").length, 2);
   assert.equal(getWindChimeAnchors("/profile").length, 1);
   assert.equal(getWindChimeAnchors("/studio").length, 0);
-  assert.ok(getWindChimeAnchors("/").every((slot) => slot.viewportX > 0 && slot.viewportX < 1 && slot.viewportY > 0 && slot.viewportY < 1));
+  assert.ok(getWindChimeAnchors("/").every((slot) => Number.isInteger(slot.sectionIndex) && slot.align > 0 && slot.align < 1));
 });
 
 test("two-axis impulse decays and remains bounded", () => {
@@ -57,18 +57,21 @@ test("public canvas and decorative layers cannot intercept normal website intera
   assert.doesNotMatch(environment, /preventDefault|stopPropagation|stopImmediatePropagation|setPointerCapture/);
 });
 
-test("fixed viewport anchors drive chime placement while pointer input only produces local impulses", async () => {
+test("document anchors scroll smoothly while pointer input only produces local impulses", async () => {
   const [anchors, environment, scene, anchorHook] = await Promise.all([
     readFile(new URL("../src/lib/wind-chime-anchors.ts", import.meta.url), "utf8"),
     readFile(new URL("../src/components/environment/PublicDepthEnvironment.tsx", import.meta.url), "utf8"),
     readFile(new URL("../src/components/environment/WindChimeScene.tsx", import.meta.url), "utf8"),
     readFile(new URL("../src/components/environment/useChimeAnchorRects.ts", import.meta.url), "utf8"),
   ]);
-  assert.match(anchors, /viewportX/);
+  assert.match(anchors, /sectionIndex/);
   assert.match(environment, /data-wind-chime-anchor/);
   assert.doesNotMatch(anchorHook, /window\.addEventListener\("scroll", schedule/);
-  assert.doesNotMatch(anchorHook, /ResizeObserver|IntersectionObserver|getBoundingClientRect/);
+  assert.match(anchorHook, /ResizeObserver/);
+  assert.match(anchorHook, /getBoundingClientRect/);
   assert.match(scene, /new THREE\.Vector3\(x, y, anchor\.depth\)/);
+  assert.match(scene, /window\.addEventListener\("scroll", onScroll/);
+  assert.match(environment, /event\.clientY \+ window\.scrollY/);
   assert.match(environment, /oriana-chime-hover/);
   assert.doesNotMatch(scene, /position\.set\([^)]*pointer|lerp\([^)]*pointer/i);
 });

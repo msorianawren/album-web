@@ -23,19 +23,25 @@ export function useChimeAnchorRects(slots: ChimeAnchorSlot[]) {
     if (slots.length === 0) {
       return;
     }
+    const sections = Array.from(document.querySelectorAll<HTMLElement>("main section"));
+    const entries = slots
+      .map((slot) => [slot, sections[slot.sectionIndex]] as const)
+      .filter((entry): entry is readonly [ChimeAnchorSlot, HTMLElement] => Boolean(entry[1]));
     let frame = 0;
 
     const refresh = () => {
       frame = 0;
-      const next = slots.map((slot) => {
+      const next = entries.map(([slot, section]) => {
         const widthPx = Math.round(Math.min(218, Math.max(138, 84 + slot.scale * 188)));
         const heightPx = Math.round(widthPx * 1.45);
-        const centerX = window.innerWidth * slot.viewportX;
-        const safeTop = heightPx / 2 + 32;
-        const safeBottom = window.innerHeight - heightPx / 2 - 32;
+        const sectionRect = section.getBoundingClientRect();
+        const edgeInset = Math.max(widthPx / 2 + 24, Math.min(120, window.innerWidth * 0.075));
+        const centerX = slot.side === "left"
+          ? Math.max(edgeInset, sectionRect.left + edgeInset)
+          : Math.min(window.innerWidth - edgeInset, sectionRect.right - edgeInset);
         const safeLeft = widthPx / 2 + 24;
         const safeRight = window.innerWidth - widthPx / 2 - 24;
-        const centerY = Math.min(safeBottom, Math.max(safeTop, window.innerHeight * slot.viewportY));
+        const centerY = sectionRect.top + window.scrollY + sectionRect.height * slot.align;
         return {
           ...slot,
           left: Math.min(safeRight, Math.max(safeLeft, centerX)) - widthPx / 2,
@@ -50,12 +56,17 @@ export function useChimeAnchorRects(slots: ChimeAnchorSlot[]) {
     const schedule = () => {
       if (!frame) frame = window.requestAnimationFrame(refresh);
     };
+    const resizeObserver = new ResizeObserver(schedule);
+    entries.forEach(([, section]) => resizeObserver.observe(section));
     window.addEventListener("resize", schedule, { passive: true });
+    window.addEventListener("load", schedule, { once: true });
     schedule();
 
     return () => {
       if (frame) window.cancelAnimationFrame(frame);
+      resizeObserver.disconnect();
       window.removeEventListener("resize", schedule);
+      window.removeEventListener("load", schedule);
     };
   }, [slots]);
 

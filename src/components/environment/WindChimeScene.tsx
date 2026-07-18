@@ -1,7 +1,7 @@
 "use client";
 
 import { useFrame, useThree } from "@react-three/fiber";
-import { useCallback, useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import type { ChimeAnchorRect, WindChimeMaterial } from "@/lib/wind-chime-anchors";
 import {
@@ -15,6 +15,12 @@ import { useUIPreferences } from "@/hooks/useUIPreferences";
 
 type ModelRefs = { group: THREE.Group; tubes: THREE.Group[] };
 type TubeMesh = { mesh: THREE.Object3D; slotId: string; tubeIndex: number };
+
+function getWorldPosition(anchor: ChimeAnchorRect, scrollY: number, size: { width: number; height: number }, viewport: { width: number; height: number }) {
+  const x = ((anchor.left + anchor.widthPx / 2) / size.width - 0.5) * viewport.width;
+  const y = (0.5 - (anchor.top - scrollY + anchor.heightPx / 2) / size.height) * viewport.height;
+  return new THREE.Vector3(x, y, anchor.depth);
+}
 
 const tubeGeometries = new Map<number, THREE.CylinderGeometry>();
 const tubeInteriorGeometries = new Map<number, THREE.CylinderGeometry>();
@@ -87,7 +93,7 @@ function ChimeModel({
   }, [anchor.id, onReady]);
 
   return (
-    <group ref={group} position={position} scale={anchor.scale} rotation={[0, anchor.viewportX < 0.5 ? 0.16 : -0.16, 0]}>
+    <group ref={group} position={position} scale={anchor.scale} rotation={[0, anchor.side === "left" ? 0.16 : -0.16, 0]}>
       <mesh position={[0, 0.075, 0]} material={supportMaterial} castShadow>
         <cylinderGeometry args={[0.32, 0.32, 0.032, 32]} />
       </mesh>
@@ -139,6 +145,8 @@ export function WindChimeScene({ anchors, reducedMotion }: { anchors: ChimeAncho
   const models = useRef(new Map<string, ModelRefs>());
   const tubes = useRef<TubeMesh[]>([]);
   const raycaster = useRef(new THREE.Raycaster());
+  const scrollY = useRef(typeof window === "undefined" ? 0 : window.scrollY);
+  const [initialScrollY] = useState(() => typeof window === "undefined" ? 0 : window.scrollY);
 
   useEffect(() => {
     const activeIds = new Set(anchors.map((anchor) => anchor.id));
@@ -152,6 +160,23 @@ export function WindChimeScene({ anchors, reducedMotion }: { anchors: ChimeAncho
       }
     });
   }, [anchors]);
+
+  useEffect(() => {
+    let frame = 0;
+    const onScroll = () => {
+      if (frame) return;
+      frame = window.requestAnimationFrame(() => {
+        frame = 0;
+        scrollY.current = window.scrollY;
+        invalidate();
+      });
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      if (frame) window.cancelAnimationFrame(frame);
+      window.removeEventListener("scroll", onScroll);
+    };
+  }, [invalidate]);
 
   const impulse = useCallback((slotId: string, tubeIndex = 0, forceX = 0.55, forceY = 0.28) => {
     const state = physical.current.get(slotId);
@@ -204,6 +229,10 @@ export function WindChimeScene({ anchors, reducedMotion }: { anchors: ChimeAncho
 
   useFrame((_, delta) => {
     let moving = false;
+    anchors.forEach((anchor) => {
+      const model = models.current.get(anchor.id);
+      if (model) model.group.position.copy(getWorldPosition(anchor, scrollY.current, size, viewport));
+    });
     physical.current.forEach((state, slotId) => {
       const impacts = advanceWindChime(state, reducedMotion ? Math.min(delta, 1 / 120) : delta);
       const model = models.current.get(slotId);
@@ -229,11 +258,10 @@ export function WindChimeScene({ anchors, reducedMotion }: { anchors: ChimeAncho
     if (moving) invalidate();
   });
 
-  const positions = useMemo(() => anchors.map((anchor) => {
-    const x = ((anchor.left + anchor.widthPx / 2) / size.width - 0.5) * viewport.width;
-    const y = (0.5 - (anchor.top + anchor.heightPx / 2) / size.height) * viewport.height;
-    return { anchor, position: new THREE.Vector3(x, y, anchor.depth) };
-  }), [anchors, size.height, size.width, viewport.height, viewport.width]);
+  const positions = useMemo(() => anchors.map((anchor) => ({
+    anchor,
+    position: getWorldPosition(anchor, initialScrollY, size, viewport),
+  })), [anchors, initialScrollY, size, viewport]);
 
   return (
     <>

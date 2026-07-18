@@ -282,7 +282,7 @@ canvas {
 
 .public-chime-control {
   pointer-events: auto;
-  position: fixed;
+  position: absolute;
   z-index: 12;
   border: 0;
   border-radius: 0.9rem;

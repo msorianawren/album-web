@@ -70,6 +70,10 @@ function hitChime(rects: ReturnType<typeof useChimeAnchorRects>, x: number, y: n
   });
 }
 
+function toDocumentPoint(event: PointerEvent) {
+  return { x: event.clientX, y: event.clientY + window.scrollY };
+}
+
 function selectVisibleChimes(rects: ReturnType<typeof useChimeAnchorRects>, enabled: boolean) {
   return enabled ? rects.filter((rect) => rect.visible) : [];
 }
@@ -153,7 +157,8 @@ function PublicDepthEnvironmentContent({ pathname }: { pathname: string }) {
       targetY = Math.max(-1, Math.min(1, event.clientY / window.innerHeight * 2 - 1));
       requestFrame();
       if (!canUseChime(event)) return;
-      const chime = hitChime(activeRectsRef.current, event.clientX, event.clientY);
+      const point = toDocumentPoint(event);
+      const chime = hitChime(activeRectsRef.current, point.x, point.y);
       if (!chime) {
         hoveredId = undefined;
         return;
@@ -172,7 +177,8 @@ function PublicDepthEnvironmentContent({ pathname }: { pathname: string }) {
     };
     const onPointerDown = (event: PointerEvent) => {
       if (!canUseChime(event)) return;
-      const chime = hitChime(activeRectsRef.current, event.clientX, event.clientY);
+      const point = toDocumentPoint(event);
+      const chime = hitChime(activeRectsRef.current, point.x, point.y);
       if (!chime) return;
       window.dispatchEvent(new CustomEvent("oriana-chime-pointer", {
         detail: { x: event.clientX, y: event.clientY, slotId: chime.id },
