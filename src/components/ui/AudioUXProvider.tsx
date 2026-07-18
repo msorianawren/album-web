@@ -43,6 +43,7 @@ export function AudioUXProvider({
       let shouldPlayMenu = false;
 
       while (target && target !== document.body) {
+        if (target.hasAttribute("data-audio-ux-ignore")) return;
         const tagName = target.tagName.toLowerCase();
         const role = target.getAttribute("role");
         const type = target.getAttribute("type");

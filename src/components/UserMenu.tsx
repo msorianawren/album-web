@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { LogIn, LogOut, Moon, Sparkles, Sun, UserRound, Shield } from "lucide-react";
+import { LogIn, LogOut, Moon, Sparkles, Sun, UserRound, Shield, Layers3 } from "lucide-react";
 import { AssistantPet } from "@/components/assistant/AssistantPet";
 import { Avatar } from "@/components/ui/Avatar";
 import { useStoredAssistantPreferences } from "@/hooks/useAssistantPreferences";
@@ -14,6 +14,7 @@ import {
   ORIANA_COMPANION_OPEN_EVENT,
 } from "@/lib/assistant/runtime-events";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { useDepthEffects, type DepthEffectsMode } from "@/hooks/useDepthEffects";
 import type { PublicSession } from "@/lib/types";
 import type { AppDictionary } from "@/lib/i18n";
 
@@ -65,6 +66,7 @@ export function UserMenu({ session, dict }: UserMenuProps) {
   const [open, setOpen] = useState(false);
   const theme = useSyncExternalStore(subscribeTheme, getStoredTheme, () => "auto" as ThemeMode);
   const assistantPreferences = useStoredAssistantPreferences();
+  const { mode: depthEffects, setMode: setDepthEffects } = useDepthEffects();
   const menuRef = useRef<HTMLDivElement>(null);
   const pathname = usePathname() ?? "";
   const searchParams = useSearchParams();
@@ -116,6 +118,11 @@ export function UserMenu({ session, dict }: UserMenuProps) {
     localStorage.setItem("album-theme", next);
     syncThemeClass(next);
     window.dispatchEvent(new Event(themeEvent));
+  }
+
+  function cycleDepthEffects() {
+    const modes: DepthEffectsMode[] = ["auto", "full", "reduced", "off"];
+    setDepthEffects(modes[(modes.indexOf(depthEffects) + 1) % modes.length]);
   }
 
   return (
@@ -170,6 +177,19 @@ export function UserMenu({ session, dict }: UserMenuProps) {
             </span>
             <span className="text-[10px] font-bold uppercase tracking-wider text-text-secondary bg-background border border-border px-2 py-0.5 rounded-full">
               {theme}
+            </span>
+          </button>
+          <button
+            type="button"
+            className="flex w-full items-center justify-between gap-3 rounded-[1rem] px-3 py-3 text-left text-sm font-medium text-text-primary transition hover:bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            onClick={cycleDepthEffects}
+          >
+            <span className="inline-flex items-center gap-3">
+              <Layers3 className="h-4 w-4 text-muted-accent" aria-hidden="true" />
+              Depth effects
+            </span>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-text-secondary bg-background border border-border px-2 py-0.5 rounded-full">
+              {depthEffects}
             </span>
           </button>
           <LanguageSwitcher dict={dict} />

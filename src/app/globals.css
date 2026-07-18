@@ -99,6 +99,11 @@ main {
   width: 100%;
 }
 
+body > main {
+  position: relative;
+  z-index: 10;
+}
+
 body::before {
   pointer-events: none;
   content: "";
@@ -209,6 +214,103 @@ canvas {
   mix-blend-mode: soft-light;
   background: radial-gradient(circle at var(--depth-glare-x, 50%) var(--depth-glare-y, 50%), rgba(255, 255, 255, 0.26), transparent 38%);
   transition: opacity var(--depth-duration, 260ms) ease;
+}
+
+/* Public-only spatial layers stay below application content and all fixed UI. */
+.public-depth-environment {
+  --public-depth-x: 0;
+  --public-depth-y: 0;
+  pointer-events: none;
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  overflow: clip;
+}
+
+.public-depth-plane {
+  pointer-events: none;
+  position: absolute;
+  inset: -8%;
+  transform: translate3d(0, 0, 0);
+  transition: opacity 420ms ease;
+}
+
+.public-depth-plane--far {
+  opacity: 0.26;
+  background:
+    radial-gradient(circle at 13% 14%, color-mix(in srgb, var(--surface) 75%, transparent), transparent 36%),
+    radial-gradient(circle at 88% 24%, color-mix(in srgb, var(--surface-secondary) 62%, transparent), transparent 34%);
+  transform: translate3d(calc(var(--public-depth-x) * -4px), calc(var(--public-depth-y) * -5px), 0);
+}
+
+.public-depth-plane--middle {
+  opacity: 0.2;
+  background:
+    radial-gradient(ellipse at 78% 72%, color-mix(in srgb, var(--accent) 12%, transparent), transparent 25%),
+    linear-gradient(120deg, transparent 32%, color-mix(in srgb, var(--surface) 40%, transparent) 52%, transparent 74%);
+  filter: blur(12px);
+  transform: translate3d(calc(var(--public-depth-x) * -9px), calc(var(--public-depth-y) * -11px), 0);
+}
+
+.public-depth-plane--near {
+  opacity: 0.16;
+  background:
+    radial-gradient(circle at 3% 77%, color-mix(in srgb, var(--muted-accent) 26%, transparent) 0 4%, transparent 18%),
+    radial-gradient(circle at 98% 48%, color-mix(in srgb, var(--accent) 16%, transparent) 0 3%, transparent 16%);
+  filter: blur(18px);
+  transform: translate3d(calc(var(--public-depth-x) * -15px), calc(var(--public-depth-y) * -18px), 0);
+}
+
+.public-chime-canvas {
+  pointer-events: none;
+  position: fixed;
+  inset: 0;
+  z-index: 11;
+}
+
+.public-chime-canvas canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.public-chime-control {
+  pointer-events: auto;
+  position: fixed;
+  z-index: 12;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: transparent;
+  cursor: pointer;
+}
+
+.public-chime-control:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 6px;
+  background: color-mix(in srgb, var(--surface) 12%, transparent);
+}
+
+@media (max-width: 1023px), (hover: none), (pointer: coarse) {
+  .public-chime-control,
+  .public-chime-canvas {
+    display: none;
+  }
+
+  .public-depth-plane--far,
+  .public-depth-plane--middle,
+  .public-depth-plane--near {
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .public-depth-plane--far,
+  .public-depth-plane--middle,
+  .public-depth-plane--near {
+    transform: none;
+    transition: none;
+  }
 }
 
 @media (hover: hover) and (pointer: fine) {

@@ -10,6 +10,10 @@ type WindowWithAudioFallback = Window & {
 class AudioUXSystem {
   private context: AudioContext | null = null;
   private isInitialized = false;
+  private windChimeBuffers = new Map<string, AudioBuffer>();
+  private windChimeVoices = new Map<number, { source: AudioBufferSourceNode; gain: GainNode; startedAt: number }>();
+  private windChimeCooldowns = new Map<string, number>();
+  private windChimeBus: { dry: GainNode; reverb: GainNode; master: GainNode; compressor: DynamicsCompressorNode } | null = null;
 
   private ambientNodes: {
     oscillators: OscillatorNode[];
@@ -168,6 +172,114 @@ class AudioUXSystem {
 
     osc.start(now);
     osc.stop(now + 0.35);
+  }
+
+  public playWindChimeImpact({
+    tubeId,
+    frequency,
+    velocity,
+    pan,
+  }: {
+    tubeId: string;
+    frequency: number;
+    velocity: number;
+    pan: number;
+  }) {
+    if (!this.context || this.context.state !== "running" || velocity < 0.08) return;
+    const now = this.context.currentTime;
+    const lastImpact = this.windChimeCooldowns.get(tubeId) ?? -Infinity;
+    if (now - lastImpact < 0.075) return;
+    this.windChimeCooldowns.set(tubeId, now);
+
+    const bus = this.ensureWindChimeBus();
+    if (!bus) return;
+    if (this.windChimeVoices.size >= 10) {
+      const oldest = [...this.windChimeVoices.entries()].sort((a, b) => a[1].startedAt - b[1].startedAt)[0];
+      if (oldest) {
+        oldest[1].source.stop();
+        oldest[1].gain.disconnect();
+        this.windChimeVoices.delete(oldest[0]);
+      }
+    }
+
+    const source = this.context.createBufferSource();
+    source.buffer = this.getWindChimeBuffer(frequency);
+    const gain = this.context.createGain();
+    const voiceId = Date.now() + Math.random();
+    const level = Math.min(0.19, Math.max(0.02, velocity * 0.16));
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(level, now + 0.008);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 1.9);
+    source.connect(gain);
+    if ("createStereoPanner" in this.context) {
+      const panner = this.context.createStereoPanner();
+      panner.pan.setValueAtTime(Math.max(-0.9, Math.min(0.9, pan)), now);
+      gain.connect(panner);
+      panner.connect(bus.dry);
+      panner.connect(bus.reverb);
+    } else {
+      gain.connect(bus.dry);
+      gain.connect(bus.reverb);
+    }
+    this.windChimeVoices.set(voiceId, { source, gain, startedAt: now });
+    source.onended = () => {
+      gain.disconnect();
+      this.windChimeVoices.delete(voiceId);
+    };
+    source.start(now);
+    source.stop(now + 2);
+  }
+
+  private ensureWindChimeBus() {
+    if (!this.context) return null;
+    if (this.windChimeBus) return this.windChimeBus;
+    const dry = this.context.createGain();
+    const reverb = this.context.createGain();
+    const convolver = this.context.createConvolver();
+    const master = this.context.createGain();
+    const compressor = this.context.createDynamicsCompressor();
+    dry.gain.value = 0.86;
+    reverb.gain.value = 0.14;
+    master.gain.value = 0.72;
+    compressor.threshold.value = -18;
+    compressor.knee.value = 16;
+    compressor.ratio.value = 8;
+    convolver.buffer = this.getReverbBuffer(1.2, 2.2);
+    dry.connect(master);
+    reverb.connect(convolver);
+    convolver.connect(master);
+    master.connect(compressor);
+    compressor.connect(this.context.destination);
+    this.windChimeBus = { dry, reverb, master, compressor };
+    return this.windChimeBus;
+  }
+
+  private getWindChimeBuffer(frequency: number) {
+    if (!this.context) throw new Error("Audio context unavailable");
+    const key = Math.round(frequency).toString();
+    const cached = this.windChimeBuffers.get(key);
+    if (cached) return cached;
+    const duration = 2;
+    const length = Math.floor(this.context.sampleRate * duration);
+    const buffer = this.context.createBuffer(1, length, this.context.sampleRate);
+    const samples = buffer.getChannelData(0);
+    const partials = [
+      { ratio: 1, decay: 1.45, gain: 0.72 },
+      { ratio: 2.01, decay: 1.08, gain: 0.34 },
+      { ratio: 2.89, decay: 0.76, gain: 0.22 },
+      { ratio: 4.95, decay: 0.48, gain: 0.12 },
+      { ratio: 6.2, decay: 0.31, gain: 0.07 },
+    ];
+    for (let index = 0; index < length; index += 1) {
+      const time = index / this.context.sampleRate;
+      const envelope = Math.min(1, time / 0.006);
+      samples[index] = partials.reduce(
+        (sum, partial) => sum + Math.sin(Math.PI * 2 * frequency * partial.ratio * time) * Math.exp(-time / partial.decay) * partial.gain,
+        0,
+      ) * envelope * 0.55;
+    }
+    this.windChimeBuffers.set(key, buffer);
+    return buffer;
   }
 
   private audioCache = new Map<string, Promise<AudioBuffer | null>>();
