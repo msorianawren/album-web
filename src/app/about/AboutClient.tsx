@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useEffect, useRef } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
@@ -14,6 +15,11 @@ if (typeof window !== "undefined") {
 interface AboutClientProps {
   profile: AboutProfile;
 }
+
+const AboutClockwork = dynamic(
+  () => import("@/components/about/AboutClockwork").then((module) => module.AboutClockwork),
+  { ssr: false },
+);
 
 export function AboutClient({ profile }: AboutClientProps) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -34,7 +40,10 @@ export function AboutClient({ profile }: AboutClientProps) {
   useEffect(() => {
     const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (prefersReducedMotion) {
-      gsap.globalTimeline.timeScale(20);
+      gsap.set(".about-hero-fade, .about-reveal", { opacity: 1, y: 0 });
+      gsap.set(".about-hero-img", { opacity: 1, scale: 1 });
+      gsap.set(".about-line", { scaleX: 1 });
+      return;
     }
     if (!containerRef.current) return;
 
@@ -73,6 +82,10 @@ export function AboutClient({ profile }: AboutClientProps) {
 
   return (
     <main ref={containerRef} className="relative z-10 bg-transparent text-text-primary selection:bg-accent/20">
+      <AboutClockwork
+        displayName={profile.display_name || "Oriana Wren"}
+        chapterCount={Math.max(1, (profile.career?.length || 0) + (profile.education?.length || 0) + (profile.achievements?.length || 0))}
+      />
       
       {profile._is_demo && (
         <div className="fixed top-0 left-0 w-full z-[100] bg-surface-secondary/90 border-b border-border py-2 text-center px-4 backdrop-blur-md shadow-sm">
@@ -184,6 +197,8 @@ export function AboutClient({ profile }: AboutClientProps) {
           </div>
         </div>
       </section>
+
+
 
 
       {/* ═══════════════════════════════════════════
