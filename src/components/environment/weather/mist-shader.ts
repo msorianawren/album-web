@@ -127,10 +127,7 @@ export const mistFragmentShader = `
       }
     }
 
-    if (baseAlpha <= 0.001) {
-      gl_FragColor = vec4(uColor, 0.0);
-      return;
-    }
+    // if (baseAlpha <= 0.001) return;
 
     // Domain warp & noise evolution
     vec3 pBroad = vec3(vUv.x * 2.0, vUv.y * 2.0, uTime * 0.15 * uSpeed + vSeed * 100.0);
@@ -148,7 +145,7 @@ export const mistFragmentShader = `
     // Vertical fade: Mist is denser at the bottom, fades near top of its volume
     float vertFade = 1.0 - smoothstep(0.1, 0.9, vUv.y);
     
-    float finalAlpha = baseAlpha * noise * vertFade * vOpacity * uOpacity;
+    float finalAlpha = baseAlpha * noise * vertFade * vOpacity * uOpacity * 4.0; // Boosted
     
     gl_FragColor = vec4(uColor, finalAlpha);
     
