@@ -64,9 +64,10 @@ export default async function ContactPage() {
   }
 
   return (
-    <main className="relative z-10 min-h-screen bg-transparent pb-20">
+    <>
       <NatureAnimatedBackground config={landing.background_settings} />
-      <AppHeader />
+      <main className="relative z-10 min-h-screen bg-transparent pb-20">
+        <AppHeader />
       
       <section className="mx-auto w-full max-w-[1024px] px-4 py-12 sm:px-8 sm:py-20">
         <div className="max-w-2xl">
@@ -160,6 +161,7 @@ export default async function ContactPage() {
         )}
         {session?.userId ? <HelpInbox /> : null}
       </section>
-    </main>
+      </main>
+    </>
   );
 }

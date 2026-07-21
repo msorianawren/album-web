@@ -30,5 +30,5 @@ export default async function GamesPage() {
     if (!isPuzzleSchemaUnavailable(error)) throw error;
     unavailable = true;
   }
-  return <main className="relative z-10 min-h-screen"><NatureAnimatedBackground config={landing.background_settings} /><AppHeader /><PuzzleAtelier initialChallenges={challenges} initialResults={results} signedIn={Boolean(session.userId)} copy={dictionary.games} unavailable={unavailable} /><AppFooter /></main>;
+  return <><NatureAnimatedBackground config={landing.background_settings} /><main className="relative z-10 min-h-screen"><AppHeader /><PuzzleAtelier initialChallenges={challenges} initialResults={results} signedIn={Boolean(session.userId)} copy={dictionary.games} unavailable={unavailable} /><AppFooter /></main></>;
 }
