@@ -92,7 +92,7 @@ function MistLayer({
         driftAmp: prng.range(config.driftAmpRange[0], config.driftAmpRange[1]),
         vertPhase: prng.range(0, Math.PI * 2),
         driftPhase: prng.range(0, Math.PI * 2),
-        rotY: prng.range(0, Math.PI * 2),
+        rotY: prng.range(-Math.PI * 0.15, Math.PI * 0.15), // Face the camera
         seed: prng.value(),
       };
     });
