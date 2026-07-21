@@ -117,7 +117,7 @@ export const mistFragmentShader = `
     float dist = distance(vUv, center);
     float radial = 1.0 - smoothstep(0.3, 0.8, dist);
 
-    float baseAlpha = edgeX * edgeY * radial;
+    float baseAlpha = 1.0; // DEBUG: force full quad
 
     // Edge Debug mode: Force red outline around the bounding box
     if (uEdgeDebug > 0.5) {
