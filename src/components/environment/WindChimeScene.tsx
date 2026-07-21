@@ -295,7 +295,7 @@ export function WindChimeScene({
       window.removeEventListener("oriana-chime-hover", onHover);
       window.removeEventListener("oriana-chime-cascade", onCascade);
     };
-  }, [camera, impulse, reducedMotion, size.height, size.width]);
+  }, [camera, impulse, reducedMotion, size.height, size.width, soundEnabled, anchors, preferences.chimeVolume]);
 
   useFrame(({ clock }, delta) => {
     let moving = false;
