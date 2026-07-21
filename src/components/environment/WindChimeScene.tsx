@@ -225,7 +225,7 @@ export function WindChimeScene({
       impulse(detail.slotId, Math.floor(Math.random() * 5), 0.6, 0.3);
     };
     
-    const onGlobalPointerDown = (event: PointerEvent) => {
+    const onGlobalClick = (event: MouseEvent) => {
       if (reducedMotion) return;
       if (typeof document !== "undefined" && document.body.dataset.orianaMediaViewerOpen === "true") return;
       
@@ -283,13 +283,13 @@ export function WindChimeScene({
       if (!state || !detail?.slotId) return;
       state.tubes.forEach((_, index) => impulse(detail.slotId, index, 0.42 - index * 0.035, 0.2));
     };
-    window.addEventListener("pointerdown", onGlobalPointerDown, { passive: true });
+    window.addEventListener("click", onGlobalClick, { passive: true });
     window.addEventListener("oriana-chime-pointer", onPointer);
     window.addEventListener("oriana-chime-impulse", onKeyboard);
     window.addEventListener("oriana-chime-hover", onHover);
     window.addEventListener("oriana-chime-cascade", onCascade);
     return () => {
-      window.removeEventListener("pointerdown", onGlobalPointerDown);
+      window.removeEventListener("click", onGlobalClick);
       window.removeEventListener("oriana-chime-pointer", onPointer);
       window.removeEventListener("oriana-chime-impulse", onKeyboard);
       window.removeEventListener("oriana-chime-hover", onHover);
