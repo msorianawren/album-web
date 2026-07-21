@@ -101,7 +101,7 @@ export function FoliageInstances({
     mesh.current.instanceMatrix.needsUpdate = true;
     if (mesh.current.instanceColor) mesh.current.instanceColor.needsUpdate = true;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [count, dummy, colors]);
+  }, [count, dummy]);
 
   useFrame(({ clock }) => {
     if (!active || !mesh.current) return;

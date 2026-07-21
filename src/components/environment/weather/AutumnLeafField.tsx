@@ -86,7 +86,7 @@ function AutumnLeafLayer({
     }
     if (mesh.current.instanceColor) mesh.current.instanceColor.needsUpdate = true;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [count, colors]);
+  }, [count]);
 
   useFrame(({ clock }) => {
     if (!active || !mesh.current) return;
