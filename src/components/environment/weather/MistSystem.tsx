@@ -96,7 +96,8 @@ function MistLayer({
         seed: prng.value(),
       };
     });
-  }, [count, config]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [count, JSON.stringify(config)]);
 
   // Set initial matrices and attributes
   useEffect(() => {
@@ -120,7 +121,8 @@ function MistLayer({
     
     geom.setAttribute('aSeed', new THREE.InstancedBufferAttribute(seedArray, 1));
     geom.setAttribute('aOpacity', new THREE.InstancedBufferAttribute(opacityArray, 1));
-  }, [count, instanceData, dummy, geom]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [count, JSON.stringify(config), dummy, geom]);
 
   useFrame(({ clock }) => {
     if (!mesh.current || !active) return;
