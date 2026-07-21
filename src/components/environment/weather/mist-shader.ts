@@ -8,6 +8,8 @@ export const mistVertexShader = `
   varying float vSeed;
   varying float vOpacity;
   
+  #include <fog_pars_vertex>
+  
   void main() {
     vUv = uv;
     vSeed = aSeed;
@@ -15,6 +17,8 @@ export const mistVertexShader = `
     vec4 mvPosition = instanceMatrix * vec4(position, 1.0);
     mvPosition = modelViewMatrix * mvPosition;
     gl_Position = projectionMatrix * mvPosition;
+    
+    #include <fog_vertex>
   }
 `;
 
@@ -98,6 +102,8 @@ export const mistFragmentShader = `
   varying float vSeed;
   varying float vOpacity;
 
+  #include <fog_pars_fragment>
+
   ${simplex3D}
 
   void main() {
@@ -145,26 +151,32 @@ export const mistFragmentShader = `
     float finalAlpha = baseAlpha * noise * vertFade * vOpacity * uOpacity;
     
     gl_FragColor = vec4(uColor, finalAlpha);
+    
+    #include <fog_fragment>
   }
 `;
 
 export class MistShaderMaterial extends THREE.ShaderMaterial {
   constructor(color: THREE.Color) {
     super({
-      uniforms: {
-        uColor: { value: color },
-        uTime: { value: 0 },
-        uOpacity: { value: 1.0 },
-        uSpeed: { value: 1.0 },
-        uEdgeDebug: { value: 0.0 },
-        uContrast: { value: 1.2 },
-      },
+      uniforms: THREE.UniformsUtils.merge([
+        THREE.UniformsLib["fog"],
+        {
+          uColor: { value: color },
+          uTime: { value: 0 },
+          uOpacity: { value: 1.0 },
+          uSpeed: { value: 1.0 },
+          uEdgeDebug: { value: 0.0 },
+          uContrast: { value: 1.2 },
+        }
+      ]),
       vertexShader: mistVertexShader,
       fragmentShader: mistFragmentShader,
       transparent: true,
       depthWrite: false,
       depthTest: true,
       blending: THREE.NormalBlending,
+      fog: true,
     });
   }
 }
