@@ -37,7 +37,7 @@ export function BlossomClusters({
 
   const clusterCount = reduced ? 80 : 300;
 
-  const { geometry, instances } = useMemo(() => {
+  const { geometry, instances, colors } = useMemo(() => {
     // A simple petal/flower geometry - using a low-poly sphere or a custom shape.
     // For performance, an Icosahedron is decent, but intersecting planes (cards) are better for leaves.
     // Given the prompt "không dùng sphere làm hoa", we'll create a simple intersecting plane or small custom shape.
@@ -47,8 +47,8 @@ export function BlossomClusters({
     geom.translate(0, 0.25, 0); // pivot at base
 
     const inst = [];
+    const colorArray = new Float32Array(clusterCount * 3);
     const dummy = new THREE.Object3D();
-    const color = new THREE.Color();
 
     for (let i = 0; i < clusterCount; i++) {
       // Pick a random base cluster position
@@ -84,15 +84,18 @@ export function BlossomClusters({
       baseColor.getHSL(hsl);
       baseColor.setHSL(hsl.h + (Math.random() - 0.5) * 0.05, hsl.s, hsl.l + (Math.random() - 0.5) * 0.1);
 
+      colorArray[i * 3] = baseColor.r;
+      colorArray[i * 3 + 1] = baseColor.g;
+      colorArray[i * 3 + 2] = baseColor.b;
+
       inst.push({
         matrix: dummy.matrix.clone(),
-        color: baseColor,
         phase: Math.random() * Math.PI * 2,
         speed: 0.5 + Math.random() * 1.5
       });
     }
 
-    return { geometry: geom, instances: inst };
+    return { geometry: geom, instances: inst, colors: colorArray };
   }, [clusterCount, targetColors]);
 
   useFrame(({ clock }) => {
@@ -131,14 +134,12 @@ export function BlossomClusters({
         roughness={0.6}
         alphaTest={0.5}
         transparent={false}
+        vertexColors={true}
       />
-      {instances.map((inst, i) => (
-        <instancedBufferAttribute
-          key={i}
-          attach={`attributes-color`}
-          args={[new Float32Array([inst.color.r, inst.color.g, inst.color.b]), 3]}
-        />
-      ))}
+      <instancedBufferAttribute
+        attach="instanceColor"
+        args={[colors, 3]}
+      />
     </instancedMesh>
   );
 }

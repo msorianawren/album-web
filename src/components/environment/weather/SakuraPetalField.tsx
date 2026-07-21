@@ -40,7 +40,7 @@ export function SakuraPetalField({
     }
     geom.computeVertexNormals();
 
-    const colorArray = [];
+    const colorArray = new Float32Array(petalCount * 3);
     const colorOptions = state.foliage.map(c => new THREE.Color(c));
     const physics = [];
 
@@ -49,7 +49,10 @@ export function SakuraPetalField({
       const hsl = { h: 0, s: 0, l: 0 };
       color.getHSL(hsl);
       color.setHSL(hsl.h + (Math.random() - 0.5) * 0.05, hsl.s, hsl.l + (Math.random() - 0.5) * 0.1);
-      colorArray.push(color);
+      
+      colorArray[i * 3] = color.r;
+      colorArray[i * 3 + 1] = color.g;
+      colorArray[i * 3 + 2] = color.b;
 
       physics.push({
         position: new THREE.Vector3(
@@ -120,14 +123,12 @@ export function SakuraPetalField({
         side={THREE.DoubleSide} 
         roughness={0.8}
         alphaTest={0.5}
+        vertexColors={true}
       />
-      {colors.map((color, i) => (
-        <instancedBufferAttribute
-          key={i}
-          attach={`attributes-color`}
-          args={[new Float32Array([color.r, color.g, color.b]), 3]}
-        />
-      ))}
+      <instancedBufferAttribute
+        attach="instanceColor"
+        args={[colors, 3]}
+      />
     </instancedMesh>
   );
 }
