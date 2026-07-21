@@ -282,7 +282,7 @@ export function MistSystem({
 
   // Far haze — large, very transparent, deep in scene
   const farHazeConfig: MistLayerConfig = {
-    count: tier === "full" ? 12 : 6,
+    count: tier === "full" ? 24 : 12,
     xRange: [-16, 16],
     yRange: [-1, 8],
     zRange: [-22, -10],
@@ -297,7 +297,7 @@ export function MistSystem({
 
   // Middle mist banks — primary visible layer
   const midMistConfig: MistLayerConfig = {
-    count: tier === "full" ? 16 : 8,
+    count: tier === "full" ? 32 : 16,
     xRange: [-12, 12],
     yRange: [-2, 5],
     zRange: [-10, -2],
