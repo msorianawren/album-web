@@ -5,7 +5,7 @@ export type EnvironmentPresetId = typeof ENVIRONMENT_PRESET_IDS[number];
 export type EnvironmentPresetPreference = "default" | EnvironmentPresetId;
 
 export type EnvironmentPreferences = {
-  version: 1;
+  version: 2;
   preset: EnvironmentPresetPreference;
   phase: EnvironmentPhasePreference;
   windSpeed: number;
@@ -22,14 +22,17 @@ export type EnvironmentPreferences = {
   birdSongFrequency: number;
   chimeVolume: number;
   autoChimeFrequency: number;
+  precipitationAmount: number;
+  wetness: number;
+  dropletAmount: number;
 };
 
-export const ENVIRONMENT_PREFERENCES_KEY = "oriana_environment_preferences_v1";
+export const ENVIRONMENT_PREFERENCES_KEY = "oriana_environment_preferences_v2";
 export const ENVIRONMENT_PREFERENCES_EVENT = "oriana-environment-preferences-change";
 export const ENVIRONMENT_PROFILE_METADATA_KEY = "environment_preferences";
 
 export const artistEnvironmentDefaults: EnvironmentPreferences = {
-  version: 1,
+  version: 2,
   preset: "default",
   phase: "auto",
   windSpeed: 34,
@@ -46,6 +49,9 @@ export const artistEnvironmentDefaults: EnvironmentPreferences = {
   birdSongFrequency: 24,
   chimeVolume: 66,
   autoChimeFrequency: 32,
+  precipitationAmount: 50,
+  wetness: 60,
+  dropletAmount: 45,
 };
 
 export const reducedDecorationEnvironmentPreset: EnvironmentPreferences = {
@@ -62,6 +68,9 @@ export const reducedDecorationEnvironmentPreset: EnvironmentPreferences = {
   birdDensity: 14,
   birdSongFrequency: 8,
   autoChimeFrequency: 10,
+  precipitationAmount: 25,
+  wetness: 30,
+  dropletAmount: 0,
 };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -88,7 +97,7 @@ function normalizePhase(value: unknown): EnvironmentPhasePreference {
 export function normalizeEnvironmentPreferences(value: unknown): EnvironmentPreferences {
   const input = isRecord(value) ? value : {};
   return {
-    version: 1,
+    version: 2,
     preset: normalizePreset(input.preset),
     phase: normalizePhase(input.phase),
     windSpeed: clamp(input.windSpeed, artistEnvironmentDefaults.windSpeed),
@@ -105,11 +114,14 @@ export function normalizeEnvironmentPreferences(value: unknown): EnvironmentPref
     birdSongFrequency: clamp(input.birdSongFrequency, artistEnvironmentDefaults.birdSongFrequency),
     chimeVolume: clamp(input.chimeVolume, artistEnvironmentDefaults.chimeVolume),
     autoChimeFrequency: clamp(input.autoChimeFrequency, artistEnvironmentDefaults.autoChimeFrequency),
+    precipitationAmount: clamp(input.precipitationAmount, artistEnvironmentDefaults.precipitationAmount),
+    wetness: clamp(input.wetness, artistEnvironmentDefaults.wetness),
+    dropletAmount: clamp(input.dropletAmount, artistEnvironmentDefaults.dropletAmount),
   };
 }
 
 export function migrateLegacyEnvironmentPreferences(storage: Pick<Storage, "getItem">) {
-  const stored = storage.getItem(ENVIRONMENT_PREFERENCES_KEY);
+  const stored = storage.getItem(ENVIRONMENT_PREFERENCES_KEY) || storage.getItem("oriana_environment_preferences_v1");
   if (stored) {
     try {
       return normalizeEnvironmentPreferences(JSON.parse(stored));
