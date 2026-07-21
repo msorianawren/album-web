@@ -1,0 +1,24 @@
+# Environment Art Pass 3: Baseline Report
+
+- **Actual Baseline SHA:** `5145708`
+- **Current Environment Routing:** Managed in `EnvironmentScene.tsx` directly rendering `EnvironmentBranches` and `EnvironmentParticles` based on `quality.tier`.
+- **Current Rain Implementation:** Generic `EnvironmentParticles.tsx` handling basic particle descent, not specialized for Rain, missing depth layers and botanical context.
+- **Current Sakura Implementation:** Extracted into `BotanicalTree`, `VegetationScene`, `FoliageInstances`, `BlossomClusters`, `SakuraPetalField`. Relies heavily on `Math.random()` and `Date.now()` inside `useFrame`.
+- **Current Wind-Chime Behavior:** Fully interactive, raycasted 3D hitboxes, uses `audioUX` context unlocking with click events. Preserved as requested.
+- **Rain Draw Calls:** (Estimated from generic particle renderer) ~1 for instanced meshes.
+- **Rain Triangle Count:** (Estimated) Generic quad particles * count.
+- **Geometry Count:** Varies per preset.
+- **Texture Count:** Very few (mostly solid colors/shapes).
+- **FPS and Frame Time:** Target 60 FPS on desktop full.
+- **Technical Debt Relevant to Rain:** Generic `EnvironmentParticles` handles all weather types poorly, `Math.random` scattered throughout `useFrame` in Sakura implementation, hardcoded routing in `EnvironmentScene`.
+- **Files Planned for Modification:**
+  - `src/components/environment/EnvironmentScene.tsx`
+  - `src/components/environment/shared/SharedBotanicalScene.tsx` (New)
+  - `src/components/environment/shared/BotanicalBranchNetwork.tsx` (New)
+  - `src/components/environment/shared/FoliageInstances.tsx` (New)
+  - `src/components/environment/weather/RainField.tsx` (New)
+  - `src/components/environment/dev/EnvironmentReviewLab.tsx`
+  - `src/lib/environment/preferences.ts`
+  - `src/lib/environment/botanical-profiles.ts` (New)
+  - `src/lib/environment/weather-profiles.ts` (New)
+  - `src/lib/environment/deterministic-random.ts` (New)

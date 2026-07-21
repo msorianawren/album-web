@@ -1,0 +1,178 @@
+{
+  "images": [
+    {
+      "filename": "sakura-day-current.png",
+      "url": "http://localhost:3000/environment-lab",
+      "viewport": "desktop",
+      "preset": "sakura",
+      "phase": "day",
+      "quality": "full",
+      "reducedMotion": false,
+      "weather": true
+    },
+    {
+      "filename": "sakura-sunset-current.png",
+      "url": "http://localhost:3000/environment-lab",
+      "viewport": "desktop",
+      "preset": "sakura",
+      "phase": "sunset",
+      "quality": "full",
+      "reducedMotion": false,
+      "weather": true
+    },
+    {
+      "filename": "sakura-night-current.png",
+      "url": "http://localhost:3000/environment-lab",
+      "viewport": "desktop",
+      "preset": "sakura",
+      "phase": "night",
+      "quality": "full",
+      "reducedMotion": false,
+      "weather": true
+    },
+    {
+      "filename": "sakura-mobile-current.png",
+      "url": "http://localhost:3000/environment-lab",
+      "viewport": "mobile",
+      "preset": "sakura",
+      "phase": "day",
+      "quality": "reduced",
+      "reducedMotion": false,
+      "weather": false
+    },
+    {
+      "filename": "rain-day-desktop-1792x858.png",
+      "url": "http://localhost:3000/environment-lab",
+      "viewport": "desktop",
+      "preset": "rain",
+      "phase": "day",
+      "quality": "full",
+      "reducedMotion": false,
+      "weather": true
+    },
+    {
+      "filename": "rain-sunset-desktop-1792x858.png",
+      "url": "http://localhost:3000/environment-lab",
+      "viewport": "desktop",
+      "preset": "rain",
+      "phase": "sunset",
+      "quality": "full",
+      "reducedMotion": false,
+      "weather": true
+    },
+    {
+      "filename": "rain-night-desktop-1792x858.png",
+      "url": "http://localhost:3000/environment-lab",
+      "viewport": "desktop",
+      "preset": "rain",
+      "phase": "night",
+      "quality": "full",
+      "reducedMotion": false,
+      "weather": true
+    },
+    {
+      "filename": "rain-day-mobile-390x844.png",
+      "url": "http://localhost:3000/environment-lab",
+      "viewport": "mobile",
+      "preset": "rain",
+      "phase": "day",
+      "quality": "reduced",
+      "reducedMotion": false,
+      "weather": true
+    },
+    {
+      "filename": "rain-reduced-mobile.png",
+      "url": "http://localhost:3000/environment-lab",
+      "viewport": "mobile",
+      "preset": "rain",
+      "phase": "day",
+      "quality": "reduced",
+      "reducedMotion": true,
+      "weather": true
+    },
+    {
+      "filename": "rain-static-fallback.png",
+      "url": "http://localhost:3000/environment-lab",
+      "viewport": "desktop",
+      "preset": "rain",
+      "phase": "day",
+      "quality": "off",
+      "reducedMotion": true,
+      "weather": false
+    },
+    {
+      "filename": "rain-safe-zones.png",
+      "url": "http://localhost:3000/environment-lab",
+      "viewport": "desktop",
+      "preset": "rain",
+      "phase": "day",
+      "quality": "full",
+      "reducedMotion": false,
+      "weather": true,
+      "safeZonesVisible": true
+    },
+    {
+      "filename": "rain-foliage-only.png",
+      "url": "http://localhost:3000/environment-lab",
+      "viewport": "desktop",
+      "preset": "rain",
+      "phase": "day",
+      "quality": "full",
+      "reducedMotion": false,
+      "weather": false
+    },
+    {
+      "filename": "rain-weather-only.png",
+      "url": "http://localhost:3000/environment-lab",
+      "viewport": "desktop",
+      "preset": "rain",
+      "phase": "day",
+      "quality": "full",
+      "reducedMotion": false,
+      "weather": true,
+      "foliageVisible": false
+    },
+    {
+      "filename": "rain-wetness-off.png",
+      "url": "http://localhost:3000/environment-lab",
+      "viewport": "desktop",
+      "preset": "rain",
+      "phase": "day",
+      "quality": "full",
+      "reducedMotion": false,
+      "weather": true,
+      "wetness": 0
+    },
+    {
+      "filename": "chime-home-current.png",
+      "url": "http://localhost:3000/",
+      "viewport": "desktop",
+      "preset": "rain",
+      "phase": "day",
+      "quality": "full",
+      "reducedMotion": false,
+      "weather": true
+    },
+    {
+      "filename": "chime-albums-current.png",
+      "url": "http://localhost:3000/albums",
+      "viewport": "desktop",
+      "preset": "rain",
+      "phase": "day",
+      "quality": "full",
+      "reducedMotion": false,
+      "weather": true
+    },
+    {
+      "filename": "chime-after-scroll.png",
+      "url": "http://localhost:3000/albums",
+      "viewport": "desktop",
+      "preset": "rain",
+      "phase": "day",
+      "quality": "full",
+      "reducedMotion": false,
+      "weather": true,
+      "scrolled": true
+    }
+  ]
+}

@@ -1,0 +1,270 @@
+﻿
+src\app\api\contact\route.ts:41:      if (isNaN(submitTime) || (Date.now() - submitTime) < 
+(settings.min_submit_time_seconds * 1000)) {
+src\app\api\contact\route.ts:87:      const cutoff = new Date(Date.now() - settings.contact_duplicate_window_seconds * 
+1000).toISOString();
+src\app\api\cron\prune-logs\route.ts:22:    const spamCutoffDate = new Date(Date.now() - settings.spam_retention_days 
+* 24 * 60 * 60 * 1000).toISOString();
+src\app\api\cron\prune-logs\route.ts:32:    const deletedCutoffDate = new Date(Date.now() - 
+settings.deleted_message_retention_days * 24 * 60 * 60 * 1000).toISOString();
+src\app\studio\messages\MessageList.tsx:79:                id: "temp-" + Date.now(),
+src\components\about\AboutClockwork.tsx:3:import { Canvas, useFrame, useThree } from "@react-three/fiber";
+src\components\about\AboutClockwork.tsx:40:  const teeth = useRef<THREE.InstancedMesh>(null);
+src\components\about\AboutClockwork.tsx:41:  const spokes = useRef<THREE.InstancedMesh>(null);
+src\components\about\AboutClockwork.tsx:42:  const dummy = useMemo(() => new THREE.Object3D(), []);
+src\components\about\AboutClockwork.tsx:50:          if (child instanceof THREE.Mesh || child instanceof 
+THREE.InstancedMesh) {
+src\components\about\AboutClockwork.tsx:89:  useFrame((_, delta) => {
+src\components\about\AboutClockwork.tsx:110:      <instancedMesh ref={teeth} args={[undefined, undefined, 
+config.teeth]} castShadow>
+src\components\about\AboutClockwork.tsx:113:      </instancedMesh>
+src\components\about\AboutClockwork.tsx:114:      <instancedMesh ref={spokes} args={[undefined, undefined, 6]} 
+castShadow>
+src\components\about\AboutClockwork.tsx:117:      </instancedMesh>
+src\components\about\AboutClockwork.tsx:151:          if (child instanceof THREE.Mesh || child instanceof 
+THREE.InstancedMesh) {
+src\components\about\AboutClockwork.tsx:164:  useFrame(({ clock }, delta) => {
+src\components\assistant\AssistantPanel.tsx:36:  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 
+8)}`;
+src\components\contact\ContactForm.tsx:44:  const [submitStartTime] = useState(() => Date.now().toString());
+src\components\contact\UserConversationList.tsx:63:                  id: "temp-" + Date.now(),
+src\components\environment\vegetation\BlossomClusters.tsx:5:import { useFrame } from "@react-three/fiber";
+src\components\environment\vegetation\BlossomClusters.tsx:11:  new THREE.Vector3(2, 6, -1),
+src\components\environment\vegetation\BlossomClusters.tsx:12:  new THREE.Vector3(6, 7, -2),
+src\components\environment\vegetation\BlossomClusters.tsx:13:  new THREE.Vector3(-4, 5, 2),
+src\components\environment\vegetation\BlossomClusters.tsx:14:  new THREE.Vector3(5, 4, -3),
+src\components\environment\vegetation\BlossomClusters.tsx:16:  new THREE.Vector3(1.5, 6.5, -1.5),
+src\components\environment\vegetation\BlossomClusters.tsx:17:  new THREE.Vector3(5, 7.5, -1),
+src\components\environment\vegetation\BlossomClusters.tsx:18:  new THREE.Vector3(-3.5, 5.5, 1.5),
+src\components\environment\vegetation\BlossomClusters.tsx:19:  new THREE.Vector3(5.5, 4.5, -2),
+src\components\environment\vegetation\BlossomClusters.tsx:20:  new THREE.Vector3(0, 5, 1),
+src\components\environment\vegetation\BlossomClusters.tsx:21:  new THREE.Vector3(-1, 6, 0),
+src\components\environment\vegetation\BlossomClusters.tsx:35:  const meshRef = useRef<THREE.InstancedMesh>(null);
+src\components\environment\vegetation\BlossomClusters.tsx:36:  const targetColors = useMemo(() => state.foliage.map(c 
+=> new THREE.Color(c)), [state.foliage]);
+src\components\environment\vegetation\BlossomClusters.tsx:41:    const petalShape = new THREE.Shape();
+src\components\environment\vegetation\BlossomClusters.tsx:48:    const geom = new THREE.ShapeGeometry(petalShape);
+src\components\environment\vegetation\BlossomClusters.tsx:59:    const dummy = new THREE.Object3D();
+src\components\environment\vegetation\BlossomClusters.tsx:63:      const offset = new THREE.Vector3(
+src\components\environment\vegetation\BlossomClusters.tsx:64:        (Math.random() - 0.5) * 3,
+src\components\environment\vegetation\BlossomClusters.tsx:65:        (Math.random() - 0.5) * 2,
+src\components\environment\vegetation\BlossomClusters.tsx:66:        (Math.random() - 0.5) * 3
+src\components\environment\vegetation\BlossomClusters.tsx:72:      const scale = 0.4 + Math.random() * 0.6;
+src\components\environment\vegetation\BlossomClusters.tsx:74:      const baseColor = 
+targetColors[Math.floor(Math.random() * targetColors.length)].clone();
+src\components\environment\vegetation\BlossomClusters.tsx:77:      baseColor.setHSL(hsl.h + (Math.random() - 0.5) * 
+0.05, hsl.s, hsl.l + (Math.random() - 0.5) * 0.1);
+src\components\environment\vegetation\BlossomClusters.tsx:79:      const flowerRotation = new THREE.Euler(
+src\components\environment\vegetation\BlossomClusters.tsx:80:        Math.random() * Math.PI * 2,
+src\components\environment\vegetation\BlossomClusters.tsx:81:        Math.random() * Math.PI * 2,
+src\components\environment\vegetation\BlossomClusters.tsx:82:        Math.random() * Math.PI * 2
+src\components\environment\vegetation\BlossomClusters.tsx:100:          phase: Math.random() * Math.PI * 2,
+src\components\environment\vegetation\BlossomClusters.tsx:101:          speed: 0.5 + Math.random() * 1.5
+src\components\environment\vegetation\BlossomClusters.tsx:109:  useFrame(({ clock }) => {
+src\components\environment\vegetation\BlossomClusters.tsx:114:    const dummy = new THREE.Object3D();
+src\components\environment\vegetation\BlossomClusters.tsx:135:    <instancedMesh
+src\components\environment\vegetation\BlossomClusters.tsx:148:    </instancedMesh>
+src\components\environment\vegetation\BotanicalTree.tsx:5:import { useFrame } from "@react-three/fiber";
+src\components\environment\vegetation\BotanicalTree.tsx:11:  return new THREE.QuadraticBezierCurve3(start, mid, end);
+src\components\environment\vegetation\BotanicalTree.tsx:15:  const geom = new THREE.TubeGeometry(curve, segments, 
+radius, radialSegments, false);
+src\components\environment\vegetation\BotanicalTree.tsx:58:  const targetColor = useMemo(() => new 
+THREE.Color(state.branchColor), [state.branchColor]);
+src\components\environment\vegetation\BotanicalTree.tsx:62:      new THREE.Vector3(0, 0, 0),
+src\components\environment\vegetation\BotanicalTree.tsx:63:      new THREE.Vector3(2, 6, -1),
+src\components\environment\vegetation\BotanicalTree.tsx:64:      new THREE.Vector3(-1.5, 3, 1)
+src\components\environment\vegetation\BotanicalTree.tsx:75:      new THREE.Vector3(1, 4, -0.5),
+src\components\environment\vegetation\BotanicalTree.tsx:76:      new THREE.Vector3(6, 7, -2),
+src\components\environment\vegetation\BotanicalTree.tsx:77:      new THREE.Vector3(3, 6, 1)
+src\components\environment\vegetation\BotanicalTree.tsx:83:      new THREE.Vector3(0.5, 3, 0),
+src\components\environment\vegetation\BotanicalTree.tsx:84:      new THREE.Vector3(-4, 5, 2),
+src\components\environment\vegetation\BotanicalTree.tsx:85:      new THREE.Vector3(-2, 4, 3)
+src\components\environment\vegetation\BotanicalTree.tsx:91:      new THREE.Vector3(3.5, 5.5, -1),
+src\components\environment\vegetation\BotanicalTree.tsx:92:      new THREE.Vector3(5, 4, -3),
+src\components\environment\vegetation\BotanicalTree.tsx:93:      new THREE.Vector3(4, 5, -2)
+src\components\environment\vegetation\BotanicalTree.tsx:102:  useFrame((_, delta) => {
+src\components\environment\vegetation\BotanicalTree.tsx:111:      trunkGroup.current.rotation.z = Math.sin(Date.now() 
+* 0.001) * strength * 0.002;
+src\components\environment\vegetation\BotanicalTree.tsx:114:      branchesGroup.current.rotation.z = 
+Math.sin(Date.now() * 0.0015) * strength * 0.01;
+src\components\environment\vegetation\BotanicalTree.tsx:115:      branchesGroup.current.rotation.x = 
+Math.cos(Date.now() * 0.0012) * strength * 0.005;
+src\components\environment\vegetation\CanopyShadowOverlay.tsx:6:import { useFrame } from "@react-three/fiber";
+src\components\environment\vegetation\CanopyShadowOverlay.tsx:19:  useFrame(({ clock }) => {
+src\components\environment\vegetation\VegetationScene.tsx:5:import { useFrame } from "@react-three/fiber";
+src\components\environment\vegetation\VegetationScene.tsx:28:  useFrame(({ clock }, delta) => {
+src\components\environment\weather\SakuraPetalField.tsx:5:import { useFrame } from "@react-three/fiber";
+src\components\environment\weather\SakuraPetalField.tsx:21:  const meshRef = useRef<THREE.InstancedMesh>(null);
+src\components\environment\weather\SakuraPetalField.tsx:34:    const petalShape = new THREE.Shape();
+src\components\environment\weather\SakuraPetalField.tsx:41:    const geom = new THREE.ShapeGeometry(petalShape);
+src\components\environment\weather\SakuraPetalField.tsx:50:    const colorOptions = state.foliage.map(c => new 
+THREE.Color(c));
+src\components\environment\weather\SakuraPetalField.tsx:54:      const color = colorOptions[Math.floor(Math.random() * 
+colorOptions.length)].clone();
+src\components\environment\weather\SakuraPetalField.tsx:57:      color.setHSL(hsl.h + (Math.random() - 0.5) * 0.05, 
+hsl.s, hsl.l + (Math.random() - 0.5) * 0.1);
+src\components\environment\weather\SakuraPetalField.tsx:64:        position: new THREE.Vector3(
+src\components\environment\weather\SakuraPetalField.tsx:65:          (Math.random() - 0.5) * 20,
+src\components\environment\weather\SakuraPetalField.tsx:66:          Math.random() * 10 + 2,
+src\components\environment\weather\SakuraPetalField.tsx:67:          (Math.random() - 0.5) * 15 - 2
+src\components\environment\weather\SakuraPetalField.tsx:69:        rotation: new THREE.Euler(
+src\components\environment\weather\SakuraPetalField.tsx:70:          Math.random() * Math.PI,
+src\components\environment\weather\SakuraPetalField.tsx:71:          Math.random() * Math.PI,
+src\components\environment\weather\SakuraPetalField.tsx:72:          Math.random() * Math.PI
+src\components\environment\weather\SakuraPetalField.tsx:74:        speed: 0.5 + Math.random() * 1.0,
+src\components\environment\weather\SakuraPetalField.tsx:75:        drift: Math.random() * Math.PI * 2,
+src\components\environment\weather\SakuraPetalField.tsx:76:        scale: 0.5 + Math.random() * 0.5,
+src\components\environment\weather\SakuraPetalField.tsx:85:  useFrame(({ clock }, delta) => {
+src\components\environment\weather\SakuraPetalField.tsx:90:    const dummy = new THREE.Object3D();
+src\components\environment\weather\SakuraPetalField.tsx:102:        inst.position.y = 10 + Math.random() * 5;
+src\components\environment\weather\SakuraPetalField.tsx:103:        inst.position.x = (Math.random() - 0.5) * 20;
+src\components\environment\weather\SakuraPetalField.tsx:122:    <instancedMesh
+src\components\environment\weather\SakuraPetalField.tsx:135:    </instancedMesh>
+src\components\environment\weather\WeatherSystem.tsx:9:// We can keep the old EnvironmentParticles for other presets 
+(snow, rain, fireflies) 
+src\components\environment\weather\WeatherSystem.tsx:11:import { EnvironmentParticles } from "../EnvironmentParticles";
+src\components\environment\weather\WeatherSystem.tsx:32:    <EnvironmentParticles 
+src\components\environment\EnvironmentBirds.tsx:3:import { useFrame } from "@react-three/fiber";
+src\components\environment\EnvironmentBirds.tsx:34:  useFrame(({ clock }) => {
+src\components\environment\EnvironmentBranches.tsx:3:import { useFrame } from "@react-three/fiber";
+src\components\environment\EnvironmentBranches.tsx:17:export function EnvironmentBranches({
+src\components\environment\EnvironmentBranches.tsx:31:  const branchMaterial = useMemo(() => new 
+THREE.MeshStandardMaterial({ color: "#625048", roughness: .78, metalness: .02 }), []);
+src\components\environment\EnvironmentBranches.tsx:32:  const leafMaterials = useMemo(() => [0, 1, 2].map(() => new 
+THREE.MeshStandardMaterial({ color: "#d8c8bd", roughness: .72, side: THREE.DoubleSide })), []);
+src\components\environment\EnvironmentBranches.tsx:33:  const targetBranch = useMemo(() => new 
+THREE.Color(state.branchColor), [state.branchColor]);
+src\components\environment\EnvironmentBranches.tsx:34:  const targetFoliage = useMemo(() => state.foliage.map((color) 
+=> new THREE.Color(color)), [state.foliage]);
+src\components\environment\EnvironmentBranches.tsx:42:  useFrame(({ clock }, delta) => {
+src\components\environment\EnvironmentLightingRig.tsx:3:import { useFrame } from "@react-three/fiber";
+src\components\environment\EnvironmentLightingRig.tsx:24:  const targetKey = useMemo(() => new 
+THREE.Color(state.keyLight), [state.keyLight]);
+src\components\environment\EnvironmentLightingRig.tsx:25:  const targetFill = useMemo(() => new 
+THREE.Color(state.fillLight), [state.fillLight]);
+src\components\environment\EnvironmentLightingRig.tsx:26:  const targetFog = useMemo(() => new 
+THREE.Color(state.fogColor), [state.fogColor]);
+src\components\environment\EnvironmentLightingRig.tsx:28:  useFrame((_, delta) => {
+src\components\environment\EnvironmentParticles.tsx:3:import { useFrame } from "@react-three/fiber";
+src\components\environment\EnvironmentParticles.tsx:16:export function EnvironmentParticles({
+src\components\environment\EnvironmentParticles.tsx:29:  const mesh = useRef<THREE.InstancedMesh>(null);
+src\components\environment\EnvironmentParticles.tsx:31:  const dummy = useMemo(() => new THREE.Object3D(), []);
+src\components\environment\EnvironmentParticles.tsx:32:  const targetColor = useMemo(() => new 
+THREE.Color(state.particle[0]), [state.particle]);
+src\components\environment\EnvironmentParticles.tsx:60:  useFrame(({ clock }, delta) => {
+src\components\environment\EnvironmentParticles.tsx:93:    <instancedMesh ref={mesh} args={[undefined, undefined, 
+count]} frustumCulled={false}>
+src\components\environment\EnvironmentParticles.tsx:103:    </instancedMesh>
+src\components\environment\EnvironmentParticles.tsx:114:  useFrame(({ clock }) => {
+src\components\environment\EnvironmentScene.tsx:3:import { useFrame } from "@react-three/fiber";
+src\components\environment\EnvironmentScene.tsx:15:import { WindChimeScene } from "./WindChimeScene";
+src\components\environment\EnvironmentScene.tsx:16:import { EnvironmentAtmosphere } from "./EnvironmentParticles"; // 
+Kept for the atmosphere/sky background
+src\components\environment\EnvironmentScene.tsx:18:import { EnvironmentBranches } from "./EnvironmentBranches";
+src\components\environment\EnvironmentScene.tsx:46:  useFrame(({ clock }, delta) => {
+src\components\environment\EnvironmentScene.tsx:65:          <EnvironmentBranches state={state} 
+preferences={preferences} wind={wind} active={active && !reducedMotion} reduced={quality.tier === "reduced"} />
+src\components\environment\EnvironmentScene.tsx:73:      <WindChimeScene
+src\components\environment\WindChimeScene.tsx:3:import { useFrame, useThree } from "@react-three/fiber";
+src\components\environment\WindChimeScene.tsx:36:    new THREE.MeshStandardMaterial({ color: profile.color, metalness: 
+profile.metalness, roughness: profile.roughness }),
+src\components\environment\WindChimeScene.tsx:37:    new THREE.MeshStandardMaterial({ color: profile.secondary, 
+metalness: profile.metalness, roughness: Math.min(1, profile.roughness + .07) }),
+src\components\environment\WindChimeScene.tsx:40:const interiorMaterial = new THREE.MeshStandardMaterial({ color: 
+"#222222", metalness: 0.2, roughness: 0.9, side: THREE.BackSide });
+src\components\environment\WindChimeScene.tsx:41:const supportMaterial = new THREE.MeshStandardMaterial({ color: 
+"#3d2314", roughness: 0.6, metalness: 0.1 });
+src\components\environment\WindChimeScene.tsx:42:const clapperMaterial = new THREE.MeshStandardMaterial({ color: 
+"#2c1810", roughness: 0.8, metalness: 0.05 });
+src\components\environment\WindChimeScene.tsx:43:const sailMaterial = new THREE.MeshStandardMaterial({ color: 
+"#bda893", roughness: 0.9, metalness: 0.05 });
+src\components\environment\WindChimeScene.tsx:44:const cordMaterial = new THREE.MeshBasicMaterial({ color: "#222222", 
+transparent: true, opacity: 0.8 });
+src\components\environment\WindChimeScene.tsx:45:const hitboxMaterial = new THREE.MeshBasicMaterial({ transparent: 
+true, opacity: 0, depthWrite: false });
+src\components\environment\WindChimeScene.tsx:51:  const geometry = new THREE.CylinderGeometry(0.052, 0.052, length, 
+28, 1, true);
+src\components\environment\WindChimeScene.tsx:60:  const geometry = new THREE.CylinderGeometry(0.041, 0.041, length, 
+28, 1, true);
+src\components\environment\WindChimeScene.tsx:69:  const geometry = new THREE.TorusGeometry(0.047, 0.005, 7, 28);
+src\components\environment\WindChimeScene.tsx:149:export function WindChimeScene({
+src\components\environment\WindChimeScene.tsx:169:  const raycaster = useRef(new THREE.Raycaster());
+src\components\environment\WindChimeScene.tsx:231:      impulse(detail.slotId, Math.floor(Math.random() * 5), 0.6, 
+0.3);
+src\components\environment\WindChimeScene.tsx:238:      const pointer = new THREE.Vector2(event.clientX / size.width * 
+2 - 1, -(event.clientY / size.height) * 2 + 1);
+src\components\environment\WindChimeScene.tsx:264:              impulse(slotId!, index, forceX * (0.7 + Math.random() 
+* 0.6), forceY * (0.7 + Math.random() * 0.6));
+src\components\environment\WindChimeScene.tsx:306:  useFrame(({ clock }, delta) => {
+src\components\environment\WindChimeScene.tsx:363:    position: setWorldPosition(new THREE.Vector3(), anchor, 
+initialScrollY, size, viewport),
+src\components\games\PuzzleAtelier.tsx:51:  return Date.now();
+src\components\games\PuzzleAtelier.tsx:185:    const timer = window.setInterval(() => setElapsed(Date.now() - 
+startedAt), 250);
+src\components\media\MediaGrid.tsx:52:  const [shuffleSeed, setShuffleSeed] = useState(() => 
+`${albumId}:${Date.now()}`);
+src\components\media\MediaGrid.tsx:73:      if (value === "shuffle") 
+setShuffleSeed(`${albumId}:${Date.now()}:${Math.random()}`);
+src\components\studio\AlbumEditor.tsx:213:    const nextRank = item.featured_rank ? 0 : Math.max(Date.now() - 
+1_700_000_000_000, 1);
+src\components\studio\CommentsModeration.tsx:32:  const [referenceNow] = useState(() => Date.now());
+src\components\studio\SettingsCenter.tsx:645:                  <Button onClick={() => updateLanding("media_items", 
+[...landing.media_items, { id: Math.random().toString(36).slice(2), type: "image", url: "", enabled: true, order: 
+landing.media_items.length + 1, title: "", caption: "", alt: "", poster_url: "" }])}>Add Media</Button>
+src\components\studio\SettingsCenter.tsx:701:                  <Button onClick={() => updateLanding("collaborators", 
+[...landing.collaborators, { id: Math.random().toString(36).slice(2), name: "", role: "", enabled: true, order: 
+landing.collaborators.length + 1, bio: "", portfolio_url: "", portrait_url: "" }])}>Add Partner</Button>
+src\components\studio\SettingsCenter.tsx:1049:                  updateAdvanced("brand_updated_at", Date.now());
+src\components\studio\SettingsCenter.tsx:1053:                  updateAdvanced("brand_updated_at", Date.now());
+src\components\studio\SettingsCenter.tsx:1069:                  updateAdvanced("brand_updated_at", Date.now());
+src\components\studio\SettingsCenter.tsx:1085:                  updateAdvanced("brand_updated_at", Date.now());
+src\components\studio\SettingsCenter.tsx:1089:                  updateAdvanced("brand_updated_at", Date.now());
+src\components\studio\SettingsCenter.tsx:1129:                  updateAdvanced("brand_updated_at", Date.now());
+src\components\studio\SettingsCenter.tsx:1135:                    updateAdvanced("brand_updated_at", Date.now());
+src\components\studio\SettingsCenter.tsx:1144:                  updateAdvanced("brand_updated_at", Date.now());
+src\components\studio\SettingsCenter.tsx:1150:                    updateAdvanced("brand_updated_at", Date.now());
+src\components\studio\SettingsCenter.tsx:1159:                  updateAdvanced("brand_updated_at", Date.now());
+src\components\studio\SettingsCenter.tsx:1165:                    updateAdvanced("brand_updated_at", Date.now());
+src\hooks\useAlbumViewMemory.ts:60:  const now = Date.now();
+src\hooks\useAlbumViewMemory.ts:104:    const now = Date.now();
+src\hooks\useAlbumViewMemory.ts:134:    const hoursSinceLastView = (Date.now() - record.lastSeenAt) / (1000 * 60 * 60);
+src\hooks\useEnvironmentPreferences.ts:147:    let lastNow = Date.now();
+src\hooks\useEnvironmentPreferences.ts:149:      const now = Date.now();
+src\hooks\useEnvironmentPreferences.ts:158:      if (!document.hidden || Math.abs(Date.now() - lastNow) > 60_000) 
+synchronize();
+src\lib\puzzles\server.ts:191:  if (elapsedMs > Date.now() - startedAt + 10_000) throw new Error("Elapsed time is not 
+plausible.");
+src\lib\audio-ux.ts:60:        channel[j] = (Math.random() * 2 - 1) * Math.pow(1 - j / length, decay);
+src\lib\audio-ux.ts:212:    source.detune.value = (Math.random() - .5) * 9;
+src\lib\audio-ux.ts:214:    const voiceId = Date.now() + Math.random();
+src\lib\audio-ux.ts:328:      const transient = time < transientDuration ? (Math.random() * 2 - 1) * (1 - time / 
+transientDuration) * (material === "bamboo" ? .11 : .045) : 0;
+src\lib\comment-security.ts:61:  const since = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+src\lib\studio-data.ts:159:    countRowsSince("audit_logs", "created_at", new Date(Date.now() - 24 * 60 * 60 * 
+1000).toISOString()),
+src\lib\studio-data.ts:163:        const res = await supabase.from("user_album_activity").select("*", { count: 
+"exact", head: true }).eq("event_type", "album_viewed").gt("expires_at", new Date().toISOString()).gte("created_at", 
+new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString());
+src\lib\studio-data.ts:171:        const res = await supabase.from("user_album_activity").select("*", { count: 
+"exact", head: true }).in("event_type", ["album_downloaded_zip", "album_downloaded_media"]).gt("expires_at", new 
+Date().toISOString()).gte("created_at", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString());
+src\lib\studio-data.ts:257:    countRowsSince("comments", "created_at", new Date(Date.now() - 24 * 60 * 60 * 
+1000).toISOString()),
+src\lib\studio-data.ts:258:    countRowsSince("comments", "created_at", new Date(Date.now() - 7 * 24 * 60 * 60 * 
+1000).toISOString()),
+src\lib\studio-data.ts:259:    countRowsSince("likes", "created_at", new Date(Date.now() - 24 * 60 * 60 * 
+1000).toISOString()),
+src\lib\studio-data.ts:260:    countRowsSince("likes", "created_at", new Date(Date.now() - 7 * 24 * 60 * 60 * 
+1000).toISOString()),
+src\lib\studio-data.ts:261:    countRowsSince("audit_logs", "created_at", new Date(Date.now() - 24 * 60 * 60 * 
+1000).toISOString()),
+src\lib\studio-data.ts:262:    countRowsSince("audit_logs", "created_at", new Date(Date.now() - 7 * 24 * 60 * 60 * 
+1000).toISOString()),
+src\lib\user-activity.ts:50:    const windowStart = new Date(Date.now() - dedupeHours * 60 * 60 * 1000).toISOString();
+src\proxy.ts:43:  const now = Date.now();
+tests\wind-chime-physics.test.mjs:65:    readFile(new URL("../src/components/environment/WindChimeScene.tsx", 
+import.meta.url), "utf8"),
+tests\wind-chime-physics.test.mjs:94:    readFile(new URL("../src/components/environment/WindChimeScene.tsx", 
+import.meta.url), "utf8"),
+
+

@@ -18,12 +18,18 @@ export function EnvironmentReviewLab() {
   const [darkBackground, setDarkBackground] = useState(false);
   const [showParticles, setShowParticles] = useState(true);
   const [showShadows, setShowShadows] = useState(true);
+  const [precipitationAmount, setPrecipitationAmount] = useState(100);
+  const [wetness, setWetness] = useState(100);
+  const [dropletAmount, setDropletAmount] = useState(100);
   const [fps, setFps] = useState(0);
 
   const preferences: EnvironmentPreferences = {
     ...artistEnvironmentDefaults,
     preset: preset,
     phase: phase,
+    precipitationAmount,
+    wetness,
+    dropletAmount,
   };
 
   const quality: EnvironmentQuality = {
@@ -176,6 +182,26 @@ export function EnvironmentReviewLab() {
             <span>Enable Shadows</span>
           </label>
         </div>
+
+        {preset === "rain" && (
+          <div className="space-y-2 pt-2 border-t border-white/10">
+            <label className="block text-xs uppercase tracking-wider text-zinc-500">Rain Weather</label>
+            <div className="flex flex-col gap-1 text-xs">
+              <label className="flex justify-between">
+                <span>Precipitation</span>
+                <input type="range" min="0" max="100" value={precipitationAmount} onChange={e => setPrecipitationAmount(Number(e.target.value))} />
+              </label>
+              <label className="flex justify-between">
+                <span>Wetness</span>
+                <input type="range" min="0" max="100" value={wetness} onChange={e => setWetness(Number(e.target.value))} />
+              </label>
+              <label className="flex justify-between">
+                <span>Droplets</span>
+                <input type="range" min="0" max="100" value={dropletAmount} onChange={e => setDropletAmount(Number(e.target.value))} />
+              </label>
+            </div>
+          </div>
+        )}
 
         <div className="flex gap-2 pt-2 border-t border-white/10">
           <button
