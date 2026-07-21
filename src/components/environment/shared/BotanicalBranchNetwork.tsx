@@ -41,18 +41,44 @@ export function BotanicalBranchNetwork({
   const geometries = useMemo(() => {
     const prng = createSeededRandom(profile.seed + seedOffset);
     const geoms: THREE.TubeGeometry[] = [];
-    const root = new THREE.Vector3(0, 0, 0);
     const upBias = profile.branching.upwardBias ?? 0;
+    
+    // Optional Cedar-specific trunk extensions
+    const trunkHeight = (profile.branching.trunkHeight ?? 0) * scale * 3.0; // scale up to world units
+    const originH = (profile.branching.branchOriginHeight ?? 0) * trunkHeight;
+    const trunkRadius = (profile.branching.trunkRadius ?? 0) * scale;
+    
+    // Draw main trunk if requested
+    if (trunkHeight > 0 && trunkRadius > 0) {
+      const trunkStart = new THREE.Vector3(0, 0, 0);
+      const trunkEnd = new THREE.Vector3(0, trunkHeight, 0);
+      // Slight lean/bend for natural trunk
+      const leanX = (prng.value() - 0.5) * trunkHeight * 0.1;
+      const leanZ = (prng.value() - 0.5) * trunkHeight * 0.1;
+      trunkEnd.x += leanX;
+      trunkEnd.z += leanZ;
+      const trunkCurve = new THREE.QuadraticBezierCurve3(
+        trunkStart,
+        new THREE.Vector3(leanX * 0.5, trunkHeight * 0.5, leanZ * 0.5),
+        trunkEnd
+      );
+      geoms.push(new THREE.TubeGeometry(trunkCurve, 12, trunkRadius, 8, false));
+    }
 
     for (let i = 0; i < profile.branching.segments; i++) {
+      // Determine origin point for this branch along the trunk
+      const branchT = trunkHeight > 0 ? prng.range(originH / trunkHeight, 1.0) : 0;
+      const rootY = trunkHeight * branchT;
+      const root = new THREE.Vector3(0, rootY, 0);
+
       const angle = prng.range(0, Math.PI * 2);
       const radius = prng.range(3, 6) * profile.branching.spread * scale;
       const height = prng.range(-1, 3) * scale * (1 + upBias * 0.5);
 
       const end = new THREE.Vector3(
-        Math.cos(angle) * radius,
-        height,
-        Math.sin(angle) * radius
+        root.x + Math.cos(angle) * radius,
+        root.y + height,
+        root.z + Math.sin(angle) * radius
       );
 
       const curve = generateBranchCurve(root, end, profile.branching.droop * scale, upBias * scale, prng);

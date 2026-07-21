@@ -18,10 +18,28 @@ export function EnvironmentReviewLab() {
   const [darkBackground, setDarkBackground] = useState(false);
   const [showParticles, setShowParticles] = useState(true);
   const [showShadows, setShowShadows] = useState(true);
+  
+  // Mist dev flags
+  const [mistSceneFog, setMistSceneFog] = useState(true);
+  const [mistFarHaze, setMistFarHaze] = useState(true);
+  const [mistMiddle, setMistMiddle] = useState(true);
+  const [mistGround, setMistGround] = useState(true);
+  const [mistFore, setMistFore] = useState(true);
+  const [vegetationOnly, setVegetationOnly] = useState(false);
+  const [atmosphereOnly, setAtmosphereOnly] = useState(false);
+  const [staticFallback, setStaticFallback] = useState(false);
+
   const [precipitationAmount, setPrecipitationAmount] = useState(100);
   const [wetness, setWetness] = useState(100);
   const [dropletAmount, setDropletAmount] = useState(100);
   const [fps, setFps] = useState(0);
+
+  // Sync dev flags to window
+  useEffect(() => {
+    (window as any).__DEV_LAB__ = {
+      mistSceneFog, mistFarHaze, mistMiddle, mistGround, mistFore, vegetationOnly, atmosphereOnly, staticFallback
+    };
+  }, [mistSceneFog, mistFarHaze, mistMiddle, mistGround, mistFore, vegetationOnly, atmosphereOnly, staticFallback]);
 
   const preferences: EnvironmentPreferences = {
     ...artistEnvironmentDefaults,
@@ -96,19 +114,22 @@ export function EnvironmentReviewLab() {
       )}
 
       {/* Environment Canvas */}
-      <div className="absolute inset-0 z-10 pointer-events-none">
-        {quality.enabled && (
-          <PublicEnvironmentCanvas
-            rects={[]}
-            reducedMotion={reducedMotion}
-            state={state}
-            preferences={preferences}
-            quality={quality}
-            active={true}
-            onUnavailable={() => console.error("WebGL Unavailable")}
-          />
-        )}
-      </div>
+      {!staticFallback && (
+        <div className="absolute inset-0 z-10 pointer-events-none">
+          {quality.enabled && (
+            <PublicEnvironmentCanvas
+              key={JSON.stringify((window as any).__DEV_LAB__)}
+              rects={[]}
+              reducedMotion={reducedMotion}
+              state={state}
+              preferences={preferences}
+              quality={quality}
+              active={true}
+              onUnavailable={() => console.error("WebGL Unavailable")}
+            />
+          )}
+        </div>
+      )}
 
       {/* Dev Controls */}
       <div className="absolute top-4 right-4 bg-black/80 p-4 rounded-xl shadow-2xl z-[100] w-80 text-sm backdrop-blur border border-white/10 flex flex-col gap-4">
@@ -182,6 +203,22 @@ export function EnvironmentReviewLab() {
             <span>Enable Shadows</span>
           </label>
         </div>
+
+        {preset === "mist" && (
+          <div className="space-y-2 pt-2 border-t border-white/10">
+            <label className="block text-xs uppercase tracking-wider text-zinc-500">Mist Debug</label>
+            <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-xs">
+              <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" checked={mistSceneFog} onChange={e => setMistSceneFog(e.target.checked)} /> Scene Fog</label>
+              <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" checked={mistFarHaze} onChange={e => setMistFarHaze(e.target.checked)} /> Far Haze</label>
+              <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" checked={mistMiddle} onChange={e => setMistMiddle(e.target.checked)} /> Middle Banks</label>
+              <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" checked={mistGround} onChange={e => setMistGround(e.target.checked)} /> Ground Mist</label>
+              <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" checked={mistFore} onChange={e => setMistFore(e.target.checked)} /> Fore Veil</label>
+              <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" checked={vegetationOnly} onChange={e => setVegetationOnly(e.target.checked)} /> Trees Only</label>
+              <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" checked={atmosphereOnly} onChange={e => setAtmosphereOnly(e.target.checked)} /> Atmos Only</label>
+              <label className="flex items-center gap-2 cursor-pointer text-amber-400"><input type="checkbox" checked={staticFallback} onChange={e => setStaticFallback(e.target.checked)} /> Static CSS</label>
+            </div>
+          </div>
+        )}
 
         {preset === "rain" && (
           <div className="space-y-2 pt-2 border-t border-white/10">

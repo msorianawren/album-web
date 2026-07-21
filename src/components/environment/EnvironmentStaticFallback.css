@@ -1,0 +1,43 @@
+.mist-fallback-layers {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.mist-fallback-layer {
+  position: absolute;
+  inset: -10%; /* slight bleed to allow panning if needed */
+  background-repeat: repeat-x;
+  background-position: bottom center;
+}
+
+/* Base background for mist is handled by globals.css gradients */
+
+/* Far trunks */
+.mist-fallback-layer--far {
+  background-image: 
+    linear-gradient(to right, transparent 20%, var(--environment-branch) 21%, var(--environment-branch) 22%, transparent 23%),
+    linear-gradient(to right, transparent 45%, var(--environment-branch) 45.5%, var(--environment-branch) 46.5%, transparent 47%),
+    linear-gradient(to right, transparent 70%, var(--environment-branch) 71%, var(--environment-branch) 72%, transparent 73%),
+    linear-gradient(to right, transparent 85%, var(--environment-branch) 86%, var(--environment-branch) 87%, transparent 88%);
+  background-size: 100% 100%;
+  opacity: 0.15;
+  filter: blur(4px);
+}
+
+/* Mid trunks (hero and midground) */
+.mist-fallback-layer--mid {
+  background-image: 
+    linear-gradient(to right, transparent 15%, var(--environment-branch) 17%, var(--environment-branch) 23%, transparent 25%),
+    linear-gradient(to right, transparent 65%, var(--environment-branch) 67%, var(--environment-branch) 72%, transparent 74%);
+  background-size: 100% 100%;
+  opacity: 0.35;
+  filter: blur(1px);
+}
+
+/* Fog overlay to create depth */
+.mist-fallback-layer--fog {
+  background: linear-gradient(to top, var(--environment-fill) 0%, color-mix(in srgb, var(--environment-fog) 60%, transparent) 40%, transparent 100%);
+  opacity: 0.8;
+}

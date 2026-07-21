@@ -8,6 +8,7 @@ import type { EnvironmentPreferences } from "@/lib/environment/preferences";
 import { SakuraPetalField } from "./SakuraPetalField";
 import { RainField } from "./RainField";
 import { AutumnLeafField } from "./AutumnLeafField";
+import { MistSystem } from "./MistSystem";
 import { weatherProfiles } from "@/lib/environment/weather-profiles";
 
 // We can keep the old EnvironmentParticles for other presets (snow, rain, fireflies) 
@@ -43,6 +44,10 @@ export function WeatherSystem({
 
   if (state.preset === "autumn") {
     return <AutumnLeafField quality={quality} wind={wind} preferences={prefs} active={active} reducedMotion={rm} />;
+  }
+
+  if (state.preset === "mist") {
+    return <MistSystem state={state} quality={quality} wind={wind} preferences={prefs} active={active} reducedMotion={rm} />;
   }
 
   // Fallback to the original particles for other presets to avoid regression

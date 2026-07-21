@@ -113,6 +113,84 @@ function makeBroadleafGeometry(): THREE.BufferGeometry {
   return geom;
 }
 
+function makeNeedleGeometry(): THREE.BufferGeometry {
+  // Cedar needle cluster: 3 crossed flat cards radiating from center
+  // Each card is a thin elongated diamond
+  const positions: number[] = [];
+  const normals: number[] = [];
+  const uvs: number[] = [];
+  const indices: number[] = [];
+
+  const cards = [
+    { rx: 0,    ry: 0 },   // facing Z
+    { rx: 0,    ry: Math.PI * 0.5 }, // rotated 90°
+    { rx: 0.3,  ry: Math.PI * 0.25 }, // diagonal
+  ];
+
+  let vertexOffset = 0;
+  cards.forEach(({ rx, ry }) => {
+    // Card corners: elongated diamond shape (needle cluster silhouette)
+    const verts: [number, number, number][] = [
+      [0, -0.6, 0],   // bottom
+      [0.3, 0, 0],    // right
+      [0, 0.6, 0],    // top
+      [-0.3, 0, 0],   // left
+    ];
+
+    const cosY = Math.cos(ry), sinY = Math.sin(ry);
+    const cosX = Math.cos(rx), sinX = Math.sin(rx);
+
+    verts.forEach(([x, y, z]) => {
+      // Rotate around Y then X
+      const rx2 = x * cosY + z * sinY;
+      const rz2 = -x * sinY + z * cosY;
+      const ry2 = y * cosX - rz2 * sinX;
+      const rz3 = y * sinX + rz2 * cosX;
+      positions.push(rx2, ry2, rz3);
+      normals.push(0, 1, 0);
+      uvs.push(0, 0);
+    });
+
+    // Two triangles per card quad
+    indices.push(
+      vertexOffset, vertexOffset + 1, vertexOffset + 2,
+      vertexOffset, vertexOffset + 2, vertexOffset + 3,
+    );
+    vertexOffset += 4;
+  });
+
+  const geom = new THREE.BufferGeometry();
+  geom.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+  geom.setAttribute("normal", new THREE.Float32BufferAttribute(normals, 3));
+  geom.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
+  geom.setIndex(indices);
+  geom.computeVertexNormals();
+  geom.computeBoundingBox();
+  geom.computeBoundingSphere();
+  return geom;
+}
+
+function makeFernGeometry(): THREE.BufferGeometry {
+  // Fern frond: a central stem with pairs of sub-leaflets
+  const shape = new THREE.Shape();
+  shape.moveTo(0, -0.8);
+  shape.lineTo(0, 0.8);
+
+  // Main frond outline — slightly asymmetric
+  shape.moveTo(0, 0.6);
+  shape.quadraticCurveTo(0.5, 0.3, 0.6, 0);
+  shape.quadraticCurveTo(0.4, -0.3, 0.05, -0.7);
+  shape.quadraticCurveTo(-0.05, -0.7, 0, -0.8);
+  shape.quadraticCurveTo(-0.4, -0.3, -0.6, 0);
+  shape.quadraticCurveTo(-0.5, 0.3, 0, 0.6);
+  shape.closePath();
+
+  const geom = new THREE.ShapeGeometry(shape, 5);
+  geom.computeBoundingBox();
+  geom.computeBoundingSphere();
+  return geom;
+}
+
 export function getLeafGeometry(type: LeafGeometryType): THREE.BufferGeometry {
   if (cache.has(type)) return cache.get(type)!;
 
@@ -122,10 +200,12 @@ export function getLeafGeometry(type: LeafGeometryType): THREE.BufferGeometry {
     case "maple":     geom = makeMapleGeometry(); break;
     case "ginkgo":    geom = makeGinkgoGeometry(); break;
     case "broadleaf": geom = makeBroadleafGeometry(); break;
+    case "needle":    geom = makeNeedleGeometry(); break;
+    case "fern":      geom = makeFernGeometry(); break;
   }
 
-  cache.set(type, geom);
-  return geom;
+  cache.set(type, geom!);
+  return geom!;
 }
 
 export function disposeLeafGeometryCache(): void {

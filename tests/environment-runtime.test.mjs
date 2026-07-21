@@ -98,8 +98,8 @@ test("automatic chime rate follows both wind and frequency settings", () => {
 });
 
 test("artist and reduced-decoration resets are stable and intentionally distinct", () => {
-  assert.equal(artistEnvironmentDefaults.version, 1);
-  assert.equal(reducedDecorationEnvironmentPreset.version, 1);
+  assert.equal(artistEnvironmentDefaults.version, 2);
+  assert.equal(reducedDecorationEnvironmentPreset.version, 2);
   assert.ok(reducedDecorationEnvironmentPreset.particleAmount < artistEnvironmentDefaults.particleAmount);
   assert.ok(reducedDecorationEnvironmentPreset.birdDensity < artistEnvironmentDefaults.birdDensity);
 });

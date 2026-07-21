@@ -25,7 +25,10 @@ type NumericPreferenceKey =
   | "birdDensity"
   | "birdSongFrequency"
   | "chimeVolume"
-  | "autoChimeFrequency";
+  | "autoChimeFrequency"
+  | "precipitationAmount"
+  | "wetness"
+  | "dropletAmount";
 
 const presetLabels: Record<EnvironmentPresetId, string> = {
   sakura: "Sakura Garden",
@@ -36,17 +39,44 @@ const presetLabels: Record<EnvironmentPresetId, string> = {
   rain: "Rain Garden",
 };
 
-const sliders: Array<{ key: NumericPreferenceKey; label: string; min?: number; max?: number; suffix?: string }> = [
+type SliderDef = { key: NumericPreferenceKey; label: string; min?: number; max?: number; suffix?: string };
+
+const sceneSliders: SliderDef[] = [
+  { key: "brightness", label: "Scene brightness", min: 60, max: 140, suffix: "%" },
+  { key: "spatialDepth", label: "Spatial depth" },
+  { key: "environmentDensity", label: "Foliage density" },
+];
+
+const windSliders: SliderDef[] = [
   { key: "windSpeed", label: "Wind speed" },
   { key: "gustStrength", label: "Gust strength" },
   { key: "gustFrequency", label: "Gust frequency" },
   { key: "turbulence", label: "Wind turbulence" },
   { key: "branchSway", label: "Branch sway" },
-  { key: "environmentDensity", label: "Foliage density" },
+];
+
+const weatherSliders: Record<string, SliderDef[]> = {
+  rain: [
+    { key: "precipitationAmount", label: "Precipitation amount" },
+    { key: "atmosphere", label: "Atmosphere" },
+    { key: "wetness", label: "Surface wetness" },
+    { key: "dropletAmount", label: "Camera droplets" },
+  ],
+  autumn: [
+    { key: "particleAmount", label: "Falling leaves" },
+    { key: "atmosphere", label: "Atmosphere" },
+  ],
+  mist: [
+    { key: "atmosphere", label: "Mist density" },
+  ],
+};
+
+const defaultWeatherSliders: SliderDef[] = [
   { key: "particleAmount", label: "Weather particles" },
   { key: "atmosphere", label: "Fog and atmosphere" },
-  { key: "spatialDepth", label: "Spatial depth" },
-  { key: "brightness", label: "Scene brightness", min: 60, max: 140, suffix: "%" },
+];
+
+const wildlifeSliders: SliderDef[] = [
   { key: "birdDensity", label: "Bird density" },
   { key: "birdSongFrequency", label: "Bird song frequency" },
   { key: "chimeVolume", label: "Wind-chime volume" },
@@ -161,24 +191,54 @@ export function EnvironmentControlPanel({
         </label>
       </div>
 
-      <div className="mt-7 grid gap-x-8 gap-y-5 md:grid-cols-2">
-        {sliders.map(({ key, label, min = 0, max = 100, suffix = "%" }) => (
-          <label key={key} className="grid gap-2 text-sm text-text-primary">
-            <span className="flex items-center justify-between gap-3">
-              <span>{label}</span>
-              <output className="tabular-nums text-xs text-text-secondary">{preferences[key]}{suffix}</output>
-            </span>
-            <input
-              type="range"
-              min={min}
-              max={max}
-              step="1"
-              value={preferences[key]}
-              onChange={(event) => setNumericPreference(key, Number(event.target.value))}
-              className="w-full accent-muted-accent"
-            />
-          </label>
-        ))}
+      <div className="mt-7 grid gap-8 md:grid-cols-2">
+        <div className="grid gap-5">
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-accent">Scene</h3>
+          {sceneSliders.map(({ key, label, min = 0, max = 100, suffix = "%" }) => (
+            <label key={key} className="grid gap-2 text-sm text-text-primary">
+              <span className="flex items-center justify-between gap-3">
+                <span>{label}</span>
+                <output className="tabular-nums text-xs text-text-secondary">{preferences[key]}{suffix}</output>
+              </span>
+              <input type="range" min={min} max={max} step="1" value={preferences[key]} onChange={(e) => setNumericPreference(key, Number(e.target.value))} className="w-full accent-muted-accent" />
+            </label>
+          ))}
+          
+          <h3 className="mt-4 text-xs font-semibold uppercase tracking-wider text-muted-accent">Wind</h3>
+          {windSliders.map(({ key, label, min = 0, max = 100, suffix = "%" }) => (
+            <label key={key} className="grid gap-2 text-sm text-text-primary">
+              <span className="flex items-center justify-between gap-3">
+                <span>{label}</span>
+                <output className="tabular-nums text-xs text-text-secondary">{preferences[key]}{suffix}</output>
+              </span>
+              <input type="range" min={min} max={max} step="1" value={preferences[key]} onChange={(e) => setNumericPreference(key, Number(e.target.value))} className="w-full accent-muted-accent" />
+            </label>
+          ))}
+        </div>
+
+        <div className="grid gap-5">
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-accent">Weather ({presetLabels[resolvedPreset]})</h3>
+          {(weatherSliders[resolvedPreset] || defaultWeatherSliders).map(({ key, label, min = 0, max = 100, suffix = "%" }) => (
+            <label key={key} className="grid gap-2 text-sm text-text-primary">
+              <span className="flex items-center justify-between gap-3">
+                <span>{label}</span>
+                <output className="tabular-nums text-xs text-text-secondary">{preferences[key]}{suffix}</output>
+              </span>
+              <input type="range" min={min} max={max} step="1" value={preferences[key]} onChange={(e) => setNumericPreference(key, Number(e.target.value))} className="w-full accent-muted-accent" />
+            </label>
+          ))}
+
+          <h3 className="mt-4 text-xs font-semibold uppercase tracking-wider text-muted-accent">Wildlife & Sound</h3>
+          {wildlifeSliders.map(({ key, label, min = 0, max = 100, suffix = "%" }) => (
+            <label key={key} className="grid gap-2 text-sm text-text-primary">
+              <span className="flex items-center justify-between gap-3">
+                <span>{label}</span>
+                <output className="tabular-nums text-xs text-text-secondary">{preferences[key]}{suffix}</output>
+              </span>
+              <input type="range" min={min} max={max} step="1" value={preferences[key]} onChange={(e) => setNumericPreference(key, Number(e.target.value))} className="w-full accent-muted-accent" />
+            </label>
+          ))}
+        </div>
       </div>
 
       <div className="mt-7 grid gap-4 border-t border-border pt-6 sm:grid-cols-2">
