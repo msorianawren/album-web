@@ -66,7 +66,7 @@ export async function recordUserAlbumActivity({
   // Actually, we should use a service role client to insert since RLS denies inserts.
   // Wait, `supabase` in `@/lib/supabase` is the service role client by default in server context if SUPABASE_SERVICE_ROLE_KEY is set.
   // We'll just use it directly.
-  await supabase.from("user_album_activity").insert({
+  const { error } = await supabase.from("user_album_activity").insert({
     user_id: session.userId,
     album_id: albumId,
     media_id: mediaId ?? null,
@@ -75,4 +75,14 @@ export async function recordUserAlbumActivity({
     source: source ?? null,
     metadata,
   });
+
+  if (error) {
+    console.error(
+      JSON.stringify({
+        event: "user_activity_log_failure",
+        error: error,
+        details: { albumId, eventType, session: session.userId },
+      })
+    );
+  }
 }

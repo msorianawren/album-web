@@ -22,10 +22,14 @@ async function countRows(table: string, column?: string, value?: string | boolea
 }
 
 async function countRowsSince(table: string, column: string, since: string) {
-  const { count } = await supabase
+  let query = supabase
     .from(table)
     .select("*", { count: "exact", head: true })
     .gte(column, since);
+  if (table === "audit_logs" || table === "user_album_activity") {
+    query = query.gt("expires_at", new Date().toISOString());
+  }
+  const { count } = await query;
   return count ?? 0;
 }
 
@@ -139,6 +143,7 @@ export async function getStudioDashboardData(session: PublicSession) {
     supabase
       .from("audit_logs")
       .select("*")
+      .gt("expires_at", new Date().toISOString())
       .order("created_at", { ascending: false })
       .limit(8),
     countRows("albums"),
@@ -155,7 +160,7 @@ export async function getStudioDashboardData(session: PublicSession) {
     countRows("user_profiles"),
     (async () => {
       try {
-        const res = await supabase.from("user_album_activity").select("*", { count: "exact", head: true }).eq("event_type", "album_viewed").gte("created_at", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString());
+        const res = await supabase.from("user_album_activity").select("*", { count: "exact", head: true }).eq("event_type", "album_viewed").gt("expires_at", new Date().toISOString()).gte("created_at", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString());
         return res.count ?? 0;
       } catch {
         return 0;
@@ -163,7 +168,7 @@ export async function getStudioDashboardData(session: PublicSession) {
     })(),
     (async () => {
       try {
-        const res = await supabase.from("user_album_activity").select("*", { count: "exact", head: true }).in("event_type", ["album_downloaded_zip", "album_downloaded_media"]).gte("created_at", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString());
+        const res = await supabase.from("user_album_activity").select("*", { count: "exact", head: true }).in("event_type", ["album_downloaded_zip", "album_downloaded_media"]).gt("expires_at", new Date().toISOString()).gte("created_at", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString());
         return res.count ?? 0;
       } catch {
         return 0;

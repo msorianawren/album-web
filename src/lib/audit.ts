@@ -18,7 +18,7 @@ export async function logAuditEvent({
   targetId?: string;
   metadata?: Record<string, unknown>;
 }) {
-  await supabase.from("audit_logs").insert({
+  const { error } = await supabase.from("audit_logs").insert({
     actor_user_id: session.userId,
     actor_email: session.email,
     action,
@@ -30,4 +30,15 @@ export async function logAuditEvent({
     user_agent: request?.headers.get("user-agent"),
     metadata,
   });
+
+  if (error) {
+    // Structural error reporting for critical security audits
+    console.error(
+      JSON.stringify({
+        event: "audit_log_failure",
+        error: error,
+        details: { action, targetType, targetId },
+      })
+    );
+  }
 }

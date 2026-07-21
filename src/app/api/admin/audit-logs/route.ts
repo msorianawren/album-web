@@ -30,6 +30,7 @@ export async function GET(request: NextRequest) {
     let query = client
       .from("audit_logs")
       .select("*", { count: "exact" })
+      .gt("expires_at", new Date().toISOString())
       .order("created_at", { ascending: false })
       .range(offset, offset + limit - 1);
 
