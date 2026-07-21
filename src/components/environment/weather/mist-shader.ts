@@ -107,17 +107,14 @@ export const mistFragmentShader = `
   ${simplex3D}
 
   void main() {
-    // Soft edge fade reaching zero well before edges (strict domain)
-    // Left edge (0 to 0.2), Right edge (0.8 to 1.0)
-    float edgeX = smoothstep(0.0, 0.05, vUv.x) * (1.0 - smoothstep(0.95, 1.0, vUv.x));
-    float edgeY = smoothstep(0.0, 0.05, vUv.y) * (1.0 - smoothstep(0.95, 1.0, vUv.y));
-    
-    // Radial center bias
-    vec2 center = vec2(0.5, 0.5);
-    float dist = distance(vUv, center);
-    float radial = 1.0 - smoothstep(0.3, 0.8, dist);
+    // Soft elliptical fade to guarantee NO hard edges
+    vec2 centered = vUv - 0.5;
+    // Stretch horizontally (mist is wider than it is tall)
+    float dist = length(vec2(centered.x, centered.y * 1.5));
+    // Fade to 0 by dist=0.45 (safe distance from quad edges)
+    float radial = 1.0 - smoothstep(0.15, 0.45, dist);
 
-    float baseAlpha = 1.0; // DEBUG: force full quad
+    float baseAlpha = radial;
 
     // Edge Debug mode: Force red outline around the bounding box
     if (uEdgeDebug > 0.5) {
@@ -127,25 +124,29 @@ export const mistFragmentShader = `
       }
     }
 
-    // if (baseAlpha <= 0.001) return;
+    if (baseAlpha <= 0.001) {
+      gl_FragColor = vec4(uColor, 0.0);
+      return;
+    }
 
     // Domain warp & noise evolution
-    vec3 pBroad = vec3(vUv.x * 2.0, vUv.y * 2.0, uTime * 0.15 * uSpeed + vSeed * 100.0);
+    // Stretch noise horizontally for wispy cloud look
+    vec3 pBroad = vec3(vUv.x * 2.5, vUv.y * 4.5, uTime * 0.15 * uSpeed + vSeed * 100.0);
     float nBroad = snoise(pBroad);
     
-    vec3 pFine = vec3(vUv.x * 5.0 + nBroad * 0.5, vUv.y * 5.0 + nBroad * 0.5, uTime * 0.25 * uSpeed + vSeed * 200.0);
+    vec3 pFine = vec3(vUv.x * 6.0 + nBroad * 0.5, vUv.y * 9.0 + nBroad * 0.5, uTime * 0.25 * uSpeed + vSeed * 200.0);
     float nFine = snoise(pFine);
     
     // Combine noise
-    float noise = (nBroad * 0.7 + nFine * 0.3) * 0.5 + 0.5; // map to 0..1
+    float noise = (nBroad * 0.7 + nFine * 0.3) * 0.5 + 0.5; // map to roughly 0..1
     
-    // Apply contrast
-    noise = clamp((noise - 0.5) * uContrast + 0.5, 0.0, 1.0);
+    // Organic cloud thresholding (boosts contrast softly)
+    noise = smoothstep(0.25, 0.75, noise);
     
     // Vertical fade: Mist is denser at the bottom, fades near top of its volume
     float vertFade = 1.0 - smoothstep(0.1, 0.9, vUv.y);
     
-    float finalAlpha = baseAlpha * noise * vertFade * vOpacity * max(uOpacity, 0.5) * 5.0; // Restored visible mist
+    float finalAlpha = baseAlpha * noise * vertFade * vOpacity * max(uOpacity, 0.3) * 3.5;
     
     gl_FragColor = vec4(uColor, finalAlpha);
     
