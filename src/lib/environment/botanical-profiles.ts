@@ -181,17 +181,14 @@ export const cedarProfile: BotanicalArchetype = {
     windDrag: 0.3,
   },
   placements: {
-    // Hero: left group, tall, near
-    hero: [-6, 13, -1],
+    hero: [-6, -5, -1],
     midground: [
-      [5.5, 10, -4],
-      [-2, 9, -6],
+      [5.5, -4, -4],
+      [-2, -3, -6],
     ],
     far: [
-      [-9, 11, -10],
-      [8, 10, -12],
-      [-4, 8, -16],
-      [3, 7, -18],
+      [-9, -2, -10],
+      [8, -3, -12],
     ],
   },
   qualityMultipliers: { full: 1.0, reduced: 0.4, off: 0.0 },
