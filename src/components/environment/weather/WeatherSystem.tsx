@@ -3,6 +3,7 @@
 import type { EnvironmentState } from "@/lib/environment/presets";
 import type { EnvironmentQuality } from "@/lib/environment/quality";
 import type { WindRuntime } from "@/lib/environment/wind";
+import { artistEnvironmentDefaults } from "@/lib/environment/preferences";
 import { SakuraPetalField } from "./SakuraPetalField";
 
 // We can keep the old EnvironmentParticles for other presets (snow, rain, fireflies) 
@@ -30,7 +31,7 @@ export function WeatherSystem({
   return (
     <EnvironmentParticles 
       state={state} 
-      preferences={{ branchSway: 50, environmentDensity: 50, preset: state.preset, phase: state.phase, brightness: 100, chimeVolume: 50, spatialDepth: 50 }}
+      preferences={{ ...artistEnvironmentDefaults, preset: state.preset, phase: state.phase }}
 
       quality={quality} 
       wind={wind} 

@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import { PublicEnvironmentCanvas } from "../PublicEnvironmentCanvas";
+import { artistEnvironmentDefaults } from "@/lib/environment/preferences";
 import type { EnvironmentPresetId, EnvironmentPreferences } from "@/lib/environment/preferences";
 import type { EnvironmentPhase } from "@/lib/environment/phase";
 import type { EnvironmentQuality } from "@/lib/environment/quality";
@@ -20,14 +21,9 @@ export function EnvironmentReviewLab() {
   const [fps, setFps] = useState(0);
 
   const preferences: EnvironmentPreferences = {
+    ...artistEnvironmentDefaults,
     preset: preset,
     phase: phase,
-    brightness: 100,
-    chimeVolume: 50,
-    spatialDepth: 50,
-    environmentDensity: 50,
-    colorTemperature: 0,
-    branchSway: 50,
   };
 
   const quality: EnvironmentQuality = {
