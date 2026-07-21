@@ -147,7 +147,7 @@ export const mistFragmentShader = `
     
     float finalAlpha = baseAlpha * noise * vertFade * vOpacity * max(uOpacity, 0.5) * 10.0; // Boosted heavily
     
-    gl_FragColor = vec4(uColor, finalAlpha);
+    gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0); // DEBUG: FULL RED SOLID
     
     #include <fog_fragment>
   }
