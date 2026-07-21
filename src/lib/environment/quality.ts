@@ -9,6 +9,7 @@ export type EnvironmentQuality = {
   chimeCap: number;
   shadows: boolean;
   particles?: boolean;
+  qualityMultipliers?: Record<string, number>;
 };
 
 export function resolveEnvironmentQuality(

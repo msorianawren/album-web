@@ -7,6 +7,7 @@ import { artistEnvironmentDefaults } from "@/lib/environment/preferences";
 import type { EnvironmentPreferences } from "@/lib/environment/preferences";
 import { SakuraPetalField } from "./SakuraPetalField";
 import { RainField } from "./RainField";
+import { AutumnLeafField } from "./AutumnLeafField";
 import { weatherProfiles } from "@/lib/environment/weather-profiles";
 
 // We can keep the old EnvironmentParticles for other presets (snow, rain, fireflies) 
@@ -19,14 +20,17 @@ export function WeatherSystem({
   wind,
   preferences,
   active,
+  reducedMotion,
 }: {
   state: EnvironmentState;
   quality: EnvironmentQuality;
   wind: React.MutableRefObject<WindRuntime>;
   preferences?: EnvironmentPreferences;
   active: boolean;
+  reducedMotion?: boolean;
 }) {
   const prefs = preferences || artistEnvironmentDefaults;
+  const rm = reducedMotion ?? false;
   if (!quality.particles) return null;
 
   if (state.preset === "sakura") {
@@ -35,6 +39,10 @@ export function WeatherSystem({
 
   if (state.preset === "rain") {
     return <RainField profile={weatherProfiles.rain} quality={quality} wind={wind} preferences={prefs} active={active} />;
+  }
+
+  if (state.preset === "autumn") {
+    return <AutumnLeafField quality={quality} wind={wind} preferences={prefs} active={active} reducedMotion={rm} />;
   }
 
   // Fallback to the original particles for other presets to avoid regression

@@ -65,12 +65,21 @@ export function EnvironmentScene({
           <VegetationScene state={state} preferences={preferences} wind={wind} active={active && !reducedMotion} reduced={quality.tier === "reduced"} />
         ) : state.preset === "rain" ? (
           <SharedBotanicalScene profile={botanicalProfiles.willow} quality={quality} wind={wind} preferences={preferences} active={active && !reducedMotion} />
+        ) : state.preset === "autumn" ? (
+          <SharedBotanicalScene
+            profile={botanicalProfiles.maple}
+            secondaryProfile={botanicalProfiles.ginkgo}
+            quality={quality}
+            wind={wind}
+            preferences={preferences}
+            active={active && !reducedMotion}
+          />
         ) : (
           <EnvironmentBranches state={state} preferences={preferences} wind={wind} active={active && !reducedMotion} reduced={quality.tier === "reduced"} />
         )}
         <CanopyShadowOverlay state={state} active={active} />
         
-        <WeatherSystem state={state} quality={quality} wind={wind} preferences={preferences} active={active && !reducedMotion} />
+        <WeatherSystem state={state} quality={quality} wind={wind} preferences={preferences} reducedMotion={reducedMotion} active={active && !reducedMotion} />
         <EnvironmentBirds state={state} preferences={preferences} quality={quality} wind={wind} active={active && !reducedMotion} />
       </group>
       
