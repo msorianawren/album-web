@@ -28,6 +28,12 @@ export function EnvironmentReviewLab() {
   const [vegetationOnly, setVegetationOnly] = useState(false);
   const [atmosphereOnly, setAtmosphereOnly] = useState(false);
   const [staticFallback, setStaticFallback] = useState(false);
+  const [freezeAnimation, setFreezeAnimation] = useState(false);
+  const [mistEdgeDebug, setMistEdgeDebug] = useState(false);
+  const [mistNoiseContrast, setMistNoiseContrast] = useState(1.2);
+  const [mistOpacityMultiplier, setMistOpacityMultiplier] = useState(1.0);
+  const [mistMotionSpeed, setMistMotionSpeed] = useState(1.0);
+  const [brightBackground, setBrightBackground] = useState(false);
 
   const [precipitationAmount, setPrecipitationAmount] = useState(100);
   const [wetness, setWetness] = useState(100);
@@ -37,9 +43,13 @@ export function EnvironmentReviewLab() {
   // Sync dev flags to window
   useEffect(() => {
     (window as any).__DEV_LAB__ = {
-      mistSceneFog, mistFarHaze, mistMiddle, mistGround, mistFore, vegetationOnly, atmosphereOnly, staticFallback
+      mistSceneFog, mistFarHaze, mistMiddle, mistGround, mistFore, vegetationOnly, atmosphereOnly, staticFallback,
+      freezeAnimation, mistEdgeDebug, mistNoiseContrast, mistOpacityMultiplier, mistMotionSpeed
     };
-  }, [mistSceneFog, mistFarHaze, mistMiddle, mistGround, mistFore, vegetationOnly, atmosphereOnly, staticFallback]);
+  }, [
+    mistSceneFog, mistFarHaze, mistMiddle, mistGround, mistFore, vegetationOnly, atmosphereOnly, staticFallback,
+    freezeAnimation, mistEdgeDebug, mistNoiseContrast, mistOpacityMultiplier, mistMotionSpeed
+  ]);
 
   const preferences: EnvironmentPreferences = {
     ...artistEnvironmentDefaults,
@@ -84,14 +94,16 @@ export function EnvironmentReviewLab() {
   return (
     <div className="relative w-full h-screen overflow-hidden bg-black text-white font-sans">
       {/* Background Hero */}
-      <div className={`absolute inset-0 transition-opacity duration-500 ${darkBackground ? "opacity-30" : "opacity-100"}`}>
-        <Image
-          src="/images/hero-background.jpg" // Assuming there's a default background image to test with
-          alt="Hero Background"
-          fill
-          className="object-cover"
-          unoptimized
-        />
+      <div className={`absolute inset-0 transition-all duration-500 ${darkBackground ? "bg-black opacity-100" : brightBackground ? "bg-white opacity-100" : "opacity-100"}`}>
+        {!darkBackground && !brightBackground && (
+          <Image
+            src="/images/hero-background.jpg" // Assuming there's a default background image to test with
+            alt="Hero Background"
+            fill
+            className="object-cover"
+            unoptimized
+          />
+        )}
       </div>
 
       {/* Safe Zones Overlay */}
@@ -191,8 +203,12 @@ export function EnvironmentReviewLab() {
             <span>Show Safe Zones</span>
           </label>
           <label className="flex items-center gap-2 cursor-pointer">
-            <input type="checkbox" checked={darkBackground} onChange={e => setDarkBackground(e.target.checked)} />
-            <span>Darken Background (Debug)</span>
+            <input type="checkbox" checked={darkBackground} onChange={e => { setDarkBackground(e.target.checked); setBrightBackground(false); }} />
+            <span>Dark Background (Debug)</span>
+          </label>
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input type="checkbox" checked={brightBackground} onChange={e => { setBrightBackground(e.target.checked); setDarkBackground(false); }} />
+            <span>Bright Background (Debug)</span>
           </label>
           <label className="flex items-center gap-2 cursor-pointer">
             <input type="checkbox" checked={showParticles} onChange={e => setShowParticles(e.target.checked)} />
@@ -215,7 +231,24 @@ export function EnvironmentReviewLab() {
               <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" checked={mistFore} onChange={e => setMistFore(e.target.checked)} /> Fore Veil</label>
               <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" checked={vegetationOnly} onChange={e => setVegetationOnly(e.target.checked)} /> Trees Only</label>
               <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" checked={atmosphereOnly} onChange={e => setAtmosphereOnly(e.target.checked)} /> Atmos Only</label>
+              <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" checked={freezeAnimation} onChange={e => setFreezeAnimation(e.target.checked)} /> Freeze Anim</label>
+              <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" checked={mistEdgeDebug} onChange={e => setMistEdgeDebug(e.target.checked)} /> Edge Debug</label>
               <label className="flex items-center gap-2 cursor-pointer text-amber-400"><input type="checkbox" checked={staticFallback} onChange={e => setStaticFallback(e.target.checked)} /> Static CSS</label>
+            </div>
+            
+            <div className="flex flex-col gap-1 text-xs mt-2">
+              <label className="flex justify-between">
+                <span>Contrast</span>
+                <input type="range" min="0" max="3" step="0.1" value={mistNoiseContrast} onChange={e => setMistNoiseContrast(Number(e.target.value))} />
+              </label>
+              <label className="flex justify-between">
+                <span>Opacity Mul</span>
+                <input type="range" min="0" max="3" step="0.1" value={mistOpacityMultiplier} onChange={e => setMistOpacityMultiplier(Number(e.target.value))} />
+              </label>
+              <label className="flex justify-between">
+                <span>Motion Speed</span>
+                <input type="range" min="0" max="3" step="0.1" value={mistMotionSpeed} onChange={e => setMistMotionSpeed(Number(e.target.value))} />
+              </label>
             </div>
           </div>
         )}

@@ -8,12 +8,15 @@ import type { EnvironmentState } from "@/lib/environment/presets";
 import type { WindRuntime } from "@/lib/environment/wind";
 import type { EnvironmentQuality } from "@/lib/environment/quality";
 import type { EnvironmentPreferences } from "@/lib/environment/preferences";
+import { MistShaderMaterial } from "./mist-shader";
 
 // ─── Shared geometry for mist cards ─────────────────────────────────────────
 // One plane, reused across all layers. Created once, never inside useFrame.
 let _mistPlaneGeom: THREE.PlaneGeometry | null = null;
 function getMistPlaneGeom(): THREE.PlaneGeometry {
-  if (!_mistPlaneGeom) _mistPlaneGeom = new THREE.PlaneGeometry(1, 1);
+  if (!_mistPlaneGeom) {
+    _mistPlaneGeom = new THREE.PlaneGeometry(1, 1);
+  }
   return _mistPlaneGeom;
 }
 
@@ -59,15 +62,11 @@ function MistLayer({
   reducedMotion: boolean;
 }) {
   const mesh = useRef<THREE.InstancedMesh>(null);
-  const geom = useMemo(() => getMistPlaneGeom(), []);
-  const mat = useMemo(() => new THREE.MeshBasicMaterial({
-    color: tint,
-    transparent: true,
-    opacity: 0.0,
-    side: THREE.DoubleSide,
-    depthWrite: false,
-    blending: THREE.NormalBlending,
-  }), [tint]);
+  const geom = useMemo(() => getMistPlaneGeom().clone(), []);
+  
+  const dev = typeof window !== "undefined" ? (window as any).__DEV_LAB__ || {} : {};
+
+  const mat = useMemo(() => new MistShaderMaterial(tint), [tint]);
 
   const dummy = useMemo(() => new THREE.Object3D(), []);
   const count = reducedMotion ? Math.max(2, Math.floor(config.count * 0.3)) : config.count;
@@ -93,15 +92,19 @@ function MistLayer({
         driftAmp: prng.range(config.driftAmpRange[0], config.driftAmpRange[1]),
         vertPhase: prng.range(0, Math.PI * 2),
         driftPhase: prng.range(0, Math.PI * 2),
-        rotY: prng.range(0, Math.PI * 2), // random card facing
+        rotY: prng.range(0, Math.PI * 2),
+        seed: prng.value(),
       };
     });
   }, [count, config]);
 
-  // Set initial opacity via color alpha workaround (BasicMaterial opacity per-instance isn't supported)
-  // Instead we set initial matrices
+  // Set initial matrices and attributes
   useEffect(() => {
     if (!mesh.current) return;
+    
+    const seedArray = new Float32Array(count);
+    const opacityArray = new Float32Array(count);
+
     for (let i = 0; i < count; i++) {
       const d = instanceData[i];
       dummy.position.set(d.x, d.y, d.z);
@@ -109,39 +112,52 @@ function MistLayer({
       dummy.scale.set(d.scaleX, d.scaleY, 1);
       dummy.updateMatrix();
       mesh.current.setMatrixAt(i, dummy.matrix);
+      
+      seedArray[i] = d.seed;
+      opacityArray[i] = d.opacity;
     }
     mesh.current.instanceMatrix.needsUpdate = true;
-  }, [count, instanceData, dummy]);
+    
+    geom.setAttribute('aSeed', new THREE.InstancedBufferAttribute(seedArray, 1));
+    geom.setAttribute('aOpacity', new THREE.InstancedBufferAttribute(opacityArray, 1));
+  }, [count, instanceData, dummy, geom]);
 
   useFrame(({ clock }) => {
     if (!mesh.current || !active) return;
     const time = clock.elapsedTime;
+    
+    // Check dev toggles dynamically (without reacting to re-renders)
+    const devLab = typeof window !== "undefined" ? (window as any).__DEV_LAB__ || {} : {};
+    if (devLab.freezeAnimation) return;
+
     const atmosFactor = preferences.atmosphere / 100;
-    const windX = wind.current.current.x * (preferences.windSpeed / 100) * 0.12; // very gentle wind influence
+    const windX = wind.current.current.x * (preferences.windSpeed / 100) * 0.12;
 
     for (let i = 0; i < count; i++) {
       const d = instanceData[i];
 
-      // Low-frequency horizontal drift
       const drift = reducedMotion
         ? 0
         : Math.sin(time * d.driftSpeed + d.driftPhase) * d.driftAmp + windX * time * 0.02;
 
-      // Subtle vertical breathing
       const vertDrift = reducedMotion
         ? 0
         : Math.sin(time * 0.18 + d.vertPhase) * config.verticalDriftAmp;
 
       dummy.position.set(d.x + drift, d.y + vertDrift, d.z);
-      dummy.rotation.y = d.rotY + time * 0.008 * d.driftSpeed; // very slow card rotation
+      dummy.rotation.y = d.rotY + time * 0.008 * d.driftSpeed;
       dummy.scale.set(d.scaleX, d.scaleY, 1);
       dummy.updateMatrix();
       mesh.current.setMatrixAt(i, dummy.matrix);
     }
     mesh.current.instanceMatrix.needsUpdate = true;
 
-    // Update overall opacity based on atmosphere preference
-    mat.opacity = config.opacityRange[1] * atmosFactor * 0.85;
+    // Update uniforms
+    mat.uniforms.uTime.value = time;
+    mat.uniforms.uOpacity.value = atmosFactor * (devLab.mistOpacityMultiplier ?? 1.0);
+    mat.uniforms.uSpeed.value = devLab.mistMotionSpeed ?? 1.0;
+    mat.uniforms.uEdgeDebug.value = devLab.mistEdgeDebug ? 1.0 : 0.0;
+    mat.uniforms.uContrast.value = devLab.mistNoiseContrast ?? 1.2;
   });
 
   return (
@@ -215,7 +231,7 @@ export function MistSystem({
 }) {
   const { scene } = useThree();
   const prevFog = useRef<THREE.Fog | THREE.FogExp2 | null>(null);
-  const mistFog = useRef<THREE.Fog | null>(null);
+  const mistFog = useRef<THREE.Fog | THREE.FogExp2 | null>(null);
 
   const tint = useMemo(() => getMistTintForState(state), [state]);
 
@@ -231,9 +247,9 @@ export function MistSystem({
     prevFog.current = scene.fog;
 
     if (enableFog) {
-      const fogNear = state.fogNear ?? 5;
-      const fogFar  = state.fogFar  ?? 20;
-      const fog = new THREE.Fog(state.fogColor, fogNear, fogFar);
+      // Calculate a density based on fogFar. Roughly 2.0 / fogFar gives a good exponential curve
+      const baseDensity = 1.8 / (state.fogFar ?? 20);
+      const fog = new THREE.FogExp2(state.fogColor, baseDensity);
       mistFog.current = fog;
       scene.fog = fog;
     } else {
@@ -251,8 +267,11 @@ export function MistSystem({
   useFrame(() => {
     if (!mistFog.current || !active) return;
     const atmosFactor = 0.7 + (preferences.atmosphere / 100) * 0.6;
-    // Gently stretch fogFar based on atmosphere
-    mistFog.current.far = (state.fogFar ?? 20) * (1 / atmosFactor);
+    // Gently adjust density based on atmosphere
+    if (mistFog.current instanceof THREE.FogExp2) {
+      const baseDensity = 1.8 / (state.fogFar ?? 20);
+      mistFog.current.density = baseDensity * atmosFactor;
+    }
   });
 
   if (!quality.particles) return null;
