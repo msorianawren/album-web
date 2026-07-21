@@ -122,7 +122,6 @@ export function SakuraPetalField({
     >
       <meshBasicMaterial 
         side={THREE.DoubleSide} 
-        vertexColors={true}
       />
       <instancedBufferAttribute
         attach="instanceColor"
