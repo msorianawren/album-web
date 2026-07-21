@@ -30,6 +30,7 @@ export function WeatherSystem({
   return (
     <EnvironmentParticles 
       state={state} 
+      // @ts-expect-error Mocking preferences for fallback
       preferences={{ branchSway: 50, environmentDensity: 50, preset: state.preset, phase: state.phase, brightness: 100, chimeVolume: 50, spatialDepth: 50 }}
 
       quality={quality} 

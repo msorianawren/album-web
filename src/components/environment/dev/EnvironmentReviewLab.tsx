@@ -26,7 +26,6 @@ export function EnvironmentReviewLab() {
     chimeVolume: 50,
     spatialDepth: 50,
     environmentDensity: 50,
-    colorTemperature: 0,
     branchSway: 50,
   };
 

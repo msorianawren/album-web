@@ -114,7 +114,7 @@ main {
   --glass-border: rgba(108, 65, 50, 0.1);
 }
 
-body > main {
+main {
   position: relative;
   z-index: 10;
 }
@@ -286,7 +286,7 @@ canvas {
 .public-chime-canvas {
   position: fixed;
   inset: 0;
-  z-index: 11;
+  z-index: 2;
   opacity: calc(0.64 * var(--environment-artist-opacity, 1));
   transition: opacity 500ms ease;
 }

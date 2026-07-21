@@ -120,6 +120,7 @@ export function SakuraPetalField({
         side={THREE.DoubleSide} 
         roughness={0.8}
         alphaTest={0.5}
+        vertexColors={true}
       />
       {colors.map((color, i) => (
         <instancedBufferAttribute

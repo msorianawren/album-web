@@ -131,6 +131,7 @@ export function BlossomClusters({
         roughness={0.6}
         alphaTest={0.5}
         transparent={false}
+        vertexColors={true}
       />
       {instances.map((inst, i) => (
         <instancedBufferAttribute

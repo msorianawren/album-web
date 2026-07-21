@@ -36,15 +36,15 @@ export function VegetationScene({
 
   return (
     <group ref={groupRef}>
-      {/* Primary Hero Sakura */}
-      <group position={[-6.5, -4.5, -3]}>
+      {/* Primary Hero Sakura - Pushed to the left edge to avoid center UI */}
+      <group position={[-10.5, -5.5, -3]} rotation={[0, 0, 0]}>
         <BotanicalTree state={state} active={active} wind={wind} reduced={reduced} />
         <FoliageInstances state={state} active={active} wind={wind} reduced={reduced} />
         <BlossomClusters state={state} active={active} wind={wind} reduced={reduced} />
       </group>
       
-      {/* Secondary Background Sakura */}
-      <group position={[8, -3.5, -6]} rotation={[0, Math.PI * 0.6, 0]} scale={0.75}>
+      {/* Secondary Background Sakura - Pushed to the right edge */}
+      <group position={[12, -4.5, -6]} rotation={[0, Math.PI * 0.6, 0]} scale={0.75}>
         <BotanicalTree state={state} active={active} wind={wind} reduced={reduced} />
         <FoliageInstances state={state} active={active} wind={wind} reduced={reduced} />
         <BlossomClusters state={state} active={active} wind={wind} reduced={reduced} />
