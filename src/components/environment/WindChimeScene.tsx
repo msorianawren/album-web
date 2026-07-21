@@ -37,10 +37,11 @@ const metalMaterials = Object.fromEntries(Object.entries(CHIME_MATERIALS).map(([
     new THREE.MeshStandardMaterial({ color: profile.secondary, metalness: profile.metalness, roughness: Math.min(1, profile.roughness + .07) }),
   ],
 ])) as Record<WindChimeMaterial, THREE.MeshStandardMaterial[]>;
-const interiorMaterial = new THREE.MeshStandardMaterial({ color: "#6e7373", metalness: 0.7, roughness: 0.4, side: THREE.BackSide });
-const supportMaterial = new THREE.MeshStandardMaterial({ color: "#d6c7ad", roughness: 0.26, metalness: 0.82 });
-const clapperMaterial = new THREE.MeshStandardMaterial({ color: "#dad7ce", roughness: 0.22, metalness: 0.88 });
-const cordMaterial = new THREE.MeshBasicMaterial({ color: "#d8cbb5", transparent: true, opacity: 0.64 });
+const interiorMaterial = new THREE.MeshStandardMaterial({ color: "#222222", metalness: 0.2, roughness: 0.9, side: THREE.BackSide });
+const supportMaterial = new THREE.MeshStandardMaterial({ color: "#3d2314", roughness: 0.6, metalness: 0.1 });
+const clapperMaterial = new THREE.MeshStandardMaterial({ color: "#2c1810", roughness: 0.8, metalness: 0.05 });
+const sailMaterial = new THREE.MeshStandardMaterial({ color: "#bda893", roughness: 0.9, metalness: 0.05 });
+const cordMaterial = new THREE.MeshBasicMaterial({ color: "#222222", transparent: true, opacity: 0.8 });
 
 function getTubeGeometry(length: number) {
   const key = Math.round(length * 100);
@@ -91,12 +92,15 @@ function ChimeModel({
   }, [anchor.id, onReady]);
 
   return (
-    <group ref={group} visible={anchor.visible} position={position} scale={anchor.scale} rotation={[0, anchor.side === "left" ? 0.16 : -0.16, 0]}>
+    <group ref={group} userData={{ slotId: anchor.id }} visible={anchor.visible} position={position} scale={anchor.scale} rotation={[0, anchor.side === "left" ? 0.16 : -0.16, 0]}>
       <mesh position={[0, 0.075, 0]} material={supportMaterial} castShadow>
-        <cylinderGeometry args={[0.32, 0.32, 0.032, 32]} />
+        <cylinderGeometry args={[0.34, 0.34, 0.045, 48]} />
       </mesh>
       <mesh position={[0, 0.098, 0]} material={supportMaterial} rotation={[Math.PI / 2, 0, 0]}>
-        <torusGeometry args={[0.29, 0.009, 8, 32]} />
+        <torusGeometry args={[0.31, 0.012, 12, 48]} />
+      </mesh>
+      <mesh position={[0, 0.12, 0]} material={supportMaterial}>
+        <sphereGeometry args={[0.04, 16, 16]} />
       </mesh>
       {lengths.map((length, index) => {
         const angle = index / tubeCount * Math.PI * 2;
@@ -124,13 +128,13 @@ function ChimeModel({
         );
       })}
       <mesh position={[0, -0.76, 0]} material={clapperMaterial} castShadow>
-        <sphereGeometry args={[0.068, 18, 14]} />
+        <cylinderGeometry args={[0.22, 0.22, 0.024, 32]} />
       </mesh>
       <mesh position={[0, -1.3, 0]} material={cordMaterial}>
         <cylinderGeometry args={[0.006, 0.006, 0.94, 6]} />
       </mesh>
-      <mesh position={[0, -1.8, 0]} material={clapperMaterial} rotation={[0, 0.3, 0]}>
-        <boxGeometry args={[0.12, 0.28, 0.026]} />
+      <mesh position={[0, -1.8, 0]} material={sailMaterial} rotation={[0, 0.3, 0]}>
+        <boxGeometry args={[0.16, 0.42, 0.012]} />
       </mesh>
     </group>
   );
@@ -218,18 +222,48 @@ export function WindChimeScene({
     const onPointer = (event: Event) => {
       const detail = (event as CustomEvent<{ x: number; y: number; slotId: string }>).detail;
       if (!detail) return;
-      const pointer = new THREE.Vector2(detail.x / size.width * 2 - 1, -(detail.y / size.height) * 2 + 1);
+      impulse(detail.slotId, Math.floor(Math.random() * 5), 0.6, 0.3);
+    };
+    
+    const onGlobalPointerDown = (event: PointerEvent) => {
+      if (reducedMotion) return;
+      if (typeof document !== "undefined" && document.body.dataset.orianaMediaViewerOpen === "true") return;
+      
+      const pointer = new THREE.Vector2(event.clientX / size.width * 2 - 1, -(event.clientY / size.height) * 2 + 1);
       raycaster.current.setFromCamera(pointer, camera);
-      const intersections = raycaster.current.intersectObjects(tubes.current.map((tube) => tube.mesh), false);
-      const hit = intersections[0]?.object;
-      const slotId = hit?.userData.slotId ?? detail.slotId;
-      const tubeIndex = hit?.userData.tubeIndex ?? 0;
-      const direction = raycaster.current.ray.direction;
-      impulse(slotId, tubeIndex, direction.x * 0.9 || 0.45, -direction.y * 0.45 || 0.2);
-      const state = physical.current.get(slotId);
-      if (state && state.tubes.length > 1) {
-        impulse(slotId, (tubeIndex + 1) % state.tubes.length, direction.x * .28 || .14, -direction.y * .14 || .08);
-        impulse(slotId, (tubeIndex + state.tubes.length - 1) % state.tubes.length, direction.x * .2 || .1, -direction.y * .1 || .06);
+      
+      const interactables: THREE.Object3D[] = [];
+      models.current.forEach(m => interactables.push(m.group));
+      
+      const intersections = raycaster.current.intersectObjects(interactables, true);
+      if (intersections.length > 0) {
+        let node: THREE.Object3D | null = intersections[0].object;
+        let slotId: string | null = null;
+        while (node) {
+          if (node.userData.slotId) {
+            slotId = node.userData.slotId;
+            break;
+          }
+          node = node.parent;
+        }
+        
+        if (slotId) {
+          const state = physical.current.get(slotId);
+          if (state) {
+            const direction = raycaster.current.ray.direction;
+            const forceX = direction.x * 2.2 || 1.1;
+            const forceY = -direction.y * 2.2 || 0.7;
+            
+            state.tubes.forEach((_, index) => {
+              impulse(slotId!, index, forceX * (0.7 + Math.random() * 0.6), forceY * (0.7 + Math.random() * 0.6));
+            });
+            
+            const anchor = anchors.find(a => a.id === slotId);
+            if (anchor && soundEnabled) {
+              audioUX.playWindChimePreview({ frequency: anchor.tone, pan: 0, material: anchor.material, volume: preferences.chimeVolume / 100 });
+            }
+          }
+        }
       }
     };
     const onKeyboard = (event: Event) => {
@@ -249,11 +283,13 @@ export function WindChimeScene({
       if (!state || !detail?.slotId) return;
       state.tubes.forEach((_, index) => impulse(detail.slotId, index, 0.42 - index * 0.035, 0.2));
     };
+    window.addEventListener("pointerdown", onGlobalPointerDown, { passive: true });
     window.addEventListener("oriana-chime-pointer", onPointer);
     window.addEventListener("oriana-chime-impulse", onKeyboard);
     window.addEventListener("oriana-chime-hover", onHover);
     window.addEventListener("oriana-chime-cascade", onCascade);
     return () => {
+      window.removeEventListener("pointerdown", onGlobalPointerDown);
       window.removeEventListener("oriana-chime-pointer", onPointer);
       window.removeEventListener("oriana-chime-impulse", onKeyboard);
       window.removeEventListener("oriana-chime-hover", onHover);

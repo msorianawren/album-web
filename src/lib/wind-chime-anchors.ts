@@ -22,10 +22,10 @@ export type ChimeAnchorRect = ChimeAnchorSlot & {
 };
 
 const identities = [
-  { selector: "[data-environment-anchor='hero-right']", side: "right", scale: .68, depth: 0, tone: 698.46, tubeCount: 6, material: "silver" },
-  { selector: "[data-environment-anchor='archive-left']", side: "left", scale: .54, depth: -.15, tone: 587.33, tubeCount: 5, material: "champagne" },
-  { selector: "[data-environment-anchor='story-right']", side: "right", scale: .5, depth: -.3, tone: 440, tubeCount: 5, material: "bronze" },
-  { selector: "[data-environment-anchor='footer-branch']", side: "left", scale: .46, depth: -.4, tone: 523.25, tubeCount: 4, material: "bamboo" },
+  { selector: "[data-environment-anchor='hero-right']", side: "right", scale: .6, depth: 0, tone: 587.33, tubeCount: 5, material: "champagne" },
+  { selector: "[data-environment-anchor='archive-left']", side: "left", scale: .6, depth: -.15, tone: 587.33, tubeCount: 5, material: "champagne" },
+  { selector: "[data-environment-anchor='story-right']", side: "right", scale: .6, depth: -.3, tone: 587.33, tubeCount: 5, material: "champagne" },
+  { selector: "[data-environment-anchor='footer-branch']", side: "left", scale: .6, depth: -.4, tone: 587.33, tubeCount: 5, material: "champagne" },
 ] as const;
 
 function createSlots(prefix: string): ChimeAnchorSlot[] {
