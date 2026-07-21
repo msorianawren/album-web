@@ -42,6 +42,7 @@ const supportMaterial = new THREE.MeshStandardMaterial({ color: "#3d2314", rough
 const clapperMaterial = new THREE.MeshStandardMaterial({ color: "#2c1810", roughness: 0.8, metalness: 0.05 });
 const sailMaterial = new THREE.MeshStandardMaterial({ color: "#bda893", roughness: 0.9, metalness: 0.05 });
 const cordMaterial = new THREE.MeshBasicMaterial({ color: "#222222", transparent: true, opacity: 0.8 });
+const hitboxMaterial = new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false });
 
 function getTubeGeometry(length: number) {
   const key = Math.round(length * 100);
@@ -93,6 +94,11 @@ function ChimeModel({
 
   return (
     <group ref={group} userData={{ slotId: anchor.id }} visible={anchor.visible} position={position} scale={anchor.scale} rotation={[0, anchor.side === "left" ? 0.16 : -0.16, 0]}>
+      {/* Invisible massive hitbox so users can easily click the chime even when it swings rapidly */}
+      <mesh position={[0, -0.6, 0]} material={hitboxMaterial}>
+        <boxGeometry args={[2.5, 4.0, 2.5]} />
+      </mesh>
+      
       <mesh position={[0, 0.075, 0]} material={supportMaterial} castShadow>
         <cylinderGeometry args={[0.34, 0.34, 0.045, 48]} />
       </mesh>
