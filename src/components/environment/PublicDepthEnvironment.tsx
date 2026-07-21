@@ -18,8 +18,8 @@ import { isChimeControlTarget, isOverlayInteractionActive, isProtectedInteractiv
 import { EnvironmentStaticFallback } from "./EnvironmentStaticFallback";
 import { useChimeAnchorRects } from "./useChimeAnchorRects";
 
-const PublicChimeCanvas = dynamic(
-  () => import("./PublicChimeCanvas").then((module) => module.PublicChimeCanvas),
+const PublicEnvironmentCanvas = dynamic(
+  () => import("./PublicEnvironmentCanvas").then((module) => module.PublicEnvironmentCanvas),
   { ssr: false },
 );
 
@@ -228,7 +228,7 @@ function PublicDepthEnvironmentContent({ pathname }: { pathname: string }) {
         );
       })}
       {showEnvironment && quality.enabled && !webglUnavailable ? (
-        <PublicChimeCanvas
+        <PublicEnvironmentCanvas
           rects={environmentRects}
           reducedMotion={reducedMotion === "true"}
           state={environmentState}

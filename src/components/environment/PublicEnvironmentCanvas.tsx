@@ -8,7 +8,7 @@ import type { EnvironmentPreferences } from "@/lib/environment/preferences";
 import type { EnvironmentQuality } from "@/lib/environment/quality";
 import { EnvironmentScene } from "./EnvironmentScene";
 
-export function PublicChimeCanvas({
+export function PublicEnvironmentCanvas({
   rects,
   reducedMotion,
   state,

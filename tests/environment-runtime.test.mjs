@@ -78,7 +78,7 @@ test("environment payload validation rejects private media and unrelated account
 });
 
 test("quality caps remain conservative across full, reduced, mobile, and off modes", () => {
-  assert.deepEqual(resolveEnvironmentQuality("off", 1440), { enabled: false, tier: "off", dpr: [1, 1], particleCap: 0, birdCap: 0, chimeCap: 0, shadows: false });
+  assert.deepEqual(resolveEnvironmentQuality("off", 1440), { enabled: false, tier: "off", dpr: [1, 1], particleCap: 0, birdCap: 0, chimeCap: 0, shadows: false, particles: false });
   assert.equal(resolveEnvironmentQuality("full", 1440).particleCap, 128);
   assert.equal(resolveEnvironmentQuality("reduced", 1440).birdCap, 5);
   assert.ok(resolveEnvironmentQuality("auto", 390).particleCap <= 40);
@@ -106,7 +106,7 @@ test("artist and reduced-decoration resets are stable and intentionally distinct
 
 test("runtime fallbacks pause hidden or reduced-motion work and tolerate blocked autoplay", () => {
   const runtime = read("src/components/environment/PublicDepthEnvironment.tsx");
-  const canvas = read("src/components/environment/PublicChimeCanvas.tsx");
+  const canvas = read("src/components/environment/PublicEnvironmentCanvas.tsx");
   const background = read("src/components/landing/NatureAnimatedBackground.tsx");
   assert.match(runtime, /!document\.hidden/);
   assert.match(runtime, /reducedMotion !== "true"/);
