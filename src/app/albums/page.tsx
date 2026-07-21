@@ -52,9 +52,10 @@ export default async function AlbumsPage({ searchParams }: AlbumsPageProps) {
   ]);
 
   return (
-    <main className="relative z-10 min-h-screen bg-transparent">
+    <>
       <NatureAnimatedBackground config={landing.background_settings} />
-      <AppHeader />
+      <main className="relative z-10 min-h-screen bg-transparent">
+        <AppHeader />
       <section className="mx-auto max-w-[1200px] px-6 py-20 sm:py-32">
         <div className="max-w-4xl">
           <p className="text-[0.68rem] font-semibold uppercase tracking-[0.25em] text-text-secondary mb-4">
@@ -75,7 +76,8 @@ export default async function AlbumsPage({ searchParams }: AlbumsPageProps) {
         dict={dict}
         locale={locale}
       />
-      <AccessRequestModal />
-    </main>
+        <AccessRequestModal />
+      </main>
+    </>
   );
 }

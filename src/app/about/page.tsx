@@ -14,13 +14,15 @@ export default async function AboutPage() {
 
   if (!profile.is_public) {
     return (
-      <main className="relative z-10 min-h-screen bg-transparent">
+      <>
         <NatureAnimatedBackground config={landing.background_settings} />
+        <main className="relative z-10 min-h-screen bg-transparent">
         <AppHeader />
         <section className="mx-auto flex min-h-[60vh] max-w-[960px] items-center justify-center px-4 py-10">
           <p className="text-lg text-text-secondary">This profile is currently private.</p>
         </section>
-      </main>
+        </main>
+      </>
     );
   }
 

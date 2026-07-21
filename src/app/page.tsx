@@ -35,9 +35,10 @@ export default async function Home() {
   const dict = await getDictionary(locale);
 
   return (
-    <main className="relative z-10 min-h-screen bg-transparent">
+    <>
       <NatureAnimatedBackground config={landing.background_settings} />
-      <AppHeader />
+      <main className="relative z-10 min-h-screen bg-transparent">
+        <AppHeader />
       <HomeHero landing={landing} settings={settings} locale={locale} dict={dict} />
       
       {landing.section_toggles?.editorial_intro !== false && <HomeEditorialIntro landing={landing} settings={settings} />}
@@ -49,7 +50,8 @@ export default async function Home() {
       {landing.section_toggles?.collaborators !== false && <HomeCollaborators collaborators={landing.collaborators} settings={settings} />}
       {landing.section_toggles?.personal_letter !== false && <HomePersonalLetter profile={profile} />}
       
-      <AppFooter />
-    </main>
+        <AppFooter />
+      </main>
+    </>
   );
 }
