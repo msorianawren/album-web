@@ -38,61 +38,69 @@ export function BlossomClusters({
   const clusterCount = reduced ? 80 : 300;
 
   const { geometry, instances, colors } = useMemo(() => {
-    // A simple petal/flower geometry - using a low-poly sphere or a custom shape.
-    // For performance, an Icosahedron is decent, but intersecting planes (cards) are better for leaves.
-    // Given the prompt "không dùng sphere làm hoa", we'll create a simple intersecting plane or small custom shape.
-    
-    // Creating a 5-petal star-like shape
-    const geom = new THREE.CircleGeometry(0.3, 5);
-    geom.translate(0, 0.15, 0); // pivot at base
+    const petalShape = new THREE.Shape();
+    petalShape.moveTo(0, 0);
+    petalShape.bezierCurveTo(-0.25, 0.2, -0.25, 0.45, -0.1, 0.55);
+    petalShape.bezierCurveTo(-0.05, 0.58, 0, 0.45, 0, 0.45); // Cleft
+    petalShape.bezierCurveTo(0, 0.45, 0.05, 0.58, 0.1, 0.55);
+    petalShape.bezierCurveTo(0.25, 0.45, 0.25, 0.2, 0, 0);
+
+    const geom = new THREE.ShapeGeometry(petalShape);
+    const pos = geom.attributes.position;
+    for (let i = 0; i < pos.count; i++) {
+      const y = pos.getY(i);
+      pos.setZ(i, y * y * 0.4); // Bend outward
+    }
+    geom.computeVertexNormals();
 
     const inst = [];
-    const colorArray = new Float32Array(clusterCount * 3);
+    const totalPetals = clusterCount * 5;
+    const colorArray = new Float32Array(totalPetals * 3);
     const dummy = new THREE.Object3D();
 
     for (let i = 0; i < clusterCount; i++) {
-      // Pick a random base cluster position
       const base = clusterPositions[i % clusterPositions.length];
-      
-      // Spread them out around the base
       const offset = new THREE.Vector3(
         (Math.random() - 0.5) * 3,
         (Math.random() - 0.5) * 2,
         (Math.random() - 0.5) * 3
       );
-      
-      // Shape the canopy (ellipsoid)
       if (offset.length() > 2) offset.normalize().multiplyScalar(2);
 
-      const pos = base.clone().add(offset);
+      const flowerCenter = base.clone().add(offset);
       
-      dummy.position.copy(pos);
-      dummy.rotation.set(
-        Math.random() * Math.PI,
-        Math.random() * Math.PI,
-        Math.random() * Math.PI
-      );
-      
-      const scale = 0.5 + Math.random() * 0.8;
-      dummy.scale.set(scale, scale, scale);
-      dummy.updateMatrix();
+      const scale = 0.4 + Math.random() * 0.6;
 
-      // Pick a color from the foliage array with slight random variance
       const baseColor = targetColors[Math.floor(Math.random() * targetColors.length)].clone();
-      // Add slight HSL variation
       const hsl = { h: 0, s: 0, l: 0 };
       baseColor.getHSL(hsl);
       baseColor.setHSL(hsl.h + (Math.random() - 0.5) * 0.05, hsl.s, hsl.l + (Math.random() - 0.5) * 0.1);
 
-      colorArray[i * 3] = baseColor.r;
-      colorArray[i * 3 + 1] = baseColor.g;
-      colorArray[i * 3 + 2] = baseColor.b;
+      const flowerRotation = new THREE.Euler(
+        Math.random() * Math.PI * 2,
+        Math.random() * Math.PI * 2,
+        Math.random() * Math.PI * 2
+      );
 
-      inst.push({
-        matrix: dummy.matrix.clone(),
-        phase: Math.random() * Math.PI * 2,
-        speed: 0.5 + Math.random() * 1.5
-      });
+      for (let p = 0; p < 5; p++) {
+        dummy.position.copy(flowerCenter);
+        dummy.rotation.copy(flowerRotation);
+        dummy.rotateZ((p / 5) * Math.PI * 2);
+        dummy.rotateX(0.3); // Pitch outward
+        dummy.scale.set(scale, scale, scale);
+        dummy.updateMatrix();
+
+        const index = i * 5 + p;
+        colorArray[index * 3] = baseColor.r;
+        colorArray[index * 3 + 1] = baseColor.g;
+        colorArray[index * 3 + 2] = baseColor.b;
+
+        inst.push({
+          matrix: dummy.matrix.clone(),
+          phase: Math.random() * Math.PI * 2,
+          speed: 0.5 + Math.random() * 1.5
+        });
+      }
     }
 
     return { geometry: geom, instances: inst, colors: colorArray };
@@ -105,7 +113,8 @@ export function BlossomClusters({
     const strength = wind.current.current.strength;
     const dummy = new THREE.Object3D();
 
-    for (let i = 0; i < clusterCount; i++) {
+    const totalPetals = clusterCount * 5;
+    for (let i = 0; i < totalPetals; i++) {
       const inst = instances[i];
       dummy.matrix.copy(inst.matrix);
       dummy.matrix.decompose(dummy.position, dummy.quaternion, dummy.scale);
@@ -125,7 +134,7 @@ export function BlossomClusters({
   return (
     <instancedMesh
       ref={meshRef}
-      args={[geometry, undefined, clusterCount]}
+      args={[geometry, undefined, clusterCount * 5]}
       castShadow={!reduced}
       receiveShadow
     >

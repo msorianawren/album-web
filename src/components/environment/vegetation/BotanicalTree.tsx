@@ -6,10 +6,38 @@ import { useFrame } from "@react-three/fiber";
 import type { EnvironmentState } from "@/lib/environment/presets";
 import type { WindRuntime } from "@/lib/environment/wind";
 
-// Procedural generation of a Sakura tree geometry to replace primitive cylinders
 function generateBranchCurve(start: THREE.Vector3, end: THREE.Vector3, controlOffset: THREE.Vector3) {
   const mid = start.clone().lerp(end, 0.5).add(controlOffset);
   return new THREE.QuadraticBezierCurve3(start, mid, end);
+}
+
+function createTaperedBranchGeometry(curve: THREE.Curve<THREE.Vector3>, radius: number, segments: number, radialSegments: number) {
+  const geom = new THREE.TubeGeometry(curve, segments, radius, radialSegments, false);
+  const pos = geom.attributes.position;
+  for (let i = 0; i <= segments; i++) {
+    const t = i / segments;
+    // Non-linear taper: stays thicker longer, then tapers sharply at end
+    const taper = Math.max(0.02, 1 - Math.pow(t, 1.8)); 
+    
+    for (let j = 0; j <= radialSegments; j++) {
+      const vertexIndex = i * (radialSegments + 1) + j;
+      if (vertexIndex < pos.count) {
+        const curvePoint = curve.getPointAt(t);
+        const vx = pos.getX(vertexIndex);
+        const vy = pos.getY(vertexIndex);
+        const vz = pos.getZ(vertexIndex);
+        
+        pos.setXYZ(
+          vertexIndex,
+          curvePoint.x + (vx - curvePoint.x) * taper,
+          curvePoint.y + (vy - curvePoint.y) * taper,
+          curvePoint.z + (vz - curvePoint.z) * taper
+        );
+      }
+    }
+  }
+  geom.computeVertexNormals();
+  return geom;
 }
 
 export function BotanicalTree({
@@ -35,7 +63,7 @@ export function BotanicalTree({
       new THREE.Vector3(2, 6, -1),
       new THREE.Vector3(-1.5, 3, 1)
     );
-    return new THREE.TubeGeometry(curve, reduced ? 8 : 16, 0.4, reduced ? 5 : 8, false);
+    return createTaperedBranchGeometry(curve, 0.4, reduced ? 12 : 24, reduced ? 5 : 8);
   }, [reduced]);
 
   const branchesGeometry = useMemo(() => {
@@ -48,7 +76,7 @@ export function BotanicalTree({
       new THREE.Vector3(6, 7, -2),
       new THREE.Vector3(3, 6, 1)
     );
-    geometries.push(new THREE.TubeGeometry(b1, reduced ? 6 : 12, 0.15, reduced ? 4 : 6, false));
+    geometries.push(createTaperedBranchGeometry(b1, 0.18, reduced ? 8 : 16, reduced ? 4 : 6));
 
     // Main branch 2
     const b2 = generateBranchCurve(
@@ -56,7 +84,7 @@ export function BotanicalTree({
       new THREE.Vector3(-4, 5, 2),
       new THREE.Vector3(-2, 4, 3)
     );
-    geometries.push(new THREE.TubeGeometry(b2, reduced ? 6 : 12, 0.12, reduced ? 4 : 6, false));
+    geometries.push(createTaperedBranchGeometry(b2, 0.14, reduced ? 8 : 16, reduced ? 4 : 6));
 
     // Sub branches
     const b3 = generateBranchCurve(
@@ -64,7 +92,7 @@ export function BotanicalTree({
       new THREE.Vector3(5, 4, -3),
       new THREE.Vector3(4, 5, -2)
     );
-    geometries.push(new THREE.TubeGeometry(b3, reduced ? 4 : 8, 0.06, reduced ? 3 : 5, false));
+    geometries.push(createTaperedBranchGeometry(b3, 0.08, reduced ? 6 : 12, reduced ? 3 : 5));
 
     // We can merge them if we had BufferGeometryUtils, but for now we'll just return an array 
     // to map over, or since we only have a few, mapping is fine.

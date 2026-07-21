@@ -31,13 +31,18 @@ export function SakuraPetalField({
   }>>([]);
 
   const { geometry, colors } = useMemo(() => {
-    // Petal geometry: small bent diamond
-    const geom = new THREE.CircleGeometry(0.12, 4);
-    geom.rotateZ(Math.PI / 4); // Rotate to diamond shape
+    const petalShape = new THREE.Shape();
+    petalShape.moveTo(0, 0);
+    petalShape.bezierCurveTo(-0.15, 0.15, -0.15, 0.35, -0.05, 0.45);
+    petalShape.bezierCurveTo(-0.02, 0.48, 0, 0.35, 0, 0.35); // Cleft
+    petalShape.bezierCurveTo(0, 0.35, 0.02, 0.48, 0.05, 0.45);
+    petalShape.bezierCurveTo(0.15, 0.35, 0.15, 0.15, 0, 0);
+
+    const geom = new THREE.ShapeGeometry(petalShape);
     const pos = geom.attributes.position;
     for (let i = 0; i < pos.count; i++) {
       const y = pos.getY(i);
-      if (y > 0) pos.setZ(i, 0.05); // Bend top
+      pos.setZ(i, y * y * 0.4); // Bend outward
     }
     geom.computeVertexNormals();
 
