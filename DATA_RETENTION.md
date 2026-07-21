@@ -13,7 +13,7 @@ The expiry date (`expires_at`) for each row is automatically calculated from its
 ### Retention Mechanisms
 Telemetry logs are pruned using two redundant mechanisms to guarantee expiration:
 1. **Supabase pg_cron (Primary)**: An hourly job (`prune-expired-telemetry-hourly`) runs at the **15th minute** of every hour. It executes a secure database RPC `prune_expired_telemetry()`.
-2. **Vercel Cron (Fallback)**: An hourly job executes at the **45th minute** of every hour. It triggers the `/api/cron/prune-logs` route, which invokes the same database RPC.
+2. **Vercel Cron (Fallback)**: A daily job executes at **02:00 UTC** (`0 2 * * *`). It triggers the `/api/cron/prune-logs` route, which invokes the same database RPC.
 
 Both mechanisms invoke the `public.prune_expired_telemetry()` function, which is designed with advisory locks to prevent overlapping execution.
 
