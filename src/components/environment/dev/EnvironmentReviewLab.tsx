@@ -203,6 +203,18 @@ export function EnvironmentReviewLab() {
           </div>
         )}
 
+        {preset === "autumn" && (
+          <div className="space-y-2 pt-2 border-t border-white/10">
+            <label className="block text-xs uppercase tracking-wider text-zinc-500">Autumn Leaves</label>
+            <div className="flex flex-col gap-1 text-xs">
+              <label className="flex justify-between">
+                <span>Leaf Amount</span>
+                <input type="range" min="0" max="100" value={preferences.particleAmount} onChange={e => {}} readOnly />
+              </label>
+            </div>
+          </div>
+        )}
+
         <div className="flex gap-2 pt-2 border-t border-white/10">
           <button
             onClick={() => {
