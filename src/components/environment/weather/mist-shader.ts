@@ -145,7 +145,7 @@ export const mistFragmentShader = `
     // Vertical fade: Mist is denser at the bottom, fades near top of its volume
     float vertFade = 1.0 - smoothstep(0.1, 0.9, vUv.y);
     
-    float finalAlpha = baseAlpha * noise * vertFade * vOpacity * uOpacity * 4.0; // Boosted
+    float finalAlpha = baseAlpha * noise * vertFade * vOpacity * max(uOpacity, 0.5) * 10.0; // Boosted heavily
     
     gl_FragColor = vec4(uColor, finalAlpha);
     
