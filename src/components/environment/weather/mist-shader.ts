@@ -109,13 +109,13 @@ export const mistFragmentShader = `
   void main() {
     // Soft edge fade reaching zero well before edges (strict domain)
     // Left edge (0 to 0.2), Right edge (0.8 to 1.0)
-    float edgeX = smoothstep(0.0, 0.2, vUv.x) * (1.0 - smoothstep(0.8, 1.0, vUv.x));
-    float edgeY = smoothstep(0.0, 0.25, vUv.y) * (1.0 - smoothstep(0.75, 1.0, vUv.y));
+    float edgeX = smoothstep(0.0, 0.05, vUv.x) * (1.0 - smoothstep(0.95, 1.0, vUv.x));
+    float edgeY = smoothstep(0.0, 0.05, vUv.y) * (1.0 - smoothstep(0.95, 1.0, vUv.y));
     
     // Radial center bias
     vec2 center = vec2(0.5, 0.5);
     float dist = distance(vUv, center);
-    float radial = 1.0 - smoothstep(0.1, 0.7, dist);
+    float radial = 1.0 - smoothstep(0.3, 0.8, dist);
 
     float baseAlpha = edgeX * edgeY * radial;
 
