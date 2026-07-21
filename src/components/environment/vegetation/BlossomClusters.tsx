@@ -42,9 +42,9 @@ export function BlossomClusters({
     // For performance, an Icosahedron is decent, but intersecting planes (cards) are better for leaves.
     // Given the prompt "không dùng sphere làm hoa", we'll create a simple intersecting plane or small custom shape.
     
-    // Creating a 5-petal star-like shape or a simple double-sided plane cluster
-    const geom = new THREE.PlaneGeometry(0.5, 0.5);
-    geom.translate(0, 0.25, 0); // pivot at base
+    // Creating a 5-petal star-like shape
+    const geom = new THREE.CircleGeometry(0.3, 5);
+    geom.translate(0, 0.15, 0); // pivot at base
 
     const inst = [];
     const colorArray = new Float32Array(clusterCount * 3);
@@ -129,11 +129,8 @@ export function BlossomClusters({
       castShadow={!reduced}
       receiveShadow
     >
-      <meshStandardMaterial 
+      <meshBasicMaterial 
         side={THREE.DoubleSide} 
-        roughness={0.6}
-        alphaTest={0.5}
-        transparent={false}
         vertexColors={true}
       />
       <instancedBufferAttribute

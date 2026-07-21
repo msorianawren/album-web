@@ -93,6 +93,8 @@ export function BotanicalTree({
       <meshStandardMaterial
         ref={materialRef}
         color={state.branchColor}
+        emissive={state.branchColor}
+        emissiveIntensity={0.15}
         roughness={0.85}
         metalness={0.05}
       />

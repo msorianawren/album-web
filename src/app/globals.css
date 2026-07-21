@@ -286,7 +286,7 @@ canvas {
 .public-chime-canvas {
   position: fixed;
   inset: 0;
-  z-index: 11;
+  z-index: 2;
   opacity: calc(0.64 * var(--environment-artist-opacity, 1));
   transition: opacity 500ms ease;
 }

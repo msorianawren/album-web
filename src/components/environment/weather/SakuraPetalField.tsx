@@ -31,8 +31,9 @@ export function SakuraPetalField({
   }>>([]);
 
   const { geometry, colors } = useMemo(() => {
-    // Petal geometry: small bent plane
-    const geom = new THREE.PlaneGeometry(0.15, 0.2, 2, 2);
+    // Petal geometry: small bent diamond
+    const geom = new THREE.CircleGeometry(0.12, 4);
+    geom.rotateZ(Math.PI / 4); // Rotate to diamond shape
     const pos = geom.attributes.position;
     for (let i = 0; i < pos.count; i++) {
       const y = pos.getY(i);
@@ -119,10 +120,8 @@ export function SakuraPetalField({
       castShadow={false}
       receiveShadow={false}
     >
-      <meshStandardMaterial 
+      <meshBasicMaterial 
         side={THREE.DoubleSide} 
-        roughness={0.8}
-        alphaTest={0.5}
         vertexColors={true}
       />
       <instancedBufferAttribute
