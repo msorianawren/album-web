@@ -85,7 +85,8 @@ function AutumnLeafLayer({
       mesh.current.setColorAt(i, colors[instanceData[i].colorIndex]);
     }
     if (mesh.current.instanceColor) mesh.current.instanceColor.needsUpdate = true;
-  }, [count, instanceData, colors]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [count, colors]);
 
   useFrame(({ clock }) => {
     if (!active || !mesh.current) return;
