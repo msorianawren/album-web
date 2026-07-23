@@ -1,4 +1,5 @@
 import { unstable_noStore as noStore } from "next/cache";
+import { cache } from "react";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createPublicServerClient } from "@/lib/db/public";
 import type { AboutProfile, EducationItem, CareerItem, HobbyItem, LanguageItem, AchievementItem, PersonalMetrics, SocialLinkItem } from "@/lib/types";
@@ -69,7 +70,7 @@ export function normalizeAboutProfile(value: Partial<AboutProfile> | null | unde
   };
 }
 
-export async function getAboutProfile(): Promise<AboutProfile> {
+export const getAboutProfile = cache(async (): Promise<AboutProfile> => {
   noStore();
   const { data, error } = await createPublicServerClient()
     .from("about_profile")
@@ -79,7 +80,7 @@ export async function getAboutProfile(): Promise<AboutProfile> {
 
   if (error || !data) return defaultAboutProfile;
   return normalizeAboutProfile(data as Partial<AboutProfile>);
-}
+});
 
 export function aboutPayloadFromInput(input: Record<string, unknown>): AboutProfile {
   const payload = normalizeAboutProfile(input as Partial<AboutProfile>);

@@ -1,4 +1,5 @@
 import "server-only";
+import { cache } from "react";
 import { z } from "zod";
 import { albumStatuses } from "@/lib/config";
 import { supabase } from "@/lib/supabase";
@@ -223,7 +224,7 @@ export function normalizeSiteSettings(value: Partial<SiteSettings> | null | unde
   };
 }
 
-export async function getSiteSettings(client: SupabaseClient = supabase) {
+export const getSiteSettings = cache(async (client: SupabaseClient = supabase) => {
   const { data, error } = await client
     .from("site_settings")
     .select("*")
@@ -232,7 +233,7 @@ export async function getSiteSettings(client: SupabaseClient = supabase) {
 
   if (error || !data) return defaultSiteSettings;
   return normalizeSiteSettings(data as Partial<SiteSettings>);
-}
+});
 
 export async function saveSiteSettings(client: SupabaseClient, input: unknown) {
   const parsed = siteSettingsSchema.parse(input);

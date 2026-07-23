@@ -484,9 +484,6 @@ class AudioUXSystem {
 
     const url = this.getAmbientUrl(type);
     if (url) {
-      // Pre-fetch the rest in background since they are clearly interacting with audio
-      this.preloadAmbient();
-
       const now = this.context.currentTime;
       const gain = this.context.createGain();
       gain.gain.setValueAtTime(0, now);

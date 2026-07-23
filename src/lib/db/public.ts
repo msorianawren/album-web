@@ -12,13 +12,18 @@ function getPublicConfig() {
   return { url, anonKey };
 }
 
+let globalPublicClient: ReturnType<typeof createClient> | null = null;
+
 export function createPublicServerClient() {
+  if (globalPublicClient) return globalPublicClient;
+
   const { url, anonKey } = getPublicConfig();
-  return createClient(url, anonKey, {
+  globalPublicClient = createClient(url, anonKey, {
     auth: {
       persistSession: false,
       autoRefreshToken: false,
       detectSessionInUrl: false,
     },
   });
+  return globalPublicClient;
 }

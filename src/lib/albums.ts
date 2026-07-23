@@ -1,4 +1,5 @@
 import { unstable_noStore as noStore } from "next/cache";
+import { cache } from "react";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { privateAlbumMessage } from "@/lib/config";
 import { getPublicSession } from "@/lib/auth";
@@ -363,10 +364,10 @@ export async function getAlbumSections(
   return Object.fromEntries(entries) as AlbumSections;
 }
 
-export async function getFeaturedAlbums(limit = 4) {
+export const getFeaturedAlbums = cache(async (limit = 4) => {
   const page = await getAlbumPage({ status: "public", limit });
   return page.albums;
-}
+});
 
 export async function getAlbum(
   slugOrId: string,
