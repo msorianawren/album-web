@@ -4,7 +4,7 @@ import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { useEnvironmentPreferences, useResolvedEnvironmentPhase } from "@/hooks/useEnvironmentPreferences";
-import { getEnvironmentState } from "@/lib/environment/presets";
+import { resolveActiveEnvironment } from "@/lib/environment/resolve-active-environment";
 
 type GearConfig = { position: [number, number, number]; radius: number; teeth: number; speed: number; depth: number };
 type ClockworkPointer = { x: number; y: number; energy: number; previousX: number; previousY: number };
@@ -243,7 +243,7 @@ export function AboutClockwork({ displayName, chapterCount }: { displayName: str
   const [reducedMotion, setReducedMotion] = useState(false);
   const { preferences } = useEnvironmentPreferences();
   const phase = useResolvedEnvironmentPhase(preferences.phase);
-  const environment = getEnvironmentState(preferences.preset === "default" ? "sakura" : preferences.preset, phase);
+  const { state: environment } = useMemo(() => resolveActiveEnvironment({ ...preferences, phase }), [preferences, phase]);
   const palette = useMemo<ClockworkPalette>(() => ({
     brass: environment.keyLight,
     steel: environment.fillLight,

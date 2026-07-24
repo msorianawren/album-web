@@ -21,6 +21,10 @@ const AboutClockwork = dynamic(
   { ssr: false },
 );
 
+import { AboutReadingZone } from "@/components/about/AboutReadingZone";
+
+const useVeil = process.env.NEXT_PUBLIC_ABOUT_EDITORIAL_AURORA_VEIL === "true";
+
 export function AboutClient({ profile }: AboutClientProps) {
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -98,7 +102,7 @@ export function AboutClient({ profile }: AboutClientProps) {
       {/* ═══════════════════════════════════════════
           SECTION 1: EDITORIAL HERO
       ═══════════════════════════════════════════ */}
-      <section className="relative min-h-[85vh] w-full overflow-hidden flex flex-col justify-end pt-28 pb-12 sm:pb-20">
+      <AboutReadingZone as="section" enabled={useVeil} variant="hero" className="relative min-h-[85vh] w-full overflow-hidden flex flex-col justify-end pt-28 pb-12 sm:pb-20">
 
         {/* Cover background — right-aligned editorial crop */}
         {(profile.cover_image_url || profile._is_demo) && (
@@ -196,7 +200,7 @@ export function AboutClient({ profile }: AboutClientProps) {
             )}
           </div>
         </div>
-      </section>
+      </AboutReadingZone>
 
 
 
@@ -205,7 +209,7 @@ export function AboutClient({ profile }: AboutClientProps) {
           SECTION 2: BIOGRAPHY
       ═══════════════════════════════════════════ */}
       {hasBio && (
-        <section className="w-full max-w-[1320px] mx-auto px-6 sm:px-10 lg:px-16 mt-24 md:mt-40">
+        <AboutReadingZone as="section" enabled={useVeil} variant="body" className="w-full max-w-[1320px] mx-auto px-6 sm:px-10 lg:px-16 mt-24 md:mt-40">
           <div className="about-line h-px w-full bg-border mb-16" />
           <div className="grid grid-cols-1 md:grid-cols-12 gap-10 md:gap-20">
             {/* Sticky sidebar label */}
@@ -240,7 +244,7 @@ export function AboutClient({ profile }: AboutClientProps) {
           SECTION 3: PULL QUOTE
       ═══════════════════════════════════════════ */}
       {hasQuote && (
-        <section className="w-full px-6 sm:px-10 mt-24 md:mt-40 py-20 md:py-32">
+        <AboutReadingZone as="section" enabled={useVeil} variant="quote" className="w-full px-6 sm:px-10 mt-24 md:mt-40 py-20 md:py-32">
           <div className="max-w-[1000px] mx-auto text-center">
             <span className="about-reveal block font-serif text-5xl md:text-7xl text-text-secondary/20 mb-4" aria-hidden="true">&ldquo;</span>
             <p className="about-reveal font-serif text-2xl sm:text-3xl md:text-4xl lg:text-[2.8rem] italic leading-snug text-text-primary max-w-[860px] mx-auto">
@@ -255,7 +259,7 @@ export function AboutClient({ profile }: AboutClientProps) {
           SECTION 4: METRICS & EXPERTISE
       ═══════════════════════════════════════════ */}
       {(hasMetrics || hasSkills || hasTraits) && (
-        <section className="w-full max-w-[1320px] mx-auto px-6 sm:px-10 lg:px-16 mt-24 md:mt-40">
+        <AboutReadingZone as="section" enabled={useVeil} variant="body" className="w-full max-w-[1320px] mx-auto px-6 sm:px-10 lg:px-16 mt-24 md:mt-40">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-20 lg:gap-28">
 
             {/* Personal metrics */}
@@ -310,7 +314,7 @@ export function AboutClient({ profile }: AboutClientProps) {
               )}
             </div>
           </div>
-        </section>
+        </AboutReadingZone>
       )}
 
 
@@ -318,7 +322,7 @@ export function AboutClient({ profile }: AboutClientProps) {
           SECTION 5: CAREER & EDUCATION TIMELINE
       ═══════════════════════════════════════════ */}
       {(hasCareer || hasEducation) && (
-        <section className="w-full max-w-[1320px] mx-auto px-6 sm:px-10 lg:px-16 mt-24 md:mt-40">
+        <AboutReadingZone as="section" enabled={useVeil} variant="body" className="w-full max-w-[1320px] mx-auto px-6 sm:px-10 lg:px-16 mt-24 md:mt-40">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-20 lg:gap-28">
 
             {hasCareer && (
@@ -371,7 +375,7 @@ export function AboutClient({ profile }: AboutClientProps) {
               </div>
             )}
           </div>
-        </section>
+        </AboutReadingZone>
       )}
 
 
@@ -379,7 +383,7 @@ export function AboutClient({ profile }: AboutClientProps) {
           SECTION 6: LANGUAGES
       ═══════════════════════════════════════════ */}
       {hasLanguages && (
-        <section className="w-full max-w-[1320px] mx-auto px-6 sm:px-10 lg:px-16 mt-24 md:mt-40">
+        <AboutReadingZone as="section" enabled={useVeil} variant="compact" className="w-full max-w-[1320px] mx-auto px-6 sm:px-10 lg:px-16 mt-24 md:mt-40">
           <div className="max-w-[680px]">
             <div className="about-line h-px w-full bg-border mb-12" />
             <h2 className="about-reveal font-serif text-2xl md:text-3xl mb-10">Languages</h2>
@@ -392,7 +396,7 @@ export function AboutClient({ profile }: AboutClientProps) {
               ))}
             </div>
           </div>
-        </section>
+        </AboutReadingZone>
       )}
 
 
@@ -400,7 +404,7 @@ export function AboutClient({ profile }: AboutClientProps) {
           SECTION 7: ACHIEVEMENTS
       ═══════════════════════════════════════════ */}
       {hasAchievements && (
-        <section className="w-full max-w-[1320px] mx-auto px-6 sm:px-10 lg:px-16 mt-24 md:mt-40">
+        <AboutReadingZone as="section" enabled={useVeil} variant="body" className="w-full max-w-[1320px] mx-auto px-6 sm:px-10 lg:px-16 mt-24 md:mt-40">
           <div className="about-line h-px w-full bg-border mb-12" />
           <h2 className="about-reveal font-serif text-3xl md:text-4xl mb-12">Recognition</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
@@ -419,7 +423,7 @@ export function AboutClient({ profile }: AboutClientProps) {
               </div>
             ))}
           </div>
-        </section>
+        </AboutReadingZone>
       )}
 
 
@@ -427,7 +431,7 @@ export function AboutClient({ profile }: AboutClientProps) {
           SECTION 8: HOBBIES & INTERESTS
       ═══════════════════════════════════════════ */}
       {hasHobbies && (
-        <section className="w-full max-w-[1320px] mx-auto px-6 sm:px-10 lg:px-16 mt-24 md:mt-40">
+        <AboutReadingZone as="section" enabled={useVeil} variant="compact" className="w-full max-w-[1320px] mx-auto px-6 sm:px-10 lg:px-16 mt-24 md:mt-40">
           <div className="about-line h-px w-full bg-border mb-10" />
           <h2 className="about-reveal font-serif text-2xl md:text-3xl mb-8">Interests</h2>
           <div className="flex flex-wrap gap-2.5">
@@ -437,7 +441,7 @@ export function AboutClient({ profile }: AboutClientProps) {
               </span>
             ))}
           </div>
-        </section>
+        </AboutReadingZone>
       )}
 
 
@@ -445,7 +449,7 @@ export function AboutClient({ profile }: AboutClientProps) {
           SECTION 9: SOCIAL & CONNECT
       ═══════════════════════════════════════════ */}
       {hasSocialLinks && (
-        <section className="w-full mt-24 md:mt-40 pb-24 md:pb-32">
+        <AboutReadingZone as="section" enabled={useVeil} variant="compact" className="w-full mt-24 md:mt-40 pb-24 md:pb-32">
           <div className="max-w-[1320px] mx-auto px-6 sm:px-10 lg:px-16 text-center">
             <h2 className="about-reveal font-serif text-[2.5rem] md:text-[4rem] lg:text-[5rem] tracking-tight text-text-primary/15 mb-10">
               Connect
@@ -464,7 +468,7 @@ export function AboutClient({ profile }: AboutClientProps) {
               ))}
             </div>
           </div>
-        </section>
+        </AboutReadingZone>
       )}
 
       {/* Bottom spacing when no social links */}

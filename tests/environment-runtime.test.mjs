@@ -124,3 +124,19 @@ test("chime anchors use stable selectors, fail safely, and never use section ind
   assert.match(resolver, /filter\(\(entry\).*Boolean\(entry\[1\]\)/s);
   assert.match(resolver, /slice\(0, 2\)/);
 });
+
+test("AboutClockwork immutable geometry, formulas, and pointers are strictly preserved", () => {
+  const clockwork = read("src/components/about/AboutClockwork.tsx");
+  assert.ok(clockwork.includes("function buildGears(chapterCount: number): GearConfig[] {"));
+  assert.ok(clockwork.includes("radius: .38 + ((index * 7) % 5) * .075,"));
+  assert.ok(clockwork.includes("teeth: 10 + (index % 5) * 2,"));
+  assert.ok(clockwork.includes("speed: (index % 2 ? -1 : 1) * (2.2 / (10 + (index % 5) * 2)),"));
+  assert.ok(clockwork.includes("pointer.current.energy = Math.min(1, pointer.current.energy + Math.hypot(x - pointer.current.previousX, y - pointer.current.previousY) * 2.6)"));
+  assert.ok(clockwork.includes("pointerRef.current.energy = THREE.MathUtils.damp(pointerRef.current.energy, 0, 3.2, Math.min(delta, .05))"));
+  assert.ok(clockwork.includes("Math.sin(clock.elapsedTime * 1.45 * speed) * .19"));
+  assert.ok(clockwork.includes("-clock.elapsedTime * .045 * speed"));
+  assert.ok(clockwork.includes("-clock.elapsedTime * .012 * speed"));
+  assert.ok(clockwork.includes("Math.sin(clock.elapsedTime * 3.8 * speed) * .34"));
+  assert.ok(clockwork.includes("opacity-40 mix-blend-screen"));
+  assert.ok(clockwork.includes("camera={{ position: [0, 0, 9.5], fov: 40 }}"));
+});
