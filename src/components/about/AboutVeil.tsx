@@ -1,6 +1,5 @@
 "use client";
 
-import type { VeilVariant } from "@/lib/about/create-about-veil-tokens";
 
 interface AboutVeilProps {
   tokens: React.CSSProperties;

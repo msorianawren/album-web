@@ -251,7 +251,7 @@ export function AboutClient({ profile }: AboutClientProps) {
                 )}
               </div>
             </div>
-          </div>
+          </AboutReadingZone>
         </section>
       )}
 
@@ -266,7 +266,7 @@ export function AboutClient({ profile }: AboutClientProps) {
             <p className="about-reveal font-serif text-2xl sm:text-3xl md:text-4xl lg:text-[2.8rem] italic leading-snug text-text-primary max-w-[860px] mx-auto">
               {profile.quote}
             </p>
-          </div>
+          </AboutReadingZone>
         </section>
       )}
 
@@ -329,8 +329,8 @@ export function AboutClient({ profile }: AboutClientProps) {
                 </div>
               )}
             </div>
-          </div>
-        </AboutReadingZone>
+          </AboutReadingZone>
+        </section>
       )}
 
 

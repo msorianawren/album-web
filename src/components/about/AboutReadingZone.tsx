@@ -3,7 +3,6 @@
 import { type ReactNode } from "react";
 import { AboutVeil } from "./AboutVeil";
 import { type VeilVariant } from "@/lib/about/create-about-veil-tokens";
-import { cn } from "@/lib/utils";
 
 interface AboutReadingZoneProps {
   variant?: VeilVariant;
@@ -14,7 +13,6 @@ interface AboutReadingZoneProps {
 }
 
 export function AboutReadingZone({
-  variant = "body",
   className = "",
   children,
   as: Component = "div",
