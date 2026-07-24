@@ -7,9 +7,11 @@ import { HomeAlbumWorlds } from "@/components/landing/HomeAlbumWorlds";
 import { SocialLinksTree } from "@/components/landing/SocialLinksTree";
 import { HomePrivateExperience } from "@/components/landing/HomePrivateExperience";
 import { HomeCreativeServices } from "@/components/landing/HomeCreativeServices";
-import { HomePersonalLetter } from "@/components/landing/HomePersonalLetter";
 import { HomeMediaGallery } from "@/components/landing/HomeMediaGallery";
 import { HomeCollaborators } from "@/components/landing/HomeCollaborators";
+import { HomePersonalLetterWrapper } from "@/components/landing/HomePersonalLetterWrapper";
+import { HomeAlbumWorldsWrapper } from "@/components/landing/HomeAlbumWorldsWrapper";
+import { Suspense } from "react";
 
 import { getLandingPage } from "@/lib/landing";
 import { getFeaturedAlbums } from "@/lib/albums";
@@ -23,10 +25,8 @@ import { getDictionary } from "@/lib/getDictionary";
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
-  const [landing, profile, albums, settings] = await Promise.all([
+  const [landing, settings] = await Promise.all([
     getLandingPage(),
-    getAboutProfile(),
-    getFeaturedAlbums(4),
     getSiteSettings(),
   ]);
 
@@ -42,13 +42,21 @@ export default async function Home() {
       <HomeHero landing={landing} settings={settings} locale={locale} dict={dict} />
       
       {landing.section_toggles?.editorial_intro !== false && <HomeEditorialIntro landing={landing} settings={settings} />}
-      {landing.section_toggles?.album_worlds !== false && <HomeAlbumWorlds albums={albums} settings={settings} />}
+      {landing.section_toggles?.album_worlds !== false && (
+        <Suspense fallback={<div className="h-96" />}>
+          <HomeAlbumWorldsWrapper settings={settings} />
+        </Suspense>
+      )}
       {landing.section_toggles?.media_gallery !== false && <HomeMediaGallery items={landing.media_items} settings={settings} />}
       {landing.section_toggles?.social_tree !== false && <SocialLinksTree links={landing.social_links} settings={settings} />}
       {landing.section_toggles?.private_experience !== false && <HomePrivateExperience />}
       {landing.section_toggles?.creative_services !== false && <HomeCreativeServices />}
       {landing.section_toggles?.collaborators !== false && <HomeCollaborators collaborators={landing.collaborators} settings={settings} />}
-      {landing.section_toggles?.personal_letter !== false && <HomePersonalLetter profile={profile} />}
+      {landing.section_toggles?.personal_letter !== false && (
+        <Suspense fallback={<div className="h-96" />}>
+          <HomePersonalLetterWrapper />
+        </Suspense>
+      )}
       
         <AppFooter />
       </main>
