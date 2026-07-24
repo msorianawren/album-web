@@ -37,6 +37,7 @@ dev-server.log
 
 # vercel
 .vercel
+artifacts/game-migration-backups/
 
 # supabase
 supabase/.temp/
