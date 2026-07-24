@@ -45,9 +45,31 @@ test("resolves every environment state through the v2 storage key", async ({ pag
       await setEnvironment(page, preset, phase);
       await expect(main).toHaveAttribute("data-about-preset", preset);
       await expect(main).toHaveAttribute("data-about-phase", phase);
-      await expect(main.locator("[data-about-reading-veil]").first()).toHaveCount(1);
+      const veil = main.locator("[data-about-reading-veil]").first();
+      await expect(veil).toHaveCount(1);
+      await expect(veil).toHaveAttribute("data-about-reading-veil-rendered", "true");
     }
   }
+});
+
+test("About readability veil has a valid visible computed background", async ({ page }) => {
+  await page.goto("/about");
+  await setEnvironment(page, "sakura", "day");
+
+  const result = await page.locator("[data-about-reading-veil]").first().evaluate((veil) => {
+    const styles = window.getComputedStyle(veil);
+    const probe = document.createElement("div");
+    probe.style.backgroundImage = styles.backgroundImage;
+
+    return {
+      computedBackground: styles.backgroundImage,
+      parsedBackground: probe.style.backgroundImage,
+    };
+  });
+
+  expect(result.computedBackground).not.toBe("none");
+  expect(result.computedBackground).toContain("radial-gradient");
+  expect(result.parsedBackground).not.toBe("");
 });
 
 test("About reading zones stay contained across target responsive viewports", async ({ page }) => {

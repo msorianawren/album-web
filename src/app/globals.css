@@ -708,7 +708,11 @@ canvas {
   isolation: isolate;
   min-width: 0;
   max-width: 100%;
-  overflow: clip;
+  overflow: visible;
+}
+
+main[data-about-readability="v2"] {
+  overflow-x: clip;
 }
 
 .about-reading-veil {

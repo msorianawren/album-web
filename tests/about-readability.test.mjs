@@ -11,6 +11,12 @@ function parseRgb(value) {
   return match.slice(1).map(Number);
 }
 
+function parseRgbChannels(value) {
+  const match = value.match(/^(\d+) (\d+) (\d+)$/);
+  assert.ok(match, `Expected raw RGB channels, received ${value}`);
+  return match.slice(1).map(Number);
+}
+
 function luminance([red, green, blue]) {
   const channel = (value) => {
     const normalized = value / 255;
@@ -35,9 +41,18 @@ test("About readability tokens maintain readable text across all environment sta
         "--about-reading-text",
       ]);
 
-      const surface = parseRgb(tokens["--about-reading-surface"]);
+      const surfaceToken = tokens["--about-reading-surface"];
+      const accentToken = tokens["--about-reading-accent"];
+      assert.doesNotMatch(surfaceToken, /rgb\(/);
+      assert.doesNotMatch(accentToken, /rgb\(/);
+
+      const surface = parseRgbChannels(surfaceToken);
       assert.ok(contrast(parseRgb(tokens["--about-reading-text"]), surface) >= 7);
       assert.ok(contrast(parseRgb(tokens["--about-reading-secondary"]), surface) >= 4.5);
+
+      const generatedBackground = `radial-gradient(ellipse 128% 120% at 38% 42%, rgb(${surfaceToken} / 0.88) 0%, rgb(${surfaceToken} / 0.58) 52%, rgb(${accentToken} / 0.08) 72%, transparent 100%)`;
+      assert.match(generatedBackground, /^radial-gradient\(/);
+      assert.doesNotMatch(generatedBackground, /rgb\(rgb\(/);
     }
   }
 });
@@ -53,7 +68,9 @@ test("About v2 is always-on and does not retain the Aurora build switch", () => 
   assert.match(aboutClient, /data-about-phase=\{activeEnvironment\.phase\}/);
   assert.doesNotMatch(aboutClient, /NEXT_PUBLIC_ABOUT_EDITORIAL_AURORA_VEIL|data-aurora-veil-enabled/);
   assert.match(readingVeil, /data-about-reading-veil=\{variant\}/);
+  assert.match(readingVeil, /data-about-reading-veil-rendered="true"/);
   assert.doesNotMatch(readingVeil, /useState|useEffect|use client/);
   assert.match(styles, /pointer-events: none/);
+  assert.match(styles, /main\[data-about-readability="v2"\][\s\S]*?overflow-x:\s*clip/);
   assert.doesNotMatch(styles, /about-reading-veil[\s\S]*?z-index:\s*-/);
 });

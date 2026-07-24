@@ -41,6 +41,10 @@ function toCssRgb([red, green, blue]: Rgb) {
   return `rgb(${red} ${green} ${blue})`;
 }
 
+function toCssChannels([red, green, blue]: Rgb) {
+  return `${red} ${green} ${blue}`;
+}
+
 export function createAboutReadabilityTokens(
   environment: EnvironmentState,
   brightness: number,
@@ -54,9 +58,9 @@ export function createAboutReadabilityTokens(
   const surface = mixRgb(baseSurface, fog, isDarkEnvironment ? 0.16 - brightnessBias : 0.12 + brightnessBias);
 
   return {
-    "--about-reading-surface": toCssRgb(surface),
+    "--about-reading-surface": toCssChannels(surface),
     "--about-reading-text": toCssRgb(isDarkEnvironment ? [250, 247, 241] : [38, 31, 27]),
     "--about-reading-secondary": toCssRgb(isDarkEnvironment ? [229, 225, 217] : [81, 70, 62]),
-    "--about-reading-accent": toCssRgb(accent),
+    "--about-reading-accent": toCssChannels(accent),
   };
 }
