@@ -687,17 +687,86 @@ canvas {
 
 @layer utilities {
   .about-text-primary {
-    color: var(--about-text-primary, var(--text-primary));
+    color: var(--about-reading-text, var(--text-primary));
   }
   .about-text-secondary {
-    color: var(--about-text-secondary, var(--text-secondary));
+    color: var(--about-reading-secondary, var(--text-secondary));
   }
   .about-text-muted {
-    color: var(--about-text-muted, var(--text-secondary));
-    opacity: 0.5;
+    color: var(--about-reading-secondary, var(--text-secondary));
   }
   .about-text-faint {
-    color: var(--about-text-faint, var(--text-secondary));
-    opacity: 0.2;
+    color: var(--about-reading-secondary, var(--text-secondary));
+  }
+  .about-text-decorative {
+    color: color-mix(in srgb, var(--about-reading-accent, var(--text-secondary)) 58%, transparent);
+  }
+}
+
+.about-reading-zone {
+  position: relative;
+  isolation: isolate;
+  min-width: 0;
+  max-width: 100%;
+  overflow: clip;
+}
+
+.about-reading-veil {
+  position: absolute;
+  z-index: 0;
+  inset: -0.9rem -0.75rem;
+  pointer-events: none;
+  border: 0;
+  background:
+    radial-gradient(
+      ellipse 128% 120% at 38% 42%,
+      rgb(var(--about-reading-surface, 246 241 233) / var(--about-reading-center-alpha, 0.88)) 0%,
+      rgb(var(--about-reading-surface, 246 241 233) / var(--about-reading-middle-alpha, 0.58)) 52%,
+      rgb(var(--about-reading-accent, 141 102 84) / 0.08) 72%,
+      transparent 100%
+    );
+  -webkit-backdrop-filter: blur(var(--about-reading-blur, 3px));
+  backdrop-filter: blur(var(--about-reading-blur, 3px));
+  -webkit-mask-image: radial-gradient(ellipse 118% 112% at 38% 42%, #000 18%, rgb(0 0 0 / 0.78) 58%, transparent 100%);
+  mask-image: radial-gradient(ellipse 118% 112% at 38% 42%, #000 18%, rgb(0 0 0 / 0.78) 58%, transparent 100%);
+}
+
+.about-reading-veil[data-about-reading-veil="hero"] {
+  --about-reading-center-alpha: 0.8;
+  --about-reading-middle-alpha: 0.48;
+  --about-reading-blur: 4px;
+}
+
+.about-reading-veil[data-about-reading-veil="body"] {
+  --about-reading-center-alpha: 0.88;
+  --about-reading-middle-alpha: 0.58;
+  --about-reading-blur: 3px;
+}
+
+.about-reading-veil[data-about-reading-veil="quote"] {
+  --about-reading-center-alpha: 0.76;
+  --about-reading-middle-alpha: 0.42;
+  --about-reading-blur: 3px;
+}
+
+.about-reading-veil[data-about-reading-veil="compact"] {
+  --about-reading-center-alpha: 0.9;
+  --about-reading-middle-alpha: 0.62;
+  --about-reading-blur: 2px;
+}
+
+.about-reading-content {
+  display: contents;
+}
+
+.about-reading-content > * {
+  position: relative;
+  z-index: 1;
+  min-width: 0;
+}
+
+@media (min-width: 768px) {
+  .about-reading-veil {
+    inset: -1.15rem -1.1rem;
   }
 }
