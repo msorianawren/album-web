@@ -109,7 +109,11 @@ export function AboutClient({ profile }: AboutClientProps) {
   }, []);
 
   return (
-    <main ref={containerRef} className="relative z-10 bg-transparent text-text-primary selection:bg-accent/20">
+    <main 
+      ref={containerRef} 
+      className="relative z-10 bg-transparent text-text-primary selection:bg-accent/20"
+      data-aurora-veil-enabled={useVeil ? "true" : "false"}
+    >
       <AboutClockwork
         displayName={profile.display_name || "Oriana Wren"}
         chapterCount={Math.max(1, (profile.career?.length || 0) + (profile.education?.length || 0) + (profile.achievements?.length || 0))}
@@ -141,7 +145,7 @@ export function AboutClient({ profile }: AboutClientProps) {
               <div className="about-hero-img h-full w-full bg-gradient-to-br from-surface-secondary/80 to-surface-secondary/20 flex items-center justify-center border-l border-border/10 relative overflow-hidden">
                 <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-transparent to-black/5" />
                 <div className="absolute inset-0 opacity-[0.03] mix-blend-overlay" style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E\")" }} />
-                <div className="flex flex-col items-center gap-4 text-text-secondary/30 -rotate-90">
+                <div className="flex flex-col items-center gap-4 text-[var(--about-text-faint)] -rotate-90">
                   <div className="h-px w-16 bg-text-secondary/20" />
                   <span className="text-[0.65rem] uppercase tracking-[0.3em] font-medium">Editorial Cover Frame</span>
                   <div className="h-px w-16 bg-text-secondary/20" />
@@ -199,7 +203,7 @@ export function AboutClient({ profile }: AboutClientProps) {
                   </Link>
                 )}
                 {profile.secondary_cta_href && (
-                  <Link href={profile.secondary_cta_href} className="inline-flex items-center gap-3 text-[0.72rem] uppercase tracking-[0.18em] font-medium about-text-secondary border-b border-border pb-1.5 hover:text-text-primary hover:border-text-primary/40 transition-colors duration-200">
+                  <Link href={profile.secondary_cta_href} className="inline-flex items-center gap-3 text-[0.72rem] uppercase tracking-[0.18em] font-medium text-[var(--about-text-secondary)] border-b border-border pb-1.5 hover:text-[var(--about-text-primary)] hover:border-[var(--about-text-muted)] transition-colors duration-200">
                     {profile.secondary_cta_label || "Contact"}
                   </Link>
                 )}
@@ -218,7 +222,7 @@ export function AboutClient({ profile }: AboutClientProps) {
                     <div className="h-24 w-24 mb-6 border-[0.5px] border-border/30 rounded-full flex items-center justify-center relative">
                       <div className="absolute inset-2 border-[0.5px] border-border/10 rounded-full" />
                     </div>
-                    <span className="text-[0.6rem] uppercase tracking-[0.25em] text-text-secondary/40 font-medium">Portrait Frame</span>
+                    <span className="text-[0.6rem] uppercase tracking-[0.25em] text-[var(--about-text-faint)] font-medium">Portrait Frame</span>
                   </div>
                 )}
               </div>
@@ -482,7 +486,7 @@ export function AboutClient({ profile }: AboutClientProps) {
       {hasSocialLinks && (
         <section className="w-full mt-24 md:mt-40 pb-24 md:pb-32">
           <div className="max-w-[1320px] mx-auto px-6 sm:px-10 lg:px-16 text-center">
-            <h2 className="about-reveal font-serif text-[2.5rem] md:text-[4rem] lg:text-[5rem] tracking-tight text-text-primary/15 mb-10">
+            <h2 className="about-reveal font-serif text-[2.5rem] md:text-[4rem] lg:text-[5rem] tracking-tight text-[var(--about-text-faint)] mb-10">
               Connect
             </h2>
             <AboutReadingZone as="div" enabled={useVeil} variant="compact" tokens={veilTokens?.compact} className="flex flex-wrap justify-center gap-x-10 gap-y-5">

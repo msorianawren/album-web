@@ -22,7 +22,6 @@ const defaultBackgroundSettings: LandingBackgroundSettings = {
   reduce_animations_on_mobile: true,
 };
 
-export const ENVIRONMENT_ARTIST_CONFIG_EVENT = "oriana-environment-artist-config";
 
 export function NatureAnimatedBackground({ config }: { config?: Partial<LandingBackgroundSettings> }) {
   const pathname = usePathname();
@@ -33,6 +32,12 @@ export function NatureAnimatedBackground({ config }: { config?: Partial<LandingB
   const [documentVisible, setDocumentVisible] = useState(true);
   const customVideoRef = useRef<HTMLVideoElement>(null);
   const appliesHere = resolvedConfig.apply_to_all_public_pages || pathname === "/";
+
+  useEffect(() => {
+    import("@/lib/environment/artist-store").then(({ artistStore }) => {
+      artistStore.setConfig(resolvedConfig.preset, appliesHere && resolvedConfig.enabled !== false && documentVisible);
+    });
+  }, [resolvedConfig.preset, appliesHere, resolvedConfig.enabled, documentVisible]);
 
   useEffect(() => {
     if (!bgCustomUrlOverride) return;
@@ -60,14 +65,11 @@ export function NatureAnimatedBackground({ config }: { config?: Partial<LandingB
 
   useEffect(() => {
     const root = document.documentElement;
-    root.dataset.environmentArtistPreset = resolvedConfig.preset;
-    root.dataset.environmentEnabled = resolvedConfig.enabled !== false && appliesHere ? "true" : "false";
     root.style.setProperty("--environment-artist-opacity", String(resolvedConfig.opacity / 100));
     root.style.setProperty("--environment-artist-density", String(resolvedConfig.density / 100));
     root.style.setProperty("--preset-accent", resolvedConfig.accent_color_1 ?? "rgba(168, 150, 130, .32)");
     root.style.setProperty("--preset-hover-bg", resolvedConfig.accent_color_2 ?? "rgba(255, 255, 255, .05)");
-    window.dispatchEvent(new CustomEvent(ENVIRONMENT_ARTIST_CONFIG_EVENT));
-  }, [appliesHere, resolvedConfig.accent_color_1, resolvedConfig.accent_color_2, resolvedConfig.density, resolvedConfig.enabled, resolvedConfig.opacity, resolvedConfig.preset]);
+  }, [resolvedConfig.accent_color_1, resolvedConfig.accent_color_2, resolvedConfig.density, resolvedConfig.opacity]);
 
   useEffect(() => {
     const video = customVideoRef.current;
@@ -75,16 +77,14 @@ export function NatureAnimatedBackground({ config }: { config?: Partial<LandingB
     const synchronize = () => {
       if (reducedMotion || !documentVisible) {
         video.pause();
-        return;
+      } else {
+        video.play().catch(() => {});
       }
-      void video.play().catch(() => {
-        // A custom background remains optional when autoplay is unavailable.
-      });
     };
     synchronize();
-    video.addEventListener("canplay", synchronize);
-    return () => video.removeEventListener("canplay", synchronize);
-  }, [customImageUrl, documentVisible, reducedMotion]);
+    video.addEventListener("loadedmetadata", synchronize);
+    return () => video.removeEventListener("loadedmetadata", synchronize);
+  }, [documentVisible, reducedMotion]);
 
   const customUrl = bgCustomUrlOverride ? customImageUrl : resolvedConfig.custom_url;
   const enabled = resolvedConfig.enabled !== false && appliesHere;

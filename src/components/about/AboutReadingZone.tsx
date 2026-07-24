@@ -28,22 +28,20 @@ export function AboutReadingZone<T extends ElementType = "div">({
   const Component = as || "div";
 
   if (!enabled) {
-    return <Component className={className} {...(props as any)}>{children}</Component>;
+    return React.createElement(Component, { className, ...(props as ComponentPropsWithoutRef<T>) }, children);
   }
 
-  return (
-    <Component 
-      className={`relative z-10 isolate ${className}`} 
-      style={{
+  return React.createElement(
+    Component,
+    {
+      className: `relative z-10 isolate ${className}`,
+      style: {
         ...tokens,
         color: "var(--about-text-primary)"
-      }}
-      {...(props as any)}
-    >
-      <AboutVeil tokens={tokens} />
-      <div className="relative z-10">
-        {children}
-      </div>
-    </Component>
+      },
+      ...(props as ComponentPropsWithoutRef<T>)
+    },
+    <AboutVeil tokens={tokens} />,
+    <div className="relative z-10">{children}</div>
   );
 }

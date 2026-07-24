@@ -3,7 +3,6 @@
 import dynamic from "next/dynamic";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
-import { ENVIRONMENT_ARTIST_CONFIG_EVENT } from "@/components/landing/NatureAnimatedBackground";
 import { useDepthEffects } from "@/hooks/useDepthEffects";
 import { useEnvironmentPreferences, useResolvedEnvironmentPhase } from "@/hooks/useEnvironmentPreferences";
 import { useUIPreferences } from "@/hooks/useUIPreferences";

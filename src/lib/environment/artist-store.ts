@@ -1,16 +1,38 @@
-import { ENVIRONMENT_ARTIST_CONFIG_EVENT } from "@/components/landing/NatureAnimatedBackground";
+class ArtistStore extends EventTarget {
+  private preset: string = "mist";
+  private enabled: boolean = true;
+
+  getSnapshot = () => {
+    return `${this.preset}:${this.enabled}`;
+  };
+
+  getServerSnapshot = () => {
+    return "mist:true";
+  };
+
+  subscribe = (callback: () => void) => {
+    this.addEventListener("change", callback);
+    return () => this.removeEventListener("change", callback);
+  };
+
+  setConfig = (preset: string, enabled: boolean) => {
+    if (this.preset === preset && this.enabled === enabled) return;
+    this.preset = preset;
+    this.enabled = enabled;
+    this.dispatchEvent(new Event("change"));
+  };
+}
+
+export const artistStore = new ArtistStore();
 
 export function subscribeArtistConfig(callback: () => void) {
-  if (typeof window === "undefined") return () => {};
-  window.addEventListener(ENVIRONMENT_ARTIST_CONFIG_EVENT, callback);
-  return () => window.removeEventListener(ENVIRONMENT_ARTIST_CONFIG_EVENT, callback);
+  return artistStore.subscribe(callback);
 }
 
 export function getArtistConfigSnapshot() {
-  if (typeof document === "undefined") return "mist:true";
-  return `${document.documentElement.dataset.environmentArtistPreset ?? "mist"}:${document.documentElement.dataset.environmentEnabled ?? "true"}`;
+  return artistStore.getSnapshot();
 }
 
 export function getServerArtistConfigSnapshot() {
-  return "mist:true";
+  return artistStore.getServerSnapshot();
 }
