@@ -61,5 +61,26 @@ try {
   if (error.code !== "ENOENT") throw error;
 }
 
+const assetDirectory = path.join(root, "public/games");
+try {
+  const queue = [assetDirectory];
+  while (queue.length) {
+    const current = queue.pop();
+    for (const entry of await readdir(current, { withFileTypes: true })) {
+      const assetPath = path.join(current, entry.name);
+      if (entry.isDirectory()) {
+        queue.push(assetPath);
+        continue;
+      }
+      const bytes = (await stat(assetPath)).size;
+      if (bytes > budgets.gamePlatform.maxAssetBytes) {
+        failures.push(`${path.relative(root, assetPath)} exceeds the per-asset budget`);
+      }
+    }
+  }
+} catch (error) {
+  if (error.code !== "ENOENT") throw error;
+}
+
 if (failures.length) throw new Error(`Game platform gate failed:\n- ${failures.join("\n- ")}`);
 console.log("Game platform import, security, and source-budget gates passed.");

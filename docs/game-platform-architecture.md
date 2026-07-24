@@ -103,7 +103,7 @@ Add an index only when a measured plan shows a harmful sequential scan or sort. 
 - every catalog entry has its own dynamic loader;
 - generic game source imports no Three.js;
 - generic game source contains no private R2 URLs, signatures, or server credentials;
-- future engine source stays within the recorded budget.
+- future engine source and files under `public/games` stay within recorded budgets.
 
 The standard private-media leak gate remains authoritative for generated artifacts. Phase 1 adds no private media path, API route, dependency, global client provider, worker, or game asset.
 
