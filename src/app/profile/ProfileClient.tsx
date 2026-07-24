@@ -204,15 +204,15 @@ export default function ProfileClient({
           </div>
         </section>
 
-        <AssistantPreferencesPanel
-          userId={userId}
-          initialPreferences={initialAssistantPreferences}
-        />
-
         <EnvironmentControlPanel
           userId={userId}
           initialPreferences={initialEnvironmentPreferences}
           artistPreset={config.preset}
+        />
+
+        <AssistantPreferencesPanel
+          userId={userId}
+          initialPreferences={initialAssistantPreferences}
         />
 
         {/* Custom background remains local and independent of the built-in environment. */}
