@@ -8,7 +8,7 @@ interface AboutVeilProps {
 
 export function AboutVeil({ tokens, className = "" }: AboutVeilProps) {
 
-  const gradientStops = tokens["--about-veil-gradient-positions"] as string;
+  const gradientStops = (tokens as any)["--about-veil-gradient-positions"] as string;
   const stops = gradientStops.split(",").map(s => s.trim());
   const s0 = stops[0] || "0%";
   const s1 = stops[1] || "50%";

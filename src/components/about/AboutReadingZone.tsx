@@ -8,8 +8,9 @@ interface AboutReadingZoneProps {
   variant?: VeilVariant;
   className?: string;
   children: ReactNode;
-  as?: React.ElementType;
-  tokens?: Record<string, string>;
+  as?: React.ElementType<any>;
+  enabled?: boolean;
+  tokens?: React.CSSProperties;
 }
 
 export function AboutReadingZone({
