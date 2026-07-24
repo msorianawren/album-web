@@ -172,9 +172,9 @@ export class MistShaderMaterial extends THREE.ShaderMaterial {
       fragmentShader: mistFragmentShader,
       transparent: true,
       depthWrite: false,
-      depthTest: false, // DEBUG: force render on top
+      depthTest: true,
       blending: THREE.NormalBlending,
-      fog: false, // DEBUG: disable fog to see if it eats the mist
+      fog: true,
     });
   }
 }
