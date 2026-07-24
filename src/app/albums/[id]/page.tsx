@@ -111,11 +111,12 @@ export default async function AlbumPage({ params }: AlbumPageProps) {
   };
 
   return (
-    <main className="relative z-10 min-h-screen bg-transparent">
+    <>
       <NatureAnimatedBackground config={landing.background_settings} />
-      <AppHeader />
-      <AlbumViewTracker albumId={album.id} slug={album.slug} locked={album.locked} />
-      <AlbumHeader album={localizedAlbum} dict={dict} />
+      <main className="relative z-10 min-h-screen bg-transparent">
+        <AppHeader />
+        <AlbumViewTracker albumId={album.id} slug={album.slug} locked={album.locked} />
+        <AlbumHeader album={localizedAlbum} dict={dict} />
       {album.locked ? (
         <LockedAlbumState
           album={album}
@@ -149,5 +150,6 @@ export default async function AlbumPage({ params }: AlbumPageProps) {
       )}
       <AccessRequestModal />
     </main>
+    </>
   );
 }

@@ -445,7 +445,7 @@ export async function getAlbum(
       .select(mediaSelect)
       .eq("album_id", album.id)
       .is("deleted_at", null)
-      .in("processing_status", ["ready", "processed"])
+      .in("processing_status", ["ready", "processed", "uploaded", "processing"])
       .order("sort_order", { ascending: true })
       .order("created_at", { ascending: true })
       .limit(250);
