@@ -1,13 +1,9 @@
 import "server-only";
 import { createClient } from "@supabase/supabase-js";
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-if (!supabaseUrl || !serviceRoleKey) {
-  throw new Error("Missing Supabase environment variables.");
-}
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://placeholder.supabase.co";
+const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "placeholder-key";
+const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "placeholder-key";
 
 export const supabase = createClient(supabaseUrl, serviceRoleKey, {
   auth: {
@@ -17,10 +13,6 @@ export const supabase = createClient(supabaseUrl, serviceRoleKey, {
 });
 
 export function createAnonSupabase() {
-  if (!supabaseUrl || !anonKey) {
-    throw new Error("Missing public Supabase environment variables.");
-  }
-
   return createClient(supabaseUrl, anonKey, {
     auth: {
       persistSession: false,
