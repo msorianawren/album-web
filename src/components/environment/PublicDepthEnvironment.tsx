@@ -7,6 +7,11 @@ import { useDepthEffects } from "@/hooks/useDepthEffects";
 import { useEnvironmentPreferences, useResolvedEnvironmentPhase } from "@/hooks/useEnvironmentPreferences";
 import { useUIPreferences } from "@/hooks/useUIPreferences";
 import { audioUX } from "@/lib/audio-ux";
+import {
+  getGameRuntimeSuspensionSnapshot,
+  getServerGameRuntimeSuspensionSnapshot,
+  subscribeGameRuntimeSuspension,
+} from "@/games/core/runtime";
 import { ORIANA_MEDIA_VIEWER_STATE_EVENT } from "@/lib/assistant/runtime-events";
 import { getEnvironmentState } from "@/lib/environment/presets";
 import { ENVIRONMENT_PRESET_IDS, type EnvironmentPresetId } from "@/lib/environment/preferences";
@@ -105,6 +110,11 @@ function PublicDepthEnvironmentContent({ pathname }: { pathname: string }) {
   const artistSnapshot = useSyncExternalStore(subscribeArtistConfig, getArtistConfigSnapshot, getServerArtistConfigSnapshot);
   const capabilitySnapshot = useSyncExternalStore(subscribeRuntimeCapability, getRuntimeCapabilitySnapshot, () => "1280:false:false:true");
   const mediaViewerOpen = useSyncExternalStore(subscribeMediaViewer, getMediaViewerSnapshot, () => false);
+  const gameRuntimeSuspended = useSyncExternalStore(
+    subscribeGameRuntimeSuspension,
+    getGameRuntimeSuspensionSnapshot,
+    getServerGameRuntimeSuspensionSnapshot,
+  );
   const locale = useSyncExternalStore(subscribeLocale, getStoredLocale, () => "en");
   const [webglUnavailable, setWebglUnavailable] = useState(false);
   const [isIdle, setIsIdle] = useState(false);
@@ -119,7 +129,7 @@ function PublicDepthEnvironmentContent({ pathname }: { pathname: string }) {
   );
   const slots = useMemo(() => getWindChimeAnchors(pathname), [pathname]);
   const rects = useChimeAnchorRects(slots);
-  const showEnvironment = artistEnabled && !mediaViewerOpen;
+  const showEnvironment = artistEnabled && !mediaViewerOpen && !gameRuntimeSuspended;
   const environmentRects = useMemo(
     () => showEnvironment && quality.enabled ? rects : [],
     [quality.enabled, rects, showEnvironment],

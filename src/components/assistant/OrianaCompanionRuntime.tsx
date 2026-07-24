@@ -15,6 +15,11 @@ import {
 import { getAssistantUICopy } from "@/lib/assistant/ui-copy";
 import { cn } from "@/lib/utils";
 import type { PublicSession } from "@/lib/types";
+import {
+  getGameRuntimeSuspensionSnapshot,
+  getServerGameRuntimeSuspensionSnapshot,
+  subscribeGameRuntimeSuspension,
+} from "@/games/core/runtime";
 
 const AssistantPanel = dynamic(
   () => import("@/components/assistant/AssistantPanel").then((mod) => mod.AssistantPanel),
@@ -50,8 +55,16 @@ export function OrianaCompanionRuntime({ session }: OrianaCompanionRuntimeProps)
     getMediaViewerSnapshot,
     () => false,
   );
+  const gameRuntimeSuspended = useSyncExternalStore(
+    subscribeGameRuntimeSuspension,
+    getGameRuntimeSuspensionSnapshot,
+    getServerGameRuntimeSuspensionSnapshot,
+  );
   const routeAllowsRuntime = isOrianaCompanionRuntimePath(pathname);
-  const canUseRuntime = routeAllowsRuntime && preferences.mode !== "off" && !mediaViewerOpen;
+  const canUseRuntime = routeAllowsRuntime
+    && preferences.mode !== "off"
+    && !mediaViewerOpen
+    && !gameRuntimeSuspended;
   const currentDismissKey = `${pathname}:${preferences.mode}`;
   const dismissed = dismissedKey === currentDismissKey;
   const shouldShowDock =

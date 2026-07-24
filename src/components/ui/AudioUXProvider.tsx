@@ -1,8 +1,13 @@
 "use client";
 
-import { useEffect, useCallback, useState } from "react";
+import { useEffect, useCallback, useState, useSyncExternalStore } from "react";
 import { audioUX } from "@/lib/audio-ux";
 import { useUIPreferences } from "@/hooks/useUIPreferences";
+import {
+  getGameRuntimeSuspensionSnapshot,
+  getServerGameRuntimeSuspensionSnapshot,
+  subscribeGameRuntimeSuspension,
+} from "@/games/core/runtime";
 
 import { AmbientSoundType, ClickSoundType } from "@/hooks/useUIPreferences";
 
@@ -15,6 +20,11 @@ export function AudioUXProvider({
 }) {
   const { soundEnabled, clickSound, ambientSound, ambientVolume } = useUIPreferences();
   const [isReady, setIsReady] = useState(() => Boolean(audioUX.isReady));
+  const gameRuntimeSuspended = useSyncExternalStore(
+    subscribeGameRuntimeSuspension,
+    getGameRuntimeSuspensionSnapshot,
+    getServerGameRuntimeSuspensionSnapshot,
+  );
 
   useEffect(() => {
     const initAudio = () => {
@@ -36,7 +46,7 @@ export function AudioUXProvider({
 
   const handleClick = useCallback(
     (e: MouseEvent) => {
-      if (!soundEnabled || !audioUX.isReady) return;
+      if (!soundEnabled || !audioUX.isReady || gameRuntimeSuspended) return;
 
       let target = e.target as HTMLElement | null;
       let shouldPlayClick = false;
@@ -67,7 +77,7 @@ export function AudioUXProvider({
         audioUX.playClickSound(clickSound === "auto" ? (defaultClick as ClickSoundType) : clickSound);
       }
     },
-    [soundEnabled, clickSound, defaultClick]
+    [soundEnabled, clickSound, defaultClick, gameRuntimeSuspended]
   );
 
   useEffect(() => {
@@ -78,7 +88,7 @@ export function AudioUXProvider({
   }, [handleClick]);
 
   useEffect(() => {
-    if (!soundEnabled || !isReady) {
+    if (!soundEnabled || !isReady || gameRuntimeSuspended) {
       audioUX.stopAmbient();
       return;
     }
@@ -97,7 +107,7 @@ export function AudioUXProvider({
     });
     
     return () => {};
-  }, [soundEnabled, ambientSound, ambientVolume, defaultAmbient, isReady]);
+  }, [soundEnabled, ambientSound, ambientVolume, defaultAmbient, isReady, gameRuntimeSuspended]);
 
   return null;
 }
