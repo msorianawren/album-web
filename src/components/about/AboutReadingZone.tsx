@@ -8,7 +8,7 @@ interface AboutReadingZoneProps {
   variant?: VeilVariant;
   className?: string;
   children: ReactNode;
-  as?: React.ElementType<any>;
+  as?: any;
   enabled?: boolean;
   tokens?: React.CSSProperties;
 }
