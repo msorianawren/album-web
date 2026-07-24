@@ -1,5 +1,6 @@
 import { readdir, readFile, stat } from "node:fs/promises";
 import path from "node:path";
+import { gzipSync } from "node:zlib";
 
 const root = process.cwd();
 const failures = [];
@@ -44,17 +45,28 @@ try {
   for (const entry of await readdir(engineDirectory, { withFileTypes: true })) {
     if (!entry.isDirectory()) continue;
     let total = 0;
+    const sourceParts = [];
     const queue = [path.join(engineDirectory, entry.name)];
     while (queue.length) {
       const current = queue.pop();
       for (const child of await readdir(current, { withFileTypes: true })) {
         const childPath = path.join(current, child.name);
         if (child.isDirectory()) queue.push(childPath);
-        else total += (await stat(childPath)).size;
+        else {
+          total += (await stat(childPath)).size;
+          if (/\.(ts|tsx|js|mjs)$/.test(child.name)) sourceParts.push(await readFile(childPath));
+        }
       }
     }
     if (total > budgets.gamePlatform.maxEngineSourceBytes) {
       failures.push(`${entry.name} engine source exceeds ${budgets.gamePlatform.maxEngineSourceBytes} bytes`);
+    }
+    const engineBudget = budgets.gamePlatform.engines?.[entry.name];
+    if (engineBudget) {
+      const gzipBytes = gzipSync(Buffer.concat(sourceParts)).byteLength;
+      if (gzipBytes > engineBudget.maxGzipBytes) {
+        failures.push(`${entry.name} engine source is ${gzipBytes} gzip bytes, over ${engineBudget.maxGzipBytes}`);
+      }
     }
   }
 } catch (error) {
@@ -63,6 +75,7 @@ try {
 
 const assetDirectory = path.join(root, "public/games");
 try {
+  const totals = new Map();
   const queue = [assetDirectory];
   while (queue.length) {
     const current = queue.pop();
@@ -73,10 +86,18 @@ try {
         continue;
       }
       const bytes = (await stat(assetPath)).size;
+      const relative = path.relative(assetDirectory, assetPath);
+      const slug = relative.split(path.sep)[0];
+      totals.set(slug, (totals.get(slug) ?? 0) + bytes);
       if (bytes > budgets.gamePlatform.maxAssetBytes) {
         failures.push(`${path.relative(root, assetPath)} exceeds the per-asset budget`);
       }
     }
+  }
+  for (const [slug, bytes] of totals) {
+    const maximum = budgets.gamePlatform.engines?.[slug]?.maxAssetBytes
+      ?? budgets.gamePlatform.maxTotalAssetBytes;
+    if (bytes > maximum) failures.push(`public/games/${slug} assets exceed ${maximum} bytes`);
   }
 } catch (error) {
   if (error.code !== "ENOENT") throw error;

@@ -89,8 +89,21 @@ export interface GameCatalogEntry {
   title: string;
   description: string;
   engineKey: string;
+  version: string;
+  category: "atelier" | "logic" | "arcade";
+  accent: "rose" | "sage" | "amber" | "sky";
+  status: "draft" | "published" | "archived";
+  rewardMode: "practice" | "verified";
   legacy: boolean;
   enabled: boolean;
+}
+
+export type GameEngineStatus = "loading" | "ready" | "running" | "paused" | "destroyed";
+
+export interface GameClientProps {
+  onEngineStatusChange?: (status: GameEngineStatus) => void;
+  quality?: "low" | "balanced" | "high";
+  reducedMotion?: boolean;
 }
 
 export interface StartGameSessionRequest {

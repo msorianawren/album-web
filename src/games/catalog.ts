@@ -2,15 +2,66 @@ import type { GameCatalogEntry } from "./core/types.ts";
 
 export const gameCatalog = [
   {
+    id: "00000000-0000-4000-8000-000000000010",
+    slug: "snake",
+    title: "Wren Trail Snake",
+    description: "Guide a ribbon-tailed wren through a quiet moonlit garden.",
+    engineKey: "snake-v1",
+    version: "1.0.0",
+    category: "arcade",
+    accent: "sage",
+    status: "published",
+    rewardMode: "practice",
+    legacy: false,
+    enabled: true,
+  },
+  {
+    id: "00000000-0000-4000-8000-000000000020",
+    slug: "feather-merge",
+    title: "Feather Merge",
+    description: "Compose matching feathers into an increasingly luminous collection.",
+    engineKey: "feather-merge-v1",
+    version: "1.0.0",
+    category: "logic",
+    accent: "amber",
+    status: "published",
+    rewardMode: "practice",
+    legacy: false,
+    enabled: true,
+  },
+  {
+    id: "00000000-0000-4000-8000-000000000030",
+    slug: "memory-garden",
+    title: "Memory Garden",
+    description: "Reveal and pair botanical keepsakes from Oriana's seasonal garden.",
+    engineKey: "memory-garden-v1",
+    version: "1.0.0",
+    category: "logic",
+    accent: "rose",
+    status: "published",
+    rewardMode: "practice",
+    legacy: false,
+    enabled: true,
+  },
+  {
     id: "00000000-0000-4000-8000-000000000001",
     slug: "puzzle-atelier",
     title: "Puzzle Atelier",
     description: "Oriana Wren's existing editorial sliding and swap puzzle.",
     engineKey: "legacy-puzzle-atelier",
+    version: "legacy-1",
+    category: "atelier",
+    accent: "sky",
+    status: "published",
+    rewardMode: "verified",
     legacy: true,
     enabled: true,
   },
 ] as const satisfies readonly GameCatalogEntry[];
+
+export const publishedGameCatalog = gameCatalog.filter(
+  (entry) => entry.enabled && entry.status === "published",
+);
 
 export function getGameCatalogEntry(slug: string) {
   return gameCatalog.find((entry) => entry.slug === slug) ?? null;

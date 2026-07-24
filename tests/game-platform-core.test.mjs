@@ -112,8 +112,26 @@ test("catalog stays server-safe and each game has one dynamic client loader", ()
   const loader = read("src/games/loaders.client.ts");
   const gamesPage = read("src/app/games/page.tsx");
   assert.doesNotMatch(catalog, /loaders\.client|components\/games|dynamic\(/);
-  assert.match(loader, /"puzzle-atelier": \(\) => import\("@\/components\/games\/PuzzleAtelier"\)/);
+  for (const slug of ["snake", "feather-merge", "memory-garden", "puzzle-atelier"]) {
+    assert.match(loader, new RegExp(`"${slug}": \\(\\) => import\\(`));
+  }
   assert.doesNotMatch(gamesPage, /src\/games\/engines|games\/loaders\.client/);
+  assert.doesNotMatch(gamesPage, /PuzzleAtelier/);
+});
+
+test("Game Hub exposes only real published routes and canaries remain practice-only", () => {
+  const catalog = read("src/games/catalog.ts");
+  const hub = read("src/components/games/GameHub.tsx");
+  const player = read("src/components/games/GamePlayerShell.tsx");
+  const proxy = read("src/proxy.ts");
+  for (const slug of ["snake", "feather-merge", "memory-garden", "puzzle-atelier"]) {
+    assert.match(catalog, new RegExp(`slug: "${slug}"`));
+  }
+  assert.match(hub, /data-game-card=\{game\.slug\}/);
+  assert.match(hub, /data-game-status=\{game\.status\}/);
+  assert.match(player, /data-game-route=\{game\.slug\}/);
+  assert.match(catalog, /rewardMode: "practice"/);
+  assert.match(proxy, /pathname\.startsWith\("\/games"\)/);
 });
 
 test("global visual and audio runtimes subscribe to game suspension", () => {

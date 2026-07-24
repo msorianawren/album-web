@@ -13,6 +13,21 @@
   },
   "gamePlatform": {
     "maxEngineSourceBytes": 180000,
-    "maxAssetBytes": 1572864
+    "maxAssetBytes": 1572864,
+    "maxTotalAssetBytes": 2097152,
+    "engines": {
+      "snake": {
+        "maxGzipBytes": 81920,
+        "maxAssetBytes": 1048576
+      },
+      "feather-merge": {
+        "maxGzipBytes": 81920,
+        "maxAssetBytes": 1048576
+      },
+      "memory-garden": {
+        "maxGzipBytes": 81920,
+        "maxAssetBytes": 1048576
+      }
+    }
   }
 }

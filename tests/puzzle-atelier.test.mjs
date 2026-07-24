@@ -133,8 +133,8 @@ test("puzzle APIs enforce server-side access and Studio only exposes public albu
 
 test("games page treats any missing Puzzle Atelier relation as a migration-ready state", () => {
   const puzzleServer = read("src/lib/puzzles/server.ts");
-  const gamesPage = read("src/app/games/page.tsx");
+  const legacyRoute = read("src/app/games/[slug]/page.tsx");
   assert.match(puzzleServer, /puzzle_\(challenges\|attempts\|user_results\|user_profiles\|user_badges\)/);
-  assert.match(gamesPage, /isPuzzleSchemaUnavailable\(error\)/);
-  assert.match(gamesPage, /unavailable = true/);
+  assert.match(legacyRoute, /isPuzzleSchemaUnavailable\(error\)/);
+  assert.match(legacyRoute, /unavailable = true/);
 });
