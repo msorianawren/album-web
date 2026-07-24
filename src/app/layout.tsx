@@ -1,9 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import { OAuthHashHandler } from "@/components/auth/OAuthHashHandler";
-import { OrianaCompanionRuntime } from "@/components/assistant/OrianaCompanionRuntime";
 import { AudioUXProvider } from "@/components/ui/AudioUXProvider";
-import { PublicDepthEnvironment } from "@/components/environment/PublicDepthEnvironment";
 import { ToastProvider } from "@/components/ui/ToastProvider";
+import { EnvironmentShell, CompanionShell } from "./LayoutClientShells";
 import "./globals.css";
 import "@/components/assistant/assistant-pet.css";
 
@@ -70,9 +69,9 @@ export default async function RootLayout({
         />
         <ToastProvider>
           <OAuthHashHandler />
-          <PublicDepthEnvironment />
+          <EnvironmentShell />
           {children}
-          <OrianaCompanionRuntime session={session} />
+          <CompanionShell session={session} />
         </ToastProvider>
       </body>
     </html>
