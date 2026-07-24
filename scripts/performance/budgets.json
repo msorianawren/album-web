@@ -10,5 +10,9 @@
       "entry": "[project]/src/app/albums/page",
       "maxBytes": 780000
     }
+  },
+  "gamePlatform": {
+    "maxEngineSourceBytes": 180000,
+    "maxAssetBytes": 1572864
   }
 }

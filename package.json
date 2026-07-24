@@ -22,10 +22,12 @@
     "media:classify-existing": "node scripts/media-processing/classify-existing.mjs",
     "media:canary": "node scripts/media-processing/canary.mjs",
     "authz:verify-remote": "node scripts/authorization/verify-role-matrix.mjs",
+    "games:inventory-legacy": "node scripts/games/inventory-legacy-puzzles.mjs",
     "perf:bundle": "node scripts/performance/check-client-bundle.mjs",
     "perf:privacy": "node scripts/performance/check-private-media-leaks.mjs",
     "perf:queries": "node scripts/performance/check-query-shapes.mjs",
-    "perf:gate": "npm run perf:bundle && npm run perf:privacy && npm run perf:queries",
+    "perf:games": "node scripts/performance/check-game-platform.mjs",
+    "perf:gate": "npm run perf:bundle && npm run perf:privacy && npm run perf:queries && npm run perf:games",
     "perf:lighthouse": "npx --yes @lhci/cli@0.15.1 autorun"
   },
   "dependencies": {
