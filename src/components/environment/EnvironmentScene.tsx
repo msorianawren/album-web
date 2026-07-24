@@ -8,15 +8,18 @@ import type { EnvironmentPreferences } from "@/lib/environment/preferences";
 import type { EnvironmentQuality } from "@/lib/environment/quality";
 import { advanceWindRuntime, applyWindInteractionImpulse, createWindRuntime } from "@/lib/environment/wind";
 
-import { EnvironmentLightingRig } from "./EnvironmentLightingRig";
-import { VegetationScene } from "./vegetation/VegetationScene";
-import { CanopyShadowOverlay } from "./vegetation/CanopyShadowOverlay";
-import { WeatherSystem } from "./weather/WeatherSystem";
-import { WindChimeScene } from "./WindChimeScene";
-import { EnvironmentAtmosphere } from "./EnvironmentParticles"; // Kept for the atmosphere/sky background
-import { EnvironmentBirds } from "./EnvironmentBirds";
-import { EnvironmentBranches } from "./EnvironmentBranches";
-import { SharedBotanicalScene } from "./shared/SharedBotanicalScene";
+import dynamic from "next/dynamic";
+
+const EnvironmentLightingRig = dynamic(() => import("./EnvironmentLightingRig").then(m => m.EnvironmentLightingRig), { ssr: false });
+const VegetationScene = dynamic(() => import("./vegetation/VegetationScene").then(m => m.VegetationScene), { ssr: false });
+const CanopyShadowOverlay = dynamic(() => import("./vegetation/CanopyShadowOverlay").then(m => m.CanopyShadowOverlay), { ssr: false });
+const WeatherSystem = dynamic(() => import("./weather/WeatherSystem").then(m => m.WeatherSystem), { ssr: false });
+const WindChimeScene = dynamic(() => import("./WindChimeScene").then(m => m.WindChimeScene), { ssr: false });
+const EnvironmentAtmosphere = dynamic(() => import("./EnvironmentParticles").then(m => m.EnvironmentAtmosphere), { ssr: false });
+const EnvironmentBirds = dynamic(() => import("./EnvironmentBirds").then(m => m.EnvironmentBirds), { ssr: false });
+const EnvironmentBranches = dynamic(() => import("./EnvironmentBranches").then(m => m.EnvironmentBranches), { ssr: false });
+const SharedBotanicalScene = dynamic(() => import("./shared/SharedBotanicalScene").then(m => m.SharedBotanicalScene), { ssr: false });
+
 import { botanicalProfiles } from "@/lib/environment/botanical-profiles";
 
 export function EnvironmentScene({

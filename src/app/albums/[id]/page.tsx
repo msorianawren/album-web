@@ -5,14 +5,8 @@ import { AlbumDownloadButton } from "@/components/albums/AlbumDownloadButton";
 import { LockedAlbumState } from "@/components/albums/LockedAlbumState";
 import { UpdatingNotice } from "@/components/albums/UpdatingNotice";
 import { AppHeader } from "@/components/AppHeader";
-import dynamic from "next/dynamic";
-
-const CommentSection = dynamic(() => import("@/components/comments/CommentSection").then(m => m.CommentSection), {
-  ssr: false,
-});
-const LikeButton = dynamic(() => import("@/components/media/LikeButton").then(m => m.LikeButton), {
-  ssr: false,
-});
+import { CommentSection } from "@/components/comments/CommentSection";
+import { LikeButton } from "@/components/media/LikeButton";
 
 import { MediaGrid } from "@/components/media/MediaGrid";
 import { getAlbum } from "@/lib/albums";

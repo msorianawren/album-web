@@ -10,6 +10,7 @@
 
 import dynamic from "next/dynamic";
 import { Suspense } from "react";
+import { usePathname } from "next/navigation";
 import type { PublicSession } from "@/lib/types";
 
 const PublicDepthEnvironment = dynamic(
@@ -23,6 +24,18 @@ const OrianaCompanionRuntime = dynamic(
 );
 
 export function EnvironmentShell() {
+  const pathname = usePathname() ?? "/";
+  const isEnvironmentRoute =
+    pathname === "/" ||
+    pathname === "/albums" ||
+    pathname.startsWith("/albums/") ||
+    pathname === "/about" ||
+    pathname === "/contact" ||
+    pathname === "/games" ||
+    pathname === "/profile";
+
+  if (!isEnvironmentRoute) return null;
+
   return (
     <Suspense fallback={null}>
       <PublicDepthEnvironment />
@@ -31,6 +44,11 @@ export function EnvironmentShell() {
 }
 
 export function CompanionShell({ session }: { session: PublicSession }) {
+  const pathname = usePathname() ?? "/";
+  if (pathname.startsWith("/studio")) return null;
+  if (pathname.startsWith("/login")) return null;
+  if (pathname.startsWith("/api")) return null;
+
   return (
     <Suspense fallback={null}>
       <OrianaCompanionRuntime session={session} />

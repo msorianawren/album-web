@@ -110,6 +110,7 @@ function PublicDepthEnvironmentContent({ pathname }: { pathname: string }) {
   const mediaViewerOpen = useSyncExternalStore(subscribeMediaViewer, getMediaViewerSnapshot, () => false);
   const locale = useSyncExternalStore(subscribeLocale, getStoredLocale, () => "en");
   const [webglUnavailable, setWebglUnavailable] = useState(false);
+  const [isIdle, setIsIdle] = useState(false);
   const handleWebglUnavailable = useCallback(() => setWebglUnavailable(true), []);
   const [viewportWidth, reducedMotion, saveData, documentVisible] = capabilitySnapshot.split(":");
   const artistEnabled = artistSnapshot.endsWith(":true");
@@ -147,6 +148,23 @@ function PublicDepthEnvironmentContent({ pathname }: { pathname: string }) {
     }, 0);
     return () => window.clearTimeout(timeout);
   }, [handleWebglUnavailable]);
+
+  useEffect(() => {
+    if (!showEnvironment || !quality.enabled) return;
+    let handle: number;
+    if ("requestIdleCallback" in window) {
+      handle = (window as any).requestIdleCallback(() => setIsIdle(true), { timeout: 2000 });
+    } else {
+      handle = setTimeout(() => setIsIdle(true), 500) as unknown as number;
+    }
+    return () => {
+      if ("requestIdleCallback" in window && "cancelIdleCallback" in window) {
+        (window as any).cancelIdleCallback(handle);
+      } else {
+        clearTimeout(handle);
+      }
+    };
+  }, [showEnvironment, quality.enabled]);
 
   useEffect(() => {
     if (!showEnvironment || !quality.enabled) return;
@@ -243,7 +261,7 @@ function PublicDepthEnvironmentContent({ pathname }: { pathname: string }) {
           </button>
         );
       })}
-      {showEnvironment && quality.enabled && !webglUnavailable ? (
+      {showEnvironment && quality.enabled && !webglUnavailable && isIdle ? (
         <PublicEnvironmentCanvas
           rects={environmentRects}
           reducedMotion={reducedMotion === "true"}
