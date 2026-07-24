@@ -12,6 +12,7 @@ import { ORIANA_MEDIA_VIEWER_STATE_EVENT } from "@/lib/assistant/runtime-events"
 import { getEnvironmentState } from "@/lib/environment/presets";
 import { ENVIRONMENT_PRESET_IDS, type EnvironmentPresetId } from "@/lib/environment/preferences";
 import { resolveEnvironmentQuality } from "@/lib/environment/quality";
+import { subscribeArtistConfig, getArtistConfigSnapshot, getServerArtistConfigSnapshot } from "@/lib/environment/artist-store";
 import { getStoredLocale } from "@/lib/i18n";
 import { getWindChimeAnchors } from "@/lib/wind-chime-anchors";
 import { isChimeControlTarget, isOverlayInteractionActive, isProtectedInteractiveTarget } from "./chime-interaction";
@@ -37,15 +38,7 @@ function getMediaViewerSnapshot() {
   return typeof document !== "undefined" && document.body.dataset.orianaMediaViewerOpen === "true";
 }
 
-function subscribeArtistConfig(callback: () => void) {
-  window.addEventListener(ENVIRONMENT_ARTIST_CONFIG_EVENT, callback);
-  return () => window.removeEventListener(ENVIRONMENT_ARTIST_CONFIG_EVENT, callback);
-}
 
-function getArtistConfigSnapshot() {
-  if (typeof document === "undefined") return "mist:true";
-  return `${document.documentElement.dataset.environmentArtistPreset ?? "mist"}:${document.documentElement.dataset.environmentEnabled ?? "true"}`;
-}
 
 function subscribeRuntimeCapability(callback: () => void) {
   const motion = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -110,7 +103,7 @@ function PublicDepthEnvironmentContent({ pathname }: { pathname: string }) {
   const { preferences } = useEnvironmentPreferences();
   const { soundEnabled } = useUIPreferences();
   const phase = useResolvedEnvironmentPhase(preferences.phase);
-  const artistSnapshot = useSyncExternalStore(subscribeArtistConfig, getArtistConfigSnapshot, () => "mist:true");
+  const artistSnapshot = useSyncExternalStore(subscribeArtistConfig, getArtistConfigSnapshot, getServerArtistConfigSnapshot);
   const capabilitySnapshot = useSyncExternalStore(subscribeRuntimeCapability, getRuntimeCapabilitySnapshot, () => "1280:false:false:true");
   const mediaViewerOpen = useSyncExternalStore(subscribeMediaViewer, getMediaViewerSnapshot, () => false);
   const locale = useSyncExternalStore(subscribeLocale, getStoredLocale, () => "en");

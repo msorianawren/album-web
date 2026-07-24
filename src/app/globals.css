@@ -684,3 +684,20 @@ canvas {
   background: linear-gradient(90deg, transparent, var(--border), transparent);
   height: 1px;
 }
+
+@layer utilities {
+  .about-text-primary {
+    color: var(--about-text-primary, var(--text-primary));
+  }
+  .about-text-secondary {
+    color: var(--about-text-secondary, var(--text-secondary));
+  }
+  .about-text-muted {
+    color: var(--about-text-muted, var(--text-secondary));
+    opacity: 0.5;
+  }
+  .about-text-faint {
+    color: var(--about-text-faint, var(--text-secondary));
+    opacity: 0.2;
+  }
+}

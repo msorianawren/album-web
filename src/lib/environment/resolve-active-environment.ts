@@ -1,6 +1,6 @@
-import { type EnvironmentPreferences, type EnvironmentPresetId } from "./preferences";
-import { type EnvironmentPhase, resolveAutoEnvironmentPhase } from "./phase";
-import { type EnvironmentState, getEnvironmentState, ENVIRONMENT_STATE_REGISTRY } from "./presets";
+import { type EnvironmentPreferences, type EnvironmentPresetId } from "./preferences.ts";
+import { type EnvironmentPhase, resolveAutoEnvironmentPhase } from "./phase.ts";
+import { type EnvironmentState, getEnvironmentState, ENVIRONMENT_STATE_REGISTRY } from "./presets.ts";
 
 export type ActiveEnvironment = {
   preset: EnvironmentPresetId;
@@ -10,24 +10,18 @@ export type ActiveEnvironment = {
 
 export function resolveActiveEnvironment(
   preferences: EnvironmentPreferences,
-  artistPresetFallback?: string
+  artistPresetFallback: string,
+  resolvedPhase: EnvironmentPhase
 ): ActiveEnvironment {
-  let fallback = "sakura";
-  
-  if (artistPresetFallback) {
-    fallback = artistPresetFallback;
-  } else if (typeof document !== "undefined" && document.documentElement.dataset.environmentArtistPreset) {
-    fallback = document.documentElement.dataset.environmentArtistPreset;
-  }
+  const validPresets = ["sakura", "fireflies", "snow", "autumn", "mist", "rain"];
+  const fallback = validPresets.includes(artistPresetFallback) ? artistPresetFallback : "sakura";
 
   let resolvedPreset = preferences.preset === "default" ? fallback : preferences.preset;
-  
-  const validPresets = ["sakura", "fireflies", "snow", "autumn", "mist", "rain"];
+
   if (!validPresets.includes(resolvedPreset)) {
     resolvedPreset = "sakura";
   }
 
-  const resolvedPhase = preferences.phase === "auto" ? resolveAutoEnvironmentPhase(new Date()) : preferences.phase;
   const state = getEnvironmentState(resolvedPreset as EnvironmentPresetId, resolvedPhase);
 
   // Fallback to a known state if the registry lookup fails (should not happen if registry is complete)

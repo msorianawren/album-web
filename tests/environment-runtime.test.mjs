@@ -14,6 +14,7 @@ import {
 } from "../src/lib/environment/preferences.ts";
 import { getEnvironmentState, hasCompleteEnvironmentRegistry } from "../src/lib/environment/presets.ts";
 import { resolveAutoEnvironmentPhase } from "../src/lib/environment/phase.ts";
+import { resolveActiveEnvironment } from "../src/lib/environment/resolve-active-environment.ts";
 import { resolveEnvironmentQuality } from "../src/lib/environment/quality.ts";
 import { automaticChimeRate } from "../src/lib/environment/wind.ts";
 
@@ -27,6 +28,19 @@ test("all six preset IDs and all eighteen environment states remain available", 
       assert.equal(getEnvironmentState(preset, phase).preset, preset);
     }
   }
+});
+
+test("resolveActiveEnvironment respects default preset fallback configurations", () => {
+  for (const preset of ENVIRONMENT_PRESET_IDS) {
+    const active = resolveActiveEnvironment({ preset: "default", phase: "day", intensity: 50, brightness: 100, chimeVolume: 50, chimeMaterial: "brass", birdVolume: 50 }, preset, "day");
+    assert.equal(active.preset, preset);
+    assert.equal(active.state.preset, preset);
+    assert.equal(active.phase, "day");
+  }
+  // Unknown preset falls back to sakura
+  const fallback = resolveActiveEnvironment({ preset: "default", phase: "day", intensity: 50, brightness: 100, chimeVolume: 50, chimeMaterial: "brass", birdVolume: 50 }, "unknown", "day");
+  assert.equal(fallback.preset, "sakura");
+  assert.equal(fallback.state.preset, "sakura");
 });
 
 test("automatic phase boundaries use day, sunset, and night", () => {

@@ -1,28 +1,34 @@
 "use client";
 
-import { type ReactNode } from "react";
+import React, { type ElementType, type ComponentPropsWithoutRef } from "react";
 import { AboutVeil } from "./AboutVeil";
 import { type VeilVariant } from "@/lib/about/create-about-veil-tokens";
 
-interface AboutReadingZoneProps {
+export type AboutReadingZoneOwnProps<T extends ElementType> = {
   variant?: VeilVariant;
-  className?: string;
-  children: ReactNode;
-  as?: any;
+  as?: T;
   enabled?: boolean;
   tokens?: React.CSSProperties;
-}
+  className?: string;
+  children?: React.ReactNode;
+};
 
-export function AboutReadingZone({
+export type AboutReadingZoneProps<T extends ElementType> = AboutReadingZoneOwnProps<T> &
+  Omit<ComponentPropsWithoutRef<T>, keyof AboutReadingZoneOwnProps<T>>;
+
+export function AboutReadingZone<T extends ElementType = "div">({
+  as,
+  enabled = true,
+  tokens = {},
+  variant,
   className = "",
   children,
-  as: Component = "div",
-  enabled = true,
-  tokens = {}
-}: AboutReadingZoneProps) {
+  ...props
+}: AboutReadingZoneProps<T>) {
+  const Component = as || "div";
 
   if (!enabled) {
-    return <Component className={className}>{children}</Component>;
+    return <Component className={className} {...(props as any)}>{children}</Component>;
   }
 
   return (
@@ -32,6 +38,7 @@ export function AboutReadingZone({
         ...tokens,
         color: "var(--about-text-primary)"
       }}
+      {...(props as any)}
     >
       <AboutVeil tokens={tokens} />
       <div className="relative z-10">

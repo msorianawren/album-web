@@ -3,8 +3,7 @@
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
-import { useEnvironmentPreferences, useResolvedEnvironmentPhase } from "@/hooks/useEnvironmentPreferences";
-import { resolveActiveEnvironment } from "@/lib/environment/resolve-active-environment";
+import type { EnvironmentState } from "@/lib/environment/presets";
 
 type GearConfig = { position: [number, number, number]; radius: number; teeth: number; speed: number; depth: number };
 type ClockworkPointer = { x: number; y: number; energy: number; previousX: number; previousY: number };
@@ -236,14 +235,11 @@ function ClockworkScene({ chapterCount, active, reducedMotion, pointerRef, palet
   );
 }
 
-export function AboutClockwork({ displayName, chapterCount }: { displayName: string; chapterCount: number }) {
+export function AboutClockwork({ displayName, chapterCount, environment }: { displayName: string; chapterCount: number; environment: EnvironmentState }) {
   const container = useRef<HTMLDivElement>(null);
   const pointer = useRef<ClockworkPointer>({ x: 0, y: 0, energy: 0, previousX: 0, previousY: 0 });
   const [visible, setVisible] = useState(true);
   const [reducedMotion, setReducedMotion] = useState(false);
-  const { preferences } = useEnvironmentPreferences();
-  const phase = useResolvedEnvironmentPhase(preferences.phase);
-  const { state: environment } = useMemo(() => resolveActiveEnvironment({ ...preferences, phase }), [preferences, phase]);
   const palette = useMemo<ClockworkPalette>(() => ({
     brass: environment.keyLight,
     steel: environment.fillLight,

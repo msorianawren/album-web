@@ -116,17 +116,21 @@ export function createAboutVeilTokens(
     iterations++;
   }
 
+  const s0 = gradientPositions.split(",")[0].trim();
+  const s1 = gradientPositions.split(",")[1].trim();
+  const s2 = gradientPositions.split(",")[2].trim();
+
+  // We no longer output individual base color tokens. We output the full gradient string.
+  const surface = `radial-gradient(ellipse ${ellipseSize} at ${ellipseOrigin}, rgba(${baseRgb.r}, ${baseRgb.g}, ${baseRgb.b}, ${centerAlpha}) ${s0}, rgba(${baseRgb.r}, ${baseRgb.g}, ${baseRgb.b}, ${middleAlpha}) ${s1}, rgba(${baseRgb.r}, ${baseRgb.g}, ${baseRgb.b}, ${outerAlpha}) ${s2})`;
+  const bloom = `radial-gradient(ellipse ${ellipseSize} at ${ellipseOrigin}, rgba(${accentRgb.r}, ${accentRgb.g}, ${accentRgb.b}, 0.04) 0%, transparent 60%)`;
+  const mask = `radial-gradient(ellipse ${ellipseSize} at ${ellipseOrigin}, black 0%, transparent 80%)`;
+
   return {
     "--about-text-primary": `rgb(${textPrimary.r} ${textPrimary.g} ${textPrimary.b})`,
     "--about-text-secondary": `rgb(${textSecondary.r} ${textSecondary.g} ${textSecondary.b})`,
-    "--about-veil-base": `rgb(${baseRgb.r} ${baseRgb.g} ${baseRgb.b})`,
-    "--about-veil-accent": `rgb(${accentRgb.r} ${accentRgb.g} ${accentRgb.b})`,
-    "--about-veil-base-center": `rgba(${baseRgb.r}, ${baseRgb.g}, ${baseRgb.b}, ${centerAlpha})`,
-    "--about-veil-base-middle": `rgba(${baseRgb.r}, ${baseRgb.g}, ${baseRgb.b}, ${middleAlpha})`,
-    "--about-veil-base-outer": `rgba(${baseRgb.r}, ${baseRgb.g}, ${baseRgb.b}, ${outerAlpha})`,
-    "--about-veil-gradient-positions": gradientPositions,
+    "--about-veil-surface": surface,
+    "--about-veil-bloom": bloom,
+    "--about-veil-mask": mask,
     "--about-veil-blur": `${blurAmount}px`,
-    "--about-veil-ellipse-size": ellipseSize,
-    "--about-veil-ellipse-origin": ellipseOrigin,
   } as React.CSSProperties;
 }
