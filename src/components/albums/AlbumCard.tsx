@@ -1,5 +1,3 @@
-"use client";
-
 import Link from "next/link";
 import { Feather, Heart, Lock, MessageCircle, RefreshCw } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
@@ -7,8 +5,9 @@ import type { Album } from "@/lib/types";
 import { formatMediaCount } from "@/lib/utils";
 import { ScrollReveal } from "@/components/ui/ScrollReveal";
 import { DepthSurface } from "@/components/ui/DepthSurface";
-import { useAlbumViewMemory } from "@/hooks/useAlbumViewMemory";
 import { LivingPreviewImages } from "@/components/albums/LivingPreviewImages";
+import { AlbumViewBadge } from "@/components/albums/AlbumViewBadge";
+import { AlbumAccessRequestButton } from "@/components/albums/AlbumAccessRequestButton";
 import {
   createMediaDeliveryTarget,
   getMediaDeliveryDescriptor,
@@ -56,8 +55,7 @@ export function AlbumCard({ album, dict, locale = "en", priority = false }: Albu
     DEFAULT_PRIVATE_ALBUM_FEATHER_PRICE,
   );
 
-  const { getAlbumViewState } = useAlbumViewMemory();
-  const viewState = getAlbumViewState(album.id);
+
 
   return (
     <ScrollReveal>
@@ -103,20 +101,7 @@ export function AlbumCard({ album, dict, locale = "en", priority = false }: Albu
                 : (dict?.albums?.status_private || "Private")}
             </Badge>
           </div>
-          {viewState.isRecentlyViewed && (
-            <div className="absolute left-4 top-12 mt-2">
-              <Badge className="bg-white/90 text-black backdrop-blur-md font-medium tracking-widest text-[0.6rem] uppercase border-none shadow-sm">
-                {dict?.albums?.recently_viewed || "Recently viewed"}
-              </Badge>
-            </div>
-          )}
-          {!viewState.isRecentlyViewed && viewState.isViewed && (
-            <div className="absolute left-4 top-12 mt-2">
-              <Badge className="bg-black/40 text-white/90 backdrop-blur-md font-medium tracking-widest text-[0.6rem] uppercase border border-white/20 shadow-sm">
-                {dict?.albums?.viewed || "Viewed"}
-              </Badge>
-            </div>
-          )}
+          <AlbumViewBadge albumId={album.id} dict={dict} />
           {videoPreview ? (
             <div className="absolute bottom-4 left-4 rounded-full border border-white/20 bg-black/40 px-3 py-1.5 text-[0.6rem] font-medium uppercase tracking-[0.2em] text-white backdrop-blur-md">
               Motion
@@ -177,16 +162,7 @@ export function AlbumCard({ album, dict, locale = "en", priority = false }: Albu
               {dict?.albums?.request_rejected || "Access not approved"}
             </div>
           ) : (
-            <button 
-              className="inline-flex items-center justify-center gap-2 border-b border-text-primary/40 pb-1 text-[0.7rem] font-semibold uppercase tracking-widest text-text-primary transition-colors hover:text-accent hover:border-accent"
-              onClick={(e) => {
-                e.preventDefault();
-                // We will dispatch a custom event to open the request modal
-                document.dispatchEvent(new CustomEvent("open-access-request", { detail: album }));
-              }}
-            >
-              {dict?.albums?.request_access || "Request private access"}
-            </button>
+            <AlbumAccessRequestButton album={album} dict={dict} />
           )}
           {canPurchaseWithFeathers && featherPrice ? (
             <p className="mt-3 inline-flex items-center gap-1.5 text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-text-secondary">
