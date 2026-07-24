@@ -2,7 +2,7 @@ import { ListObjectsV2Command } from "@aws-sdk/client-s3";
 import { NextRequest } from "next/server";
 import { requireAdmin } from "@/lib/auth";
 import { apiError, apiSuccess } from "@/lib/errors";
-import { getR2Bucket, r2 } from "@/lib/r2";
+import { getR2Bucket, getR2Client } from "@/lib/r2";
 
 export const runtime = "nodejs";
 
@@ -12,7 +12,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const bucket = getR2Bucket();
-    await r2.send(new ListObjectsV2Command({ Bucket: bucket, MaxKeys: 1 }));
+    await getR2Client().send(new ListObjectsV2Command({ Bucket: bucket, MaxKeys: 1 }));
     return apiSuccess({
       ok: true,
       message: "R2 connection OK. Bucket is reachable without exposing credentials.",

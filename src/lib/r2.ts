@@ -9,37 +9,53 @@ import {
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { createStorageFailure } from "@/lib/app-failure";
 
-const accountId = process.env.R2_ACCOUNT_ID;
-const accessKeyId = process.env.R2_ACCESS_KEY_ID;
-const secretAccessKey = process.env.R2_SECRET_ACCESS_KEY;
-const privateAccountId = process.env.R2_PRIVATE_ACCOUNT_ID ?? accountId;
-const privateAccessKeyId = process.env.R2_PRIVATE_ACCESS_KEY_ID ?? accessKeyId;
-const privateSecretAccessKey = process.env.R2_PRIVATE_SECRET_ACCESS_KEY ?? secretAccessKey;
+type R2Credentials = {
+  accountId: string;
+  accessKeyId: string;
+  secretAccessKey: string;
+};
 
-if (!accountId || !accessKeyId || !secretAccessKey) {
-  throw new Error("Missing Cloudflare R2 environment variables.");
+let publicR2: S3Client | null = null;
+let privateR2: S3Client | null = null;
+
+function createR2Client({ accountId, accessKeyId, secretAccessKey }: R2Credentials) {
+  return new S3Client({
+    region: "auto",
+    endpoint: `https://${accountId}.r2.cloudflarestorage.com`,
+    credentials: { accessKeyId, secretAccessKey },
+  });
 }
 
-export const r2 = new S3Client({
-  region: "auto",
-  endpoint: `https://${accountId}.r2.cloudflarestorage.com`,
-  credentials: {
-    accessKeyId,
-    secretAccessKey,
-  },
-});
+function getPublicR2Credentials(): R2Credentials {
+  const accountId = process.env.R2_ACCOUNT_ID;
+  const accessKeyId = process.env.R2_ACCESS_KEY_ID;
+  const secretAccessKey = process.env.R2_SECRET_ACCESS_KEY;
 
-const privateR2 =
-  privateAccountId && privateAccessKeyId && privateSecretAccessKey
-    ? new S3Client({
-        region: "auto",
-        endpoint: `https://${privateAccountId}.r2.cloudflarestorage.com`,
-        credentials: {
-          accessKeyId: privateAccessKeyId,
-          secretAccessKey: privateSecretAccessKey,
-        },
-      })
-    : null;
+  if (!accountId || !accessKeyId || !secretAccessKey) {
+    throw new Error("Missing Cloudflare R2 environment variables.");
+  }
+
+  return { accountId, accessKeyId, secretAccessKey };
+}
+
+function getPrivateR2Credentials(): R2Credentials {
+  const publicCredentials = getPublicR2Credentials();
+  const accountId = process.env.R2_PRIVATE_ACCOUNT_ID ?? publicCredentials.accountId;
+  const accessKeyId = process.env.R2_PRIVATE_ACCESS_KEY_ID ?? publicCredentials.accessKeyId;
+  const secretAccessKey = process.env.R2_PRIVATE_SECRET_ACCESS_KEY ?? publicCredentials.secretAccessKey;
+
+  return { accountId, accessKeyId, secretAccessKey };
+}
+
+export function getR2Client() {
+  publicR2 ??= createR2Client(getPublicR2Credentials());
+  return publicR2;
+}
+
+function getPrivateR2Client() {
+  privateR2 ??= createR2Client(getPrivateR2Credentials());
+  return privateR2;
+}
 
 async function withStorageFailure<T>(operation: string, task: () => Promise<T>) {
   try {
@@ -68,10 +84,9 @@ export function getR2BucketForRole(role: R2BucketRole) {
 
 function getR2ClientForRole(role: R2BucketRole) {
   if (role === "private") {
-    if (!privateR2) throw new Error("Missing private Cloudflare R2 environment variables.");
-    return privateR2;
+    return getPrivateR2Client();
   }
-  return r2;
+  return getR2Client();
 }
 
 export function getPublicUrl(key: string) {
@@ -116,7 +131,7 @@ export async function deleteR2Objects(keys: Array<string | null | undefined>) {
   if (!objects.length) return;
 
   await withStorageFailure("r2.delete_objects", () =>
-    r2.send(
+    getR2Client().send(
       new DeleteObjectsCommand({
         Bucket: getR2Bucket(),
         Delete: {
