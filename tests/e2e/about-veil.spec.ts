@@ -101,10 +101,14 @@ test.describe('About Editorial Aurora Veil', () => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.addInitScript(() => {
       const originalSupports = CSS.supports;
-      CSS.supports = (property, value) => {
-        if (property === 'backdrop-filter' || property === '-webkit-backdrop-filter') return false;
-        return originalSupports(property, value);
-      };
+      CSS.supports = ((propertyOrCondition: string, value?: string) => {
+        if (value === undefined) {
+          if (propertyOrCondition.includes('backdrop-filter')) return false;
+          return originalSupports(propertyOrCondition);
+        }
+        if (propertyOrCondition === 'backdrop-filter' || propertyOrCondition === '-webkit-backdrop-filter') return false;
+        return originalSupports(propertyOrCondition, value);
+      }) as typeof CSS.supports;
     });
     await page.goto('/about');
     await page.waitForLoadState('networkidle');
