@@ -390,8 +390,7 @@ export function AboutClient({ profile }: AboutClientProps) {
                 </div>
               </div>
             )}
-          </div>
-        </AboutReadingZone>
+          </AboutReadingZone>
         </section>
       )}
 
