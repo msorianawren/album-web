@@ -54,7 +54,7 @@ export function AboutVeil({ tokens, className = "" }: AboutVeilProps) {
         
         {/* Layer 3: Subtle environment accent bloom */}
         <div 
-          className="absolute inset-0 mix-blend-overlay opacity-30"
+          className="absolute inset-0 mix-blend-overlay opacity-[0.12]"
           style={{
             background: `radial-gradient(
               ellipse var(--about-veil-ellipse-size) at var(--about-veil-ellipse-origin),

@@ -1,17 +1,16 @@
 "use client";
 
-import { useMemo, type ReactNode } from "react";
+import { type ReactNode } from "react";
 import { AboutVeil } from "./AboutVeil";
-import { createAboutVeilTokens, type VeilVariant } from "@/lib/about/create-about-veil-tokens";
-import { useEnvironmentPreferences, useResolvedEnvironmentPhase } from "@/hooks/useEnvironmentPreferences";
-import { resolveActiveEnvironment } from "@/lib/environment/resolve-active-environment";
+import { type VeilVariant } from "@/lib/about/create-about-veil-tokens";
+import { cn } from "@/lib/utils";
 
 interface AboutReadingZoneProps {
   variant?: VeilVariant;
   className?: string;
   children: ReactNode;
   as?: React.ElementType;
-  enabled?: boolean;
+  tokens?: Record<string, string>;
 }
 
 export function AboutReadingZone({
@@ -19,16 +18,9 @@ export function AboutReadingZone({
   className = "",
   children,
   as: Component = "div",
-  enabled = true
+  enabled = true,
+  tokens = {}
 }: AboutReadingZoneProps) {
-  const { preferences } = useEnvironmentPreferences();
-  const phase = useResolvedEnvironmentPhase(preferences.phase);
-  
-  const tokens = useMemo(() => {
-    if (!enabled) return {};
-    const { state } = resolveActiveEnvironment({ ...preferences, phase });
-    return createAboutVeilTokens(state, preferences.brightness, variant);
-  }, [preferences, phase, variant, enabled]);
 
   if (!enabled) {
     return <Component className={className}>{children}</Component>;

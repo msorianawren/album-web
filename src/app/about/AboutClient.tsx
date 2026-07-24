@@ -1,12 +1,16 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useEffect, useRef } from "react";
+import { useMemo, useEffect, useRef } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import type { AboutProfile } from "@/lib/types";
 import Link from "next/link";
 import { MapPin, Globe, ArrowRight, Award, ExternalLink } from "lucide-react";
+import { useEnvironmentPreferences, useResolvedEnvironmentPhase } from "@/hooks/useEnvironmentPreferences";
+import { resolveActiveEnvironment } from "@/lib/environment/resolve-active-environment";
+import { createAboutVeilTokens } from "@/lib/about/create-about-veil-tokens";
+import { AboutReadingZone } from "@/components/about/AboutReadingZone";
 
 if (typeof window !== "undefined") {
   gsap.registerPlugin(ScrollTrigger);
@@ -20,8 +24,6 @@ const AboutClockwork = dynamic(
   () => import("@/components/about/AboutClockwork").then((module) => module.AboutClockwork),
   { ssr: false },
 );
-
-import { AboutReadingZone } from "@/components/about/AboutReadingZone";
 
 const useVeil = process.env.NEXT_PUBLIC_ABOUT_EDITORIAL_AURORA_VEIL === "true";
 
@@ -40,6 +42,20 @@ export function AboutClient({ profile }: AboutClientProps) {
   const hasSocialLinks = profile.section_toggles?.social !== false && activeSocialLinks.length > 0;
   const hasBio = profile.section_toggles?.biography !== false && (profile.short_bio || profile.full_bio);
   const hasQuote = profile.section_toggles?.quote !== false && profile.quote;
+
+  const { preferences } = useEnvironmentPreferences();
+  const phase = useResolvedEnvironmentPhase(preferences.phase);
+  
+  const veilTokens = useMemo(() => {
+    if (!useVeil) return null;
+    const { state } = resolveActiveEnvironment({ ...preferences, phase });
+    return {
+      hero: createAboutVeilTokens(state, preferences.brightness, "hero"),
+      body: createAboutVeilTokens(state, preferences.brightness, "body"),
+      quote: createAboutVeilTokens(state, preferences.brightness, "quote"),
+      compact: createAboutVeilTokens(state, preferences.brightness, "compact"),
+    };
+  }, [preferences, phase]);
 
   useEffect(() => {
     const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -102,7 +118,7 @@ export function AboutClient({ profile }: AboutClientProps) {
       {/* ═══════════════════════════════════════════
           SECTION 1: EDITORIAL HERO
       ═══════════════════════════════════════════ */}
-      <AboutReadingZone as="section" enabled={useVeil} variant="hero" className="relative min-h-[85vh] w-full overflow-hidden flex flex-col justify-end pt-28 pb-12 sm:pb-20">
+      <section className="relative min-h-[85vh] w-full overflow-hidden flex flex-col justify-end pt-28 pb-12 sm:pb-20">
 
         {/* Cover background — right-aligned editorial crop */}
         {(profile.cover_image_url || profile._is_demo) && (
@@ -126,7 +142,7 @@ export function AboutClient({ profile }: AboutClientProps) {
           </div>
         )}
 
-        <div className="relative z-20 w-full max-w-[1320px] mx-auto px-6 sm:px-10 lg:px-16">
+        <AboutReadingZone as="div" enabled={useVeil} variant="hero" tokens={veilTokens?.hero} className="relative z-20 w-full max-w-[1320px] mx-auto px-6 sm:px-10 lg:px-16">
 
           {/* Eyebrow details */}
           <div className="about-hero-fade flex flex-wrap gap-x-10 gap-y-3 mb-16 md:mb-24 text-[0.68rem] uppercase tracking-[0.2em] text-text-secondary">
@@ -199,8 +215,8 @@ export function AboutClient({ profile }: AboutClientProps) {
               </div>
             )}
           </div>
-        </div>
-      </AboutReadingZone>
+        </AboutReadingZone>
+      </section>
 
 
 
@@ -209,9 +225,9 @@ export function AboutClient({ profile }: AboutClientProps) {
           SECTION 2: BIOGRAPHY
       ═══════════════════════════════════════════ */}
       {hasBio && (
-        <AboutReadingZone as="section" enabled={useVeil} variant="body" className="w-full max-w-[1320px] mx-auto px-6 sm:px-10 lg:px-16 mt-24 md:mt-40">
+        <section className="w-full max-w-[1320px] mx-auto px-6 sm:px-10 lg:px-16 mt-24 md:mt-40">
           <div className="about-line h-px w-full bg-border mb-16" />
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-10 md:gap-20">
+          <AboutReadingZone as="div" enabled={useVeil} variant="body" tokens={veilTokens?.body} className="grid grid-cols-1 md:grid-cols-12 gap-10 md:gap-20">
             {/* Sticky sidebar label */}
             <div className="md:col-span-3">
               <div className="md:sticky md:top-28">
@@ -244,8 +260,8 @@ export function AboutClient({ profile }: AboutClientProps) {
           SECTION 3: PULL QUOTE
       ═══════════════════════════════════════════ */}
       {hasQuote && (
-        <AboutReadingZone as="section" enabled={useVeil} variant="quote" className="w-full px-6 sm:px-10 mt-24 md:mt-40 py-20 md:py-32">
-          <div className="max-w-[1000px] mx-auto text-center">
+        <section className="w-full px-6 sm:px-10 mt-24 md:mt-40 py-20 md:py-32">
+          <AboutReadingZone as="div" enabled={useVeil} variant="quote" tokens={veilTokens?.quote} className="max-w-[1000px] mx-auto text-center">
             <span className="about-reveal block font-serif text-5xl md:text-7xl text-text-secondary/20 mb-4" aria-hidden="true">&ldquo;</span>
             <p className="about-reveal font-serif text-2xl sm:text-3xl md:text-4xl lg:text-[2.8rem] italic leading-snug text-text-primary max-w-[860px] mx-auto">
               {profile.quote}
@@ -259,8 +275,8 @@ export function AboutClient({ profile }: AboutClientProps) {
           SECTION 4: METRICS & EXPERTISE
       ═══════════════════════════════════════════ */}
       {(hasMetrics || hasSkills || hasTraits) && (
-        <AboutReadingZone as="section" enabled={useVeil} variant="body" className="w-full max-w-[1320px] mx-auto px-6 sm:px-10 lg:px-16 mt-24 md:mt-40">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-20 lg:gap-28">
+        <section className="w-full max-w-[1320px] mx-auto px-6 sm:px-10 lg:px-16 mt-24 md:mt-40">
+          <AboutReadingZone as="div" enabled={useVeil} variant="body" tokens={veilTokens?.body} className="grid grid-cols-1 lg:grid-cols-2 gap-20 lg:gap-28">
 
             {/* Personal metrics */}
             {hasMetrics && (
@@ -322,8 +338,8 @@ export function AboutClient({ profile }: AboutClientProps) {
           SECTION 5: CAREER & EDUCATION TIMELINE
       ═══════════════════════════════════════════ */}
       {(hasCareer || hasEducation) && (
-        <AboutReadingZone as="section" enabled={useVeil} variant="body" className="w-full max-w-[1320px] mx-auto px-6 sm:px-10 lg:px-16 mt-24 md:mt-40">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-20 lg:gap-28">
+        <section className="w-full max-w-[1320px] mx-auto px-6 sm:px-10 lg:px-16 mt-24 md:mt-40">
+          <AboutReadingZone as="div" enabled={useVeil} variant="body" tokens={veilTokens?.body} className="grid grid-cols-1 lg:grid-cols-2 gap-20 lg:gap-28">
 
             {hasCareer && (
               <div>
@@ -376,6 +392,7 @@ export function AboutClient({ profile }: AboutClientProps) {
             )}
           </div>
         </AboutReadingZone>
+        </section>
       )}
 
 
@@ -383,8 +400,8 @@ export function AboutClient({ profile }: AboutClientProps) {
           SECTION 6: LANGUAGES
       ═══════════════════════════════════════════ */}
       {hasLanguages && (
-        <AboutReadingZone as="section" enabled={useVeil} variant="compact" className="w-full max-w-[1320px] mx-auto px-6 sm:px-10 lg:px-16 mt-24 md:mt-40">
-          <div className="max-w-[680px]">
+        <section className="w-full max-w-[1320px] mx-auto px-6 sm:px-10 lg:px-16 mt-24 md:mt-40">
+          <AboutReadingZone as="div" enabled={useVeil} variant="compact" tokens={veilTokens?.compact} className="max-w-[680px]">
             <div className="about-line h-px w-full bg-border mb-12" />
             <h2 className="about-reveal font-serif text-2xl md:text-3xl mb-10">Languages</h2>
             <div className="flex flex-col w-full">
@@ -404,10 +421,11 @@ export function AboutClient({ profile }: AboutClientProps) {
           SECTION 7: ACHIEVEMENTS
       ═══════════════════════════════════════════ */}
       {hasAchievements && (
-        <AboutReadingZone as="section" enabled={useVeil} variant="body" className="w-full max-w-[1320px] mx-auto px-6 sm:px-10 lg:px-16 mt-24 md:mt-40">
+        <section className="w-full max-w-[1320px] mx-auto px-6 sm:px-10 lg:px-16 mt-24 md:mt-40">
           <div className="about-line h-px w-full bg-border mb-12" />
-          <h2 className="about-reveal font-serif text-3xl md:text-4xl mb-12">Recognition</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+          <AboutReadingZone as="div" enabled={useVeil} variant="body" tokens={veilTokens?.body}>
+            <h2 className="about-reveal font-serif text-3xl md:text-4xl mb-12">Recognition</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
             {profile.achievements.map((item, index) => (
               <div key={index} className="about-reveal flex gap-5 group">
                 <div className="shrink-0 mt-1">
@@ -424,6 +442,7 @@ export function AboutClient({ profile }: AboutClientProps) {
             ))}
           </div>
         </AboutReadingZone>
+        </section>
       )}
 
 
@@ -431,10 +450,11 @@ export function AboutClient({ profile }: AboutClientProps) {
           SECTION 8: HOBBIES & INTERESTS
       ═══════════════════════════════════════════ */}
       {hasHobbies && (
-        <AboutReadingZone as="section" enabled={useVeil} variant="compact" className="w-full max-w-[1320px] mx-auto px-6 sm:px-10 lg:px-16 mt-24 md:mt-40">
+        <section className="w-full max-w-[1320px] mx-auto px-6 sm:px-10 lg:px-16 mt-24 md:mt-40">
           <div className="about-line h-px w-full bg-border mb-10" />
-          <h2 className="about-reveal font-serif text-2xl md:text-3xl mb-8">Interests</h2>
-          <div className="flex flex-wrap gap-2.5">
+          <AboutReadingZone as="div" enabled={useVeil} variant="compact" tokens={veilTokens?.compact}>
+            <h2 className="about-reveal font-serif text-2xl md:text-3xl mb-8">Interests</h2>
+            <div className="flex flex-wrap gap-2.5">
             {profile.hobbies.map((hobby, i) => (
               <span key={i} className="about-reveal px-5 py-2 text-[0.82rem] font-light border border-border/30 text-text-primary rounded-full bg-surface/5">
                 {hobby.name}
@@ -442,6 +462,7 @@ export function AboutClient({ profile }: AboutClientProps) {
             ))}
           </div>
         </AboutReadingZone>
+        </section>
       )}
 
 
@@ -449,8 +470,8 @@ export function AboutClient({ profile }: AboutClientProps) {
           SECTION 9: SOCIAL & CONNECT
       ═══════════════════════════════════════════ */}
       {hasSocialLinks && (
-        <AboutReadingZone as="section" enabled={useVeil} variant="compact" className="w-full mt-24 md:mt-40 pb-24 md:pb-32">
-          <div className="max-w-[1320px] mx-auto px-6 sm:px-10 lg:px-16 text-center">
+        <section className="w-full mt-24 md:mt-40 pb-24 md:pb-32">
+          <AboutReadingZone as="div" enabled={useVeil} variant="compact" tokens={veilTokens?.compact} className="max-w-[1320px] mx-auto px-6 sm:px-10 lg:px-16 text-center">
             <h2 className="about-reveal font-serif text-[2.5rem] md:text-[4rem] lg:text-[5rem] tracking-tight text-text-primary/15 mb-10">
               Connect
             </h2>
@@ -469,6 +490,7 @@ export function AboutClient({ profile }: AboutClientProps) {
             </div>
           </div>
         </AboutReadingZone>
+        </section>
       )}
 
       {/* Bottom spacing when no social links */}
