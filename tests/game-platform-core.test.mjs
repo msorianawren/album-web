@@ -134,6 +134,15 @@ test("Game Hub exposes only real published routes and canaries remain practice-o
   assert.match(proxy, /pathname\.startsWith\("\/games"\)/);
 });
 
+test("production CSP keeps HTTPS upgrades off local HTTP browser runners", () => {
+  const nextConfig = read("next.config.ts");
+  assert.match(nextConfig, /siteUsesHttps/);
+  assert.match(
+    nextConfig,
+    /\$\{siteUsesHttps \? "upgrade-insecure-requests;" : ""\}/,
+  );
+});
+
 test("global visual and audio runtimes subscribe to game suspension", () => {
   for (const file of [
     "src/components/environment/PublicDepthEnvironment.tsx",

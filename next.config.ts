@@ -4,6 +4,8 @@ const r2PublicHostname = process.env.R2_PUBLIC_URL
   ? new URL(process.env.R2_PUBLIC_URL).hostname
   : "pub-6723a3eac8f14389ad2429799e3b98a5.r2.dev";
 const r2PublicOrigin = `https://${r2PublicHostname}`;
+const siteUsesHttps = (process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.orianawren.com")
+  .startsWith("https://");
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
@@ -56,7 +58,7 @@ const nextConfig: NextConfig = {
         https://pub-6723a3eac8f14389ad2429799e3b98a5.r2.dev
         ${r2PublicOrigin};
 
-      upgrade-insecure-requests;
+      ${siteUsesHttps ? "upgrade-insecure-requests;" : ""}
     `
       .replace(/\s{2,}/g, " ")
       .trim();
