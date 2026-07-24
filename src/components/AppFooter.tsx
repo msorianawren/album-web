@@ -23,7 +23,7 @@ export async function AppFooter() {
     <footer className="relative z-10 border-t border-[var(--glass-border)] bg-[var(--glass-bg)] backdrop-blur-xl px-5 py-12 sm:px-6 sm:py-24">
       <div className="mx-auto grid max-w-[1200px] gap-12 lg:grid-cols-[1fr_2fr]">
         <div className="flex flex-col gap-6">
-          <Link href="/" className="inline-block">
+          <Link href="/" prefetch={false} className="inline-block">
             {settings.site_logo_url ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={settings.site_logo_url} alt={settings.site_logo_alt ?? settings.site_name} className="h-8 w-auto object-contain" />
@@ -54,7 +54,7 @@ export async function AppFooter() {
             <ul className="mt-6 flex flex-col gap-4">
               {navLinks.map((link) => (
                 <li key={link.href}>
-                  <Link href={link.href} className="text-sm text-text-secondary transition hover:text-text-primary">
+                  <Link href={link.href} prefetch={false} className="text-sm text-text-secondary transition hover:text-text-primary">
                     {link.label}
                   </Link>
                 </li>

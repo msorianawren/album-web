@@ -35,6 +35,7 @@ export async function AppHeader() {
       <div className="mx-auto flex min-h-16 w-full max-w-[1440px] items-center gap-2 px-3 sm:min-h-20 sm:gap-4 sm:px-8 lg:px-12">
         <Link
           href="/"
+          prefetch={false}
           className="flex min-w-0 shrink items-center gap-2.5 rounded-xl text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:shrink-0"
         >
           {settings.site_logo_url ? (
@@ -64,6 +65,7 @@ export async function AppHeader() {
             <Link
               key={`${item.href}-${item.label}`}
               href={item.href}
+              prefetch={false}
               className="rounded-full px-3 py-2 text-sm font-medium text-text-secondary transition whitespace-nowrap hover:bg-surface/70 hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               {item.label}
@@ -88,6 +90,7 @@ export async function AppHeader() {
           {session.isAdmin ? (
             <Link
               href="/studio"
+              prefetch={false}
               className="hidden h-10 w-10 shrink-0 items-center justify-center gap-2 rounded-full bg-accent text-xs font-semibold uppercase tracking-[0.16em] text-accent-foreground transition-all hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.98] sm:flex lg:h-11 lg:w-auto lg:px-5"
               aria-label={dict.nav.studio}
             >
@@ -108,6 +111,7 @@ export async function AppHeader() {
           <Link
             key={`mobile-${item.href}-${item.label}`}
             href={item.href}
+            prefetch={false}
             className="snap-start flex h-10 shrink-0 items-center justify-center rounded-full border border-border bg-surface/82 px-4 text-xs font-semibold uppercase tracking-[0.12em] text-text-primary shadow-sm shadow-text-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             {item.label}
@@ -116,6 +120,7 @@ export async function AppHeader() {
         {session.isAdmin ? (
           <Link
             href="/studio"
+            prefetch={false}
             className="snap-start flex h-10 shrink-0 items-center justify-center rounded-full bg-accent px-4 text-xs font-semibold uppercase tracking-[0.12em] text-accent-foreground shadow-sm shadow-text-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             {dict.nav.studio}
