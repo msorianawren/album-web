@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import { getTrustedAdminDatabase } from "@/lib/db/admin";
 import { apiError, apiSuccess, toServerError } from "@/lib/errors";
 import { getLandingPage, saveLandingPage } from "@/lib/landing";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 
 export async function GET() {
   const landing = await getLandingPage();
@@ -18,6 +18,7 @@ export async function PATCH(request: NextRequest) {
   try {
     const body = await request.json().catch(() => ({}));
     const landing = await saveLandingPage(database.client, body);
+    revalidateTag("landing-page", "max");
     revalidatePath("/", "layout");
     return apiSuccess({ landing });
   } catch (error) {

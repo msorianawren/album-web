@@ -1,4 +1,4 @@
-import { unstable_noStore as noStore } from "next/cache";
+import { unstable_cache, unstable_noStore as noStore } from "next/cache";
 import { cache } from "react";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { privateAlbumMessage } from "@/lib/config";
@@ -25,6 +25,82 @@ import { getMediaDeliveryDescriptor } from "@/lib/media/delivery";
 import type { PublicSession } from "@/lib/types";
 
 type UnknownRow = Record<string, unknown>;
+
+export const ALBUM_DETAIL_SELECT = [
+  "id",
+  "owner_id",
+  "title",
+  "slug",
+  "description",
+  "status",
+  "cover_url",
+  "cover_media_id",
+  "safe_preview_url",
+  "feather_purchase_enabled",
+  "feather_price",
+  "photo_count",
+  "video_count",
+  "media_count",
+  "like_count",
+  "comment_count",
+  "default_media_sort",
+  "public_sort_order",
+  "private_sort_order",
+  "updating_sort_order",
+  "order_updated_at",
+  "order_updated_by",
+  "translations",
+  "created_at",
+  "updated_at",
+].join(",");
+
+const PUBLIC_MEDIA_SELECT = [
+  "id",
+  "album_id",
+  "owner_id",
+  "media_type",
+  "title",
+  "description",
+  "r2_key",
+  "url",
+  "thumbnail_url",
+  "medium_url",
+  "poster_url",
+  "width",
+  "height",
+  "duration_seconds",
+  "file_size",
+  "mime_type",
+  "original_filename",
+  "safe_display_name",
+  "uploaded_at",
+  "taken_at",
+  "sort_date",
+  "aspect_ratio",
+  "orientation",
+  "file_extension",
+  "original_file_size",
+  "original_mime_type",
+  "featured_rank",
+  "view_count",
+  "metadata_status",
+  "processing_status",
+  "content_hash",
+  "duplicate_of_media_id",
+  "blurhash",
+  "large_r2_key",
+  "large_url",
+  "processing_version",
+  "processed_at",
+  "security_status",
+  "download_allowed",
+  "original_download_allowed",
+  "metadata_stripped",
+  "sort_order",
+  "is_cover",
+  "created_at",
+  "updated_at",
+].join(",");
 
 export interface AlbumQuery {
   q?: string;
@@ -130,6 +206,10 @@ export function normalizeAlbum(row: UnknownRow): Album {
     created_at: String(row.created_at ?? new Date().toISOString()),
     updated_at:
       typeof row.updated_at === "string" ? row.updated_at : undefined,
+    translations:
+      typeof row.translations === "object" && row.translations !== null
+        ? row.translations as Album["translations"]
+        : undefined,
     preview_items: previewItems,
   };
 }
@@ -364,10 +444,147 @@ export async function getAlbumSections(
   return Object.fromEntries(entries) as AlbumSections;
 }
 
-export const getFeaturedAlbums = cache(async (limit = 4) => {
-  const page = await getAlbumPage({ status: "public", limit });
-  return page.albums;
-});
+const getCachedFeaturedAlbums = unstable_cache(
+  async (requestedLimit: number) => {
+    const limit = normalizePageLimit(requestedLimit);
+    const { data, error } = await createPublicServerClient().rpc(
+      "list_album_summaries",
+      {
+        p_status: "public",
+        p_query: null,
+        p_limit: limit,
+        p_cursor_sort: null,
+        p_cursor_created_at: null,
+        p_cursor_id: null,
+      },
+    );
+    return resolveQueryRows(data, error, "albums.featured")
+      .slice(0, limit)
+      .map((row) => normalizeAlbum(row as UnknownRow));
+  },
+  ["featured-public-albums"],
+  { tags: ["albums:public"], revalidate: 300 },
+);
+
+export const getFeaturedAlbums = cache((limit = 4) =>
+  getCachedFeaturedAlbums(limit),
+);
+
+async function readAlbumRow(
+  slugOrId: string,
+  client: SupabaseClient,
+): Promise<UnknownRow | null> {
+  let query = client
+    .from("albums")
+    .select(ALBUM_DETAIL_SELECT)
+    .eq("slug", slugOrId)
+    .is("deleted_at", null)
+    .maybeSingle();
+
+  if (isUuid(slugOrId)) {
+    query = client
+      .from("albums")
+      .select(ALBUM_DETAIL_SELECT)
+      .or(`slug.eq.${slugOrId},id.eq.${slugOrId}`)
+      .is("deleted_at", null)
+      .maybeSingle();
+  }
+
+  const { data, error } = await query;
+  return resolveOptionalRow(
+    data as unknown as UnknownRow | null,
+    error,
+    "albums.detail",
+  );
+}
+
+export async function getAlbumMetadata(
+  slugOrId: string,
+  options: {
+    isAdmin?: boolean;
+    userClient?: SupabaseClient | null;
+  } = {},
+): Promise<AlbumDetail | null> {
+  noStore();
+  const session = options.isAdmin === undefined ? await getPublicSession() : null;
+  const isAdmin = options.isAdmin ?? session?.isAdmin ?? false;
+  const userClient = options.userClient ?? (
+    (session?.userId || isAdmin) ? await createAuthenticatedUserClient() : null
+  );
+  const row = await readAlbumRow(slugOrId, createPublicServerClient());
+  if (!row) return getDemoAlbum(slugOrId, isAdmin);
+  const album = normalizeAlbum(row);
+
+  if (album.status === "private") {
+    if (!userClient) {
+      return {
+        ...album,
+        cover_url: album.safe_preview_url ?? null,
+        media: [],
+        download_allowed: false,
+        locked: true,
+        private_message: privateAlbumMessage,
+      };
+    }
+    const { data: allowed, error } = await userClient.rpc(
+      "can_access_private_album",
+      { target_album_id: album.id },
+    );
+    if (error) throw classifyDataFailure(error, "albums.private_access");
+    if (allowed !== true) {
+      return {
+        ...album,
+        cover_url: album.safe_preview_url ?? null,
+        media: [],
+        download_allowed: false,
+        locked: true,
+        private_message: privateAlbumMessage,
+      };
+    }
+  }
+
+  return {
+    ...album,
+    media: [],
+    download_allowed: album.status === "public" || isAdmin,
+    locked: false,
+  };
+}
+
+export async function getAlbumMediaPage({
+  album,
+  client,
+  offset = 0,
+  limit = 250,
+}: {
+  album: Album;
+  client: SupabaseClient;
+  offset?: number;
+  limit?: number;
+}) {
+  const pageSize = Math.min(Math.max(Math.trunc(limit), 1), 250);
+  const mediaSelect = album.status === "private"
+    ? PRIVATE_MEDIA_SAFE_SELECT
+    : PUBLIC_MEDIA_SELECT;
+  const { data, error } = await client
+    .from("media")
+    .select(mediaSelect)
+    .eq("album_id", album.id)
+    .is("deleted_at", null)
+    .in("processing_status", ["ready", "processed", "uploaded", "processing"])
+    .order("sort_order", { ascending: true })
+    .order("created_at", { ascending: true })
+    .range(offset, offset + pageSize);
+  if (error) throw error;
+  const rows = data ?? [];
+  return {
+    media: await attachMediaEngagementCounts(
+      rows.slice(0, pageSize).map((row) => normalizeMedia(row as unknown as UnknownRow)),
+      client,
+    ),
+    hasMore: rows.length > pageSize,
+  };
+}
 
 export async function getAlbum(
   slugOrId: string,
@@ -387,24 +604,7 @@ export async function getAlbum(
 
   try {
     const publicClient = createPublicServerClient();
-    let albumQuery = publicClient
-      .from("albums")
-      .select("*")
-      .eq("slug", slugOrId)
-      .is("deleted_at", null)
-      .maybeSingle();
-
-    if (isUuid(slugOrId)) {
-      albumQuery = publicClient
-        .from("albums")
-        .select("*")
-        .or(`slug.eq.${slugOrId},id.eq.${slugOrId}`)
-        .is("deleted_at", null)
-        .maybeSingle();
-    }
-
-    const { data, error } = await albumQuery;
-    const albumRow = resolveOptionalRow(data, error, "albums.detail");
+    const albumRow = await readAlbumRow(slugOrId, publicClient);
     if (!albumRow) return getDemoAlbum(slugOrId, isAdmin);
 
     const album = normalizeAlbum(albumRow);
@@ -439,23 +639,7 @@ export async function getAlbum(
     }
 
     const mediaClient = album.status === "private" ? userClient! : publicClient;
-    const mediaSelect = album.status === "private" ? PRIVATE_MEDIA_SAFE_SELECT : "*";
-    const { data: mediaRows, error: mediaError } = await mediaClient
-      .from("media")
-      .select(mediaSelect)
-      .eq("album_id", album.id)
-      .is("deleted_at", null)
-      .in("processing_status", ["ready", "processed", "uploaded", "processing"])
-      .order("sort_order", { ascending: true })
-      .order("created_at", { ascending: true })
-      .limit(250);
-
-    if (mediaError) throw mediaError;
-
-    const media = await attachMediaEngagementCounts(
-      (mediaRows ?? []).map((row) => normalizeMedia(row as unknown as UnknownRow)),
-      mediaClient,
-    );
+    const { media } = await getAlbumMediaPage({ album, client: mediaClient });
     const sortMode = parseMediaSortMode(options.sort, parseMediaSortMode(album.default_media_sort, "smart"));
     const sortedMedia = sortMedia(media, sortMode, `${album.id}:${sortMode}`);
     const deliveredMedia =

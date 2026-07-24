@@ -3,6 +3,7 @@ import type { AlbumStatus, MediaType } from "@/lib/types";
 export type MediaDeliveryVariant =
   | "thumbnail"
   | "medium"
+  | "large"
   | "display"
   | "poster"
   | "original"
@@ -47,6 +48,7 @@ export interface MediaDeliveryDescriptor {
   height: number;
   aspectRatio: number;
   mimeType: string | null;
+  blurhash: string | null;
 }
 
 export interface DeliveryMedia {
@@ -57,6 +59,7 @@ export interface DeliveryMedia {
   url?: string | null;
   thumbnail_url?: string | null;
   medium_url?: string | null;
+  large_url?: string | null;
   poster_url?: string | null;
   width?: number | null;
   height?: number | null;
@@ -66,6 +69,7 @@ export interface DeliveryMedia {
   security_status?: "processed" | "needs_review" | "rejected" | null;
   download_allowed?: boolean;
   original_download_allowed?: boolean;
+  blurhash?: string | null;
 }
 
 export type DeliveryProcessingStatus =
@@ -217,6 +221,7 @@ export function getMediaDeliveryDescriptor(
   const poster = candidate(media.poster_url, "poster", "image");
   const thumbnail = candidate(media.thumbnail_url, "thumbnail", "image");
   const medium = candidate(media.medium_url, "medium", "image");
+  const large = candidate(media.large_url, "large", "image");
   const display = candidate(media.url, "display", expected);
   const original = candidate(media.url, "original", expected);
   const placeholder = target(candidate(PLACEHOLDER_SRC, "placeholder", "image"));
@@ -240,7 +245,7 @@ export function getMediaDeliveryDescriptor(
   const viewer = isReady && (!isPrivate || isAuthorized)
     ? mediaType === "video"
       ? target(display)
-      : target(medium, display, thumbnail)
+      : target(medium, large, display, thumbnail)
     : target();
   const downloadAllowed = context.downloadAllowed ?? media.download_allowed !== false;
   const originalDownloadAllowed =
@@ -285,5 +290,6 @@ export function getMediaDeliveryDescriptor(
     alt,
     ...dimensions,
     mimeType: media.mime_type?.trim() || null,
+    blurhash: media.blurhash?.trim() || null,
   };
 }

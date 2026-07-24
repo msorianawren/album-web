@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
-import { getAlbum } from "@/lib/albums";
+import { revalidatePath, revalidateTag } from "next/cache";
+import { ALBUM_DETAIL_SELECT, getAlbum } from "@/lib/albums";
 import { getPublicSession } from "@/lib/auth";
 import { logAuditEvent } from "@/lib/audit";
 import { classifyDataFailure } from "@/lib/app-failure";
@@ -26,7 +27,10 @@ export async function GET(request: NextRequest, { params }: AlbumRouteProps) {
     });
 
     if (!album) return apiError("NOT_FOUND", "Album not found.", 404);
-    return apiSuccess({ album });
+    return apiSuccess(
+      { album },
+      { headers: { "Cache-Control": album.status === "private" ? "private, no-store" : "public, s-maxage=60, stale-while-revalidate=300" } },
+    );
   } catch (error) {
     return toServerError(error, request, "api.albums.detail");
   }
@@ -75,7 +79,7 @@ export async function PATCH(request: NextRequest, { params }: AlbumRouteProps) {
         .from("albums")
         .update(otherFields)
         .eq("id", id)
-        .select("*")
+        .select(ALBUM_DETAIL_SELECT)
         .single();
       
       if (error) throw classifyDataFailure(error, "albums.admin_update");
@@ -91,11 +95,12 @@ export async function PATCH(request: NextRequest, { params }: AlbumRouteProps) {
       if (error) return apiError("SERVER_ERROR", "Failed to update album status and ordering", 500);
       
       // Refetch to get the latest row with new order
-      const { data: finalData } = await client.from("albums").select("*").eq("id", id).single();
+      const { data: finalData } = await client.from("albums").select(ALBUM_DETAIL_SELECT).eq("id", id).single();
       data = finalData;
     }
 
     if (!data) return apiError("SERVER_ERROR", "Failed to update album", 500);
+    const albumRecord = data as unknown as { slug: string };
     await logAuditEvent({
       request,
       session,
@@ -104,6 +109,9 @@ export async function PATCH(request: NextRequest, { params }: AlbumRouteProps) {
       targetId: id,
       metadata: { changedFields: Object.keys(parsed.data) },
     });
+    revalidateTag("albums:public", "max");
+    revalidateTag(`album:${id}:media`, "max");
+    revalidatePath(`/albums/${albumRecord.slug}`);
     return apiSuccess({ album: data });
   } catch (error) {
     return toServerError(error);
@@ -159,6 +167,8 @@ export async function DELETE(request: NextRequest, { params }: AlbumRouteProps) 
       targetId: id,
       metadata: { retentionDays: settings.soft_delete_retention_days },
     });
+    revalidateTag("albums:public", "max");
+    revalidateTag(`album:${id}:media`, "max");
     return apiSuccess({ deleted: true, softDeleted: true });
   }
 
@@ -209,5 +219,7 @@ export async function DELETE(request: NextRequest, { params }: AlbumRouteProps) 
     targetId: id,
     metadata: { removedR2Objects: true },
   });
+  revalidateTag("albums:public", "max");
+  revalidateTag(`album:${id}:media`, "max");
   return apiSuccess({ deleted: true });
 }

@@ -1,9 +1,8 @@
 "use client";
 
-import { createContext, useContext, useState, useMemo, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, useMemo, type ReactNode } from "react";
 import { CheckSquare, Square } from "lucide-react";
 import { Button } from "@/components/ui/Button";
-import type { Album } from "@/lib/types";
 
 interface SelectionContextType {
   selectedIds: Set<string>;
@@ -61,12 +60,12 @@ export function PrivateAlbumSelectionProvider({ children }: { children: ReactNod
 
 export function PrivateAlbumCheckbox({ album }: { album: { id: string; slug: string; title: string } }) {
   const context = useContext(SelectionContext);
-  if (!context) return null;
 
-  // Register on mount
-  useState(() => {
-    context.registerSelectable(album);
-  });
+  useEffect(() => {
+    context?.registerSelectable(album);
+  }, [album, context]);
+
+  if (!context) return null;
 
   const isSelected = context.selectedIds.has(album.id);
 

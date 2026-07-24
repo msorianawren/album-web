@@ -1,11 +1,12 @@
 import { NextRequest } from "next/server";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { getPublicSession } from "@/lib/auth";
 import { logAuditEvent } from "@/lib/audit";
 import { classifyDataFailure } from "@/lib/app-failure";
 import { getTrustedAdminDatabase } from "@/lib/db/admin";
 import { createAuthenticatedUserClient } from "@/lib/db/user";
 import { apiError, apiSuccess, toServerError } from "@/lib/errors";
-import { getAlbumPage } from "@/lib/albums";
+import { ALBUM_DETAIL_SELECT, getAlbumPage } from "@/lib/albums";
 import { enforceRateLimit } from "@/lib/security-rate-limit";
 import { getSiteSettings } from "@/lib/site-settings";
 import { slugify } from "@/lib/utils";
@@ -84,7 +85,7 @@ export async function POST(request: NextRequest) {
         feather_purchase_enabled: parsed.data.feather_purchase_enabled ?? true,
         feather_price: parsed.data.feather_price ?? null,
       })
-      .select("*")
+      .select(ALBUM_DETAIL_SELECT)
       .single();
 
     if (error) {
@@ -93,18 +94,25 @@ export async function POST(request: NextRequest) {
       }
       throw classifyDataFailure(error, "albums.admin_create");
     }
+    const albumRecord = data as unknown as {
+      id: string;
+      title: string;
+      status: string;
+    };
 
     await logAuditEvent({
       request,
       session,
       action: "admin_create_album",
       targetType: "album",
-      targetId: data.id,
+      targetId: albumRecord.id,
       metadata: {
-        title: data.title,
-        status: data.status,
+        title: albumRecord.title,
+        status: albumRecord.status,
       },
     });
+    revalidateTag("albums:public", "max");
+    revalidatePath("/albums");
 
     return apiSuccess({ album: data }, { status: 201 });
   } catch (error) {

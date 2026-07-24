@@ -1,4 +1,5 @@
 import { NextRequest } from "next/server";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { getTrustedAdminDatabase } from "@/lib/db/admin";
 import { logAuditEvent } from "@/lib/audit";
 import { apiError, apiSuccess, toServerError } from "@/lib/errors";
@@ -38,6 +39,9 @@ export async function POST(request: NextRequest) {
         targetId: job.data.album_id,
         metadata: { uploaded: 1, processing: "queued" },
       });
+      revalidateTag(`album:${job.data.album_id}:media`, "max");
+      revalidateTag("albums:public", "max");
+      revalidatePath(`/albums/${job.data.album_id}`);
       return apiSuccess(
         { media: { id: mediaId, processing_status: queued.status }, queued: queued.status !== "ready" },
         { status: queued.status === "ready" ? 200 : 202 },
@@ -62,6 +66,9 @@ export async function POST(request: NextRequest) {
     const expectedPrefix = `albums/${albumId}/videos/${mediaId}/original.`;
     if (!albumId || !r2Key.startsWith(expectedPrefix)) return apiError("INVALID_INPUT", "Invalid video upload key.", 400);
     const media = await completeUploadFile({ client, albumId, mediaId, r2Key, fileName: validation.value.safeName, mimeType, size });
+    revalidateTag(`album:${albumId}:media`, "max");
+    revalidateTag("albums:public", "max");
+    revalidatePath(`/albums/${albumId}`);
     return apiSuccess({ media }, { status: 201 });
   } catch (error) {
     return toServerError(error, request, "api.upload.complete");

@@ -73,6 +73,7 @@ export function AlbumCard({ album, dict, locale = "en", priority = false }: Albu
               sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
               imageClassName="grayscale-[15%] group-hover:grayscale-0"
               priority={priority}
+              activation="interaction"
             />
           ) : (
             <div className="living-preview-placeholder flex h-full w-full items-center justify-center bg-surface-secondary relative overflow-hidden border border-border/10">

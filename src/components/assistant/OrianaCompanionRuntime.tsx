@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { usePathname } from "next/navigation";
-import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { MessageCircle, Sparkles, X } from "lucide-react";
 import { AssistantPet } from "@/components/assistant/AssistantPet";
 import { useStoredAssistantPreferences } from "@/hooks/useAssistantPreferences";
@@ -59,19 +59,19 @@ export function OrianaCompanionRuntime({ session }: OrianaCompanionRuntimeProps)
   const currentPath = useMemo(() => getCurrentPath(pathname), [pathname]);
 
   const [hasOpened, setHasOpened] = useState(false);
-
-  useEffect(() => {
-    if (open) setHasOpened(true);
-  }, [open]);
+  const openPanel = useCallback(() => {
+    setHasOpened(true);
+    setOpen(true);
+  }, []);
 
   useEffect(() => {
     function handleOpen() {
-      if (canUseRuntime) setOpen(true);
+      if (canUseRuntime) openPanel();
     }
 
     window.addEventListener(ORIANA_COMPANION_OPEN_EVENT, handleOpen);
     return () => window.removeEventListener(ORIANA_COMPANION_OPEN_EVENT, handleOpen);
-  }, [canUseRuntime]);
+  }, [canUseRuntime, openPanel]);
 
   return (
     <>
@@ -90,7 +90,7 @@ export function OrianaCompanionRuntime({ session }: OrianaCompanionRuntimeProps)
               "transition duration-300 hover:-translate-y-0.5 hover:border-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
               preferences.mode === "expressive" ? "pr-4" : "px-4",
             )}
-            onClick={() => setOpen(true)}
+            onClick={openPanel}
             aria-label={copy.inputLabel}
           >
             {preferences.mode === "expressive" ? (

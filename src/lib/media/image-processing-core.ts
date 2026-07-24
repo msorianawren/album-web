@@ -5,9 +5,9 @@ import { detectImageMimeFromMagicBytes } from "./signatures.ts";
 import type { SiteSettings } from "@/lib/types";
 
 export const WEBP_VARIANTS = {
-  thumbnail: { width: 640, quality: 82 },
-  medium: { width: 1800, quality: 88 },
-  large: { width: 3200, quality: 92 },
+  thumbnail: { width: 480, quality: 82 },
+  medium: { width: 1440, quality: 88 },
+  large: { width: 2560, quality: 92 },
 } as const;
 
 export class MediaQuarantineError extends Error {

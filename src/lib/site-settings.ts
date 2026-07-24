@@ -1,5 +1,5 @@
 import "server-only";
-import { cache } from "react";
+import { unstable_cache } from "next/cache";
 import { z } from "zod";
 import { albumStatuses } from "@/lib/config";
 import { supabase } from "@/lib/supabase";
@@ -118,6 +118,8 @@ export const defaultSiteSettings: SiteSettings = {
   },
 };
 
+const siteSettingsColumns = Object.keys(defaultSiteSettings).join(",");
+
 export const siteSettingsSchema = z.object({
   site_name: z.string().trim().min(1).max(120),
   site_description: z.string().trim().max(500),
@@ -224,16 +226,26 @@ export function normalizeSiteSettings(value: Partial<SiteSettings> | null | unde
   };
 }
 
-export const getSiteSettings = cache(async (client: SupabaseClient = supabase) => {
+async function readSiteSettings(client: SupabaseClient) {
   const { data, error } = await client
     .from("site_settings")
-    .select("*")
+    .select(siteSettingsColumns)
     .eq("id", "default")
     .maybeSingle();
 
   if (error || !data) return defaultSiteSettings;
   return normalizeSiteSettings(data as Partial<SiteSettings>);
-});
+}
+
+const getCachedSiteSettings = unstable_cache(
+  () => readSiteSettings(supabase),
+  ["site-settings"],
+  { tags: ["site-settings"], revalidate: 3600 },
+);
+
+export function getSiteSettings(client?: SupabaseClient) {
+  return client ? readSiteSettings(client) : getCachedSiteSettings();
+}
 
 export async function saveSiteSettings(client: SupabaseClient, input: unknown) {
   const parsed = siteSettingsSchema.parse(input);
@@ -257,7 +269,7 @@ export async function saveSiteSettings(client: SupabaseClient, input: unknown) {
   const { data, error } = await client
     .from("site_settings")
     .upsert(payload, { onConflict: "id" })
-    .select("*")
+    .select(siteSettingsColumns)
     .single();
 
   if (error) throw error;

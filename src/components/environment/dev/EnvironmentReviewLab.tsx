@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import { PublicEnvironmentCanvas } from "../PublicEnvironmentCanvas";
 import { artistEnvironmentDefaults } from "@/lib/environment/preferences";
@@ -8,6 +8,7 @@ import type { EnvironmentPresetId, EnvironmentPreferences } from "@/lib/environm
 import type { EnvironmentPhase } from "@/lib/environment/phase";
 import type { EnvironmentQuality } from "@/lib/environment/quality";
 import { getEnvironmentState } from "@/lib/environment/presets";
+import { setEnvironmentDevLabState } from "@/lib/environment/dev-lab";
 
 export function EnvironmentReviewLab() {
   const [preset, setPreset] = useState<EnvironmentPresetId>("sakura");
@@ -42,10 +43,10 @@ export function EnvironmentReviewLab() {
 
   // Sync dev flags to window
   useEffect(() => {
-    (window as any).__DEV_LAB__ = {
+    setEnvironmentDevLabState({
       mistSceneFog, mistFarHaze, mistMiddle, mistGround, mistFore, vegetationOnly, atmosphereOnly, staticFallback,
       freezeAnimation, mistEdgeDebug, mistNoiseContrast, mistOpacityMultiplier, mistMotionSpeed
-    };
+    });
   }, [
     mistSceneFog, mistFarHaze, mistMiddle, mistGround, mistFore, vegetationOnly, atmosphereOnly, staticFallback,
     freezeAnimation, mistEdgeDebug, mistNoiseContrast, mistOpacityMultiplier, mistMotionSpeed
@@ -130,7 +131,7 @@ export function EnvironmentReviewLab() {
         <div className="absolute inset-0 z-10 pointer-events-none">
           {quality.enabled && (
             <PublicEnvironmentCanvas
-              key={JSON.stringify((window as any).__DEV_LAB__)}
+              key={`${preset}:${phase}:${tier}:${reducedMotion}:${mistSceneFog}:${mistFarHaze}:${mistMiddle}:${mistGround}:${mistFore}:${vegetationOnly}:${atmosphereOnly}:${freezeAnimation}:${mistEdgeDebug}:${mistNoiseContrast}:${mistOpacityMultiplier}:${mistMotionSpeed}`}
               rects={[]}
               reducedMotion={reducedMotion}
               state={state}
@@ -153,7 +154,7 @@ export function EnvironmentReviewLab() {
 
         <div className="space-y-2">
           <label className="block text-xs uppercase tracking-wider text-zinc-500">Preset</label>
-          <select value={preset} onChange={(e) => setPreset(e.target.value as any)} className="w-full bg-zinc-900 border border-zinc-700 rounded p-1 text-white">
+          <select value={preset} onChange={(e) => setPreset(e.target.value as EnvironmentPresetId)} className="w-full bg-zinc-900 border border-zinc-700 rounded p-1 text-white">
             <option value="sakura">Sakura Garden</option>
             <option value="fireflies">Fireflies</option>
             <option value="snow">Snow</option>
@@ -279,7 +280,7 @@ export function EnvironmentReviewLab() {
             <div className="flex flex-col gap-1 text-xs">
               <label className="flex justify-between">
                 <span>Leaf Amount</span>
-                <input type="range" min="0" max="100" value={preferences.particleAmount} onChange={e => {}} readOnly />
+                <input type="range" min="0" max="100" value={preferences.particleAmount} onChange={() => {}} readOnly />
               </label>
             </div>
           </div>

@@ -5,6 +5,7 @@ import * as THREE from "three";
 import { useFrame } from "@react-three/fiber";
 import type { EnvironmentState } from "@/lib/environment/presets";
 import type { WindRuntime } from "@/lib/environment/wind";
+import { createSeededRandom } from "@/lib/environment/deterministic-random";
 
 // Define locations for blossom clusters along the branches defined in BotanicalTree
 const clusterPositions = [
@@ -38,6 +39,7 @@ export function BlossomClusters({
   const clusterCount = reduced ? 80 : 300;
 
   const { geometry, instances, colors } = useMemo(() => {
+    const prng = createSeededRandom(`${state.preset}:${state.phase}:${clusterCount}:${state.foliage.join("|")}`);
     const petalShape = new THREE.Shape();
     petalShape.moveTo(0, 0);
     petalShape.bezierCurveTo(-0.25, 0.2, -0.25, 0.45, -0.1, 0.55);
@@ -61,25 +63,25 @@ export function BlossomClusters({
     for (let i = 0; i < clusterCount; i++) {
       const base = clusterPositions[i % clusterPositions.length];
       const offset = new THREE.Vector3(
-        (Math.random() - 0.5) * 3,
-        (Math.random() - 0.5) * 2,
-        (Math.random() - 0.5) * 3
+        (prng.value() - 0.5) * 3,
+        (prng.value() - 0.5) * 2,
+        (prng.value() - 0.5) * 3
       );
       if (offset.length() > 2) offset.normalize().multiplyScalar(2);
 
       const flowerCenter = base.clone().add(offset);
       
-      const scale = 0.4 + Math.random() * 0.6;
+      const scale = 0.4 + prng.value() * 0.6;
 
-      const baseColor = targetColors[Math.floor(Math.random() * targetColors.length)].clone();
+      const baseColor = targetColors[Math.floor(prng.value() * targetColors.length)].clone();
       const hsl = { h: 0, s: 0, l: 0 };
       baseColor.getHSL(hsl);
-      baseColor.setHSL(hsl.h + (Math.random() - 0.5) * 0.05, hsl.s, hsl.l + (Math.random() - 0.5) * 0.1);
+      baseColor.setHSL(hsl.h + (prng.value() - 0.5) * 0.05, hsl.s, hsl.l + (prng.value() - 0.5) * 0.1);
 
       const flowerRotation = new THREE.Euler(
-        Math.random() * Math.PI * 2,
-        Math.random() * Math.PI * 2,
-        Math.random() * Math.PI * 2
+        prng.value() * Math.PI * 2,
+        prng.value() * Math.PI * 2,
+        prng.value() * Math.PI * 2
       );
 
       for (let p = 0; p < 5; p++) {
@@ -97,14 +99,14 @@ export function BlossomClusters({
 
         inst.push({
           matrix: dummy.matrix.clone(),
-          phase: Math.random() * Math.PI * 2,
-          speed: 0.5 + Math.random() * 1.5
+          phase: prng.value() * Math.PI * 2,
+          speed: 0.5 + prng.value() * 1.5
         });
       }
     }
 
     return { geometry: geom, instances: inst, colors: colorArray };
-  }, [clusterCount, targetColors]);
+  }, [clusterCount, state.foliage, state.phase, state.preset, targetColors]);
 
   useFrame(({ clock }) => {
     if (!active || !meshRef.current) return;

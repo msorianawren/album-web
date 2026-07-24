@@ -45,8 +45,8 @@ export function MediaCard({
 
   return (
     <div
-      className="group relative mb-4 block w-full break-inside-avoid overflow-hidden rounded-3xl bg-surface-secondary text-left"
-      style={{ aspectRatio }}
+      className="media-grid-item group relative mb-4 block w-full break-inside-avoid overflow-hidden rounded-3xl bg-surface-secondary text-left"
+      style={{ aspectRatio, contentVisibility: "auto", containIntrinsicSize: "360px 480px" }}
       onContextMenu={protectAssets ? (event) => event.preventDefault() : undefined}
     >
       <button
@@ -88,6 +88,7 @@ export function MediaCard({
             draggable={!protectAssets}
             fallback={fallback}
             priority={priority}
+            blurhash={delivery.blurhash}
           />
         ) : (
           <>
@@ -100,6 +101,7 @@ export function MediaCard({
               draggable={!protectAssets}
               fallback={fallback}
               priority={priority}
+              blurhash={delivery.blurhash}
             />
             <div className="absolute inset-0 flex items-center justify-center">
               <span className="flex h-14 w-14 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur-md transition-colors group-hover:bg-accent group-hover:text-accent-foreground">

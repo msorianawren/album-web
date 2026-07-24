@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useCallback, useMemo, useState, useTransition } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { Camera, RotateCcw } from "lucide-react";
 import { MediaCard } from "@/components/media/MediaCard";
 import { Button } from "@/components/ui/Button";
@@ -19,6 +19,9 @@ const MediaViewer = dynamic(
   () => import("@/components/media/MediaViewer").then((mod) => mod.MediaViewer),
   { ssr: false },
 );
+
+const INITIAL_MEDIA_BATCH = 16;
+const MEDIA_BATCH_SIZE = 12;
 
 interface MediaGridProps {
   albumId: string;
@@ -51,6 +54,8 @@ export function MediaGrid({
   
   const [shuffleSeed, setShuffleSeed] = useState(() => `${albumId}:${Date.now()}`);
   const [isPending, startTransition] = useTransition();
+  const [visibleCount, setVisibleCount] = useState(INITIAL_MEDIA_BATCH);
+  const loadMoreRef = useRef<HTMLDivElement>(null);
 
   const sortedMedia = useMemo(
     () => sortMedia(media, sortMode, shuffleSeed),
@@ -67,6 +72,10 @@ export function MediaGrid({
     () => new Map(viewableMedia.map((item, index) => [item.id, index])),
     [viewableMedia],
   );
+  const visibleMedia = useMemo(
+    () => sortedMedia.slice(0, visibleCount),
+    [sortedMedia, visibleCount],
+  );
 
   const chooseSortMode = useCallback((value: MediaSortMode) => {
     startTransition(() => {
@@ -78,6 +87,7 @@ export function MediaGrid({
         // Local storage is only a convenience for the viewer session.
       }
       setCurrentIndex(null);
+      setVisibleCount(INITIAL_MEDIA_BATCH);
     });
   }, [albumId, storageKey]);
 
@@ -90,6 +100,7 @@ export function MediaGrid({
         // Ignore private browsing storage failures.
       }
       setCurrentIndex(null);
+      setVisibleCount(INITIAL_MEDIA_BATCH);
     });
   }, [defaultMode, storageKey]);
 
@@ -111,10 +122,26 @@ export function MediaGrid({
 
   const [hasOpenedViewer, setHasOpenedViewer] = useState(false);
 
-  // Mark viewer as opened when index becomes non-null
-  if (currentIndex !== null && !hasOpenedViewer) {
+  const openMedia = useCallback((index: number) => {
     setHasOpenedViewer(true);
-  }
+    setCurrentIndex(index);
+  }, []);
+
+  useEffect(() => {
+    const sentinel = loadMoreRef.current;
+    if (!sentinel || visibleCount >= sortedMedia.length) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (!entries.some((entry) => entry.isIntersecting)) return;
+        setVisibleCount((count) =>
+          Math.min(count + MEDIA_BATCH_SIZE, sortedMedia.length),
+        );
+      },
+      { rootMargin: "800px 0px" },
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [sortedMedia.length, visibleCount]);
 
   if (!media.length) {
     return (
@@ -181,7 +208,7 @@ export function MediaGrid({
       </div>
 
       <div id="media-grid" className="columns-1 gap-3 sm:columns-2 sm:gap-4 md:columns-3 lg:columns-4">
-        {sortedMedia.map((item, index) => (
+        {visibleMedia.map((item, index) => (
           <MediaCard
             key={item.id}
             media={item}
@@ -189,11 +216,18 @@ export function MediaGrid({
             downloadAllowed={downloadAllowed}
             albumStatus={albumStatus}
             protectAssets={protectAssets}
-            onOpen={setCurrentIndex}
+            onOpen={openMedia}
             priority={index === 0}
           />
         ))}
       </div>
+      {visibleCount < sortedMedia.length ? (
+        <div
+          ref={loadMoreRef}
+          className="h-px w-full"
+          aria-hidden="true"
+        />
+      ) : null}
       {hasOpenedViewer && (
         <MediaViewer
           media={viewableMedia}

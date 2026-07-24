@@ -49,7 +49,6 @@ function AutumnLeafLayer({
     depthWrite: false,
   }), [layerConfig.opacity]);
 
-  const dummy = useMemo(() => new THREE.Object3D(), []);
   const count = reducedMotion ? Math.floor(layerConfig.count * 0.3) : layerConfig.count;
 
   // Use full view height plus buffer so leaves cover top to bottom without disappearing
@@ -90,6 +89,7 @@ function AutumnLeafLayer({
 
   useFrame(({ clock }) => {
     if (!active || !mesh.current) return;
+    const dummy = new THREE.Object3D();
     const time = clock.elapsedTime;
     const windX = wind.current.current.x;
     const gustStrength = wind.current.current.gust * (preferences.gustStrength / 100);

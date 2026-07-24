@@ -9,7 +9,7 @@ import { CommentSection } from "@/components/comments/CommentSection";
 import { LikeButton } from "@/components/media/LikeButton";
 
 import { MediaGrid } from "@/components/media/MediaGrid";
-import { getAlbum } from "@/lib/albums";
+import { getAlbum, getAlbumMetadata } from "@/lib/albums";
 import { getSiteSettings } from "@/lib/site-settings";
 import { getLandingPage } from "@/lib/landing";
 import { getPublicSession } from "@/lib/auth";
@@ -29,7 +29,7 @@ interface AlbumPageProps {
 export async function generateMetadata({ params }: AlbumPageProps): Promise<Metadata> {
   const { id } = await params;
   const userClient = await createAuthenticatedUserClient();
-  const album = await getAlbum(id, { userClient });
+  const album = await getAlbumMetadata(id, { userClient });
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ?? "";
   const cookieStore = await cookies();
   const locale = (cookieStore.get("NEXT_LOCALE")?.value as string) || "en";

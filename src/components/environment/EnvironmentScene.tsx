@@ -21,6 +21,7 @@ const EnvironmentBranches = dynamic(() => import("./EnvironmentBranches").then(m
 const SharedBotanicalScene = dynamic(() => import("./shared/SharedBotanicalScene").then(m => m.SharedBotanicalScene), { ssr: false });
 
 import { botanicalProfiles } from "@/lib/environment/botanical-profiles";
+import { getEnvironmentDevLabState } from "@/lib/environment/dev-lab";
 
 export function EnvironmentScene({
   state,
@@ -57,7 +58,7 @@ export function EnvironmentScene({
   // Preserve scale adjustments from user preferences
   const scaleZ = 0.65 + preferences.spatialDepth / 100 * 0.7;
 
-  const dev = typeof window !== "undefined" ? (window as any).__DEV_LAB__ || {} : {};
+  const dev = getEnvironmentDevLabState();
 
   return (
     <>

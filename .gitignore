@@ -51,5 +51,6 @@ next-env.d.ts
 /PRIVATE_MEDIA_R2_MIGRATION_REPORT.md
 /.private-media-checkpoints/
 /MEDIA_PROCESSING_CANARY.json
+/.lighthouseci/
 artifacts/environment-review/  
 PR_DESCRIPTION.md 

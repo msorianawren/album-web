@@ -485,6 +485,22 @@ canvas {
   backface-visibility: hidden;
 }
 
+.living-preview-frame [data-preview-active="false"] .living-preview-image {
+  animation: none;
+  opacity: 1;
+  transform: scale(1.035) translate3d(0, 0, 0);
+  will-change: auto;
+}
+
+.living-preview-frame [data-preview-active="false"] ~ .living-preview-light,
+.living-preview-frame:has([data-preview-active="false"]) .living-preview-light {
+  animation-play-state: paused;
+}
+
+.media-grid-item {
+  contain: layout paint style;
+}
+
 .living-preview-frame .living-preview-image:only-child {
   opacity: 1;
   animation: living-preview-single 14s ease-in-out infinite;

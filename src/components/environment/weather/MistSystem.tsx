@@ -2,13 +2,14 @@
 
 import * as THREE from "three";
 import { useRef, useMemo, useEffect } from "react";
-import { useFrame, useThree } from "@react-three/fiber";
+import { useFrame } from "@react-three/fiber";
 import { createSeededRandom } from "@/lib/environment/deterministic-random";
 import type { EnvironmentState } from "@/lib/environment/presets";
 import type { WindRuntime } from "@/lib/environment/wind";
 import type { EnvironmentQuality } from "@/lib/environment/quality";
 import type { EnvironmentPreferences } from "@/lib/environment/preferences";
 import { MistShaderMaterial } from "./mist-shader";
+import { getEnvironmentDevLabState } from "@/lib/environment/dev-lab";
 
 // ─── Shared geometry for mist cards ─────────────────────────────────────────
 // One plane, reused across all layers. Created once, never inside useFrame.
@@ -62,46 +63,72 @@ function MistLayer({
   reducedMotion: boolean;
 }) {
   const mesh = useRef<THREE.InstancedMesh>(null);
+  const materialRef = useRef<MistShaderMaterial | null>(null);
   const geom = useMemo(() => getMistPlaneGeom().clone(), []);
-  
-  const dev = typeof window !== "undefined" ? (window as any).__DEV_LAB__ || {} : {};
 
   const mat = useMemo(() => new MistShaderMaterial(tint), [tint]);
-
-  const dummy = useMemo(() => new THREE.Object3D(), []);
   const count = reducedMotion ? Math.max(2, Math.floor(config.count * 0.3)) : config.count;
+  const [xMin, xMax] = config.xRange;
+  const [yMin, yMax] = config.yRange;
+  const [zMin, zMax] = config.zRange;
+  const [scaleMin, scaleMax] = config.scaleRange;
+  const [heightMin, heightMax] = config.heightRange;
+  const [opacityMin, opacityMax] = config.opacityRange;
+  const [driftSpeedMin, driftSpeedMax] = config.driftSpeedRange;
+  const [driftAmpMin, driftAmpMax] = config.driftAmpRange;
+  const isForeground = config.isForeground ?? false;
+  const stableConfig = useMemo(() => ({
+    xRange: [xMin, xMax] as [number, number],
+    yRange: [yMin, yMax] as [number, number],
+    zRange: [zMin, zMax] as [number, number],
+    scaleRange: [scaleMin, scaleMax] as [number, number],
+    heightRange: [heightMin, heightMax] as [number, number],
+    opacityRange: [opacityMin, opacityMax] as [number, number],
+    driftSpeedRange: [driftSpeedMin, driftSpeedMax] as [number, number],
+    driftAmpRange: [driftAmpMin, driftAmpMax] as [number, number],
+    verticalDriftAmp: config.verticalDriftAmp,
+    seedOffset: config.seedOffset,
+    isForeground,
+  }), [driftAmpMax, driftAmpMin, driftSpeedMax, driftSpeedMin, heightMax, heightMin, isForeground, opacityMax, opacityMin, scaleMax, scaleMin, xMax, xMin, yMax, yMin, zMax, zMin, config.seedOffset, config.verticalDriftAmp]);
 
   const instanceData = useMemo(() => {
-    const prng = createSeededRandom(config.seedOffset * 997 + 13);
-    return Array.from({ length: count }, (_, i) => {
-      let x = prng.range(config.xRange[0], config.xRange[1]);
+    const prng = createSeededRandom(stableConfig.seedOffset * 997 + 13);
+    return Array.from({ length: count }, () => {
+      let x = prng.range(stableConfig.xRange[0], stableConfig.xRange[1]);
       // Explicitly push foreground veil away from the center (safe zone)
-      if (config.isForeground) {
+      if (stableConfig.isForeground) {
         if (x > -3 && x < 3) {
           x = x < 0 ? x - 4 : x + 4;
         }
       }
       return {
         x,
-        y: prng.range(config.yRange[0], config.yRange[1]),
-        z: prng.range(config.zRange[0], config.zRange[1]),
-        scaleX: prng.range(config.scaleRange[0], config.scaleRange[1]),
-        scaleY: prng.range(config.heightRange[0], config.heightRange[1]),
-        opacity: prng.range(config.opacityRange[0], config.opacityRange[1]),
-        driftSpeed: prng.range(config.driftSpeedRange[0], config.driftSpeedRange[1]),
-        driftAmp: prng.range(config.driftAmpRange[0], config.driftAmpRange[1]),
+        y: prng.range(stableConfig.yRange[0], stableConfig.yRange[1]),
+        z: prng.range(stableConfig.zRange[0], stableConfig.zRange[1]),
+        scaleX: prng.range(stableConfig.scaleRange[0], stableConfig.scaleRange[1]),
+        scaleY: prng.range(stableConfig.heightRange[0], stableConfig.heightRange[1]),
+        opacity: prng.range(stableConfig.opacityRange[0], stableConfig.opacityRange[1]),
+        driftSpeed: prng.range(stableConfig.driftSpeedRange[0], stableConfig.driftSpeedRange[1]),
+        driftAmp: prng.range(stableConfig.driftAmpRange[0], stableConfig.driftAmpRange[1]),
         vertPhase: prng.range(0, Math.PI * 2),
         driftPhase: prng.range(0, Math.PI * 2),
         rotY: prng.range(-Math.PI * 0.15, Math.PI * 0.15), // Face the camera
         seed: prng.value(),
       };
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [count, JSON.stringify(config)]);
+  }, [count, stableConfig]);
+
+  useEffect(() => {
+    materialRef.current = mat;
+    return () => {
+      if (materialRef.current === mat) materialRef.current = null;
+    };
+  }, [mat]);
 
   // Set initial matrices and attributes
   useEffect(() => {
     if (!mesh.current) return;
+    const dummy = new THREE.Object3D();
     
     const seedArray = new Float32Array(count);
     const opacityArray = new Float32Array(count);
@@ -121,15 +148,15 @@ function MistLayer({
     
     geom.setAttribute('aSeed', new THREE.InstancedBufferAttribute(seedArray, 1));
     geom.setAttribute('aOpacity', new THREE.InstancedBufferAttribute(opacityArray, 1));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [count, JSON.stringify(config), dummy, geom]);
+  }, [count, geom, instanceData]);
 
   useFrame(({ clock }) => {
     if (!mesh.current || !active) return;
     const time = clock.elapsedTime;
+    const dummy = new THREE.Object3D();
     
     // Check dev toggles dynamically (without reacting to re-renders)
-    const devLab = typeof window !== "undefined" ? (window as any).__DEV_LAB__ || {} : {};
+    const devLab = getEnvironmentDevLabState();
     if (devLab.freezeAnimation) return;
 
     const atmosFactor = preferences.atmosphere / 100;
@@ -144,7 +171,7 @@ function MistLayer({
 
       const vertDrift = reducedMotion
         ? 0
-        : Math.sin(time * 0.18 + d.vertPhase) * config.verticalDriftAmp;
+        : Math.sin(time * 0.18 + d.vertPhase) * stableConfig.verticalDriftAmp;
 
       dummy.position.set(d.x + drift, d.y + vertDrift, d.z);
       dummy.rotation.y = d.rotY + time * 0.008 * d.driftSpeed;
@@ -155,11 +182,13 @@ function MistLayer({
     mesh.current.instanceMatrix.needsUpdate = true;
 
     // Update uniforms
-    mat.uniforms.uTime.value = time;
-    mat.uniforms.uOpacity.value = atmosFactor * (devLab.mistOpacityMultiplier ?? 1.0);
-    mat.uniforms.uSpeed.value = devLab.mistMotionSpeed ?? 1.0;
-    mat.uniforms.uEdgeDebug.value = devLab.mistEdgeDebug ? 1.0 : 0.0;
-    mat.uniforms.uContrast.value = devLab.mistNoiseContrast ?? 1.2;
+    const material = materialRef.current;
+    if (!material) return;
+    material.uniforms.uTime.value = time;
+    material.uniforms.uOpacity.value = atmosFactor * (devLab.mistOpacityMultiplier ?? 1.0);
+    material.uniforms.uSpeed.value = devLab.mistMotionSpeed ?? 1.0;
+    material.uniforms.uEdgeDebug.value = devLab.mistEdgeDebug ? 1.0 : 0.0;
+    material.uniforms.uContrast.value = devLab.mistNoiseContrast ?? 1.2;
   });
 
   return (
@@ -231,50 +260,17 @@ export function MistSystem({
   active: boolean;
   reducedMotion: boolean;
 }) {
-  const { scene } = useThree();
-  const prevFog = useRef<THREE.Fog | THREE.FogExp2 | null>(null);
-  const mistFog = useRef<THREE.Fog | THREE.FogExp2 | null>(null);
-
   const tint = useMemo(() => getMistTintForState(state), [state]);
-
-  const dev = typeof window !== "undefined" ? (window as any).__DEV_LAB__ || {} : {};
+  const dev = getEnvironmentDevLabState();
   const enableFog = dev.mistSceneFog ?? true;
   const showFar = dev.mistFarHaze ?? true;
   const showMid = dev.mistMiddle ?? true;
   const showGround = dev.mistGround ?? true;
   const showFore = dev.mistFore ?? true;
 
-  // Install mist-specific scene fog, restore on unmount / preset change
-  useEffect(() => {
-    prevFog.current = scene.fog;
-
-    if (enableFog) {
-      // Calculate a density based on fogFar. Roughly 2.0 / fogFar gives a good exponential curve
-      const baseDensity = 1.8 / (state.fogFar ?? 20);
-      const fog = new THREE.FogExp2(state.fogColor, baseDensity);
-      mistFog.current = fog;
-      scene.fog = fog;
-    } else {
-      scene.fog = null;
-      mistFog.current = null;
-    }
-
-    return () => {
-      scene.fog = prevFog.current;
-      mistFog.current = null;
-    };
-  }, [scene, state.fogColor, state.fogNear, state.fogFar, state.preset, state.phase, enableFog]);
-
-  // Animate fog density gently with atmosphere preference
-  useFrame(() => {
-    if (!mistFog.current || !active) return;
-    const atmosFactor = 0.7 + (preferences.atmosphere / 100) * 0.6;
-    // Gently adjust density based on atmosphere
-    if (mistFog.current instanceof THREE.FogExp2) {
-      const baseDensity = 1.8 / (state.fogFar ?? 20);
-      mistFog.current.density = baseDensity * atmosFactor;
-    }
-  });
+  const fogDensity = enableFog && active
+    ? (1.8 / (state.fogFar ?? 20)) * (0.7 + (preferences.atmosphere / 100) * 0.6)
+    : 0;
 
   if (!quality.particles) return null;
 
@@ -328,6 +324,7 @@ export function MistSystem({
 
   return (
     <group>
+      {enableFog ? <fogExp2 attach="fog" args={[state.fogColor, fogDensity]} /> : null}
       {/* Far atmospheric haze */}
       {showFar && <MistLayer config={farHazeConfig} tint={tint} wind={wind} preferences={preferences} active={active} reducedMotion={reducedMotion} />}
 

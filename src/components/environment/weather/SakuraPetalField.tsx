@@ -1,11 +1,12 @@
 "use client";
 
-import { useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { useFrame } from "@react-three/fiber";
 import type { EnvironmentState } from "@/lib/environment/presets";
 import type { EnvironmentQuality } from "@/lib/environment/quality";
 import type { WindRuntime } from "@/lib/environment/wind";
+import { createSeededRandom } from "@/lib/environment/deterministic-random";
 
 export function SakuraPetalField({
   state,
@@ -29,8 +30,10 @@ export function SakuraPetalField({
     drift: number;
     scale: number;
   }>>([]);
+  const resetRandomRef = useRef(createSeededRandom(`${state.preset}:${state.phase}:petal-resets`));
 
-  const { geometry, colors } = useMemo(() => {
+  const { geometry, colors, physics } = useMemo(() => {
+    const prng = createSeededRandom(`${state.preset}:${state.phase}:${petalCount}:${state.foliage.join("|")}`);
     const petalShape = new THREE.Shape();
     petalShape.moveTo(0, 0);
     petalShape.bezierCurveTo(-0.15, 0.15, -0.15, 0.35, -0.05, 0.45);
@@ -51,10 +54,10 @@ export function SakuraPetalField({
     const physics = [];
 
     for (let i = 0; i < petalCount; i++) {
-      const color = colorOptions[Math.floor(Math.random() * colorOptions.length)].clone();
+      const color = colorOptions[Math.floor(prng.value() * colorOptions.length)].clone();
       const hsl = { h: 0, s: 0, l: 0 };
       color.getHSL(hsl);
-      color.setHSL(hsl.h + (Math.random() - 0.5) * 0.05, hsl.s, hsl.l + (Math.random() - 0.5) * 0.1);
+      color.setHSL(hsl.h + (prng.value() - 0.5) * 0.05, hsl.s, hsl.l + (prng.value() - 0.5) * 0.1);
       
       colorArray[i * 3] = color.r;
       colorArray[i * 3 + 1] = color.g;
@@ -62,25 +65,28 @@ export function SakuraPetalField({
 
       physics.push({
         position: new THREE.Vector3(
-          (Math.random() - 0.5) * 20,
-          Math.random() * 10 + 2,
-          (Math.random() - 0.5) * 15 - 2
+          (prng.value() - 0.5) * 20,
+          prng.value() * 10 + 2,
+          (prng.value() - 0.5) * 15 - 2
         ),
         rotation: new THREE.Euler(
-          Math.random() * Math.PI,
-          Math.random() * Math.PI,
-          Math.random() * Math.PI
+          prng.value() * Math.PI,
+          prng.value() * Math.PI,
+          prng.value() * Math.PI
         ),
-        speed: 0.5 + Math.random() * 1.0,
-        drift: Math.random() * Math.PI * 2,
-        scale: 0.5 + Math.random() * 0.5,
+        speed: 0.5 + prng.value() * 1.0,
+        drift: prng.value() * Math.PI * 2,
+        scale: 0.5 + prng.value() * 0.5,
       });
     }
-    
+
+    return { geometry: geom, colors: colorArray, physics };
+  }, [petalCount, state.foliage, state.phase, state.preset]);
+
+  useEffect(() => {
     physicsRef.current = physics;
-    
-    return { geometry: geom, colors: colorArray };
-  }, [petalCount, state.foliage]);
+    resetRandomRef.current = createSeededRandom(`${state.preset}:${state.phase}:petal-resets`);
+  }, [physics, state.phase, state.preset]);
 
   useFrame(({ clock }, delta) => {
     if (!active || !meshRef.current) return;
@@ -99,8 +105,8 @@ export function SakuraPetalField({
 
       // Wrap around
       if (inst.position.y < -5) {
-        inst.position.y = 10 + Math.random() * 5;
-        inst.position.x = (Math.random() - 0.5) * 20;
+        inst.position.y = 10 + resetRandomRef.current.value() * 5;
+        inst.position.x = (resetRandomRef.current.value() - 0.5) * 20;
       }
 
       // Update rotation

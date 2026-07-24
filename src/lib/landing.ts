@@ -1,4 +1,4 @@
-import { cache } from "react";
+import { unstable_cache } from "next/cache";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createPublicServerClient } from "@/lib/db/public";
 import type { LandingPageContent, LandingBackgroundSettings, LandingSocialLink, TranslationMap } from "@/lib/types";
@@ -136,7 +136,7 @@ export function normalizeLandingPage(value: Partial<LandingPageContent> | null |
   } as LandingPageContent;
 }
 
-export const getLandingPage = cache(async () => {
+const getCachedLandingPage = unstable_cache(async () => {
   const { data, error } = await createPublicServerClient()
     .from("landing_page_settings")
     .select(landingColumns)
@@ -145,7 +145,11 @@ export const getLandingPage = cache(async () => {
 
   if (error || !data) return defaultLandingPage;
   return normalizeLandingPage(data as Partial<LandingPageContent>);
-});
+}, ["landing-page"], { tags: ["landing-page"], revalidate: 3600 });
+
+export function getLandingPage() {
+  return getCachedLandingPage();
+}
 
 export function landingPayloadFromInput(input: Record<string, unknown>) {
   return {

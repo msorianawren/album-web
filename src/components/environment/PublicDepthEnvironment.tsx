@@ -18,6 +18,11 @@ import { isChimeControlTarget, isOverlayInteractionActive, isProtectedInteractiv
 import { EnvironmentStaticFallback } from "./EnvironmentStaticFallback";
 import { useChimeAnchorRects } from "./useChimeAnchorRects";
 
+type IdleCallbackWindow = Window & {
+  requestIdleCallback?: (callback: IdleRequestCallback, options?: IdleRequestOptions) => number;
+  cancelIdleCallback?: (handle: number) => void;
+};
+
 const PublicEnvironmentCanvas = dynamic(
   () => import("./PublicEnvironmentCanvas").then((module) => module.PublicEnvironmentCanvas),
   { ssr: false },
@@ -152,14 +157,15 @@ function PublicDepthEnvironmentContent({ pathname }: { pathname: string }) {
   useEffect(() => {
     if (!showEnvironment || !quality.enabled) return;
     let handle: number;
-    if ("requestIdleCallback" in window) {
-      handle = (window as any).requestIdleCallback(() => setIsIdle(true), { timeout: 2000 });
+    const idleWindow = window as IdleCallbackWindow;
+    if (idleWindow.requestIdleCallback) {
+      handle = idleWindow.requestIdleCallback(() => setIsIdle(true), { timeout: 2000 });
     } else {
       handle = setTimeout(() => setIsIdle(true), 500) as unknown as number;
     }
     return () => {
-      if ("requestIdleCallback" in window && "cancelIdleCallback" in window) {
-        (window as any).cancelIdleCallback(handle);
+      if (idleWindow.cancelIdleCallback) {
+        idleWindow.cancelIdleCallback(handle);
       } else {
         clearTimeout(handle);
       }

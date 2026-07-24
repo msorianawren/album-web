@@ -3,7 +3,7 @@ import { ZodError } from "zod";
 import { getTrustedAdminDatabase } from "@/lib/db/admin";
 import { apiError, apiSuccess, toServerError } from "@/lib/errors";
 import { getSiteSettings, saveSiteSettings } from "@/lib/site-settings";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 
 export async function GET(request: NextRequest) {
   const database = await getTrustedAdminDatabase(request);
@@ -20,6 +20,7 @@ export async function PATCH(request: NextRequest) {
   try {
     const body = await request.json().catch(() => ({}));
     const settings = await saveSiteSettings(database.client, body);
+    revalidateTag("site-settings", "max");
     revalidatePath("/", "layout");
     return apiSuccess({ settings });
   } catch (error) {

@@ -51,11 +51,8 @@ export function BotanicalTree({
   wind: React.MutableRefObject<WindRuntime>;
   reduced: boolean;
 }) {
-  const materialRef = useRef<THREE.MeshStandardMaterial>(null);
   const trunkGroup = useRef<THREE.Group>(null);
   const branchesGroup = useRef<THREE.Group>(null);
-
-  const targetColor = useMemo(() => new THREE.Color(state.branchColor), [state.branchColor]);
 
   const trunkGeometry = useMemo(() => {
     const curve = generateBranchCurve(
@@ -99,38 +96,30 @@ export function BotanicalTree({
     return geometries;
   }, [reduced]);
 
-  useFrame((_, delta) => {
-    if (materialRef.current) {
-      materialRef.current.color.lerp(targetColor, Math.min(1, delta * 2.2));
-    }
-    
+  useFrame(({ clock }) => {
     if (!active) return;
     
     const strength = wind.current.current.strength;
     if (trunkGroup.current) {
-      trunkGroup.current.rotation.z = Math.sin(Date.now() * 0.001) * strength * 0.002;
+      trunkGroup.current.rotation.z = Math.sin(clock.elapsedTime) * strength * 0.002;
     }
     if (branchesGroup.current) {
-      branchesGroup.current.rotation.z = Math.sin(Date.now() * 0.0015) * strength * 0.01;
-      branchesGroup.current.rotation.x = Math.cos(Date.now() * 0.0012) * strength * 0.005;
+      branchesGroup.current.rotation.z = Math.sin(clock.elapsedTime * 1.5) * strength * 0.01;
+      branchesGroup.current.rotation.x = Math.cos(clock.elapsedTime * 1.2) * strength * 0.005;
     }
   });
 
   return (
     <group>
-      <meshStandardMaterial
-        ref={materialRef}
-        color={state.branchColor}
-        emissive={state.branchColor}
-        emissiveIntensity={0.15}
-        roughness={0.85}
-        metalness={0.05}
-      />
       <group ref={trunkGroup}>
-        <mesh geometry={trunkGeometry} material={materialRef.current || undefined} castShadow={!reduced} receiveShadow />
+        <mesh geometry={trunkGeometry} castShadow={!reduced} receiveShadow>
+          <meshStandardMaterial color={state.branchColor} emissive={state.branchColor} emissiveIntensity={0.15} roughness={0.85} metalness={0.05} />
+        </mesh>
         <group ref={branchesGroup}>
           {branchesGeometry.map((geom, idx) => (
-            <mesh key={idx} geometry={geom} material={materialRef.current || undefined} castShadow={!reduced} receiveShadow />
+            <mesh key={idx} geometry={geom} castShadow={!reduced} receiveShadow>
+              <meshStandardMaterial color={state.branchColor} emissive={state.branchColor} emissiveIntensity={0.15} roughness={0.85} metalness={0.05} />
+            </mesh>
           ))}
         </group>
       </group>

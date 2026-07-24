@@ -10,7 +10,7 @@ import {
 
 export { MediaQuarantineError, validateAndProcessImage } from "@/lib/media/image-processing-core";
 
-const PROCESSING_VERSION = 2;
+const PROCESSING_VERSION = 3;
 interface ProcessingJobRow {
   id: string;
   media_id: string;

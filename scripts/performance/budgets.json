@@ -1,0 +1,14 @@
+{
+  "routes": {
+    "home": {
+      "manifest": ".next/server/app/page_client-reference-manifest.js",
+      "entry": "[project]/src/app/page",
+      "maxBytes": 780000
+    },
+    "albums": {
+      "manifest": ".next/server/app/albums/page_client-reference-manifest.js",
+      "entry": "[project]/src/app/albums/page",
+      "maxBytes": 780000
+    }
+  }
+}

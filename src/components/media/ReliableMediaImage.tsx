@@ -19,6 +19,7 @@ interface ReliableMediaImageProps {
   fallback?: ReactNode;
   onLoad?: () => void;
   onUnavailable?: () => void;
+  blurhash?: string | null;
 }
 
 export function ReliableMediaImage(props: ReliableMediaImageProps) {
@@ -40,6 +41,7 @@ function ReliableMediaImageAttempt({
   fallback,
   onLoad,
   onUnavailable,
+  blurhash,
 }: ReliableMediaImageProps) {
   const signature = target.candidates.map((candidate) => candidate.src).join("\n");
   const [candidateIndex, setCandidateIndex] = useState(0);
@@ -68,7 +70,7 @@ function ReliableMediaImageAttempt({
 
   return (
     <>
-      {!loaded ? <div className="absolute inset-0 bg-surface-secondary" aria-hidden="true" /> : null}
+      {!loaded ? <BlurhashPlaceholder blurhash={blurhash} /> : null}
       <Image
         key={current.src}
         src={current.src}
@@ -92,5 +94,44 @@ function ReliableMediaImageAttempt({
         }}
       />
     </>
+  );
+}
+
+function BlurhashPlaceholder({ blurhash }: { blurhash?: string | null }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    if (!blurhash || !canvasRef.current) return;
+    let cancelled = false;
+    void import("blurhash").then(({ decode }) => {
+      if (cancelled || !canvasRef.current) return;
+      try {
+        const width = 32;
+        const height = 24;
+        const pixels = decode(blurhash, width, height, 1);
+        const context = canvasRef.current.getContext("2d");
+        if (!context) return;
+        canvasRef.current.width = width;
+        canvasRef.current.height = height;
+        context.putImageData(
+          new ImageData(new Uint8ClampedArray([...pixels]), width, height),
+          0,
+          0,
+        );
+      } catch {
+        // Invalid legacy hashes fall back to the neutral surface.
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [blurhash]);
+
+  return (
+    <canvas
+      ref={canvasRef}
+      className="absolute inset-0 h-full w-full bg-surface-secondary object-cover"
+      aria-hidden="true"
+    />
   );
 }

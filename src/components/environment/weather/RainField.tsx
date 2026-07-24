@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { useRef, useMemo, useEffect } from "react";
+import { useRef, useMemo } from "react";
 import { useFrame } from "@react-three/fiber";
 import type { WeatherProfile } from "@/lib/environment/weather-profiles";
 import { createSeededRandom } from "@/lib/environment/deterministic-random";
@@ -35,7 +35,6 @@ function RainLayer({
     side: THREE.DoubleSide,
   }), [layer.opacity]);
 
-  const dummy = useMemo(() => new THREE.Object3D(), []);
   const instanceData = useMemo(() => {
     const prng = createSeededRandom(42 + seedOffset);
     const data = [];
@@ -52,6 +51,7 @@ function RainLayer({
 
   useFrame(({ clock }) => {
     if (!active || !mesh.current) return;
+    const dummy = new THREE.Object3D();
     
     // If browser is hidden, we could skip updates, but useFrame already halts on tab blur.
     

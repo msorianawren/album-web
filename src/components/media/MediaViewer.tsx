@@ -322,6 +322,7 @@ export function MediaViewer({
                     <ReliableMediaImage
                       target={delivery.viewer}
                       alt={delivery.alt}
+                      blurhash={delivery.blurhash}
                       width={delivery.width}
                       height={delivery.height}
                       sizes="100vw"

@@ -42,8 +42,6 @@ export function FoliageInstances({
     side: THREE.DoubleSide,
   }), []);
 
-  const dummy = useMemo(() => new THREE.Object3D(), []);
-
   const instanceData = useMemo(() => {
     const prng = createSeededRandom(profile.seed * 2 + seedOffset);
     const upBias = profile.branching.upwardBias ?? 0;
@@ -89,6 +87,7 @@ export function FoliageInstances({
 
   useEffect(() => {
     if (!mesh.current) return;
+    const dummy = new THREE.Object3D();
     for (let i = 0; i < count; i++) {
       const d = instanceData[i];
       dummy.position.copy(d.pos);
@@ -100,11 +99,11 @@ export function FoliageInstances({
     }
     mesh.current.instanceMatrix.needsUpdate = true;
     if (mesh.current.instanceColor) mesh.current.instanceColor.needsUpdate = true;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [count, dummy]);
+  }, [colors, count, instanceData]);
 
   useFrame(({ clock }) => {
     if (!active || !mesh.current) return;
+    const dummy = new THREE.Object3D();
     const time = clock.elapsedTime;
     const windSpeed = wind.current.current.strength * (preferences.windSpeed / 100);
     const flutterIntensity = profile.foliage.flutter * (preferences.branchSway / 100);
