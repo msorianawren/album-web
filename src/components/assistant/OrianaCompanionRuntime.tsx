@@ -58,6 +58,12 @@ export function OrianaCompanionRuntime({ session }: OrianaCompanionRuntimeProps)
     canUseRuntime && !dismissed && (preferences.mode === "helpful" || preferences.mode === "expressive");
   const currentPath = useMemo(() => getCurrentPath(pathname), [pathname]);
 
+  const [hasOpened, setHasOpened] = useState(false);
+
+  useEffect(() => {
+    if (open) setHasOpened(true);
+  }, [open]);
+
   useEffect(() => {
     function handleOpen() {
       if (canUseRuntime) setOpen(true);
@@ -115,13 +121,15 @@ export function OrianaCompanionRuntime({ session }: OrianaCompanionRuntimeProps)
         </div>
       ) : null}
 
-      <AssistantPanel
-        open={open && canUseRuntime}
-        onClose={() => setOpen(false)}
-        preferences={preferences}
-        session={session}
-        currentPath={currentPath}
-      />
+      {hasOpened && canUseRuntime ? (
+        <AssistantPanel
+          open={open}
+          onClose={() => setOpen(false)}
+          preferences={preferences}
+          session={session}
+          currentPath={currentPath}
+        />
+      ) : null}
     </>
   );
 }

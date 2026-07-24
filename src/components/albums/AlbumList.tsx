@@ -189,7 +189,7 @@ export function AlbumList({ sections, query, dict, locale = "en" }: AlbumListPro
           </p>
         </div>
 
-        <form action="/albums" className="flex w-full max-w-[500px] items-center gap-3 md:w-auto">
+        <form id="album-list-search" name="albumListSearch" action="/albums" className="flex w-full max-w-[500px] items-center gap-3 md:w-auto">
           <input type="hidden" name="limit" value={query.limit} />
           <input
             name="q"
@@ -243,12 +243,13 @@ export function AlbumList({ sections, query, dict, locale = "en" }: AlbumListPro
             </div>
 
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              {page.albums.map((album) => {
+              {page.albums.map((album, index) => {
                 const isSelectable = isPrivate && selectablePrivateAlbums.some((item) => item.id === album.id);
                 const isSelected = selectedIds.has(album.id);
+                const isLcpCandidate = index === 0 && status === visibleStatuses[0];
                 return (
                   <div key={album.id} className="relative">
-                    <AlbumCard album={album} dict={dict} locale={locale} />
+                    <AlbumCard album={album} dict={dict} locale={locale} priority={isLcpCandidate} />
                     {isPrivate ? (
                       <button
                         type="button"

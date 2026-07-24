@@ -63,7 +63,7 @@ export function PublicMobileNav({ session, navItems }: PublicMobileNavProps) {
             </button>
           </div>
 
-          <form action="/albums" className="relative mt-5">
+          <form id="mobile-nav-search" name="mobileNavSearch" action="/albums" className="relative mt-5">
             <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-text-secondary" aria-hidden="true" />
             <input
               name="q"

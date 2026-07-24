@@ -29,7 +29,7 @@ export function AssistantSearchBox({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex gap-2">
+    <form id="assistant-search" name="assistantSearch" onSubmit={handleSubmit} className="flex gap-2">
       <Input
         value={question}
         onChange={(event) => setQuestion(event.target.value)}

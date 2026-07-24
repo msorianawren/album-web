@@ -11,6 +11,7 @@ interface MediaCardProps {
   downloadAllowed: boolean;
   albumStatus: AlbumStatus;
   protectAssets?: boolean;
+  priority?: boolean;
   onOpen: (index: number) => void;
 }
 
@@ -20,6 +21,7 @@ export function MediaCard({
   downloadAllowed,
   albumStatus,
   protectAssets = false,
+  priority = false,
   onOpen,
 }: MediaCardProps) {
   const delivery = getMediaDeliveryDescriptor(media, {
@@ -85,6 +87,7 @@ export function MediaCard({
             className="object-cover transition duration-300 ease-out group-hover:scale-[1.05]"
             draggable={!protectAssets}
             fallback={fallback}
+            priority={priority}
           />
         ) : (
           <>
@@ -96,6 +99,7 @@ export function MediaCard({
               className="object-cover transition duration-300 ease-out group-hover:scale-[1.05]"
               draggable={!protectAssets}
               fallback={fallback}
+              priority={priority}
             />
             <div className="absolute inset-0 flex items-center justify-center">
               <span className="flex h-14 w-14 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur-md transition-colors group-hover:bg-accent group-hover:text-accent-foreground">

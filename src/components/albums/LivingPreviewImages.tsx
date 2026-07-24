@@ -9,6 +9,7 @@ interface LivingPreviewImagesProps {
   title: string;
   sizes: string;
   imageClassName?: string;
+  priority?: boolean;
 }
 
 const SLIDE_DURATION_SECONDS = 5.8;
@@ -18,6 +19,7 @@ export function LivingPreviewImages({
   title,
   sizes,
   imageClassName = "",
+  priority = false,
 }: LivingPreviewImagesProps) {
   const usableImages = images
     .map((image) =>
@@ -56,7 +58,8 @@ export function LivingPreviewImages({
             fill
             sizes={sizes}
             className={`object-cover transition-opacity duration-500 ${imageClassName}`}
-            loading="lazy"
+            loading={index === 0 && priority ? "eager" : "lazy"}
+            priority={index === 0 && priority}
           />
         </div>
       ))}

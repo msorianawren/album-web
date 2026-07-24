@@ -73,7 +73,7 @@ export async function AppHeader() {
           ))}
         </nav>
 
-        <form action="/albums" className="relative ml-auto hidden w-full max-w-sm shrink lg:block">
+        <form id="app-header-search" name="appHeaderSearch" action="/albums" className="relative ml-auto hidden w-full max-w-sm shrink lg:block">
           <Search
             className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-text-secondary"
             aria-hidden="true"

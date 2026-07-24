@@ -26,7 +26,7 @@ export function StudioTopbar({ session, onOpenMobileNav }: StudioTopbarProps) {
         <div className="hidden min-w-0 flex-1 lg:block">
           <StudioBreadcrumbs />
         </div>
-        <form action="/studio/albums" className="relative ml-auto hidden w-full max-w-md md:block lg:ml-0">
+        <form id="studio-topbar-search" name="studioTopbarSearch" action="/studio/albums" className="relative ml-auto hidden w-full max-w-md md:block lg:ml-0">
           <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-text-secondary" aria-hidden="true" />
           <Input name="q" placeholder="Search albums" aria-label="Search albums" className="pl-11" />
         </form>

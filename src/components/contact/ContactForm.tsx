@@ -155,7 +155,7 @@ export function ContactForm({
   }
 
   return (
-    <form ref={formRef} onSubmit={handleSubmit} className="flex flex-col space-y-5 relative">
+    <form id="contact-form" name="contactForm" ref={formRef} onSubmit={handleSubmit} className="flex flex-col space-y-5 relative">
       {errorMsg && (
         <div className="flex items-center justify-between gap-2 rounded-xl bg-red-500/10 p-4 text-sm text-red-500">
           <div className="flex items-center gap-2">

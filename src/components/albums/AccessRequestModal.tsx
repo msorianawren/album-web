@@ -152,7 +152,7 @@ export function AccessRequestModal() {
             </p>
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="overflow-y-auto p-6">
+          <form id="access-request-form" name="accessRequestForm" onSubmit={handleSubmit} className="overflow-y-auto p-6">
             <div className="mb-5 rounded-2xl border border-border bg-background/60 p-4">
               <p className="text-sm text-text-primary">
                 The selected private albums are reviewed manually. If no admin reviews your request within 7 days,

@@ -123,7 +123,7 @@ export function AlbumForm({ defaultStatus = "private", settings }: { defaultStat
   }
 
   return (
-    <form onSubmit={submit} className="grid gap-5 rounded-[1.4rem] border border-border bg-surface/82 p-5 shadow-xl shadow-text-primary/5">
+    <form id="album-form" name="albumForm" onSubmit={submit} className="grid gap-5 rounded-[1.4rem] border border-border bg-surface/82 p-5 shadow-xl shadow-text-primary/5">
       <div className="grid gap-4 lg:grid-cols-2">
         <label className="grid gap-2">
           <span className="text-sm font-medium text-text-primary">Title</span>

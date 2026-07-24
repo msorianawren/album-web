@@ -39,7 +39,7 @@ export function HelpMessageList({ initialThreads, page, total, pageSize, status,
 
   return <div className="grid gap-4 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
     <section className="rounded-2xl border border-border bg-surface p-3">
-      <form className="mb-3 grid gap-2 sm:grid-cols-3" action="/studio/messages">
+      <form id="help-message-list-form" name="helpMessageListForm" className="mb-3 grid gap-2 sm:grid-cols-3" action="/studio/messages">
         <input name="q" defaultValue={query} placeholder="Search user, email, subject" className="min-w-0 rounded-xl border border-border bg-background px-3 py-2 text-sm text-text-primary" />
         <select name="status" defaultValue={status || ""} className="rounded-xl border border-border bg-background px-3 py-2 text-sm text-text-primary"><option value="">All statuses</option><option value="waiting_admin">Waiting admin</option><option value="waiting_user">Waiting user</option><option value="open">Open</option><option value="closed">Closed</option><option value="archived">Archived</option><option value="blocked">Blocked</option></select>
         <select name="source" defaultValue={source || ""} className="rounded-xl border border-border bg-background px-3 py-2 text-sm text-text-primary"><option value="">All sources</option><option value="assistant">Assistant</option><option value="contact">Contact</option><option value="private_access">Private access</option><option value="system">System</option></select>

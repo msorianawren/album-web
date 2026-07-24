@@ -27,7 +27,7 @@ const nextConfig: NextConfig = {
       frame-ancestors 'none';
       form-action 'self';
 
-      script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com;
+      script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com https://static.cloudflareinsights.com;
       style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
       style-src-elem 'self' 'unsafe-inline' https://fonts.googleapis.com;
       font-src 'self' data: https://fonts.gstatic.com;
@@ -40,6 +40,7 @@ const nextConfig: NextConfig = {
         https://*.r2.cloudflarestorage.com
         https://*.r2.dev
         https://pub-6723a3eac8f14389ad2429799e3b98a5.r2.dev
+        https://cloudflareinsights.com
         ${r2PublicOrigin};
 
       img-src 'self' data: blob:

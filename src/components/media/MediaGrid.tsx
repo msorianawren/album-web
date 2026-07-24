@@ -109,6 +109,13 @@ export function MediaGrid({
     );
   }, [viewableMedia.length]);
 
+  const [hasOpenedViewer, setHasOpenedViewer] = useState(false);
+
+  // Mark viewer as opened when index becomes non-null
+  if (currentIndex !== null && !hasOpenedViewer) {
+    setHasOpenedViewer(true);
+  }
+
   if (!media.length) {
     return (
       <section className="mx-auto flex w-full max-w-[1200px] flex-col items-center px-4 sm:px-6 py-20 sm:py-32 text-center">
@@ -183,20 +190,23 @@ export function MediaGrid({
             albumStatus={albumStatus}
             protectAssets={protectAssets}
             onOpen={setCurrentIndex}
+            priority={index === 0}
           />
         ))}
       </div>
-      <MediaViewer
-        media={viewableMedia}
-        currentIndex={currentIndex}
-        downloadAllowed={downloadAllowed}
-        albumStatus={albumStatus}
-        protectAssets={protectAssets}
-        onClose={() => setCurrentIndex(null)}
-        onNext={handleNext}
-        onPrevious={handlePrevious}
-        onSelect={setCurrentIndex}
-      />
+      {hasOpenedViewer && (
+        <MediaViewer
+          media={viewableMedia}
+          currentIndex={currentIndex}
+          downloadAllowed={downloadAllowed}
+          albumStatus={albumStatus}
+          protectAssets={protectAssets}
+          onClose={() => setCurrentIndex(null)}
+          onNext={handleNext}
+          onPrevious={handlePrevious}
+          onSelect={setCurrentIndex}
+        />
+      )}
     </section>
   );
 }

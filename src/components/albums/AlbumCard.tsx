@@ -21,9 +21,10 @@ interface AlbumCardProps {
   album: Album;
   dict?: AppDictionary;
   locale?: string;
+  priority?: boolean;
 }
 
-export function AlbumCard({ album, dict, locale = "en" }: AlbumCardProps) {
+export function AlbumCard({ album, dict, locale = "en", priority = false }: AlbumCardProps) {
   const previewItems = album.preview_items ?? [];
   const hasAuthorizedPrivatePreviews = album.status === "private" && previewItems.length > 0;
   const previewImages: MediaDeliveryTarget[] = album.status === "private"
@@ -73,6 +74,7 @@ export function AlbumCard({ album, dict, locale = "en" }: AlbumCardProps) {
               title={album.title}
               sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
               imageClassName="grayscale-[15%] group-hover:grayscale-0"
+              priority={priority}
             />
           ) : (
             <div className="living-preview-placeholder flex h-full w-full items-center justify-center bg-surface-secondary relative overflow-hidden border border-border/10">

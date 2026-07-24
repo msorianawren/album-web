@@ -83,7 +83,7 @@ export function CommentSection({ albumId }: CommentSectionProps) {
             </h2>
           </div>
         </div>
-        <form className="mt-5 grid gap-3" onSubmit={submitComment}>
+        <form id="comment-form" name="commentForm" className="mt-5 grid gap-3" onSubmit={submitComment}>
           <Input
             value={authorName}
             onChange={(event) => setAuthorName(event.target.value)}

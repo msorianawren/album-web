@@ -87,7 +87,7 @@ export function HelpThreadConversation({ threadId, onBack }: { threadId: string;
           </article>
         ))}
       </div>
-      <form onSubmit={submit} className="border-t border-border bg-surface p-4">
+      <form id="help-thread-form" name="helpThreadForm" onSubmit={submit} className="border-t border-border bg-surface p-4">
         <label className="sr-only" htmlFor={`help-message-${threadId}`}>Reply to Oriana Wren</label>
         <textarea id={`help-message-${threadId}`} value={body} onChange={(event) => setBody(event.target.value)} maxLength={5000} rows={3} disabled={!thread || ["closed", "archived", "blocked"].includes(thread.status) || sending} placeholder="Write a reply..." className="w-full resize-none rounded-xl border border-border bg-background p-3 text-sm text-text-primary outline-none focus:ring-2 focus:ring-ring disabled:opacity-60" />
         <div className="mt-2 flex justify-end"><Button type="submit" disabled={!body.trim() || sending || !thread || ["closed", "archived", "blocked"].includes(thread.status)}><Send className="mr-2 h-4 w-4" />{sending ? "Sending..." : "Send reply"}</Button></div>

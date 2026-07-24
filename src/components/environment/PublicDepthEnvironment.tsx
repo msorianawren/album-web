@@ -158,23 +158,39 @@ function PublicDepthEnvironmentContent({ pathname }: { pathname: string }) {
       if (!finePointer.matches || isOverlayInteractionActive()) return false;
       return isChimeControlTarget(event.target) || !isProtectedInteractiveTarget(event.target);
     };
+    let ticking = false;
+    let lastEvent: PointerEvent | null = null;
     const onPointerMove = (event: PointerEvent) => {
-      const velocityX = Math.max(-1, Math.min(1, (event.clientX - previousX) / 42));
-      const velocityY = Math.max(-1, Math.min(1, (event.clientY - previousY) / 42));
-      previousX = event.clientX;
-      previousY = event.clientY;
-      window.dispatchEvent(new CustomEvent("oriana-environment-wind-impulse", { detail: { x: velocityX * .035, y: velocityY * .02 } }));
-      if (!canUseChime(event)) return;
-      const point = toDocumentPoint(event);
-      const chime = hitChime(activeRectsRef.current, point.x, point.y);
-      if (!chime) {
-        hoveredId = undefined;
-        return;
-      }
-      const entering = hoveredId !== chime.id;
-      hoveredId = chime.id;
-      if (entering || Math.abs(velocityX) + Math.abs(velocityY) > .12) {
-        window.dispatchEvent(new CustomEvent("oriana-chime-hover", { detail: { slotId: chime.id, x: event.clientX, y: event.clientY, velocityX, velocityY, entering } }));
+      lastEvent = event;
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          const currentEvent = lastEvent;
+          ticking = false;
+          if (!currentEvent) return;
+
+          const velocityX = Math.max(-1, Math.min(1, (currentEvent.clientX - previousX) / 42));
+          const velocityY = Math.max(-1, Math.min(1, (currentEvent.clientY - previousY) / 42));
+          previousX = currentEvent.clientX;
+          previousY = currentEvent.clientY;
+          
+          if (!document.hidden) {
+            window.dispatchEvent(new CustomEvent("oriana-environment-wind-impulse", { detail: { x: velocityX * .035, y: velocityY * .02 } }));
+          }
+          
+          if (!canUseChime(currentEvent)) return;
+          const point = toDocumentPoint(currentEvent);
+          const chime = hitChime(activeRectsRef.current, point.x, point.y);
+          if (!chime) {
+            hoveredId = undefined;
+            return;
+          }
+          const entering = hoveredId !== chime.id;
+          hoveredId = chime.id;
+          if (entering || Math.abs(velocityX) + Math.abs(velocityY) > .12) {
+            window.dispatchEvent(new CustomEvent("oriana-chime-hover", { detail: { slotId: chime.id, x: currentEvent.clientX, y: currentEvent.clientY, velocityX, velocityY, entering } }));
+          }
+        });
+        ticking = true;
       }
     };
     const onPointerDown = (event: PointerEvent) => {
