@@ -165,6 +165,7 @@ export default function EchoChimesGame({
         if (action?.type === "press") {
           const valid = pressChime(stateRef.current, action.index);
           if (valid || stateRef.current.phase === "game_over") {
+            playChimeAudio(action.index);
             traceRef.current.push({ tick, type: "press", payload: action.index });
             setScore(stateRef.current.score);
             dirty = true;
@@ -175,7 +176,7 @@ export default function EchoChimesGame({
         
         if (stateRef.current.activeChime !== lastActiveChime) {
           lastActiveChime = stateRef.current.activeChime;
-          if (lastActiveChime !== null) {
+          if (lastActiveChime !== null && stateRef.current.phase === "playing_sequence") {
             playChimeAudio(lastActiveChime);
           }
           dirty = true;

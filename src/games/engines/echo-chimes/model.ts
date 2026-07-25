@@ -62,6 +62,14 @@ export function stepEchoChimes(state: EchoChimesState) {
         state.activeChime = null;
       }
     }
+  } else if (state.phase === "waiting_for_input") {
+    // If the player pressed a chime, keep it lit for 15 ticks
+    if (state.tickCounter > 0) {
+      state.tickCounter--;
+      if (state.tickCounter === 0) {
+        state.activeChime = null;
+      }
+    }
   } else if (state.phase === "game_over") {
     state.tickCounter++;
     if (state.tickCounter > 60) {
@@ -86,6 +94,10 @@ export function pressChime(state: EchoChimesState, chimeIndex: number): boolean 
       state.phase = "success_pause";
       state.tickCounter = 0;
       state.activeChime = null;
+    } else {
+      // Show feedback for correct press
+      state.activeChime = chimeIndex;
+      state.tickCounter = 15; // Light up for 15 ticks
     }
     return true; // Correct press
   } else {

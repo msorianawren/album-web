@@ -10,7 +10,7 @@ export type ZenCairnState = {
 };
 
 const BASE_WIDTH = 40; // 40% of screen width
-const BLOCK_SPEED = 0.8;
+const BLOCK_SPEED = 0.55;
 
 const STONE_COLORS = [
   "#6b705c", // Mossy green-grey
@@ -61,7 +61,7 @@ export function dropStone(state: ZenCairnState) {
     let newWidth = overlapWidth;
     let newX = overlapLeft + overlapWidth / 2;
     
-    if (diff < 1.5) {
+    if (diff < 2.5) {
       newWidth = topBlock.width;
       newX = topBlock.x;
     }

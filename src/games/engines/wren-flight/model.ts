@@ -14,8 +14,8 @@ export type WrenFlightState = {
   complete: boolean;
 };
 
-const GRAVITY = 0.25;
-const FLAP_VELOCITY = -5.5;
+const GRAVITY = 0.15;
+const FLAP_VELOCITY = -2.5;
 const OBSTACLE_SPEED = 1.5;
 const OBSTACLE_SPAWN_INTERVAL = 120; // ticks
 const GAP_SIZE = 35; // Size of the safe gap (out of 100)
