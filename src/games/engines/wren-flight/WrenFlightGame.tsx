@@ -221,7 +221,7 @@ export default function WrenFlightGame({
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === " " || event.key === "ArrowUp" || event.key === "w") {
         event.preventDefault();
-        if (status === "running") handleFlap();
+        handleFlap();
       } else if (event.key === "Escape" || event.key === "p" || event.key === "P") {
         event.preventDefault();
         togglePause();
@@ -229,10 +229,8 @@ export default function WrenFlightGame({
     };
     
     const onPointerDown = (event: PointerEvent) => {
-      if (status === "running") {
-        event.preventDefault();
-        handleFlap();
-      }
+      event.preventDefault();
+      handleFlap();
     };
 
     window.addEventListener("keydown", onKeyDown);
@@ -247,7 +245,7 @@ export default function WrenFlightGame({
       window.removeEventListener("keydown", onKeyDown);
       canvas.removeEventListener("pointerdown", onPointerDown);
     };
-  }, [handleFlap, onEngineStatusChange, playEffect, quality, status, togglePause]);
+  }, [handleFlap, onEngineStatusChange, playEffect, quality, togglePause]);
 
   const start = useCallback(async () => {
     void startAudio();

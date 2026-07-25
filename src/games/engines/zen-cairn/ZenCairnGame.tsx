@@ -225,7 +225,7 @@ export default function ZenCairnGame({
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === " " || event.key === "Enter" || event.key === "ArrowDown") {
         event.preventDefault();
-        if (status === "running") handleDrop();
+        handleDrop();
       } else if (event.key === "Escape" || event.key === "p" || event.key === "P") {
         event.preventDefault();
         togglePause();
@@ -233,10 +233,8 @@ export default function ZenCairnGame({
     };
     
     const onPointerDown = (event: PointerEvent) => {
-      if (status === "running") {
-        event.preventDefault();
-        handleDrop();
-      }
+      event.preventDefault();
+      handleDrop();
     };
 
     window.addEventListener("keydown", onKeyDown);
@@ -251,7 +249,7 @@ export default function ZenCairnGame({
       window.removeEventListener("keydown", onKeyDown);
       canvas.removeEventListener("pointerdown", onPointerDown);
     };
-  }, [handleDrop, onEngineStatusChange, playEffect, quality, status, togglePause]);
+  }, [handleDrop, onEngineStatusChange, playEffect, quality, togglePause]);
 
   const start = useCallback(async () => {
     void startAudio();
