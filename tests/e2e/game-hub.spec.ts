@@ -41,7 +41,7 @@ test("Game Hub and Snake remain usable on a mobile viewport", async ({ browser }
   try {
     await page.goto("/games");
 
-    await expect(page.locator('[data-game-card][data-game-status="published"]')).toHaveCount(4);
+    await expect(page.locator('[data-game-card][data-game-status="published"]')).toHaveCount(5);
     const overflow = await page.evaluate(
       () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
     );

@@ -33,10 +33,12 @@ export default async function GamePage({ params }: { params: Promise<{ slug: str
   if (!game || game.status !== "published" || !game.enabled) notFound();
 
   const landing = await getLandingPage();
-  let initialGameProps: Record<string, unknown> = {};
+  const session = await getPublicSession();
+  let initialGameProps: Record<string, unknown> = {
+    signedIn: Boolean(session.userId),
+  };
 
   if (game.slug === "puzzle-atelier") {
-    const session = await getPublicSession();
     const locale = (await cookies()).get("NEXT_LOCALE")?.value ?? "en";
     const dictionary = await getDictionary(locale);
     let challenges: PuzzleChallenge[] = [];

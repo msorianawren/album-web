@@ -111,6 +111,7 @@ function generatePracticeSeed() {
 export default function MemoryGardenGame({
   onEngineStatusChange,
   quality = "balanced",
+  signedIn,
 }: GameClientProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   
@@ -234,21 +235,23 @@ export default function MemoryGardenGame({
       
       let nextSeed = generatePracticeSeed();
       
-      try {
-        const response = await fetch("/api/game-sessions", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ gameSlug: "memory-garden" }),
-        });
-        if (response.ok) {
-          const { data } = await response.json();
-          nextSeed = data.seed;
-          sessionRef.current = { id: data.sessionId, nonce: data.nonce, seed: data.seed };
-        } else {
-          sessionRef.current = null; // fallback to practice
+      if (signedIn) {
+        try {
+          const response = await fetch("/api/game-sessions", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ gameSlug: "memory-garden" }),
+          });
+          if (response.ok) {
+            const { data } = await response.json();
+            nextSeed = data.seed;
+            sessionRef.current = { id: data.sessionId, nonce: data.nonce, seed: data.seed };
+          } else {
+            sessionRef.current = null; // fallback to practice
+          }
+        } catch (e) {
+          sessionRef.current = null;
         }
-      } catch (e) {
-        sessionRef.current = null;
       }
       
       setCurrentSeed(nextSeed);

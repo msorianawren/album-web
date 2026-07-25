@@ -10,6 +10,7 @@ export const gameClientLoaders: Readonly<Record<string, GameClientModuleLoader>>
   "snake": () => import("@/games/engines/snake/SnakeGame"),
   "feather-merge": () => import("@/games/engines/feather-merge/FeatherMergeGame"),
   "memory-garden": () => import("@/games/engines/memory-garden/MemoryGardenGame"),
+  "quiet-meadow": () => import("@/games/engines/quiet-meadow/QuietMeadowGame"),
   "puzzle-atelier": () => import("@/components/games/PuzzleAtelier").then((module) => ({
     default: module.PuzzleAtelier as LoadedGameComponent,
   })),

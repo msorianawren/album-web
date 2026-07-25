@@ -119,7 +119,7 @@ test("catalog stays server-safe and each game has one dynamic client loader", ()
   assert.doesNotMatch(gamesPage, /PuzzleAtelier/);
 });
 
-test("Game Hub exposes only real published routes and canaries remain practice-only", () => {
+test("Game Hub exposes only real published routes and canaries are verified", () => {
   const catalog = read("src/games/catalog.ts");
   const hub = read("src/components/games/GameHub.tsx");
   const player = read("src/components/games/GamePlayerShell.tsx");
@@ -130,7 +130,7 @@ test("Game Hub exposes only real published routes and canaries remain practice-o
   assert.match(hub, /data-game-card=\{game\.slug\}/);
   assert.match(hub, /data-game-status=\{game\.status\}/);
   assert.match(player, /data-game-route=\{game\.slug\}/);
-  assert.match(catalog, /rewardMode: "practice"/);
+  assert.match(catalog, /rewardMode: "verified"/);
   assert.match(proxy, /pathname\.startsWith\("\/games"\)/);
 });
 

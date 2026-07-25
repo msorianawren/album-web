@@ -104,6 +104,7 @@ export interface GameClientProps {
   onEngineStatusChange?: (status: GameEngineStatus) => void;
   quality?: "low" | "balanced" | "high";
   reducedMotion?: boolean;
+  signedIn?: boolean;
 }
 
 export interface StartGameSessionRequest {

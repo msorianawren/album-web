@@ -56,7 +56,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       .eq("id", gameSession.game_id)
       .single();
 
-    if (!["memory-garden", "snake", "feather-merge"].includes(game?.slug)) {
+    if (!["memory-garden", "snake", "feather-merge", "quiet-meadow"].includes(game?.slug)) {
       return apiError("FORBIDDEN", "Rewards are not enabled for this game.", 403);
     }
 
@@ -100,6 +100,9 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     } else if (game?.slug === "feather-merge") {
       const { verifyFeatherMerge } = await import("@/games/engines/feather-merge/verifier");
       verification = verifyFeatherMerge(publishedVersion, difficulty as any, replay as any);
+    } else if (game?.slug === "quiet-meadow") {
+      const { verifyQuietMeadow } = await import("@/games/engines/quiet-meadow/verifier");
+      verification = verifyQuietMeadow(publishedVersion, difficulty as any, replay as any);
     } else {
       return apiError("SERVER_ERROR", "Verifier not registered.", 500);
     }

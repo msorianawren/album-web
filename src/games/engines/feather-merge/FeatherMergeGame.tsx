@@ -80,6 +80,7 @@ function generatePracticeSeed() {
 export default function FeatherMergeGame({
   onEngineStatusChange,
   quality = "balanced",
+  signedIn,
 }: GameClientProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   
@@ -192,21 +193,23 @@ export default function FeatherMergeGame({
 
       let nextSeed = generatePracticeSeed();
       
-      try {
-        const response = await fetch("/api/game-sessions", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ gameSlug: "feather-merge" }),
-        });
-        if (response.ok) {
-          const { data } = await response.json();
-          nextSeed = data.seed;
-          sessionRef.current = { id: data.sessionId, nonce: data.nonce, seed: data.seed };
-        } else {
+      if (signedIn) {
+        try {
+          const response = await fetch("/api/game-sessions", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ gameSlug: "feather-merge" }),
+          });
+          if (response.ok) {
+            const { data } = await response.json();
+            nextSeed = data.seed;
+            sessionRef.current = { id: data.sessionId, nonce: data.nonce, seed: data.seed };
+          } else {
+            sessionRef.current = null;
+          }
+        } catch (e) {
           sessionRef.current = null;
         }
-      } catch (e) {
-        sessionRef.current = null;
       }
       
       setCurrentSeed(nextSeed);
