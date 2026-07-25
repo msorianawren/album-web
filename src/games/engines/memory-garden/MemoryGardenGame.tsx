@@ -131,6 +131,32 @@ export default function MemoryGardenGame({
   
   const { playEffect, start: startAudio } = useGameAudio();
 
+  const pause = useCallback(() => {
+    setStatus(s => {
+      if (s === "running") {
+        runtimeRef.current?.pause();
+        onEngineStatusChange?.("paused");
+        return "paused";
+      }
+      return s;
+    });
+  }, [onEngineStatusChange]);
+
+  const togglePause = useCallback(() => {
+    setStatus(s => {
+      if (s === "running") {
+        runtimeRef.current?.pause();
+        onEngineStatusChange?.("paused");
+        return "paused";
+      } else if (s === "paused") {
+        runtimeRef.current?.start();
+        onEngineStatusChange?.("running");
+        return "running";
+      }
+      return s;
+    });
+  }, [onEngineStatusChange]);
+
   const reveal = useCallback((index?: number) => {
     actionRef.current.push({ type: "reveal", index });
   }, []);
@@ -196,6 +222,9 @@ export default function MemoryGardenGame({
       } else if (event.key === "Enter" || event.key === " ") {
         event.preventDefault();
         reveal();
+      } else if (event.key === "Escape" || event.key === "p" || event.key === "P") {
+        event.preventDefault();
+        togglePause();
       }
     };
     const onPointerUp = (event: PointerEvent) => {
@@ -222,7 +251,7 @@ export default function MemoryGardenGame({
       window.removeEventListener("keydown", onKeyDown);
       canvas.removeEventListener("pointerup", onPointerUp);
     };
-  }, [moveCursor, onEngineStatusChange, playEffect, quality, reveal]);
+  }, [moveCursor, onEngineStatusChange, playEffect, quality, reveal, togglePause]);
 
   const start = useCallback(async () => {
     void startAudio();
@@ -264,11 +293,6 @@ export default function MemoryGardenGame({
     onEngineStatusChange?.("running");
   }, [onEngineStatusChange, signedIn, startAudio, status]);
 
-  const pause = useCallback(() => {
-    runtimeRef.current?.pause();
-    setStatus("paused");
-    onEngineStatusChange?.("paused");
-  }, [onEngineStatusChange]);
 
   const restart = useCallback(() => {
     runtimeRef.current?.pause();

@@ -1,5 +1,5 @@
 import { type EnvironmentPreferences, type EnvironmentPresetId } from "./preferences.ts";
-import { type EnvironmentPhase, resolveAutoEnvironmentPhase } from "./phase.ts";
+import { type EnvironmentPhase } from "./phase.ts";
 import { type EnvironmentState, getEnvironmentState, ENVIRONMENT_STATE_REGISTRY } from "./presets.ts";
 
 export type ActiveEnvironment = {

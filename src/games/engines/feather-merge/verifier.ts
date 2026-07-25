@@ -30,7 +30,7 @@ export function verifyFeatherMerge(
     valid: true,
     versionId: version.id,
     replayDigest: "0",
-    score: state.score,
+    score: state.score < 500 ? 0 : state.score,
     durationTicks: step,
   };
 }

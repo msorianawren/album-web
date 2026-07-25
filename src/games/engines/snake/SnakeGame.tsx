@@ -207,10 +207,37 @@ export default function SnakeGame({
 
   const [status, setStatus] = useState<"ready" | "running" | "paused" | "complete">("ready");
   const [score, setScore] = useState(0);
+  const [speed, setSpeed] = useState<"slow" | "normal" | "fast">("normal");
   const [completion, setCompletion] = useState<FinalizeGameSessionResponse | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   const { playEffect, start: startAudio } = useGameAudio();
+
+  const pause = useCallback(() => {
+    setStatus(s => {
+      if (s === "running") {
+        runtimeRef.current?.pause();
+        onEngineStatusChange?.("paused");
+        return "paused";
+      }
+      return s;
+    });
+  }, [onEngineStatusChange]);
+
+  const togglePause = useCallback(() => {
+    setStatus(s => {
+      if (s === "running") {
+        runtimeRef.current?.pause();
+        onEngineStatusChange?.("paused");
+        return "paused";
+      } else if (s === "paused") {
+        runtimeRef.current?.start();
+        onEngineStatusChange?.("running");
+        return "running";
+      }
+      return s;
+    });
+  }, [onEngineStatusChange]);
 
   const setDirection = useCallback((direction: SnakeDirection) => {
     if (!runtimeRef.current) return;
@@ -222,7 +249,7 @@ export default function SnakeGame({
     const canvas = canvasRef.current;
     if (!canvas) return;
     const runtime = createFixedStepRuntime({
-      stepMs: quality === "low" ? 125 : 100,
+      stepMs: speed === "slow" ? 150 : speed === "normal" ? 100 : 70,
       targetRenderFps: quality === "low" ? 30 : 60,
       onTick(tick) {
         previousBodyRef.current = stateRef.current.body.map(p => ({ ...p }));
@@ -270,6 +297,13 @@ export default function SnakeGame({
         ArrowRight: "right",
         d: "right",
       } as Record<string, SnakeDirection | undefined>)[event.key];
+      
+      if (event.key === "p" || event.key === "Escape") {
+        event.preventDefault();
+        togglePause();
+        return;
+      }
+
       if (!direction) return;
       event.preventDefault();
       setDirection(direction);
@@ -283,7 +317,7 @@ export default function SnakeGame({
       observer.disconnect();
       window.removeEventListener("keydown", onKeyDown);
     };
-  }, [onEngineStatusChange, playEffect, quality, setDirection]);
+  }, [onEngineStatusChange, playEffect, quality, setDirection, speed, togglePause]);
 
   const start = useCallback(async () => {
     void startAudio();
@@ -325,11 +359,6 @@ export default function SnakeGame({
     onEngineStatusChange?.("running");
   }, [onEngineStatusChange, signedIn, startAudio, status]);
 
-  const pause = useCallback(() => {
-    runtimeRef.current?.pause();
-    setStatus("paused");
-    onEngineStatusChange?.("paused");
-  }, [onEngineStatusChange]);
 
   const restart = useCallback(() => {
     runtimeRef.current?.pause();
@@ -361,7 +390,7 @@ export default function SnakeGame({
         formatVersion: 1,
         engineVersion: "snake-v1",
         seed: session.seed,
-        fixedStepMs: quality === "low" ? 125 : 100,
+        fixedStepMs: speed === "slow" ? 150 : speed === "normal" ? 100 : 70,
         actions: traceRef.current,
       };
       
@@ -381,15 +410,30 @@ export default function SnakeGame({
           sessionRef.current = null;
         });
     }
-  }, [status, completion, submitting, quality]);
+  }, [status, completion, submitting, quality, speed]);
 
   return (
     <GameSurface
       canvasRef={canvasRef}
       title="Wren Trail Snake"
       status={status}
-      score={String(score)}
-      detail="Use arrow keys, WASD, or the directional controls. Collect rose berries without touching the garden edge."
+      score={
+        <div className="flex gap-4 items-center">
+          <span>{score}</span>
+          {status === "ready" && (
+            <select 
+              value={speed} 
+              onChange={e => setSpeed(e.target.value as "slow" | "normal" | "fast")}
+              className="bg-transparent outline-none border-b border-[#a3b8aa] text-xs cursor-pointer"
+            >
+              <option value="slow">Slow</option>
+              <option value="normal">Normal</option>
+              <option value="fast">Fast</option>
+            </select>
+          )}
+        </div>
+      }
+      detail="Guide a ribbon-tailed wren through a quiet moonlit garden. Target: 30 points to earn rewards."
       onStart={start}
       onPause={pause}
       onRestart={restart}
@@ -403,7 +447,7 @@ export default function SnakeGame({
         <Button variant="icon" aria-label="Move right" onClick={() => setDirection("right")}><ArrowRight className="h-4 w-4" /></Button>
       </div>
       
-      {completion && (
+      {completion && completion.rewardGranted > 0 && (
         <div className="mt-2 rounded-xl bg-[color-mix(in_srgb,var(--preset-accent)_20%,transparent)] p-4 text-center">
           <Check className="mx-auto mb-2 h-6 w-6 text-accent" />
           <p className="font-semibold text-text-primary">
@@ -412,6 +456,11 @@ export default function SnakeGame({
           {completion.duplicate && (
             <p className="mt-1 text-xs text-text-secondary">Already completed today.</p>
           )}
+        </div>
+      )}
+      {completion && completion.rewardGranted === 0 && (
+        <div className="mt-2 rounded-xl bg-surface/50 p-4 text-center text-sm text-text-secondary">
+          Target of 30 points not reached. No feathers awarded.
         </div>
       )}
       {!completion && status === "complete" && !signedIn && (

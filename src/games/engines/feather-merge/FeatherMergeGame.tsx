@@ -10,9 +10,10 @@ import type { GameClientProps, FinalizeGameSessionResponse, GameInputAction, Gam
 import {
   createFeatherMergeState,
   moveFeatherMerge,
-  type FeatherMergeState,
   type MergeDirection,
 } from "./model";
+
+import { motion } from "framer-motion";
 
 const palette: Record<number, string> = {
   0: "rgba(255,255,255,.14)",
@@ -29,63 +30,15 @@ const palette: Record<number, string> = {
   2048: "#24283d",
 };
 
-function drawMerge(canvas: HTMLCanvasElement, state: FeatherMergeState, quality: GameClientProps["quality"]) {
-  const rect = canvas.getBoundingClientRect();
-  const maxDpr = quality === "low" ? 1 : window.matchMedia("(pointer: coarse)").matches ? 1.25 : 1.5;
-  const dpr = Math.min(window.devicePixelRatio || 1, maxDpr);
-  const width = Math.max(1, Math.round(rect.width * dpr));
-  const height = Math.max(1, Math.round(rect.height * dpr));
-  if (canvas.width !== width || canvas.height !== height) {
-    canvas.width = width;
-    canvas.height = height;
-  }
-  const context = canvas.getContext("2d");
-  if (!context) return;
-  context.clearRect(0, 0, width, height);
-  const gradient = context.createLinearGradient(0, 0, width, height);
-  gradient.addColorStop(0, "#fff5e7");
-  gradient.addColorStop(1, "#cfb792");
-  context.fillStyle = gradient;
-  context.fillRect(0, 0, width, height);
-  const board = Math.min(width, height) * 0.82;
-  const gap = board * 0.025;
-  const cell = (board - gap * 5) / 4;
-  const left = (width - board) / 2;
-  const top = (height - board) / 2;
-  context.fillStyle = "rgba(55,44,35,.22)";
-  context.beginPath();
-  context.roundRect(left, top, board, board, board * 0.045);
-  context.fill();
-  state.cells.forEach((value, index) => {
-    const x = left + gap + (index % 4) * (cell + gap);
-    const y = top + gap + Math.floor(index / 4) * (cell + gap);
-    context.fillStyle = palette[value] ?? "#1d2436";
-    context.beginPath();
-    context.roundRect(x, y, cell, cell, cell * 0.14);
-    context.fill();
-    if (value) {
-      context.fillStyle = value >= 64 ? "#fffaf0" : "#45382f";
-      context.font = `600 ${Math.max(16, cell * (value >= 1000 ? 0.26 : value >= 100 ? 0.32 : 0.4))}px Georgia`;
-      context.textAlign = "center";
-      context.textBaseline = "middle";
-      context.fillText(String(value), x + cell / 2, y + cell / 2);
-    }
-  });
-}
-
-function generatePracticeSeed() {
-  return "practice-" + Math.random().toString(36).slice(2);
-}
-
 export default function FeatherMergeGame({
   onEngineStatusChange,
   quality = "balanced",
   signedIn,
 }: GameClientProps) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
   
   const [currentSeed, setCurrentSeed] = useState(generatePracticeSeed());
-  const stateRef = useRef(createFeatherMergeState(currentSeed));
+  const [initialState] = useState(() => createFeatherMergeState(currentSeed));
+  const stateRef = useRef(initialState);
   const runtimeRef = useRef<ReturnType<typeof createFixedStepRuntime> | null>(null);
   
   const sessionRef = useRef<{ id: string; nonce: string; seed: string } | null>(null);
@@ -94,10 +47,37 @@ export default function FeatherMergeGame({
 
   const [status, setStatus] = useState<"ready" | "running" | "paused" | "complete">("ready");
   const [score, setScore] = useState(0);
+  const [cells, setCells] = useState(initialState.cells);
   const [completion, setCompletion] = useState<FinalizeGameSessionResponse | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   const { playEffect, start: startAudio } = useGameAudio();
+
+  const pause = useCallback(() => {
+    setStatus(s => {
+      if (s === "running") {
+        runtimeRef.current?.pause();
+        onEngineStatusChange?.("paused");
+        return "paused";
+      }
+      return s;
+    });
+  }, [onEngineStatusChange]);
+
+  const togglePause = useCallback(() => {
+    setStatus(s => {
+      if (s === "running") {
+        runtimeRef.current?.pause();
+        onEngineStatusChange?.("paused");
+        return "paused";
+      } else if (s === "paused") {
+        runtimeRef.current?.start();
+        onEngineStatusChange?.("running");
+        return "running";
+      }
+      return s;
+    });
+  }, [onEngineStatusChange]);
 
   const queueMove = useCallback((direction: MergeDirection) => {
     if (!runtimeRef.current) return;
@@ -130,12 +110,11 @@ export default function FeatherMergeGame({
       },
       onRender() {
         if (!dirty) return;
-        drawMerge(canvas, stateRef.current, quality);
+        setCells([...stateRef.current.cells]);
         dirty = false;
       },
     });
     runtimeRef.current = runtime;
-    drawMerge(canvas, stateRef.current, quality);
     const onKeyDown = (event: KeyboardEvent) => {
       const direction = ({
         ArrowUp: "up",
@@ -147,14 +126,22 @@ export default function FeatherMergeGame({
         ArrowRight: "right",
         d: "right",
       } as Record<string, MergeDirection | undefined>)[event.key];
+      
+      if (event.key === "p" || event.key === "Escape") {
+        event.preventDefault();
+        togglePause();
+        return;
+      }
+      
       if (!direction) return;
       event.preventDefault();
       queueMove(direction);
     };
+    
+    // We add pointer events to the window or game container instead of canvas
     let startPoint: { x: number; y: number } | null = null;
     const onPointerDown = (event: PointerEvent) => {
       startPoint = { x: event.clientX, y: event.clientY };
-      canvas.setPointerCapture(event.pointerId);
     };
     const onPointerUp = (event: PointerEvent) => {
       if (!startPoint) return;
@@ -165,22 +152,17 @@ export default function FeatherMergeGame({
       queueMove(Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? "right" : "left") : (dy > 0 ? "down" : "up"));
     };
     window.addEventListener("keydown", onKeyDown);
-    canvas.addEventListener("pointerdown", onPointerDown);
-    canvas.addEventListener("pointerup", onPointerUp);
-    const observer = new ResizeObserver(() => {
-      drawMerge(canvas, stateRef.current, quality);
-      dirty = false;
-    });
-    observer.observe(canvas);
+    window.addEventListener("pointerdown", onPointerDown);
+    window.addEventListener("pointerup", onPointerUp);
+    
     return () => {
       runtime.destroy();
       runtimeRef.current = null;
-      observer.disconnect();
       window.removeEventListener("keydown", onKeyDown);
-      canvas.removeEventListener("pointerdown", onPointerDown);
-      canvas.removeEventListener("pointerup", onPointerUp);
+      window.removeEventListener("pointerdown", onPointerDown);
+      window.removeEventListener("pointerup", onPointerUp);
     };
-  }, [onEngineStatusChange, playEffect, quality, queueMove]);
+  }, [onEngineStatusChange, playEffect, quality, queueMove, togglePause]);
 
   const start = useCallback(async () => {
     void startAudio();
@@ -214,6 +196,7 @@ export default function FeatherMergeGame({
       
       setCurrentSeed(nextSeed);
       stateRef.current = createFeatherMergeState(nextSeed);
+      setCells([...stateRef.current.cells]);
       runtimeRef.current?.reset();
     }
     
@@ -222,11 +205,6 @@ export default function FeatherMergeGame({
     onEngineStatusChange?.("running");
   }, [onEngineStatusChange, signedIn, startAudio, status]);
 
-  const pause = useCallback(() => {
-    runtimeRef.current?.pause();
-    setStatus("paused");
-    onEngineStatusChange?.("paused");
-  }, [onEngineStatusChange]);
 
   const restart = useCallback(() => {
     runtimeRef.current?.pause();
@@ -238,13 +216,12 @@ export default function FeatherMergeGame({
     const nextSeed = generatePracticeSeed();
     setCurrentSeed(nextSeed);
     stateRef.current = createFeatherMergeState(nextSeed);
+    setCells([...stateRef.current.cells]);
     
     setScore(0);
     setStatus("ready");
     setCompletion(null);
     onEngineStatusChange?.("ready");
-    const canvas = canvasRef.current;
-    if (canvas) drawMerge(canvas, stateRef.current, quality);
   }, [onEngineStatusChange, quality]);
 
   useEffect(() => {
@@ -279,15 +256,59 @@ export default function FeatherMergeGame({
 
   return (
     <GameSurface
-      canvasRef={canvasRef}
       title="Feather Merge"
       status={status}
       score={String(score)}
-      detail="Swipe, use arrow keys, WASD, or the controls to merge equal feathers. Reach 2048 without filling the board."
+      detail="Swipe, use arrow keys, WASD, or the controls to merge equal feathers. Reach 2048 without filling the board. Target: 500 score to earn rewards."
       onStart={start}
       onPause={pause}
       onRestart={restart}
     >
+      <div className="relative aspect-square w-full max-w-[min(78dvh,42rem)] mx-auto overflow-hidden rounded-[1.5rem] bg-gradient-to-br from-[#fff5e7] to-[#cfb792] shadow-2xl border border-border">
+        <div className="absolute inset-[9%] rounded-[4.5%] bg-[rgba(55,44,35,.22)]">
+          {/* Background grid */}
+          {Array.from({ length: 16 }).map((_, index) => {
+            const x = index % 4;
+            const y = Math.floor(index / 4);
+            return <div key={index} className="absolute rounded-[14%]" style={{
+              left: `${2.5 + x * 24.375}%`,
+              top: `${2.5 + y * 24.375}%`,
+              width: '21.875%',
+              height: '21.875%',
+              backgroundColor: 'rgba(255,255,255,0.05)'
+            }} />
+          })}
+          
+          {/* Foreground tiles */}
+          {cells.map((cell, index) => {
+            if (!cell) return null;
+            const x = index % 4;
+            const y = Math.floor(index / 4);
+            return (
+              <motion.div
+                key={cell.id}
+                layout
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ type: "spring", stiffness: 400, damping: 28 }}
+                className="absolute flex items-center justify-center rounded-[14%] shadow-sm font-serif font-bold pointer-events-none select-none"
+                style={{
+                  left: `${2.5 + x * 24.375}%`,
+                  top: `${2.5 + y * 24.375}%`,
+                  width: '21.875%',
+                  height: '21.875%',
+                  backgroundColor: palette[cell.value] ?? "#1d2436",
+                  color: cell.value >= 64 ? "#fffaf0" : "#45382f",
+                  fontSize: cell.value >= 1000 ? "1.5rem" : cell.value >= 100 ? "1.8rem" : "2.2rem",
+                  zIndex: cell.value
+                }}
+              >
+                {cell.value}
+              </motion.div>
+            );
+          })}
+        </div>
+      </div>
       <div className="grid grid-cols-3 gap-2" aria-label="Feather Merge controls">
         <span />
         <Button variant="icon" aria-label="Move up" onClick={() => queueMove("up")}><ArrowUp className="h-4 w-4" /></Button>
@@ -297,7 +318,7 @@ export default function FeatherMergeGame({
         <Button variant="icon" aria-label="Move right" onClick={() => queueMove("right")}><ArrowRight className="h-4 w-4" /></Button>
       </div>
 
-      {completion && (
+      {completion && completion.rewardGranted > 0 && (
         <div className="mt-2 rounded-xl bg-[color-mix(in_srgb,var(--preset-accent)_20%,transparent)] p-4 text-center">
           <Check className="mx-auto mb-2 h-6 w-6 text-accent" />
           <p className="font-semibold text-text-primary">
@@ -306,6 +327,11 @@ export default function FeatherMergeGame({
           {completion.duplicate && (
             <p className="mt-1 text-xs text-text-secondary">Already completed today.</p>
           )}
+        </div>
+      )}
+      {completion && completion.rewardGranted === 0 && (
+        <div className="mt-2 rounded-xl bg-surface/50 p-4 text-center text-sm text-text-secondary">
+          Target of 500 score not reached. No feathers awarded.
         </div>
       )}
       {!completion && status === "complete" && !signedIn && (
