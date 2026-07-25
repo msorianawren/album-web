@@ -14,6 +14,15 @@ begin
   -- SNAKE REWARDS
   -------------------------------------------------------
   
+  -- Ensure game exists
+  insert into public.games (
+    id, slug, title, description, engine_key, status, visibility
+  ) values (
+    v_snake_id, 'snake', 'Wren Trail Snake', 'Guide a ribbon-tailed wren through a quiet moonlit garden.', 'snake-v1', 'published', 'public'
+  ) on conflict (slug) do update set title = excluded.title, description = excluded.description, status = excluded.status;
+
+  select id into v_snake_id from public.games where slug = 'snake';
+
   -- Version 2 (draft initially)
   insert into public.game_versions (
     id, game_id, version, schema_version, engine_version, content_digest, config, verification_config, status
@@ -65,6 +74,15 @@ begin
   -------------------------------------------------------
   -- FEATHER MERGE REWARDS
   -------------------------------------------------------
+
+  -- Ensure game exists
+  insert into public.games (
+    id, slug, title, description, engine_key, status, visibility
+  ) values (
+    v_merge_id, 'feather-merge', 'Feather Merge', 'Compose matching feathers into an increasingly luminous collection.', 'feather-merge-v1', 'published', 'public'
+  ) on conflict (slug) do update set title = excluded.title, description = excluded.description, status = excluded.status;
+
+  select id into v_merge_id from public.games where slug = 'feather-merge';
 
   -- Version 2 (draft initially)
   insert into public.game_versions (
