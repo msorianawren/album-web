@@ -26,7 +26,7 @@ begin
 
   -- 2. Game Version (Immutable snapshot)
   insert into public.game_versions (
-    id, game_id, version, schema_version, engine_version, content_digest, config, verification_config, status, published_at
+    id, game_id, version, schema_version, engine_version, content_digest, config, verification_config, status
   ) values (
     v_version_id,
     v_game_id,
@@ -43,12 +43,8 @@ begin
       'shuffle_algorithm', 'seeded-fisher-yates-v1',
       'scoring', 'standard'
     ),
-    'published',
-    now()
+    'draft'
   );
-
-  -- Update published_version_id
-  update public.games set published_version_id = v_version_id where id = v_game_id;
 
   -- 3. Game Difficulty (Standard)
   insert into public.game_difficulties (
@@ -75,6 +71,14 @@ begin
     100,
     now()
   );
+
+  -- 5. Publish the version
+  update public.game_versions
+  set status = 'published', published_at = now()
+  where id = v_version_id;
+
+  -- 6. Update active published_version_id for the game
+  update public.games set published_version_id = v_version_id where id = v_game_id;
 
 end;
 $$;
