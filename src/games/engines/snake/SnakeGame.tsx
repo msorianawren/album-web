@@ -12,10 +12,17 @@ import {
   queueSnakeDirection,
   stepSnake,
   type SnakeDirection,
+  type SnakePoint,
   type SnakeState,
 } from "./model";
 
-function drawSnake(canvas: HTMLCanvasElement, state: SnakeState, quality: GameClientProps["quality"]) {
+function drawSnake(
+  canvas: HTMLCanvasElement,
+  state: SnakeState,
+  quality: GameClientProps["quality"],
+  previousBody: SnakePoint[],
+  interpolation: number
+) {
   const rect = canvas.getBoundingClientRect();
   const maxDpr = quality === "low" ? 1 : window.matchMedia("(pointer: coarse)").matches ? 1.25 : 1.5;
   const dpr = Math.min(window.devicePixelRatio || 1, maxDpr);
@@ -30,6 +37,7 @@ function drawSnake(canvas: HTMLCanvasElement, state: SnakeState, quality: GameCl
   const cell = Math.min(width / state.width, height / state.height);
   const offsetX = (width - cell * state.width) / 2;
   const offsetY = (height - cell * state.height) / 2;
+  
   context.clearRect(0, 0, width, height);
   const gradient = context.createLinearGradient(0, 0, width, height);
   gradient.addColorStop(0, "#17271f");
@@ -38,6 +46,8 @@ function drawSnake(canvas: HTMLCanvasElement, state: SnakeState, quality: GameCl
   context.fillRect(0, 0, width, height);
   context.strokeStyle = "rgba(255,255,255,.045)";
   context.lineWidth = 1;
+  
+  // Draw grid
   for (let x = 0; x <= state.width; x += 1) {
     context.beginPath();
     context.moveTo(offsetX + x * cell, offsetY);
@@ -50,28 +60,116 @@ function drawSnake(canvas: HTMLCanvasElement, state: SnakeState, quality: GameCl
     context.lineTo(offsetX + state.width * cell, offsetY + y * cell);
     context.stroke();
   }
-  state.body.forEach((segment, index) => {
-    context.fillStyle = index === 0 ? "#fff7e8" : `rgba(218, 236, 209, ${Math.max(0.45, 1 - index * 0.035)})`;
+
+  // Calculate interpolated positions
+  // If the game is complete, don't interpolate further than 1
+  const t = state.complete ? 1 : Math.max(0, Math.min(1, interpolation));
+  
+  const getInterpolated = (prev: SnakePoint | undefined, curr: SnakePoint) => {
+    if (!prev) return { x: curr.x, y: curr.y };
+    // If the distance is > 1 (e.g. wrapped or teleported), don't interpolate
+    if (Math.abs(curr.x - prev.x) > 1 || Math.abs(curr.y - prev.y) > 1) {
+      return { x: curr.x, y: curr.y };
+    }
+    return {
+      x: prev.x + (curr.x - prev.x) * t,
+      y: prev.y + (curr.y - prev.y) * t
+    };
+  };
+
+  const bodyPoints = state.body.map((segment, index) => {
+    // A segment's previous position is where it was last tick.
+    // In our logic, each segment moved to the position of the one before it,
+    // so previousBody[index] holds its old location.
+    const prev = previousBody[index] || segment;
+    return getInterpolated(prev, segment);
+  });
+
+  if (bodyPoints.length > 0) {
+    const head = bodyPoints[0];
+    
+    // Draw Snake Body Path
+    context.lineCap = "round";
+    context.lineJoin = "round";
+    context.lineWidth = cell * 0.76;
+    context.shadowColor = "rgba(255, 247, 232, 0.4)";
+    context.shadowBlur = cell * 0.5;
+
+    // We draw from tail to head
+    for (let i = bodyPoints.length - 1; i > 0; i--) {
+      const start = bodyPoints[i];
+      const end = bodyPoints[i - 1];
+      
+      context.beginPath();
+      context.moveTo(offsetX + start.x * cell + cell * 0.5, offsetY + start.y * cell + cell * 0.5);
+      context.lineTo(offsetX + end.x * cell + cell * 0.5, offsetY + end.y * cell + cell * 0.5);
+      context.strokeStyle = `rgba(218, 236, 209, ${Math.max(0.45, 1 - i * 0.035)})`;
+      context.stroke();
+    }
+
+    // Draw Head
+    context.shadowBlur = cell * 0.8;
+    context.shadowColor = "rgba(255, 247, 232, 0.8)";
+    context.fillStyle = "#fff7e8";
     context.beginPath();
-    context.roundRect(
-      offsetX + segment.x * cell + cell * 0.12,
-      offsetY + segment.y * cell + cell * 0.12,
-      cell * 0.76,
-      cell * 0.76,
-      cell * 0.28,
+    context.arc(
+      offsetX + head.x * cell + cell * 0.5, 
+      offsetY + head.y * cell + cell * 0.5, 
+      cell * 0.38, 
+      0, 
+      Math.PI * 2
     );
     context.fill();
-  });
+
+    // Draw Eyes
+    context.shadowBlur = 0;
+    context.fillStyle = "#17271f";
+    const eyeOffset = cell * 0.15;
+    const eyeRadius = cell * 0.08;
+    
+    let dx = 0;
+    let dy = 0;
+    if (state.direction === "up") dy = -1;
+    if (state.direction === "down") dy = 1;
+    if (state.direction === "left") dx = -1;
+    if (state.direction === "right") dx = 1;
+
+    // Normal to direction
+    const nx = dy;
+    const ny = -dx;
+
+    context.beginPath();
+    context.arc(
+      offsetX + head.x * cell + cell * 0.5 + dx * eyeOffset + nx * eyeOffset,
+      offsetY + head.y * cell + cell * 0.5 + dy * eyeOffset + ny * eyeOffset,
+      eyeRadius, 0, Math.PI * 2
+    );
+    context.fill();
+
+    context.beginPath();
+    context.arc(
+      offsetX + head.x * cell + cell * 0.5 + dx * eyeOffset - nx * eyeOffset,
+      offsetY + head.y * cell + cell * 0.5 + dy * eyeOffset - ny * eyeOffset,
+      eyeRadius, 0, Math.PI * 2
+    );
+    context.fill();
+  }
+
+  // Draw Food (pulse effect)
+  const pulse = Math.sin(performance.now() / 200) * 0.1 + 0.9;
+  context.shadowBlur = cell * 0.6 * pulse;
+  context.shadowColor = "rgba(244, 168, 184, 0.8)";
   context.fillStyle = "#f4a8b8";
   context.beginPath();
   context.arc(
     offsetX + (state.food.x + 0.5) * cell,
     offsetY + (state.food.y + 0.5) * cell,
-    cell * 0.31,
+    cell * 0.31 * pulse,
     0,
     Math.PI * 2,
   );
   context.fill();
+  context.shadowBlur = 0;
 }
 
 function generatePracticeSeed() {
@@ -92,6 +190,7 @@ export default function SnakeGame({
   const sessionRef = useRef<{ id: string; nonce: string; seed: string } | null>(null);
   const traceRef = useRef<GameInputAction[]>([]);
   const actionQueueRef = useRef<Array<{ tick: number, dir: SnakeDirection }>>([]);
+  const previousBodyRef = useRef<SnakePoint[]>(stateRef.current.body.map(p => ({ ...p })));
 
   const [status, setStatus] = useState<"ready" | "running" | "paused" | "complete">("ready");
   const [score, setScore] = useState(0);
@@ -113,12 +212,19 @@ export default function SnakeGame({
       stepMs: quality === "low" ? 125 : 100,
       targetRenderFps: quality === "low" ? 30 : 60,
       onTick(tick) {
-        // apply all queued directions up to this tick
-        while (actionQueueRef.current.length > 0) {
-          const action = actionQueueRef.current[0];
-          queueSnakeDirection(stateRef.current, action.dir);
-          traceRef.current.push({ tick, type: "direction", payload: action.dir });
-          actionQueueRef.current.shift();
+        previousBodyRef.current = stateRef.current.body.map(p => ({ ...p }));
+
+        let actionProcessed = false;
+        while (actionQueueRef.current.length > 0 && !actionProcessed) {
+          const action = actionQueueRef.current.shift()!;
+          const isOpposite = action.dir === ({ up: "down", down: "up", left: "right", right: "left" } as const)[stateRef.current.direction];
+          const isSame = action.dir === stateRef.current.direction;
+          
+          if (!isOpposite && !isSame) {
+            queueSnakeDirection(stateRef.current, action.dir);
+            traceRef.current.push({ tick, type: "direction", payload: action.dir });
+            actionProcessed = true;
+          }
         }
         
         const previousScore = stateRef.current.score;
@@ -134,12 +240,12 @@ export default function SnakeGame({
           playEffect(180, 0.2);
         }
       },
-      onRender() {
-        drawSnake(canvas, stateRef.current, quality);
+      onRender(interpolation) {
+        drawSnake(canvas, stateRef.current, quality, previousBodyRef.current, interpolation);
       },
     });
     runtimeRef.current = runtime;
-    drawSnake(canvas, stateRef.current, quality);
+    drawSnake(canvas, stateRef.current, quality, previousBodyRef.current, 1);
     const onKeyDown = (event: KeyboardEvent) => {
       const direction = ({
         ArrowUp: "up",
@@ -156,7 +262,7 @@ export default function SnakeGame({
       setDirection(direction);
     };
     window.addEventListener("keydown", onKeyDown);
-    const observer = new ResizeObserver(() => drawSnake(canvas, stateRef.current, quality));
+    const observer = new ResizeObserver(() => drawSnake(canvas, stateRef.current, quality, previousBodyRef.current, 1));
     observer.observe(canvas);
     return () => {
       runtime.destroy();
@@ -228,7 +334,10 @@ export default function SnakeGame({
     setCompletion(null);
     onEngineStatusChange?.("ready");
     const canvas = canvasRef.current;
-    if (canvas) drawSnake(canvas, stateRef.current, quality);
+    if (canvas) {
+      previousBodyRef.current = stateRef.current.body.map(p => ({ ...p }));
+      drawSnake(canvas, stateRef.current, quality, previousBodyRef.current, 1);
+    }
   }, [onEngineStatusChange, quality]);
 
   useEffect(() => {
