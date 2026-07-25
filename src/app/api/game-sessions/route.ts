@@ -24,8 +24,8 @@ export async function POST(request: NextRequest) {
 
     const { gameSlug } = parsed.data;
 
-    if (gameSlug !== "memory-garden") {
-      return apiError("FORBIDDEN", "Only Memory Garden rewards are currently enabled.", 403);
+    if (!["memory-garden", "snake", "feather-merge"].includes(gameSlug)) {
+      return apiError("FORBIDDEN", "Rewards are not enabled for this game.", 403);
     }
 
     const admin = createTrustedServiceRoleClient();

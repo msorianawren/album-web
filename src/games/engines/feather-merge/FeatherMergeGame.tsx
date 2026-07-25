@@ -1,12 +1,12 @@
 "use client";
 
-import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp } from "lucide-react";
+import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Check } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { GameSurface } from "@/components/games/GameSurface";
 import { Button } from "@/components/ui/Button";
 import { useGameAudio } from "@/games/core/audio-context.client";
 import { createFixedStepRuntime } from "@/games/core/runtime";
-import type { GameClientProps } from "@/games/core/types";
+import type { GameClientProps, FinalizeGameSessionResponse, GameInputAction, GameReplayTrace } from "@/games/core/types";
 import {
   createFeatherMergeState,
   moveFeatherMerge,
@@ -14,7 +14,6 @@ import {
   type MergeDirection,
 } from "./model";
 
-const seed = "oriana-feather-merge-v1";
 const palette: Record<number, string> = {
   0: "rgba(255,255,255,.14)",
   2: "#f8e8dd",
@@ -74,21 +73,35 @@ function drawMerge(canvas: HTMLCanvasElement, state: FeatherMergeState, quality:
   });
 }
 
+function generatePracticeSeed() {
+  return "practice-" + Math.random().toString(36).slice(2);
+}
+
 export default function FeatherMergeGame({
   onEngineStatusChange,
   quality = "balanced",
 }: GameClientProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const stateRef = useRef(createFeatherMergeState(seed));
-  const inputRef = useRef<MergeDirection[]>([]);
+  
+  const [currentSeed, setCurrentSeed] = useState(generatePracticeSeed());
+  const stateRef = useRef(createFeatherMergeState(currentSeed));
   const runtimeRef = useRef<ReturnType<typeof createFixedStepRuntime> | null>(null);
+  
+  const sessionRef = useRef<{ id: string; nonce: string; seed: string } | null>(null);
+  const traceRef = useRef<GameInputAction[]>([]);
+  const inputRef = useRef<MergeDirection[]>([]);
+
   const [status, setStatus] = useState<"ready" | "running" | "paused" | "complete">("ready");
   const [score, setScore] = useState(0);
+  const [completion, setCompletion] = useState<FinalizeGameSessionResponse | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+
   const { playEffect, start: startAudio } = useGameAudio();
 
   const queueMove = useCallback((direction: MergeDirection) => {
+    if (status !== "running" || !runtimeRef.current) return;
     inputRef.current.push(direction);
-  }, []);
+  }, [status]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -97,9 +110,12 @@ export default function FeatherMergeGame({
     const runtime = createFixedStepRuntime({
       stepMs: quality === "low" ? 1000 / 30 : 1000 / 60,
       targetRenderFps: quality === "low" ? 30 : 60,
-      onTick() {
+      onTick(tick) {
         const direction = inputRef.current.shift();
         if (!direction) return;
+        
+        traceRef.current.push({ tick, type: "direction", payload: direction });
+        
         if (moveFeatherMerge(stateRef.current, direction)) {
           setScore(stateRef.current.score);
           playEffect(420 + Math.min(460, stateRef.current.score / 4));
@@ -165,13 +181,39 @@ export default function FeatherMergeGame({
     };
   }, [onEngineStatusChange, playEffect, quality, queueMove]);
 
-  const start = useCallback(() => {
-    if (status === "complete") {
-      stateRef.current = createFeatherMergeState(seed);
+  const start = useCallback(async () => {
+    void startAudio();
+
+    if (status === "complete" || status === "ready") {
+      setCompletion(null);
       setScore(0);
+      inputRef.current = [];
+      traceRef.current = [];
+
+      let nextSeed = generatePracticeSeed();
+      
+      try {
+        const response = await fetch("/api/game-sessions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ gameSlug: "feather-merge" }),
+        });
+        if (response.ok) {
+          const { data } = await response.json();
+          nextSeed = data.seed;
+          sessionRef.current = { id: data.sessionId, nonce: data.nonce, seed: data.seed };
+        } else {
+          sessionRef.current = null;
+        }
+      } catch (e) {
+        sessionRef.current = null;
+      }
+      
+      setCurrentSeed(nextSeed);
+      stateRef.current = createFeatherMergeState(nextSeed);
       runtimeRef.current?.reset();
     }
-    void startAudio();
+    
     runtimeRef.current?.start();
     setStatus("running");
     onEngineStatusChange?.("running");
@@ -187,13 +229,50 @@ export default function FeatherMergeGame({
     runtimeRef.current?.pause();
     runtimeRef.current?.reset();
     inputRef.current = [];
-    stateRef.current = createFeatherMergeState(seed);
+    traceRef.current = [];
+    sessionRef.current = null;
+
+    const nextSeed = generatePracticeSeed();
+    setCurrentSeed(nextSeed);
+    stateRef.current = createFeatherMergeState(nextSeed);
+    
     setScore(0);
     setStatus("ready");
+    setCompletion(null);
     onEngineStatusChange?.("ready");
     const canvas = canvasRef.current;
     if (canvas) drawMerge(canvas, stateRef.current, quality);
   }, [onEngineStatusChange, quality]);
+
+  useEffect(() => {
+    if (status === "complete" && sessionRef.current && !completion && !submitting) {
+      setSubmitting(true);
+      const session = sessionRef.current;
+      const trace: GameReplayTrace = {
+        formatVersion: 1,
+        engineVersion: "feather-merge-v1",
+        seed: session.seed,
+        fixedStepMs: quality === "low" ? 1000 / 30 : 1000 / 60,
+        actions: traceRef.current,
+      };
+      
+      fetch(`/api/game-sessions/${session.id}/complete`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nonce: session.nonce, replay: trace }),
+      })
+        .then((res) => (res.ok ? res.json() : null))
+        .then((json) => {
+          if (json?.data) {
+            setCompletion(json.data);
+          }
+        })
+        .finally(() => {
+          setSubmitting(false);
+          sessionRef.current = null;
+        });
+    }
+  }, [status, completion, submitting, quality]);
 
   return (
     <GameSurface
@@ -214,6 +293,23 @@ export default function FeatherMergeGame({
         <Button variant="icon" aria-label="Move down" onClick={() => queueMove("down")}><ArrowDown className="h-4 w-4" /></Button>
         <Button variant="icon" aria-label="Move right" onClick={() => queueMove("right")}><ArrowRight className="h-4 w-4" /></Button>
       </div>
+
+      {completion && (
+        <div className="mt-2 rounded-xl bg-[color-mix(in_srgb,var(--preset-accent)_20%,transparent)] p-4 text-center">
+          <Check className="mx-auto mb-2 h-6 w-6 text-accent" />
+          <p className="font-semibold text-text-primary">
+            +{completion.rewardGranted} Wren Feathers
+          </p>
+          {completion.duplicate && (
+            <p className="mt-1 text-xs text-text-secondary">Already completed today.</p>
+          )}
+        </div>
+      )}
+      {!completion && status === "complete" && !sessionRef.current && (
+        <div className="mt-2 rounded-xl bg-surface/50 p-4 text-center text-sm text-text-secondary">
+          Practice session complete.
+        </div>
+      )}
     </GameSurface>
   );
 }

@@ -1,12 +1,12 @@
 "use client";
 
-import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp } from "lucide-react";
+import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Check } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { GameSurface } from "@/components/games/GameSurface";
 import { Button } from "@/components/ui/Button";
 import { useGameAudio } from "@/games/core/audio-context.client";
 import { createFixedStepRuntime } from "@/games/core/runtime";
-import type { GameClientProps } from "@/games/core/types";
+import type { GameClientProps, FinalizeGameSessionResponse, GameInputAction, GameReplayTrace } from "@/games/core/types";
 import {
   createSnakeState,
   queueSnakeDirection,
@@ -14,8 +14,6 @@ import {
   type SnakeDirection,
   type SnakeState,
 } from "./model";
-
-const seed = "oriana-wren-trail-v1";
 
 function drawSnake(canvas: HTMLCanvasElement, state: SnakeState, quality: GameClientProps["quality"]) {
   const rect = canvas.getBoundingClientRect();
@@ -76,20 +74,36 @@ function drawSnake(canvas: HTMLCanvasElement, state: SnakeState, quality: GameCl
   context.fill();
 }
 
+function generatePracticeSeed() {
+  return "practice-" + Math.random().toString(36).slice(2);
+}
+
 export default function SnakeGame({
   onEngineStatusChange,
   quality = "balanced",
 }: GameClientProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const stateRef = useRef(createSnakeState(seed));
+  
+  const [currentSeed, setCurrentSeed] = useState(generatePracticeSeed());
+  const stateRef = useRef(createSnakeState(currentSeed));
   const runtimeRef = useRef<ReturnType<typeof createFixedStepRuntime> | null>(null);
+  
+  const sessionRef = useRef<{ id: string; nonce: string; seed: string } | null>(null);
+  const traceRef = useRef<GameInputAction[]>([]);
+  const actionQueueRef = useRef<Array<{ tick: number, dir: SnakeDirection }>>([]);
+
   const [status, setStatus] = useState<"ready" | "running" | "paused" | "complete">("ready");
   const [score, setScore] = useState(0);
+  const [completion, setCompletion] = useState<FinalizeGameSessionResponse | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+
   const { playEffect, start: startAudio } = useGameAudio();
 
   const setDirection = useCallback((direction: SnakeDirection) => {
-    queueSnakeDirection(stateRef.current, direction);
-  }, []);
+    if (status !== "running" || !runtimeRef.current) return;
+    const tick = runtimeRef.current.tick;
+    actionQueueRef.current.push({ tick, dir: direction });
+  }, [status]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -97,7 +111,15 @@ export default function SnakeGame({
     const runtime = createFixedStepRuntime({
       stepMs: quality === "low" ? 125 : 100,
       targetRenderFps: quality === "low" ? 30 : 60,
-      onTick() {
+      onTick(tick) {
+        // apply all queued directions up to this tick
+        while (actionQueueRef.current.length > 0) {
+          const action = actionQueueRef.current[0];
+          queueSnakeDirection(stateRef.current, action.dir);
+          traceRef.current.push({ tick, type: "direction", payload: action.dir });
+          actionQueueRef.current.shift();
+        }
+        
         const previousScore = stateRef.current.score;
         stepSnake(stateRef.current);
         if (stateRef.current.score !== previousScore) {
@@ -143,13 +165,39 @@ export default function SnakeGame({
     };
   }, [onEngineStatusChange, playEffect, quality, setDirection]);
 
-  const start = useCallback(() => {
-    if (status === "complete") {
-      stateRef.current = createSnakeState(seed);
+  const start = useCallback(async () => {
+    void startAudio();
+
+    if (status === "complete" || status === "ready") {
+      setCompletion(null);
       setScore(0);
+      actionQueueRef.current = [];
+      traceRef.current = [];
+
+      let nextSeed = generatePracticeSeed();
+      
+      try {
+        const response = await fetch("/api/game-sessions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ gameSlug: "snake" }),
+        });
+        if (response.ok) {
+          const { data } = await response.json();
+          nextSeed = data.seed;
+          sessionRef.current = { id: data.sessionId, nonce: data.nonce, seed: data.seed };
+        } else {
+          sessionRef.current = null;
+        }
+      } catch (e) {
+        sessionRef.current = null;
+      }
+      
+      setCurrentSeed(nextSeed);
+      stateRef.current = createSnakeState(nextSeed);
       runtimeRef.current?.reset();
     }
-    void startAudio();
+    
     runtimeRef.current?.start();
     setStatus("running");
     onEngineStatusChange?.("running");
@@ -164,13 +212,51 @@ export default function SnakeGame({
   const restart = useCallback(() => {
     runtimeRef.current?.pause();
     runtimeRef.current?.reset();
-    stateRef.current = createSnakeState(seed);
+    actionQueueRef.current = [];
+    traceRef.current = [];
+    sessionRef.current = null;
+
+    const nextSeed = generatePracticeSeed();
+    setCurrentSeed(nextSeed);
+    stateRef.current = createSnakeState(nextSeed);
+    
     setScore(0);
     setStatus("ready");
+    setCompletion(null);
     onEngineStatusChange?.("ready");
     const canvas = canvasRef.current;
     if (canvas) drawSnake(canvas, stateRef.current, quality);
   }, [onEngineStatusChange, quality]);
+
+  useEffect(() => {
+    if (status === "complete" && sessionRef.current && !completion && !submitting) {
+      setSubmitting(true);
+      const session = sessionRef.current;
+      const trace: GameReplayTrace = {
+        formatVersion: 1,
+        engineVersion: "snake-v1",
+        seed: session.seed,
+        fixedStepMs: quality === "low" ? 125 : 100,
+        actions: traceRef.current,
+      };
+      
+      fetch(`/api/game-sessions/${session.id}/complete`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nonce: session.nonce, replay: trace }),
+      })
+        .then((res) => (res.ok ? res.json() : null))
+        .then((json) => {
+          if (json?.data) {
+            setCompletion(json.data);
+          }
+        })
+        .finally(() => {
+          setSubmitting(false);
+          sessionRef.current = null;
+        });
+    }
+  }, [status, completion, submitting, quality]);
 
   return (
     <GameSurface
@@ -191,6 +277,23 @@ export default function SnakeGame({
         <Button variant="icon" aria-label="Move down" onClick={() => setDirection("down")}><ArrowDown className="h-4 w-4" /></Button>
         <Button variant="icon" aria-label="Move right" onClick={() => setDirection("right")}><ArrowRight className="h-4 w-4" /></Button>
       </div>
+      
+      {completion && (
+        <div className="mt-2 rounded-xl bg-[color-mix(in_srgb,var(--preset-accent)_20%,transparent)] p-4 text-center">
+          <Check className="mx-auto mb-2 h-6 w-6 text-accent" />
+          <p className="font-semibold text-text-primary">
+            +{completion.rewardGranted} Wren Feathers
+          </p>
+          {completion.duplicate && (
+            <p className="mt-1 text-xs text-text-secondary">Already completed today.</p>
+          )}
+        </div>
+      )}
+      {!completion && status === "complete" && !sessionRef.current && (
+        <div className="mt-2 rounded-xl bg-surface/50 p-4 text-center text-sm text-text-secondary">
+          Practice session complete.
+        </div>
+      )}
     </GameSurface>
   );
 }

@@ -56,8 +56,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       .eq("id", gameSession.game_id)
       .single();
 
-    if (game?.slug !== "memory-garden") {
-      return apiError("FORBIDDEN", "Only Memory Garden rewards are currently enabled.", 403);
+    if (!["memory-garden", "snake", "feather-merge"].includes(game?.slug)) {
+      return apiError("FORBIDDEN", "Rewards are not enabled for this game.", 403);
     }
 
     const { data: version } = await admin
@@ -91,7 +91,18 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       config: version.config as Record<string, unknown>,
     };
 
-    const verification = verifyMemoryGarden(publishedVersion, difficulty as any, replay as any);
+    let verification;
+    if (game?.slug === "memory-garden") {
+      verification = verifyMemoryGarden(publishedVersion, difficulty as any, replay as any);
+    } else if (game?.slug === "snake") {
+      const { verifySnake } = await import("@/games/engines/snake/verifier");
+      verification = verifySnake(publishedVersion, difficulty as any, replay as any);
+    } else if (game?.slug === "feather-merge") {
+      const { verifyFeatherMerge } = await import("@/games/engines/feather-merge/verifier");
+      verification = verifyFeatherMerge(publishedVersion, difficulty as any, replay as any);
+    } else {
+      return apiError("SERVER_ERROR", "Verifier not registered.", 500);
+    }
     
     if (!verification.valid) {
       return apiError("INVALID_INPUT", verification.reason || "Replay verification failed.", 400);
