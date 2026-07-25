@@ -211,10 +211,10 @@ export default function SnakeGame({
   const { playEffect, start: startAudio } = useGameAudio();
 
   const setDirection = useCallback((direction: SnakeDirection) => {
-    if (status !== "running" || !runtimeRef.current) return;
+    if (!runtimeRef.current) return;
     const tick = runtimeRef.current.tick;
     actionQueueRef.current.push({ tick, dir: direction });
-  }, [status]);
+  }, []);
 
   useEffect(() => {
     const canvas = canvasRef.current;

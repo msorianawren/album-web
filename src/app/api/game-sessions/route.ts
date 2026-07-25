@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
 
     const { gameSlug } = parsed.data;
 
-    if (!["memory-garden", "snake", "feather-merge"].includes(gameSlug)) {
+    if (!["memory-garden", "snake", "feather-merge", "quiet-meadow"].includes(gameSlug)) {
       return apiError("FORBIDDEN", "Rewards are not enabled for this game.", 403);
     }
 
