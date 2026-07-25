@@ -39,27 +39,25 @@ function drawSnake(
   const offsetY = (height - cell * state.height) / 2;
   
   context.clearRect(0, 0, width, height);
-  const gradient = context.createLinearGradient(0, 0, width, height);
-  gradient.addColorStop(0, "#17271f");
-  gradient.addColorStop(1, "#38483d");
-  context.fillStyle = gradient;
-  context.fillRect(0, 0, width, height);
-  context.strokeStyle = "rgba(255,255,255,.045)";
-  context.lineWidth = 1;
   
-  // Draw grid
-  for (let x = 0; x <= state.width; x += 1) {
-    context.beginPath();
-    context.moveTo(offsetX + x * cell, offsetY);
-    context.lineTo(offsetX + x * cell, offsetY + state.height * cell);
-    context.stroke();
+  // Base dark background outside the grid
+  context.fillStyle = "#0d1410";
+  context.fillRect(0, 0, width, height);
+  
+  // Draw Grass Checkerboard
+  for (let y = 0; y < state.height; y += 1) {
+    for (let x = 0; x < state.width; x += 1) {
+      // Checkerboard pattern of rich grass colors
+      const isEven = (x + y) % 2 === 0;
+      context.fillStyle = isEven ? "#2e5033" : "#27442b"; 
+      context.fillRect(offsetX + x * cell, offsetY + y * cell, cell + 0.5, cell + 0.5);
+    }
   }
-  for (let y = 0; y <= state.height; y += 1) {
-    context.beginPath();
-    context.moveTo(offsetX, offsetY + y * cell);
-    context.lineTo(offsetX + state.width * cell, offsetY + y * cell);
-    context.stroke();
-  }
+
+  // Draw a subtle border around the play area
+  context.strokeStyle = "rgba(255,255,255,.05)";
+  context.lineWidth = 1;
+  context.strokeRect(offsetX, offsetY, state.width * cell, state.height * cell);
 
   // Calculate interpolated positions
   // If the game is complete, don't interpolate further than 1
@@ -155,21 +153,34 @@ function drawSnake(
     context.fill();
   }
 
-  // Draw Food (pulse effect)
-  const pulse = Math.sin(performance.now() / 200) * 0.1 + 0.9;
-  context.shadowBlur = cell * 0.6 * pulse;
-  context.shadowColor = "rgba(244, 168, 184, 0.8)";
-  context.fillStyle = "#f4a8b8";
+  // Draw Detailed Berry (Food)
+  const pulse = Math.sin(performance.now() / 200) * 0.05 + 0.95;
+  const foodCenterX = offsetX + (state.food.x + 0.5) * cell;
+  const foodCenterY = offsetY + (state.food.y + 0.5) * cell;
+  const foodRadius = cell * 0.32 * pulse;
+  
+  context.shadowBlur = cell * 0.5 * pulse;
+  context.shadowColor = "rgba(255, 100, 120, 0.6)";
+  
+  // Berry body
+  context.fillStyle = "#ff4d6d";
   context.beginPath();
-  context.arc(
-    offsetX + (state.food.x + 0.5) * cell,
-    offsetY + (state.food.y + 0.5) * cell,
-    cell * 0.31 * pulse,
-    0,
-    Math.PI * 2,
-  );
+  context.arc(foodCenterX, foodCenterY, foodRadius, 0, Math.PI * 2);
   context.fill();
+  
   context.shadowBlur = 0;
+  
+  // Berry highlight (shiny effect)
+  context.fillStyle = "rgba(255, 255, 255, 0.5)";
+  context.beginPath();
+  context.ellipse(foodCenterX - foodRadius * 0.3, foodCenterY - foodRadius * 0.3, foodRadius * 0.3, foodRadius * 0.15, -Math.PI / 4, 0, Math.PI * 2);
+  context.fill();
+  
+  // Berry leaf
+  context.fillStyle = "#74c69d";
+  context.beginPath();
+  context.ellipse(foodCenterX + foodRadius * 0.2, foodCenterY - foodRadius * 0.7, foodRadius * 0.4, foodRadius * 0.15, Math.PI / 4, 0, Math.PI * 2);
+  context.fill();
 }
 
 function generatePracticeSeed() {

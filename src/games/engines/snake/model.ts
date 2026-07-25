@@ -77,13 +77,10 @@ export function stepSnake(state: SnakeState) {
   const vector = vectors[state.direction];
   const head = state.body[0];
   const next = { x: head.x + vector.x, y: head.y + vector.y };
-  if (
-    next.x < 0
-    || next.y < 0
-    || next.x >= state.width
-    || next.y >= state.height
-    || state.body.some((segment) => samePoint(segment, next))
-  ) {
+  next.x = (next.x + state.width) % state.width;
+  next.y = (next.y + state.height) % state.height;
+
+  if (state.body.some((segment) => samePoint(segment, next))) {
     state.complete = true;
     return;
   }
