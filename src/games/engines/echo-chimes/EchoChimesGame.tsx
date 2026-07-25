@@ -115,25 +115,11 @@ export default function EchoChimesGame({
   const [completion, setCompletion] = useState<FinalizeGameSessionResponse | null>(null);
   const [submitting, setSubmitting] = useState(false);
   
-  const { start: startAudio, audioContext } = useGameAudio();
+  const { start: startAudio, playEffect } = useGameAudio();
 
   const playChimeAudio = useCallback((index: number) => {
-    if (!audioContext.current) return;
-    const ctx = audioContext.current;
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.type = "sine";
-    osc.frequency.setValueAtTime(CHIME_PITCHES[index], ctx.currentTime);
-    
-    gain.gain.setValueAtTime(0, ctx.currentTime);
-    gain.gain.linearRampToValueAtTime(0.5, ctx.currentTime + 0.05);
-    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 1.5);
-    
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.start();
-    osc.stop(ctx.currentTime + 1.5);
-  }, [audioContext]);
+    playEffect(CHIME_PITCHES[index], 1.5);
+  }, [playEffect]);
 
   const pause = useCallback(() => {
     setStatus(s => {
@@ -348,7 +334,7 @@ export default function EchoChimesGame({
       canvasRef={canvasRef}
       title="Echo Chimes"
       status={status}
-      score={score}
+      score={String(score)}
       detail="Listen to the wind chimes and repeat their delicate melody. Keyboard players can use keys 1, 2, 3, 4."
       onStart={start}
       onPause={pause}

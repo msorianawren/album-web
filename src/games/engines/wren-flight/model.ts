@@ -1,4 +1,4 @@
-import { prng } from "@/games/core/math";
+import { createSeededRng } from "@/games/core/rng";
 
 export type WrenFlightState = {
   seed: string;
@@ -60,7 +60,8 @@ export function stepWrenFlight(state: WrenFlightState) {
   // Obstacle spawning
   if (state.tickCounter % OBSTACLE_SPAWN_INTERVAL === 0 || (state.tickCounter === 1 && state.obstacles.length === 0)) {
     // Generate a gap between 20 and 80
-    const gapY = 20 + Math.floor(prng(state.seed + state.tickCounter) * 60);
+    const rng = createSeededRng(state.seed + state.tickCounter);
+    const gapY = 20 + Math.floor(rng.next() * 60);
     state.obstacles.push({
       x: 100, // Starts at 100% width
       gapY,

@@ -1,4 +1,4 @@
-import { prng } from "@/games/core/math";
+import { createSeededRng } from "@/games/core/rng";
 
 export type EchoChimesState = {
   seed: string;
@@ -29,7 +29,8 @@ export function createEchoChimesState(seed: string): EchoChimesState {
 }
 
 function appendSequence(state: EchoChimesState) {
-  const nextNote = Math.floor(prng(state.seed + state.sequence.length) * 4);
+  const rng = createSeededRng(state.seed + state.sequence.length);
+  const nextNote = Math.floor(rng.next() * 4);
   state.sequence.push(nextNote);
 }
 

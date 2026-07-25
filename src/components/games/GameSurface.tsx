@@ -15,10 +15,10 @@ export function GameSurface({
   onRestart,
   children,
 }: {
-  canvasRef: RefObject<HTMLCanvasElement | null>;
+  canvasRef?: RefObject<HTMLCanvasElement | null>;
   title: string;
   status: "ready" | "running" | "paused" | "complete";
-  score: string;
+  score: ReactNode | string;
   detail: string;
   onStart(): void;
   onPause(): void;

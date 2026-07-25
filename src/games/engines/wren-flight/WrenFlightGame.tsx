@@ -346,7 +346,7 @@ export default function WrenFlightGame({
       canvasRef={canvasRef}
       title="Wren Flight"
       status={status}
-      score={score}
+      score={String(score)}
       detail="Guide the ribbon-tailed wren safely through the hanging vines. Tap, Click, or press Space to flap."
       onStart={start}
       onPause={pause}

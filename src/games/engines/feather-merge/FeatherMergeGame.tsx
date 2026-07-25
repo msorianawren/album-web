@@ -30,6 +30,10 @@ const palette: Record<number, string> = {
   2048: "#24283d",
 };
 
+function generatePracticeSeed() {
+  return "practice-" + Math.random().toString(36).slice(2);
+}
+
 export default function FeatherMergeGame({
   onEngineStatusChange,
   quality = "balanced",
@@ -85,8 +89,6 @@ export default function FeatherMergeGame({
   }, []);
 
   useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
     let dirty = true;
     const runtime = createFixedStepRuntime({
       stepMs: quality === "low" ? 1000 / 30 : 1000 / 60,

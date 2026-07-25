@@ -350,7 +350,7 @@ export default function ZenCairnGame({
       canvasRef={canvasRef}
       title="Zen Cairn"
       status={status}
-      score={score}
+      score={String(score)}
       detail="Stack smooth river stones perfectly to build a towering cairn. Tap, Click, or press Space to drop a stone."
       onStart={start}
       onPause={pause}
