@@ -110,7 +110,7 @@ export default function QuietMeadowGame({
     
     setStatus("running");
     onEngineStatusChange?.("running");
-  }, [difficulty, onEngineStatusChange, startAudio, status]);
+  }, [difficulty, onEngineStatusChange, signedIn, startAudio, status]);
 
   const pause = useCallback(() => {
     if (status === "running") {
@@ -319,7 +319,7 @@ export default function QuietMeadowGame({
             )}
           </div>
         )}
-        {!completion && status === "complete" && !sessionRef.current && (
+        {!completion && status === "complete" && !signedIn && (
           <div className="rounded-xl bg-surface/50 p-4 text-center text-sm text-text-secondary">
             Practice session complete.
           </div>

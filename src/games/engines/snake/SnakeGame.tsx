@@ -98,6 +98,8 @@ function drawSnake(
       const start = bodyPoints[i];
       const end = bodyPoints[i - 1];
       
+      if (Math.abs(start.x - end.x) > 1.5 || Math.abs(start.y - end.y) > 1.5) continue;
+
       context.beginPath();
       context.moveTo(offsetX + start.x * cell + cell * 0.5, offsetY + start.y * cell + cell * 0.5);
       context.lineTo(offsetX + end.x * cell + cell * 0.5, offsetY + end.y * cell + cell * 0.5);
@@ -201,7 +203,7 @@ export default function SnakeGame({
   const sessionRef = useRef<{ id: string; nonce: string; seed: string } | null>(null);
   const traceRef = useRef<GameInputAction[]>([]);
   const actionQueueRef = useRef<Array<{ tick: number, dir: SnakeDirection }>>([]);
-  const previousBodyRef = useRef<SnakePoint[]>(stateRef.current.body.map(p => ({ ...p })));
+  const previousBodyRef = useRef<SnakePoint[]>([]);
 
   const [status, setStatus] = useState<"ready" | "running" | "paused" | "complete">("ready");
   const [score, setScore] = useState(0);
@@ -321,7 +323,7 @@ export default function SnakeGame({
     runtimeRef.current?.start();
     setStatus("running");
     onEngineStatusChange?.("running");
-  }, [onEngineStatusChange, startAudio, status]);
+  }, [onEngineStatusChange, signedIn, startAudio, status]);
 
   const pause = useCallback(() => {
     runtimeRef.current?.pause();
@@ -412,7 +414,7 @@ export default function SnakeGame({
           )}
         </div>
       )}
-      {!completion && status === "complete" && !sessionRef.current && (
+      {!completion && status === "complete" && !signedIn && (
         <div className="mt-2 rounded-xl bg-surface/50 p-4 text-center text-sm text-text-secondary">
           Practice session complete.
         </div>

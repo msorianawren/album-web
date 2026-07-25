@@ -100,9 +100,9 @@ export default function FeatherMergeGame({
   const { playEffect, start: startAudio } = useGameAudio();
 
   const queueMove = useCallback((direction: MergeDirection) => {
-    if (status !== "running" || !runtimeRef.current) return;
+    if (!runtimeRef.current) return;
     inputRef.current.push(direction);
-  }, [status]);
+  }, []);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -220,7 +220,7 @@ export default function FeatherMergeGame({
     runtimeRef.current?.start();
     setStatus("running");
     onEngineStatusChange?.("running");
-  }, [onEngineStatusChange, startAudio, status]);
+  }, [onEngineStatusChange, signedIn, startAudio, status]);
 
   const pause = useCallback(() => {
     runtimeRef.current?.pause();
@@ -308,7 +308,7 @@ export default function FeatherMergeGame({
           )}
         </div>
       )}
-      {!completion && status === "complete" && !sessionRef.current && (
+      {!completion && status === "complete" && !signedIn && (
         <div className="mt-2 rounded-xl bg-surface/50 p-4 text-center text-sm text-text-secondary">
           Practice session complete.
         </div>

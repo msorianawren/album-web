@@ -262,7 +262,7 @@ export default function MemoryGardenGame({
     runtimeRef.current?.start();
     setStatus("running");
     onEngineStatusChange?.("running");
-  }, [onEngineStatusChange, startAudio, status]);
+  }, [onEngineStatusChange, signedIn, startAudio, status]);
 
   const pause = useCallback(() => {
     runtimeRef.current?.pause();
@@ -341,7 +341,7 @@ export default function MemoryGardenGame({
           )}
         </div>
       )}
-      {!completion && status === "complete" && !sessionRef.current && (
+      {!completion && status === "complete" && !signedIn && (
         <div className="mt-2 rounded-xl bg-surface/50 p-4 text-center text-sm text-text-secondary">
           Practice session complete.
         </div>

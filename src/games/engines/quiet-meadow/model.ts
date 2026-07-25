@@ -55,8 +55,6 @@ function placeMines(state: QuietMeadowState, firstX: number, firstY: number) {
     }
   }
 
-  // Pick mines
-  let placed = 0;
   // Create an array of available indices
   const availableIndices: number[] = [];
   for (let i = 0; i < totalCells; i++) {

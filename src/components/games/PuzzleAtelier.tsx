@@ -88,9 +88,10 @@ function PuzzleBoard({
 
   return (
     <div
-      className="grid aspect-square w-full max-w-[min(78dvh,42rem)] touch-manipulation overflow-hidden rounded-[1.5rem] border border-border bg-surface-secondary p-1.5 shadow-2xl shadow-text-primary/10 sm:p-2"
+      className="grid aspect-square w-full max-w-[min(78dvh,42rem)] touch-manipulation overflow-hidden rounded-[1.5rem] border border-border bg-surface-secondary p-1.5 shadow-2xl shadow-text-primary/10 sm:p-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       style={{ gridTemplateColumns: `repeat(${grid}, minmax(0, 1fr))` }}
       onKeyDown={onKeyDown}
+      tabIndex={0}
       aria-label={`${grid} by ${grid} ${mode} puzzle board`}
     >
       {board.map((tile, position) => tile === null ? (
