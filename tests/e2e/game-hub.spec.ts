@@ -23,9 +23,11 @@ for (const slug of canaries) {
     await expect(route).toHaveAttribute("data-engine-status", "ready", { timeout: 15_000 });
     await page.getByRole("button", { name: "Start", exact: true }).click();
     await expect(route).toHaveAttribute("data-engine-status", "running");
+    await expect(page.locator("html")).toHaveAttribute("data-game-runtime-suspended", "true");
     await page.keyboard.press("ArrowRight");
     await page.getByRole("button", { name: "Pause" }).click();
     await expect(route).toHaveAttribute("data-engine-status", "paused");
+    await expect(page.locator("html")).toHaveAttribute("data-game-runtime-suspended", "false");
     expect(apiRequests).toEqual([]);
   });
 }
@@ -50,9 +52,11 @@ test("Game Hub and Snake remain usable on a mobile viewport", async ({ browser }
     await expect(route).toHaveAttribute("data-engine-status", "ready", { timeout: 15_000 });
     await page.getByRole("button", { name: "Start", exact: true }).tap();
     await expect(route).toHaveAttribute("data-engine-status", "running");
+    await expect(page.locator("html")).toHaveAttribute("data-game-runtime-suspended", "true");
     await page.getByRole("button", { name: "Move right" }).tap();
     await page.getByRole("button", { name: "Pause", exact: true }).tap();
     await expect(route).toHaveAttribute("data-engine-status", "paused");
+    await expect(page.locator("html")).toHaveAttribute("data-game-runtime-suspended", "false");
   } finally {
     await context.close();
   }

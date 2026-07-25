@@ -96,6 +96,7 @@ export default function SnakeGame({
     if (!canvas) return;
     const runtime = createFixedStepRuntime({
       stepMs: quality === "low" ? 125 : 100,
+      targetRenderFps: quality === "low" ? 30 : 60,
       onTick() {
         const previousScore = stateRef.current.score;
         stepSnake(stateRef.current);

@@ -129,6 +129,7 @@ export default function MemoryGardenGame({
     let dirty = true;
     const runtime = createFixedStepRuntime({
       stepMs: quality === "low" ? 1000 / 30 : 1000 / 60,
+      targetRenderFps: quality === "low" ? 30 : 60,
       onTick(tick) {
         const action = actionRef.current.shift();
         if (action?.type === "cursor") {

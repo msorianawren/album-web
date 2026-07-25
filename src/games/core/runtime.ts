@@ -52,6 +52,7 @@ export function getGameRuntimeSuspensionDiagnostics() {
 export interface FixedStepRuntimeOptions {
   stepMs?: number;
   maximumCatchUpSteps?: number;
+  targetRenderFps?: 30 | 60;
   onTick(tick: number): void;
   onRender?(interpolation: number): void;
 }
@@ -60,9 +61,11 @@ export function createFixedStepRuntime(options: FixedStepRuntimeOptions) {
   const clock = new FixedStepClock(options.stepMs, options.maximumCatchUpSteps);
   let frame = 0;
   let previousTimestamp: number | null = null;
+  let previousRenderTimestamp: number | null = null;
   let running = false;
   let requested = false;
   let destroyed = false;
+  const renderIntervalMs = 1000 / (options.targetRenderFps ?? 60);
 
   const loop = (timestamp: number) => {
     if (!running) return;
@@ -70,7 +73,13 @@ export function createFixedStepRuntime(options: FixedStepRuntimeOptions) {
     const advance = clock.advance(timestamp - previousTimestamp);
     previousTimestamp = timestamp;
     advance.ticks.forEach(options.onTick);
-    options.onRender?.(advance.interpolation);
+    if (
+      previousRenderTimestamp === null
+      || timestamp - previousRenderTimestamp >= renderIntervalMs - 0.5
+    ) {
+      options.onRender?.(advance.interpolation);
+      previousRenderTimestamp = timestamp;
+    }
     frame = requestAnimationFrame(loop);
   };
 
@@ -78,6 +87,7 @@ export function createFixedStepRuntime(options: FixedStepRuntimeOptions) {
     running = false;
     cancelAnimationFrame(frame);
     previousTimestamp = null;
+    previousRenderTimestamp = null;
   };
 
   const startFrame = () => {
@@ -108,6 +118,7 @@ export function createFixedStepRuntime(options: FixedStepRuntimeOptions) {
     reset() {
       clock.reset();
       previousTimestamp = null;
+      previousRenderTimestamp = null;
     },
     destroy() {
       requested = false;

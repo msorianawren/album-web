@@ -96,6 +96,7 @@ export default function FeatherMergeGame({
     let dirty = true;
     const runtime = createFixedStepRuntime({
       stepMs: quality === "low" ? 1000 / 30 : 1000 / 60,
+      targetRenderFps: quality === "low" ? 30 : 60,
       onTick() {
         const direction = inputRef.current.shift();
         if (!direction) return;

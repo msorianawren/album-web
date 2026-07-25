@@ -60,3 +60,14 @@ test("canary migration publishes versions without enabling reward policies", () 
   assert.match(migration, /"registered":false,"mode":"practice-only"/);
   assert.doesNotMatch(migration, /insert into public\.game_reward_policies/);
 });
+
+test("every canary caps low-quality rendering at 30 FPS", () => {
+  for (const relativePath of [
+    "../src/games/engines/snake/SnakeGame.tsx",
+    "../src/games/engines/feather-merge/FeatherMergeGame.tsx",
+    "../src/games/engines/memory-garden/MemoryGardenGame.tsx",
+  ]) {
+    const source = readFileSync(new URL(relativePath, import.meta.url), "utf8");
+    assert.match(source, /targetRenderFps: quality === "low" \? 30 : 60/);
+  }
+});
