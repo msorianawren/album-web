@@ -39,7 +39,7 @@ export const gameCatalog = [
     category: "logic",
     accent: "rose",
     status: "published",
-    rewardMode: "practice",
+    rewardMode: "verified",
     legacy: false,
     enabled: true,
   },

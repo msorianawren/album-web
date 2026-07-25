@@ -1,10 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { Check } from "lucide-react";
 import { GameSurface } from "@/components/games/GameSurface";
 import { useGameAudio } from "@/games/core/audio-context.client";
 import { createFixedStepRuntime } from "@/games/core/runtime";
-import type { GameClientProps } from "@/games/core/types";
+import type { GameClientProps, GameInputAction, GameReplayTrace, FinalizeGameSessionResponse } from "@/games/core/types";
 import {
   createMemoryGardenState,
   moveMemoryCursor,
@@ -13,7 +14,6 @@ import {
   type MemoryGardenState,
 } from "./model";
 
-const seed = "oriana-memory-garden-v1";
 const flowers = [
   ["#f1a4b4", 5],
   ["#e9c77b", 6],
@@ -104,21 +104,36 @@ function drawMemory(canvas: HTMLCanvasElement, state: MemoryGardenState, quality
   });
 }
 
+function generatePracticeSeed() {
+  return "practice-" + Math.random().toString(36).slice(2);
+}
+
 export default function MemoryGardenGame({
   onEngineStatusChange,
   quality = "balanced",
 }: GameClientProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const stateRef = useRef(createMemoryGardenState(seed));
+  
+  // Start with a local practice seed just to draw the initial ready state
+  const [currentSeed, setCurrentSeed] = useState(generatePracticeSeed());
+  const stateRef = useRef(createMemoryGardenState(currentSeed));
   const actionRef = useRef<Array<{ type: "cursor"; dx: number; dy: number } | { type: "reveal"; index?: number }>>([]);
+  
+  const traceRef = useRef<GameInputAction[]>([]);
+  const sessionRef = useRef<{ id: string; nonce: string; seed: string } | null>(null);
+
   const runtimeRef = useRef<ReturnType<typeof createFixedStepRuntime> | null>(null);
   const [status, setStatus] = useState<"ready" | "running" | "paused" | "complete">("ready");
   const [score, setScore] = useState("0 / 8");
+  const [completion, setCompletion] = useState<FinalizeGameSessionResponse | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  
   const { playEffect, start: startAudio } = useGameAudio();
 
   const reveal = useCallback((index?: number) => {
     actionRef.current.push({ type: "reveal", index });
   }, []);
+  
   const moveCursor = useCallback((dx: number, dy: number) => {
     actionRef.current.push({ type: "cursor", dx, dy });
   }, []);
@@ -137,13 +152,11 @@ export default function MemoryGardenGame({
           dirty = true;
         }
         if (action?.type === "reveal") {
+          const index = action.index ?? stateRef.current.cursor;
           const before = stateRef.current.pairs;
-          const changed = revealMemoryCard(
-            stateRef.current,
-            action.index ?? stateRef.current.cursor,
-            tick,
-          );
+          const changed = revealMemoryCard(stateRef.current, index, tick);
           if (changed) {
+            traceRef.current.push({ tick, type: "reveal", payload: index });
             playEffect(stateRef.current.pairs > before ? 720 : 460);
             setScore(`${stateRef.current.pairs} / 8`);
             dirty = true;
@@ -164,6 +177,7 @@ export default function MemoryGardenGame({
     });
     runtimeRef.current = runtime;
     drawMemory(canvas, stateRef.current, quality);
+    
     const onKeyDown = (event: KeyboardEvent) => {
       const move = ({
         ArrowUp: [0, -1],
@@ -209,13 +223,39 @@ export default function MemoryGardenGame({
     };
   }, [moveCursor, onEngineStatusChange, playEffect, quality, reveal]);
 
-  const start = useCallback(() => {
-    if (status === "complete") {
-      stateRef.current = createMemoryGardenState(seed);
+  const start = useCallback(async () => {
+    void startAudio();
+    
+    if (status === "complete" || status === "ready") {
+      setCompletion(null);
       setScore("0 / 8");
+      actionRef.current = [];
+      traceRef.current = [];
+      
+      let nextSeed = generatePracticeSeed();
+      
+      try {
+        const response = await fetch("/api/game-sessions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ gameSlug: "memory-garden" }),
+        });
+        if (response.ok) {
+          const { data } = await response.json();
+          nextSeed = data.seed;
+          sessionRef.current = { id: data.sessionId, nonce: data.nonce, seed: data.seed };
+        } else {
+          sessionRef.current = null; // fallback to practice
+        }
+      } catch (e) {
+        sessionRef.current = null;
+      }
+      
+      setCurrentSeed(nextSeed);
+      stateRef.current = createMemoryGardenState(nextSeed);
       runtimeRef.current?.reset();
     }
-    void startAudio();
+    
     runtimeRef.current?.start();
     setStatus("running");
     onEngineStatusChange?.("running");
@@ -231,13 +271,50 @@ export default function MemoryGardenGame({
     runtimeRef.current?.pause();
     runtimeRef.current?.reset();
     actionRef.current = [];
-    stateRef.current = createMemoryGardenState(seed);
+    traceRef.current = [];
+    sessionRef.current = null;
+    
+    const nextSeed = generatePracticeSeed();
+    setCurrentSeed(nextSeed);
+    stateRef.current = createMemoryGardenState(nextSeed);
+    
     setScore("0 / 8");
     setStatus("ready");
+    setCompletion(null);
     onEngineStatusChange?.("ready");
     const canvas = canvasRef.current;
     if (canvas) drawMemory(canvas, stateRef.current, quality);
   }, [onEngineStatusChange, quality]);
+
+  useEffect(() => {
+    if (status === "complete" && sessionRef.current && !completion && !submitting) {
+      setSubmitting(true);
+      const session = sessionRef.current;
+      const trace: GameReplayTrace = {
+        formatVersion: 1,
+        engineVersion: "memory-garden-v1",
+        seed: session.seed,
+        fixedStepMs: quality === "low" ? 1000 / 30 : 1000 / 60,
+        actions: traceRef.current,
+      };
+      
+      fetch(`/api/game-sessions/${session.id}/complete`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nonce: session.nonce, replay: trace }),
+      })
+        .then((res) => (res.ok ? res.json() : null))
+        .then((json) => {
+          if (json?.data) {
+            setCompletion(json.data);
+          }
+        })
+        .finally(() => {
+          setSubmitting(false);
+          sessionRef.current = null; // consume session
+        });
+    }
+  }, [status, completion, submitting, quality]);
 
   return (
     <GameSurface
@@ -249,6 +326,23 @@ export default function MemoryGardenGame({
       onStart={start}
       onPause={pause}
       onRestart={restart}
-    />
+    >
+      {completion && (
+        <div className="mt-2 rounded-xl bg-[color-mix(in_srgb,var(--preset-accent)_20%,transparent)] p-4 text-center">
+          <Check className="mx-auto mb-2 h-6 w-6 text-accent" />
+          <p className="font-semibold text-text-primary">
+            +{completion.rewardGranted} Wren Feathers
+          </p>
+          {completion.duplicate && (
+            <p className="mt-1 text-xs text-text-secondary">Already completed today.</p>
+          )}
+        </div>
+      )}
+      {!completion && status === "complete" && !sessionRef.current && (
+        <div className="mt-2 rounded-xl bg-surface/50 p-4 text-center text-sm text-text-secondary">
+          Practice session complete.
+        </div>
+      )}
+    </GameSurface>
   );
 }
