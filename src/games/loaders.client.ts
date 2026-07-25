@@ -11,6 +11,9 @@ export const gameClientLoaders: Readonly<Record<string, GameClientModuleLoader>>
   "feather-merge": () => import("@/games/engines/feather-merge/FeatherMergeGame"),
   "memory-garden": () => import("@/games/engines/memory-garden/MemoryGardenGame"),
   "quiet-meadow": () => import("@/games/engines/quiet-meadow/QuietMeadowGame"),
+  "echo-chimes": () => import("@/games/engines/echo-chimes/EchoChimesGame"),
+  "wren-flight": () => import("@/games/engines/wren-flight/WrenFlightGame"),
+  "zen-cairn": () => import("@/games/engines/zen-cairn/ZenCairnGame"),
   "puzzle-atelier": () => import("@/components/games/PuzzleAtelier").then((module) => ({
     default: module.PuzzleAtelier as LoadedGameComponent,
   })),

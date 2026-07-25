@@ -3,6 +3,7 @@ import { getPublicSession } from "@/lib/auth";
 import { apiError, apiSuccess, toServerError } from "@/lib/errors";
 import { createTrustedServiceRoleClient } from "@/lib/db/trusted-service";
 import { verifyMemoryGarden } from "@/games/engines/memory-garden/verifier";
+import type { GameDifficulty, GameReplayTrace } from "@/games/core/types";
 import { z } from "zod";
 
 const completeSchema = z.object({
@@ -56,7 +57,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       .eq("id", gameSession.game_id)
       .single();
 
-    if (!["memory-garden", "snake", "feather-merge", "quiet-meadow"].includes(game?.slug)) {
+    if (!["memory-garden", "snake", "feather-merge", "quiet-meadow", "echo-chimes", "wren-flight", "zen-cairn"].includes(game?.slug)) {
       return apiError("FORBIDDEN", "Rewards are not enabled for this game.", 403);
     }
 
@@ -93,16 +94,25 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
     let verification;
     if (game?.slug === "memory-garden") {
-      verification = verifyMemoryGarden(publishedVersion, difficulty as any, replay as any);
+      verification = verifyMemoryGarden(publishedVersion, difficulty as GameDifficulty, replay as GameReplayTrace);
     } else if (game?.slug === "snake") {
       const { verifySnake } = await import("@/games/engines/snake/verifier");
-      verification = verifySnake(publishedVersion, difficulty as any, replay as any);
+      verification = verifySnake(publishedVersion, difficulty as GameDifficulty, replay as GameReplayTrace);
     } else if (game?.slug === "feather-merge") {
       const { verifyFeatherMerge } = await import("@/games/engines/feather-merge/verifier");
-      verification = verifyFeatherMerge(publishedVersion, difficulty as any, replay as any);
+      verification = verifyFeatherMerge(publishedVersion, difficulty as GameDifficulty, replay as GameReplayTrace);
     } else if (game?.slug === "quiet-meadow") {
       const { verifyQuietMeadow } = await import("@/games/engines/quiet-meadow/verifier");
-      verification = verifyQuietMeadow(publishedVersion, difficulty as any, replay as any);
+      verification = verifyQuietMeadow(publishedVersion, difficulty as GameDifficulty, replay as GameReplayTrace);
+    } else if (game?.slug === "echo-chimes") {
+      const { verifyEchoChimes } = await import("@/games/engines/echo-chimes/verifier");
+      verification = verifyEchoChimes(publishedVersion, difficulty as GameDifficulty, replay as GameReplayTrace);
+    } else if (game?.slug === "wren-flight") {
+      const { verifyWrenFlight } = await import("@/games/engines/wren-flight/verifier");
+      verification = verifyWrenFlight(publishedVersion, difficulty as GameDifficulty, replay as GameReplayTrace);
+    } else if (game?.slug === "zen-cairn") {
+      const { verifyZenCairn } = await import("@/games/engines/zen-cairn/verifier");
+      verification = verifyZenCairn(publishedVersion, difficulty as GameDifficulty, replay as GameReplayTrace);
     } else {
       return apiError("SERVER_ERROR", "Verifier not registered.", 500);
     }
