@@ -102,7 +102,7 @@ export default function EchoChimesGame({
 }: GameClientProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   
-  const [currentSeed, setCurrentSeed] = useState(generatePracticeSeed());
+  const [currentSeed, setCurrentSeed] = useState("practice-initial");
   const stateRef = useRef(createEchoChimesState(currentSeed));
   const actionRef = useRef<Array<{ type: "press"; index: number }>>([]);
   

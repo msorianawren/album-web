@@ -40,7 +40,7 @@ export default function FeatherMergeGame({
   signedIn,
 }: GameClientProps) {
   
-  const [currentSeed, setCurrentSeed] = useState(generatePracticeSeed());
+  const [currentSeed, setCurrentSeed] = useState("practice-initial");
   const [initialState] = useState(() => createFeatherMergeState(currentSeed));
   const stateRef = useRef(initialState);
   const runtimeRef = useRef<ReturnType<typeof createFixedStepRuntime> | null>(null);

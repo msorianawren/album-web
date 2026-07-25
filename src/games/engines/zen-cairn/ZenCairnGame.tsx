@@ -125,7 +125,7 @@ export default function ZenCairnGame({
 }: GameClientProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   
-  const [currentSeed, setCurrentSeed] = useState(generatePracticeSeed());
+  const [currentSeed, setCurrentSeed] = useState("practice-initial");
   const stateRef = useRef(createZenCairnState(currentSeed));
   const prevStateRef = useRef<ZenCairnState | undefined>(undefined);
   const actionRef = useRef<Array<{ type: "drop" }>>([]);

@@ -121,7 +121,7 @@ export default function WrenFlightGame({
 }: GameClientProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   
-  const [currentSeed, setCurrentSeed] = useState(generatePracticeSeed());
+  const [currentSeed, setCurrentSeed] = useState("practice-initial");
   const stateRef = useRef(createWrenFlightState(currentSeed));
   const prevStateRef = useRef<WrenFlightState | undefined>(undefined);
   const actionRef = useRef<Array<{ type: "flap" }>>([]);

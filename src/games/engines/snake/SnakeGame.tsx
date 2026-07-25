@@ -196,7 +196,7 @@ export default function SnakeGame({
 }: GameClientProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   
-  const [currentSeed, setCurrentSeed] = useState(generatePracticeSeed());
+  const [currentSeed, setCurrentSeed] = useState("practice-initial");
   const stateRef = useRef(createSnakeState(currentSeed));
   const runtimeRef = useRef<ReturnType<typeof createFixedStepRuntime> | null>(null);
   
