@@ -15,6 +15,11 @@ const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "placeholder-key
 const adminId = process.env.DEFAULT_OWNER_ID ?? "";
 
 const ALLOWED_HOSTS = new Set(["orianawren.com", "www.orianawren.com"]);
+const VERCEL_PREVIEW_HOSTS = new Set(
+  [process.env.VERCEL_URL, process.env.VERCEL_BRANCH_URL]
+    .filter((value): value is string => Boolean(value))
+    .map((value) => value.toLowerCase()),
+);
 
 const rateBuckets = new Map<string, { count: number; resetAt: number }>();
 
@@ -277,10 +282,17 @@ function responseUnauthenticated(request: NextRequest, clearCookies: boolean) {
 }
 
 export async function proxy(request: NextRequest, event: NextFetchEvent) {
-  const host = request.headers.get("host")?.split(":")[0] ?? "";
+  const host = request.headers.get("host")?.split(":")[0]?.toLowerCase() ?? "";
   const isLocal = host === "localhost" || host === "127.0.0.1" || host.endsWith(".local");
+  const isTrustedVercelPreview =
+    process.env.VERCEL_ENV === "preview" && VERCEL_PREVIEW_HOSTS.has(host);
 
-  if (process.env.NODE_ENV === "production" && !isLocal && !ALLOWED_HOSTS.has(host)) {
+  if (
+    process.env.NODE_ENV === "production"
+    && !isLocal
+    && !ALLOWED_HOSTS.has(host)
+    && !isTrustedVercelPreview
+  ) {
     const url = request.nextUrl.clone();
     url.protocol = "https:";
     url.host = "www.orianawren.com";

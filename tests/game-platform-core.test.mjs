@@ -143,6 +143,13 @@ test("production CSP keeps HTTPS upgrades off local HTTP browser runners", () =>
   );
 });
 
+test("canonical host enforcement permits only Vercel-provided preview hosts", () => {
+  const proxy = read("src/proxy.ts");
+  assert.match(proxy, /process\.env\.VERCEL_ENV === "preview"/);
+  assert.match(proxy, /VERCEL_PREVIEW_HOSTS\.has\(host\)/);
+  assert.doesNotMatch(proxy, /host\.endsWith\("\.vercel\.app"\)/);
+});
+
 test("global visual and audio runtimes subscribe to game suspension", () => {
   for (const file of [
     "src/components/environment/PublicDepthEnvironment.tsx",
