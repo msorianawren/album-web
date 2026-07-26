@@ -18,6 +18,7 @@ import { getMediaDeliveryDescriptor } from "@/lib/media/delivery";
 import type { AlbumStatus, Media } from "@/lib/types";
 import { useAlbumViewMemory } from "@/hooks/useAlbumViewMemory";
 import { useViewerDelivery } from "@/hooks/media-viewer/useViewerDelivery";
+import { useViewerGestures } from "@/hooks/media-viewer/useViewerGestures";
 
 interface MediaViewerProps {
   media: Media[];
@@ -30,8 +31,6 @@ interface MediaViewerProps {
   onPrevious: () => void;
   onSelect: (index: number) => void;
 }
-
-const clamp = (value: number, limit: number) => Math.min(Math.max(value, -limit), limit);
 
 function backdropHue(blurhash: string | null | undefined) {
   return [...(blurhash ?? "oriana")].reduce((total, character) => (total * 31 + character.charCodeAt(0)) % 360, 0);
@@ -54,13 +53,10 @@ export function MediaViewer({
   const [autoPlay, setAutoPlay] = useState(false);
   const [scale, setScale] = useState(1);
   const [translate, setTranslate] = useState({ x: 0, y: 0 });
-  const [isDragging, setIsDragging] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [controlsVisible, setControlsVisible] = useState(true);
   const [infoOpen, setInfoOpen] = useState(false);
   const [transitionDirection, setTransitionDirection] = useState(1);
-  const dragStartPos = useRef({ x: 0, y: 0 });
-  const pointerStart = useRef({ x: 0, y: 0 });
   const controlsTimer = useRef<number | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
@@ -88,31 +84,7 @@ export function MediaViewer({
   const resetZoom = useCallback(() => {
     setScale(1);
     setTranslate({ x: 0, y: 0 });
-    setIsDragging(false);
   }, []);
-
-  const constrainTranslate = useCallback((value: { x: number; y: number }, targetScale: number) => {
-    const bounds = stageRef.current?.getBoundingClientRect();
-    if (!bounds || targetScale <= 1) return { x: 0, y: 0 };
-
-    const maxX = Math.min((bounds.width * (targetScale - 1)) / 2, Math.max(0, bounds.width / 2 - 24));
-    const maxY = Math.min((bounds.height * (targetScale - 1)) / 2, Math.max(0, bounds.height / 2 - 24));
-    return { x: clamp(value.x, maxX), y: clamp(value.y, maxY) };
-  }, []);
-
-  const changeScale = useCallback((nextScale: number, anchor?: { x: number; y: number }) => {
-    setScale(nextScale);
-    setTranslate((current) => {
-      if (!anchor || !stageRef.current) return constrainTranslate(current, nextScale);
-      const bounds = stageRef.current.getBoundingClientRect();
-      const fromCenter = { x: anchor.x - bounds.left - bounds.width / 2, y: anchor.y - bounds.top - bounds.height / 2 };
-      const ratio = nextScale / scale;
-      return constrainTranslate({
-        x: fromCenter.x - (fromCenter.x - current.x) * ratio,
-        y: fromCenter.y - (fromCenter.y - current.y) * ratio,
-      }, nextScale);
-    });
-  }, [constrainTranslate, scale]);
 
   const toggleFullscreen = useCallback(() => {
     if (document.fullscreenElement === containerRef.current) {
@@ -122,7 +94,8 @@ export function MediaViewer({
     void containerRef.current?.requestFullscreen().catch(() => {});
   }, []);
 
-  const navigate = useCallback((direction: -1 | 1) => {
+  const navigate = useCallback((direction: -1 | 1, manual = true) => {
+    if (manual) setAutoPlay(false);
     resetZoom();
     setTransitionDirection(direction);
     if (direction === 1) onNext();
@@ -132,10 +105,32 @@ export function MediaViewer({
   }, [onNext, onPrevious, resetZoom]);
 
   const selectMedia = useCallback((index: number) => {
+    setAutoPlay(false);
     resetZoom();
     setTransitionDirection(index >= (currentIndex ?? 0) ? 1 : -1);
     onSelect(index);
   }, [currentIndex, onSelect, resetZoom]);
+
+  const { isPanning, onPointerDown, onPointerMove, onPointerUp, onPointerCancel, zoomAt } = useViewerGestures({
+    stageRef,
+    scale,
+    translate,
+    onTransform: ({ scale: nextScale, translate: nextTranslate }) => {
+      setScale(nextScale);
+      setTranslate(nextTranslate);
+    },
+    onNext: () => navigate(1),
+    onPrevious: () => navigate(-1),
+    onClose,
+    onOpenInfo: () => {
+      setAutoPlay(false);
+      setInfoOpen(true);
+      setControlsVisible(true);
+    },
+    onToggleControls: () => setControlsVisible((visible) => !visible),
+    onInteraction: () => setControlsVisible(true),
+    onZoom: () => setAutoPlay(false),
+  });
 
   useEffect(() => {
     const resetTimer = window.setTimeout(resetZoom, 0);
@@ -193,14 +188,14 @@ export function MediaViewer({
       if (event.key.toLowerCase() === "h") setControlsVisible((visible) => !visible);
       if (event.key.toLowerCase() === "i") setInfoOpen((open) => !open);
       if (event.key.toLowerCase() === "s") setAutoPlay((active) => !active);
-      if (event.key === "=" || event.key === "+") changeScale(Math.min(scale + 0.5, 5));
-      if (event.key === "-") changeScale(Math.max(scale - 0.5, 1));
+      if (event.key === "=" || event.key === "+") zoomAt(Math.min(scale + 0.5, 5));
+      if (event.key === "-") zoomAt(Math.max(scale - 0.5, 1));
       if (event.key === "0") resetZoom();
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [changeScale, item, navigate, onClose, resetZoom, scale, toggleFullscreen]);
+  }, [item, navigate, onClose, resetZoom, scale, toggleFullscreen, zoomAt]);
 
   useEffect(() => {
     if (!item) return;
@@ -230,40 +225,16 @@ export function MediaViewer({
 
   useEffect(() => {
     if (!item || !autoPlay || scale > 1 || infoOpen) return;
-    const timer = window.setInterval(() => navigate(1), item.media_type === "video" ? 9000 : 4200);
+    const timer = window.setInterval(() => navigate(1, false), item.media_type === "video" ? 9000 : 4200);
     return () => window.clearInterval(timer);
   }, [autoPlay, infoOpen, item, navigate, scale]);
 
   const handleWheel = (event: React.WheelEvent) => {
     event.preventDefault();
     const nextScale = Math.min(Math.max(1, scale - event.deltaY * 0.005), 5);
-    changeScale(nextScale, { x: event.clientX, y: event.clientY });
+    setAutoPlay(false);
+    zoomAt(nextScale, { x: event.clientX, y: event.clientY });
     setControlsVisible(true);
-  };
-
-  const handlePointerDown = (event: React.PointerEvent) => {
-    pointerStart.current = { x: event.clientX, y: event.clientY };
-    setIsDragging(scale > 1);
-    event.currentTarget.setPointerCapture(event.pointerId);
-    dragStartPos.current = { x: event.clientX - translate.x, y: event.clientY - translate.y };
-  };
-
-  const handlePointerMove = (event: React.PointerEvent) => {
-    if (!isDragging || scale <= 1) return;
-    setTranslate(constrainTranslate({
-      x: event.clientX - dragStartPos.current.x,
-      y: event.clientY - dragStartPos.current.y,
-    }, scale));
-  };
-
-  const handlePointerUp = (event: React.PointerEvent) => {
-    const deltaX = event.clientX - pointerStart.current.x;
-    const deltaY = event.clientY - pointerStart.current.y;
-    if (scale <= 1 && Math.abs(deltaX) > 56 && Math.abs(deltaX) > Math.abs(deltaY) * 1.4) {
-      navigate(deltaX < 0 ? 1 : -1);
-    }
-    setIsDragging(false);
-    if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
   };
 
   return (
@@ -387,16 +358,15 @@ export function MediaViewer({
                 transition={{ duration: 0.21, ease: [0.22, 1, 0.36, 1] }}
               >
                 <div
-                  className={`relative flex h-full w-full items-center justify-center ${scale > 1 ? (isDragging ? "cursor-grabbing" : "cursor-grab") : "cursor-default"}`}
+                  className={`relative flex h-full w-full touch-none select-none items-center justify-center ${scale > 1 ? (isPanning ? "cursor-grabbing" : "cursor-grab") : "cursor-default"}`}
                   onContextMenu={protectAssets ? (event) => event.preventDefault() : undefined}
-                  onPointerDown={handlePointerDown}
-                  onPointerMove={handlePointerMove}
-                  onPointerUp={handlePointerUp}
-                  onPointerCancel={handlePointerUp}
-                  onDoubleClick={(event) => changeScale(scale > 1 ? 1 : 2, { x: event.clientX, y: event.clientY })}
+                  onPointerDown={onPointerDown}
+                  onPointerMove={onPointerMove}
+                  onPointerUp={onPointerUp}
+                  onPointerCancel={onPointerCancel}
                   style={{
                     transform: `translate3d(${translate.x}px, ${translate.y}px, 0) scale(${scale})`,
-                    transition: isDragging ? "none" : "transform 0.1s ease-out",
+                    transition: isPanning ? "none" : "transform 0.16s cubic-bezier(.22,1,.36,1)",
                   }}
                 >
                   {isImageLoading ? (
