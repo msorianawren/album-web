@@ -230,6 +230,12 @@ export function PuzzleAtelier({ initialChallenges, initialResults, signedIn, cop
       const value = payload.data.completion as Completion;
       setCompletion(value);
       setResults((current) => ({ ...current, [resultId]: { bestTimeMs: finalElapsed, bestMoveCount: nextMoves, bestReward: value?.rewardEarned ?? 0, completionCount: value?.completionCount ?? 1 } }));
+      
+      if (value && value.rewardEarned > 0) {
+        window.dispatchEvent(new CustomEvent("wren-feathers-update", {
+          detail: { rewardGranted: value.rewardEarned, balanceAfter: value.totalFeathers }
+        }));
+      }
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Could not verify this puzzle.");
     } finally {

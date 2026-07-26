@@ -275,7 +275,7 @@ export default function QuietMeadowGame({
     gridTemplateColumns: `repeat(${state.width}, minmax(0, 1fr))`,
     gap: "2px",
     width: "100%",
-    maxWidth: state.width * 36 + "px",
+    maxWidth: `min(100%, 65dvh, ${state.width * 36}px)`,
     margin: "0 auto",
   }), [state.width]);
 
