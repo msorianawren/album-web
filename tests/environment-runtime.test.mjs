@@ -136,7 +136,7 @@ test("chime anchors use stable selectors, fail safely, and never use section ind
   assert.match(anchors, /data-environment-anchor='footer-branch'/);
   assert.doesNotMatch(anchors, /sectionIndex/);
   assert.match(resolver, /filter\(\(entry\).*Boolean\(entry\[1\]\)/s);
-  assert.match(resolver, /slice\(0, 2\)/);
+  assert.doesNotMatch(resolver, /slice\(0, 2\)/);
 });
 
 test("AboutClockwork immutable geometry, formulas, and pointers are strictly preserved", () => {

@@ -74,11 +74,6 @@ export function useChimeAnchorRects(slots: ChimeAnchorSlot[]) {
           distance: Math.abs(targetRect.top - window.innerHeight / 2),
         };
       });
-      const nearestVisibleIds = new Set(positioned
-        .filter((entry) => entry.visible)
-        .sort((left, right) => left.distance - right.distance)
-        .slice(0, 2)
-        .map((entry) => entry.id));
       const next: ChimeAnchorRect[] = positioned.map((entry) => ({
         id: entry.id,
         selector: entry.selector,
@@ -92,7 +87,7 @@ export function useChimeAnchorRects(slots: ChimeAnchorSlot[]) {
         top: entry.top,
         widthPx: entry.widthPx,
         heightPx: entry.heightPx,
-        visible: nearestVisibleIds.has(entry.id),
+        visible: entry.visible,
       }));
       setRects((current) => sameRects(current, next) ? current : next);
     };

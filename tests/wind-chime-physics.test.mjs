@@ -90,7 +90,7 @@ test("album detail keeps its chimes while running the canvas only on demand", as
   assert.match(environment, /function isAlbumDetailRoute/);
   assert.match(environment, /const albumChimeOnly = isAlbumDetailRoute\(pathname\)/);
   assert.match(environment, /\(\) => getWindChimeAnchors\(pathname\)/);
-  assert.match(environment, /const interactiveChimesEnabled = showEnvironment && quality\.enabled/);
+  assert.match(environment, /const interactiveChimesEnabled = !mediaViewerOpen && !gameRuntimeSuspended && quality\.enabled/);
   assert.match(environment, /const canvasActive = interactiveChimesEnabled/);
   assert.match(environment, /chimeOnly=\{albumChimeOnly\}/);
   assert.match(canvas, /frameloop=\{chimeOnly \|\| !active \|\| reducedMotion \? "demand" : "always"\}/);
@@ -116,7 +116,8 @@ test("explicit chime controls initialize and play distinct material previews", a
     readFile(new URL("../src/lib/environment/chime-materials.ts", import.meta.url), "utf8"),
   ]);
   assert.match(environment, /audioUX\.playWindChimePreview/);
-  assert.match(environment, /window\.dispatchEvent\(new CustomEvent\("oriana-chime-impulse"/);
+  assert.match(environment, /window\.dispatchEvent\(new CustomEvent\("oriana-chime-activate"/);
+  assert.match(environment, /onPointerDown=/);
   assert.doesNotMatch(environment, /if \(soundEnabled\) audioUX\.playWindChime/);
   assert.match(audio, /public playWindChimePreview/);
   assert.match(audio, /this\.init\(\)/);

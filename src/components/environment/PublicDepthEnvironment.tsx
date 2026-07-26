@@ -69,9 +69,11 @@ function subscribeLocale() {
 }
 
 function getChimeControlRect(rect: ReturnType<typeof useChimeAnchorRects>[number]) {
-  const width = Math.min(112, rect.widthPx * .56);
-  const height = Math.min(158, rect.heightPx * .72);
-  return { left: rect.left + (rect.widthPx - width) / 2, top: rect.top + 12, width, height };
+  const width = Math.min(144, rect.widthPx * .8);
+  const height = Math.min(208, rect.heightPx * .94);
+  // The scene origin is the canopy hook; the visible tubes hang below it.
+  // Align the hit area with the body people actually tap, not the hook.
+  return { left: rect.left + (rect.widthPx - width) / 2, top: rect.top + 42, width, height };
 }
 
 function hitChime(rects: ReturnType<typeof useChimeAnchorRects>, x: number, y: number) {
@@ -136,7 +138,10 @@ function PublicDepthEnvironmentContent({ pathname }: { pathname: string }) {
   );
   const rects = useChimeAnchorRects(slots);
   const showEnvironment = artistEnabled && !mediaViewerOpen && !gameRuntimeSuspended;
-  const interactiveChimesEnabled = showEnvironment && quality.enabled;
+  // The artist background can be disabled independently of the physical chimes.
+  // Keeping their lifecycle separate prevents a background refresh from making
+  // the interactive instruments disappear.
+  const interactiveChimesEnabled = !mediaViewerOpen && !gameRuntimeSuspended && quality.enabled;
   const environmentRects = useMemo(
     () => interactiveChimesEnabled ? rects : [],
     [interactiveChimesEnabled, rects],
@@ -144,6 +149,14 @@ function PublicDepthEnvironmentContent({ pathname }: { pathname: string }) {
   const activeRects = useMemo(() => environmentRects.filter((rect) => rect.visible), [environmentRects]);
   const chimeLabel = locale === "vi" ? "Nghe chuông gió" : "Play the wind chime";
   const canvasActive = interactiveChimesEnabled && documentVisible === "true" && reducedMotion !== "true";
+  const playChime = useCallback((rect: typeof activeRects[number]) => {
+    const pan = Math.max(-.65, Math.min(.65, (rect.left + rect.widthPx / 2) / Math.max(1, Number(viewportWidth)) * 2 - 1));
+    // A direct, deliberate tap must remain audible even when the background's
+    // automatic chime volume was set very low.
+    const volume = Math.max(.24, preferences.chimeVolume / 100);
+    audioUX.playWindChimePreview({ frequency: rect.tone, pan, material: rect.material, volume });
+    window.dispatchEvent(new CustomEvent("oriana-chime-activate", { detail: { slotId: rect.id } }));
+  }, [preferences.chimeVolume, viewportWidth]);
 
   useEffect(() => {
     activeRectsRef.current = activeRects;
@@ -255,9 +268,12 @@ function PublicDepthEnvironmentContent({ pathname }: { pathname: string }) {
             className="public-chime-control"
             style={{ left: `${control.left}px`, top: `${control.top}px`, width: `${control.width}px`, height: `${control.height}px` }}
             aria-label={chimeLabel}
-            onClick={() => {
-              audioUX.playWindChimePreview({ frequency: rect.tone, pan, material: rect.material, volume: preferences.chimeVolume / 100 });
-              window.dispatchEvent(new CustomEvent("oriana-chime-impulse", { detail: { slotId: rect.id } }));
+            onPointerDown={(event) => {
+              if (event.button !== 0) return;
+              playChime(rect);
+            }}
+            onClick={(event) => {
+              if (event.detail === 0) playChime(rect);
             }}
             onDoubleClick={() => {
               audioUX.playWindChimeHarmony({ frequency: rect.tone, pan, material: rect.material, volume: preferences.chimeVolume / 100 });

@@ -225,9 +225,9 @@ export function WindChimeScene({
       if (!detail) return;
       impulse(detail.slotId, Math.floor(Math.random() * 5), 0.6, 0.3);
     };
-    const onKeyboard = (event: Event) => {
+    const onActivate = (event: Event) => {
       const detail = (event as CustomEvent<{ slotId: string }>).detail;
-      if (detail?.slotId) impulse(detail.slotId, 0, 0.42, 0.2);
+      if (detail?.slotId) impulse(detail.slotId, 0, 1.05, 0.52);
     };
     const onHover = (event: Event) => {
       const detail = (event as CustomEvent<{ slotId: string; velocityX: number; velocityY: number; entering: boolean }>).detail;
@@ -243,12 +243,12 @@ export function WindChimeScene({
       state.tubes.forEach((_, index) => impulse(detail.slotId, index, 0.42 - index * 0.035, 0.2));
     };
     window.addEventListener("oriana-chime-pointer", onPointer);
-    window.addEventListener("oriana-chime-impulse", onKeyboard);
+    window.addEventListener("oriana-chime-activate", onActivate);
     window.addEventListener("oriana-chime-hover", onHover);
     window.addEventListener("oriana-chime-cascade", onCascade);
     return () => {
       window.removeEventListener("oriana-chime-pointer", onPointer);
-      window.removeEventListener("oriana-chime-impulse", onKeyboard);
+      window.removeEventListener("oriana-chime-activate", onActivate);
       window.removeEventListener("oriana-chime-hover", onHover);
       window.removeEventListener("oriana-chime-cascade", onCascade);
     };
