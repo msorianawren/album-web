@@ -52,7 +52,7 @@ export function getGameRuntimeSuspensionDiagnostics() {
 export interface FixedStepRuntimeOptions {
   stepMs?: number;
   maximumCatchUpSteps?: number;
-  targetRenderFps?: 30 | 60;
+  targetRenderFps?: 30 | 60 | 120;
   onTick(tick: number): void;
   onRender?(interpolation: number): void;
 }
