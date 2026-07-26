@@ -85,6 +85,8 @@ export function useViewerGestures({
   const pointers = useRef(new Map<number, Point>());
   const session = useRef<GestureSession | null>(null);
   const transform = useRef<Transform>({ scale, translate });
+  const pendingTransform = useRef<Transform | null>(null);
+  const transformFrame = useRef<number | null>(null);
   const lastTap = useRef<Point | null>(null);
   const tapTimer = useRef<number | null>(null);
   const [isPanning, setIsPanning] = useState(false);
@@ -95,7 +97,30 @@ export function useViewerGestures({
 
   useEffect(() => () => {
     if (tapTimer.current) window.clearTimeout(tapTimer.current);
+    if (transformFrame.current) window.cancelAnimationFrame(transformFrame.current);
   }, []);
+
+  const flushTransform = useCallback(() => {
+    if (transformFrame.current) {
+      window.cancelAnimationFrame(transformFrame.current);
+      transformFrame.current = null;
+    }
+    const pending = pendingTransform.current;
+    pendingTransform.current = null;
+    if (pending) onTransform(pending);
+  }, [onTransform]);
+
+  const scheduleTransform = useCallback((next: Transform) => {
+    transform.current = next;
+    pendingTransform.current = next;
+    if (transformFrame.current) return;
+    transformFrame.current = window.requestAnimationFrame(() => {
+      transformFrame.current = null;
+      const pending = pendingTransform.current;
+      pendingTransform.current = null;
+      if (pending) onTransform(pending);
+    });
+  }, [onTransform]);
 
   const constrain = useCallback((value: { x: number; y: number }, targetScale: number, resistance = false) => {
     const bounds = stageRef.current?.getBoundingClientRect();
@@ -109,9 +134,8 @@ export function useViewerGestures({
 
   const applyTransform = useCallback((nextScale: number, nextTranslate: { x: number; y: number }) => {
     const next = { scale: clamp(nextScale, minimumScale, maximumScale), translate: nextTranslate };
-    transform.current = next;
-    onTransform(next);
-  }, [onTransform]);
+    scheduleTransform(next);
+  }, [scheduleTransform]);
 
   const zoomAt = useCallback((nextScale: number, anchor?: { x: number; y: number }, base = transform.current) => {
     const bounds = stageRef.current?.getBoundingClientRect();
@@ -231,6 +255,7 @@ export function useViewerGestures({
   }, [onToggleControls, onZoom, zoomAt]);
 
   const finishPointer = useCallback((event: ReactPointerEvent<HTMLDivElement>, cancelled = false) => {
+    flushTransform();
     const point = pointers.current.get(event.pointerId);
     const active = session.current;
     pointers.current.delete(event.pointerId);
@@ -277,7 +302,7 @@ export function useViewerGestures({
     if (intent === "previous") onPrevious();
     if (intent === "close") onClose();
     if (intent === "info") onOpenInfo();
-  }, [applyTransform, constrain, onClose, onNext, onOpenInfo, onPrevious, resolveTap, startSinglePointerSession]);
+  }, [applyTransform, constrain, flushTransform, onClose, onNext, onOpenInfo, onPrevious, resolveTap, startSinglePointerSession]);
 
   return {
     isPanning,

@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import { DownloadButton } from "@/components/media/DownloadButton";
 import { MediaLikeButton } from "@/components/media/MediaLikeButton";
 import { ReliableMediaImage } from "@/components/media/ReliableMediaImage";
@@ -15,7 +16,7 @@ interface ViewerFilmstripProps {
   onSelect: (index: number) => void;
 }
 
-export function ViewerFilmstrip({ media, item, currentIndex, albumStatus, downloadAllowed, onSelect }: ViewerFilmstripProps) {
+export const ViewerFilmstrip = memo(function ViewerFilmstrip({ media, item, currentIndex, albumStatus, downloadAllowed, onSelect }: ViewerFilmstripProps) {
   const visibleMedia = media.slice(Math.max(0, currentIndex - 10), currentIndex + 11);
   const delivery = getMediaDeliveryDescriptor(item, { albumStatus, isAuthorized: true, downloadAllowed });
 
@@ -63,4 +64,4 @@ export function ViewerFilmstrip({ media, item, currentIndex, albumStatus, downlo
       </div>
     </div>
   );
-}
+});

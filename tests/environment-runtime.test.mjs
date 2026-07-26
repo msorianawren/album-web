@@ -124,7 +124,7 @@ test("runtime fallbacks pause hidden or reduced-motion work and tolerate blocked
   const background = read("src/components/landing/NatureAnimatedBackground.tsx");
   assert.match(runtime, /!document\.hidden/);
   assert.match(runtime, /reducedMotion !== "true"/);
-  assert.match(canvas, /frameloop=\{active && !reducedMotion \? "always" : "demand"\}/);
+  assert.match(canvas, /frameloop=\{chimeOnly \|\| !active \|\| reducedMotion \? "demand" : "always"\}/);
   assert.match(background, /video\.play\(\)\.catch/);
   assert.match(background, /video\.pause\(\)/);
 });

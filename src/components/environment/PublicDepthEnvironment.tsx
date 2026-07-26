@@ -131,14 +131,14 @@ function PublicDepthEnvironmentContent({ pathname }: { pathname: string }) {
     () => resolveEnvironmentQuality(mode, Number(viewportWidth), saveData === "true"),
     [mode, saveData, viewportWidth],
   );
-  const prioritizeAlbumMedia = isAlbumDetailRoute(pathname);
+  const albumChimeOnly = isAlbumDetailRoute(pathname);
   const slots = useMemo(
-    () => prioritizeAlbumMedia ? [] : getWindChimeAnchors(pathname),
-    [pathname, prioritizeAlbumMedia],
+    () => getWindChimeAnchors(pathname),
+    [pathname],
   );
   const rects = useChimeAnchorRects(slots);
   const showEnvironment = artistEnabled && !mediaViewerOpen && !gameRuntimeSuspended;
-  const interactiveChimesEnabled = showEnvironment && quality.enabled && !prioritizeAlbumMedia;
+  const interactiveChimesEnabled = showEnvironment && quality.enabled;
   const environmentRects = useMemo(
     () => interactiveChimesEnabled ? rects : [],
     [interactiveChimesEnabled, rects],
@@ -286,6 +286,7 @@ function PublicDepthEnvironmentContent({ pathname }: { pathname: string }) {
           preferences={preferences}
           quality={quality}
           active={canvasActive}
+          chimeOnly={albumChimeOnly}
           onUnavailable={handleWebglUnavailable}
         />
       ) : null}

@@ -90,6 +90,15 @@ export function MediaViewer({
   const ambientHue = backdropHue(delivery?.blurhash);
   const drift = item ? cinematicDrift(item.id) : null;
   const driftEnabled = Boolean(autoPlay && slideshowPace !== "still" && item?.media_type === "image" && !reducedMotion);
+  const controlsVisibleRef = useRef(controlsVisible);
+
+  useEffect(() => {
+    controlsVisibleRef.current = controlsVisible;
+  }, [controlsVisible]);
+
+  const revealControls = useCallback(() => {
+    if (!controlsVisibleRef.current) setControlsVisible(true);
+  }, [setControlsVisible]);
 
   const resetZoom = useCallback(() => {
     setScale(1);
@@ -120,6 +129,17 @@ export function MediaViewer({
     setTransitionDirection(index >= (currentIndex ?? 0) ? 1 : -1);
     onSelect(index);
   }, [currentIndex, onSelect, resetZoom, setAutoPlay, setTransitionDirection]);
+
+  const handleImageLoad = useCallback(() => {
+    if (!item || currentIndex === null) return;
+    setLoadedImages((current) => ({ ...current, [item.id]: true }));
+    const next = media[(currentIndex + 1) % media.length];
+    if (next) prefetch(next.id, next.media_type === "video");
+  }, [currentIndex, item, media, prefetch, setLoadedImages]);
+
+  const handleImageUnavailable = useCallback(() => {
+    if (item) setLoadedImages((current) => ({ ...current, [item.id]: true }));
+  }, [item, setLoadedImages]);
 
   const { isPanning, onPointerDown, onPointerMove, onPointerUp, onPointerCancel, zoomAt } = useViewerGestures({
     stageRef,
@@ -286,7 +306,7 @@ export function MediaViewer({
           role="dialog"
           aria-modal="true"
           aria-label="Media viewer"
-          onPointerMove={() => setControlsVisible(true)}
+          onPointerMove={revealControls}
         >
           <ViewerBackdrop hue={ambientHue} />
           {controlsVisible ? (
@@ -371,12 +391,8 @@ export function MediaViewer({
                       className="pointer-events-none h-auto w-auto max-h-full max-w-full object-contain transition-opacity duration-200"
                       priority
                       draggable={false}
-                      onLoad={() => {
-                        setLoadedImages((current) => ({ ...current, [item.id]: true }));
-                        const next = media[(currentIndex! + 1) % media.length];
-                        if (next) prefetch(next.id, next.media_type === "video");
-                      }}
-                      onUnavailable={() => setLoadedImages((current) => ({ ...current, [item.id]: true }))}
+                      onLoad={handleImageLoad}
+                      onUnavailable={handleImageUnavailable}
                     />
                   ) : failedVideos[item.id] || !viewerTarget.src ? (
                     <div className="flex min-h-64 min-w-64 items-center justify-center rounded-[18px] border border-white/10 bg-white/5 px-8 text-center text-sm text-white/65">

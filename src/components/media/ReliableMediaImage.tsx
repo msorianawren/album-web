@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { ImageOff } from "lucide-react";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { memo, useEffect, useRef, useState, type ReactNode } from "react";
 import type { MediaDeliveryTarget } from "@/lib/media/delivery";
 
 interface ReliableMediaImageProps {
@@ -22,10 +22,10 @@ interface ReliableMediaImageProps {
   blurhash?: string | null;
 }
 
-export function ReliableMediaImage(props: ReliableMediaImageProps) {
+export const ReliableMediaImage = memo(function ReliableMediaImage(props: ReliableMediaImageProps) {
   const signature = props.target.candidates.map((candidate) => candidate.src).join("\n");
   return <ReliableMediaImageAttempt key={signature} {...props} />;
-}
+});
 
 function ReliableMediaImageAttempt({
   target,

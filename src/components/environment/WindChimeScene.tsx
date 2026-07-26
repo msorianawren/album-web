@@ -148,6 +148,7 @@ export function WindChimeScene({
   preferences,
   state,
   active,
+  demandDriven = false,
 }: {
   anchors: ChimeAnchorRect[];
   reducedMotion: boolean;
@@ -155,6 +156,7 @@ export function WindChimeScene({
   preferences: EnvironmentPreferences;
   state: EnvironmentState;
   active: boolean;
+  demandDriven?: boolean;
 }) {
   const { size, viewport, invalidate } = useThree();
   const { soundEnabled } = useUIPreferences();
@@ -252,6 +254,24 @@ export function WindChimeScene({
     };
   }, [impulse, reducedMotion]);
 
+  useEffect(() => {
+    if (!demandDriven || !active || reducedMotion) return;
+    const autoRate = automaticChimeRate(preferences.windSpeed * state.wind, preferences.autoChimeFrequency);
+    if (autoRate <= 0) return;
+    let timer: number | undefined;
+    const scheduleImpact = () => {
+      timer = window.setTimeout(() => {
+        const anchor = visibleAnchors[Math.floor(performance.now() / 1000 * 1.7) % visibleAnchors.length];
+        if (anchor) impulse(anchor.id, Math.floor(performance.now() / 1000 * 2.3) % anchor.tubeCount, .18 + wind.current.current.gust * .22, .07);
+        scheduleImpact();
+      }, Math.max(2_800, 15_000 - autoRate * 11_000));
+    };
+    scheduleImpact();
+    return () => {
+      if (timer) window.clearTimeout(timer);
+    };
+  }, [active, demandDriven, impulse, preferences.autoChimeFrequency, preferences.windSpeed, reducedMotion, state.wind, visibleAnchors, wind]);
+
   useFrame(({ clock }, delta) => {
     let moving = false;
     anchors.forEach((anchor) => {
@@ -268,7 +288,7 @@ export function WindChimeScene({
         });
       }
       const autoRate = automaticChimeRate(preferences.windSpeed * state.wind, preferences.autoChimeFrequency);
-      if (autoRate > 0 && clock.elapsedTime >= nextAutomaticImpact.current) {
+      if (!demandDriven && autoRate > 0 && clock.elapsedTime >= nextAutomaticImpact.current) {
         const index = Math.floor(clock.elapsedTime * 1.7) % Math.max(visibleAnchors.length, 1);
         const anchor = visibleAnchors[index];
         if (anchor) impulse(anchor.id, Math.floor(clock.elapsedTime * 2.3) % anchor.tubeCount, .18 + wind.current.current.gust * .22, .07);

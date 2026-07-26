@@ -30,6 +30,7 @@ export function EnvironmentScene({
   anchors,
   reducedMotion,
   active,
+  chimeOnly = false,
 }: {
   state: EnvironmentState;
   preferences: EnvironmentPreferences;
@@ -37,6 +38,7 @@ export function EnvironmentScene({
   anchors: ChimeAnchorRect[];
   reducedMotion: boolean;
   active: boolean;
+  chimeOnly?: boolean;
 }) {
   const wind = useRef(createWindRuntime());
 
@@ -64,7 +66,7 @@ export function EnvironmentScene({
     <>
       <EnvironmentLightingRig state={state} preferences={preferences} quality={quality} />
       
-      <group scale={[1, 1, scaleZ]}>
+      {!chimeOnly ? <group scale={[1, 1, scaleZ]}>
         {!dev.vegetationOnly && state.preset !== "mist" && (
           <EnvironmentAtmosphere state={state} preferences={preferences} wind={wind} active={active && !reducedMotion} />
         )}
@@ -95,7 +97,7 @@ export function EnvironmentScene({
         {!dev.atmosphereOnly && (
           <EnvironmentBirds state={state} preferences={preferences} quality={quality} wind={wind} active={active && !reducedMotion} />
         )}
-      </group>
+      </group> : null}
       
       {!dev.atmosphereOnly && !dev.vegetationOnly && (
         <WindChimeScene
@@ -103,9 +105,10 @@ export function EnvironmentScene({
         reducedMotion={reducedMotion}
         wind={wind}
         preferences={preferences}
-        state={state}
-        active={active}
-      />
+          state={state}
+          active={active}
+          demandDriven={chimeOnly}
+        />
       )}
     </>
   );

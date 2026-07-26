@@ -79,16 +79,23 @@ test("document anchors scroll smoothly while pointer input only produces local i
   assert.doesNotMatch(scene, /position\.set\([^)]*pointer|lerp\([^)]*pointer/i);
 });
 
-test("album detail prioritizes media over the decorative WebGL scene and chime measurements stay stable", async () => {
-  const [environment, scene, anchorHook] = await Promise.all([
+test("album detail keeps its chimes while running the canvas only on demand", async () => {
+  const [environment, canvas, environmentScene, scene, anchorHook] = await Promise.all([
     readFile(new URL("../src/components/environment/PublicDepthEnvironment.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../src/components/environment/PublicEnvironmentCanvas.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../src/components/environment/EnvironmentScene.tsx", import.meta.url), "utf8"),
     readFile(new URL("../src/components/environment/WindChimeScene.tsx", import.meta.url), "utf8"),
     readFile(new URL("../src/components/environment/useChimeAnchorRects.ts", import.meta.url), "utf8"),
   ]);
   assert.match(environment, /function isAlbumDetailRoute/);
-  assert.match(environment, /prioritizeAlbumMedia \? \[\] : getWindChimeAnchors\(pathname\)/);
-  assert.match(environment, /const interactiveChimesEnabled = showEnvironment && quality\.enabled && !prioritizeAlbumMedia/);
+  assert.match(environment, /const albumChimeOnly = isAlbumDetailRoute\(pathname\)/);
+  assert.match(environment, /\(\) => getWindChimeAnchors\(pathname\)/);
+  assert.match(environment, /const interactiveChimesEnabled = showEnvironment && quality\.enabled/);
   assert.match(environment, /const canvasActive = interactiveChimesEnabled/);
+  assert.match(environment, /chimeOnly=\{albumChimeOnly\}/);
+  assert.match(canvas, /frameloop=\{chimeOnly \|\| !active \|\| reducedMotion \? "demand" : "always"\}/);
+  assert.match(environmentScene, /demandDriven=\{chimeOnly\}/);
+  assert.match(scene, /demandDriven = false/);
   assert.doesNotMatch(anchorHook, /MutationObserver/);
   assert.doesNotMatch(scene, /onGlobalClick|new THREE\.Raycaster|window\.addEventListener\("click"/);
 });

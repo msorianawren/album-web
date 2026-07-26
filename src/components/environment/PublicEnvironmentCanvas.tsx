@@ -15,6 +15,7 @@ export function PublicEnvironmentCanvas({
   preferences,
   quality,
   active,
+  chimeOnly = false,
   onUnavailable,
 }: {
   rects: ChimeAnchorRect[];
@@ -23,6 +24,7 @@ export function PublicEnvironmentCanvas({
   preferences: EnvironmentPreferences;
   quality: EnvironmentQuality;
   active: boolean;
+  chimeOnly?: boolean;
   onUnavailable?: () => void;
 }) {
   const [unavailable, setUnavailable] = useState(false);
@@ -46,7 +48,7 @@ export function PublicEnvironmentCanvas({
     <div className="public-chime-canvas" aria-hidden="true">
       <Canvas
         dpr={quality.dpr}
-        frameloop={active && !reducedMotion ? "always" : "demand"}
+        frameloop={chimeOnly || !active || reducedMotion ? "demand" : "always"}
         camera={{ position: [0, 0, 12], fov: 42 }}
         gl={{ alpha: true, antialias: true, powerPreference: "high-performance" }}
         onCreated={handleCreated}
@@ -59,6 +61,7 @@ export function PublicEnvironmentCanvas({
             preferences={preferences}
             quality={quality}
             active={active}
+            chimeOnly={chimeOnly}
           />
         </Suspense>
       </Canvas>
