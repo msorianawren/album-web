@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState, useMemo } from "react";
 import { Button } from "@/components/ui/Button";
 import { useGameAudio } from "@/games/core/audio-context.client";
 import type { GameClientProps, FinalizeGameSessionResponse, GameInputAction, GameReplayTrace } from "@/games/core/types";
+import { createFixedStepRuntime } from "@/games/core/runtime";
 import { createQuietMeadowState, revealCell, toggleFlag } from "./model";
 import type { QuietMeadowState, QuietMeadowDifficulty } from "./types";
 import { quietMeadowDifficulties } from "./config";
@@ -21,6 +22,9 @@ export default function QuietMeadowGame({
   quality = "balanced",
   signedIn,
 }: GameClientProps) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const fogRef = useRef<Array<{ x: number; y: number; vx: number; vy: number; size: number; alpha: number; phase: number }>>([]);
+  
   const [difficulty, setDifficulty] = useState<QuietMeadowDifficulty>("meadow");
   const [currentSeed, setCurrentSeed] = useState(generatePracticeSeed());
   const [state, setState] = useState<QuietMeadowState>(() => createQuietMeadowState(quietMeadowDifficulties["meadow"], currentSeed));
@@ -198,6 +202,71 @@ export default function QuietMeadowGame({
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [status, pause]);
 
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    
+    // Initialize fog
+    if (fogRef.current.length === 0) {
+      for (let i = 0; i < (quality === "high" ? 40 : 20); i++) {
+        fogRef.current.push({
+          x: Math.random() * window.innerWidth,
+          y: Math.random() * window.innerHeight,
+          vx: (Math.random() - 0.5) * 0.5,
+          vy: (Math.random() - 0.5) * 0.5,
+          size: Math.random() * 80 + 40,
+          alpha: Math.random() * 0.15 + 0.05,
+          phase: Math.random() * Math.PI * 2,
+        });
+      }
+    }
+
+    const runtime = createFixedStepRuntime({
+      stepMs: 1000 / 60,
+      targetRenderFps: quality === "high" ? 120 : quality === "balanced" ? 60 : 30,
+      onTick(tick) {
+        const speed = quality === "high" ? 0.5 : 1;
+        fogRef.current.forEach(p => {
+          p.x += p.vx * speed;
+          p.y += p.vy * speed;
+          p.phase += 0.01 * speed;
+          
+          if (p.x < -p.size) p.x = canvas.width + p.size;
+          if (p.x > canvas.width + p.size) p.x = -p.size;
+          if (p.y < -p.size) p.y = canvas.height + p.size;
+          if (p.y > canvas.height + p.size) p.y = -p.size;
+        });
+      },
+      onRender() {
+        const rect = canvas.getBoundingClientRect();
+        if (canvas.width !== rect.width || canvas.height !== rect.height) {
+          canvas.width = rect.width;
+          canvas.height = rect.height;
+        }
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return;
+        
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        fogRef.current.forEach(p => {
+          const currentAlpha = p.alpha + Math.sin(p.phase) * 0.05;
+          if (currentAlpha <= 0) return;
+          
+          ctx.beginPath();
+          const grad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.size);
+          grad.addColorStop(0, `rgba(255, 255, 255, ${currentAlpha})`);
+          grad.addColorStop(1, "rgba(255, 255, 255, 0)");
+          ctx.fillStyle = grad;
+          ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+          ctx.fill();
+        });
+      }
+    });
+    
+    runtime.start();
+    return () => runtime.destroy();
+  }, [quality]);
+
   const boardStyle = useMemo(() => ({
     display: "grid",
     gridTemplateColumns: `repeat(${state.width}, minmax(0, 1fr))`,
@@ -210,12 +279,13 @@ export default function QuietMeadowGame({
   return (
     <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_18rem]">
       <div 
-        className="relative overflow-hidden rounded-[1.5rem] border border-[var(--glass-border)] bg-[#f7f9f6] shadow-2xl p-6"
+        className="relative overflow-hidden rounded-[1.5rem] border border-[var(--glass-border)] bg-gradient-to-br from-[#f7f9f6] to-[#eaf2e8] shadow-2xl p-6"
         data-game-board-hash={state.seed}
         data-game-revealed={state.revealedCount}
         data-game-flags={state.flagCount}
         data-game-result={state.status === "ready" ? "playing" : state.status}
       >
+        <canvas ref={canvasRef} className="absolute inset-0 pointer-events-none z-0 w-full h-full opacity-60 mix-blend-screen" />
         
         {status !== "running" && (
           <div className="absolute z-10 inset-0 flex items-center justify-center bg-background/45 p-5 backdrop-blur-[3px]">
@@ -260,7 +330,7 @@ export default function QuietMeadowGame({
           )}
         </div>
 
-        <div style={boardStyle} aria-label="Minesweeper board" role="grid" className="touch-none select-none">
+        <div style={boardStyle} aria-label="Minesweeper board" role="grid" className="relative z-10 touch-none select-none">
           {state.cells.map((cell, i) => {
             const x = i % state.width;
             const y = Math.floor(i / state.width);
@@ -273,10 +343,10 @@ export default function QuietMeadowGame({
                 onContextMenu={(e) => handleContextMenu(e, x, y)}
                 disabled={status !== "running" && status !== "complete"}
                 aria-label={cell.isRevealed ? (cell.isMine ? "Exploded mine" : cell.adjacentMines > 0 ? `Revealed ${cell.adjacentMines}` : "Revealed empty") : cell.isFlagged ? "Flagged" : "Hidden"}
-                className={`aspect-square w-full rounded flex items-center justify-center text-sm font-bold transition-colors
+                className={`aspect-square w-full rounded flex items-center justify-center text-sm font-bold transition-all duration-300
                   ${cell.isRevealed 
-                    ? (cell.isMine ? "bg-red-200 text-red-700" : "bg-[#e2e8df] text-[#3a4f41]") 
-                    : "bg-[#b8c9bc] hover:bg-[#a3b8aa] cursor-pointer"}
+                    ? (cell.isMine ? "bg-red-200 text-red-700 shadow-inner scale-95" : "bg-[#e2e8df] text-[#3a4f41] shadow-inner scale-100") 
+                    : "bg-gradient-to-b from-[#b8c9bc] to-[#a3b8aa] hover:from-[#a3b8aa] hover:to-[#8c9e93] cursor-pointer shadow-md hover:shadow-sm scale-100"}
                 `}
               >
                 {cell.isRevealed && !cell.isMine && cell.adjacentMines > 0 && cell.adjacentMines}

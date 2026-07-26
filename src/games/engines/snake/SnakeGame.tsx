@@ -41,15 +41,14 @@ function drawSnake(
   context.clearRect(0, 0, width, height);
   
   // Base dark background outside the grid
-  context.fillStyle = "#0d1410";
+  context.fillStyle = "#1b262c";
   context.fillRect(0, 0, width, height);
   
-  // Draw Grass Checkerboard
+  // Draw Grass Checkerboard (Vibrant mystical forest)
   for (let y = 0; y < state.height; y += 1) {
     for (let x = 0; x < state.width; x += 1) {
-      // Checkerboard pattern of rich grass colors
       const isEven = (x + y) % 2 === 0;
-      context.fillStyle = isEven ? "#2e5033" : "#27442b"; 
+      context.fillStyle = isEven ? "#2a3b45" : "#212f38"; 
       context.fillRect(offsetX + x * cell, offsetY + y * cell, cell + 0.5, cell + 0.5);
     }
   }
@@ -103,14 +102,15 @@ function drawSnake(
       context.beginPath();
       context.moveTo(offsetX + start.x * cell + cell * 0.5, offsetY + start.y * cell + cell * 0.5);
       context.lineTo(offsetX + end.x * cell + cell * 0.5, offsetY + end.y * cell + cell * 0.5);
-      context.strokeStyle = `rgba(218, 236, 209, ${Math.max(0.45, 1 - i * 0.035)})`;
+      // Bright neon cyan body fading
+      context.strokeStyle = `rgba(0, 212, 255, ${Math.max(0.4, 1 - i * 0.04)})`;
       context.stroke();
     }
 
     // Draw Head
     context.shadowBlur = cell * 0.8;
-    context.shadowColor = "rgba(255, 247, 232, 0.8)";
-    context.fillStyle = "#fff7e8";
+    context.shadowColor = "rgba(0, 255, 255, 0.9)";
+    context.fillStyle = "#e0fbfc";
     context.beginPath();
     context.arc(
       offsetX + head.x * cell + cell * 0.5, 
@@ -159,13 +159,13 @@ function drawSnake(
   const pulse = Math.sin(performance.now() / 200) * 0.05 + 0.95;
   const foodCenterX = offsetX + (state.food.x + 0.5) * cell;
   const foodCenterY = offsetY + (state.food.y + 0.5) * cell;
-  const foodRadius = cell * 0.32 * pulse;
+  const foodRadius = cell * 0.35 * pulse;
   
-  context.shadowBlur = cell * 0.5 * pulse;
-  context.shadowColor = "rgba(255, 100, 120, 0.6)";
+  context.shadowBlur = cell * 0.6 * pulse;
+  context.shadowColor = "rgba(238, 108, 77, 0.8)";
   
   // Berry body
-  context.fillStyle = "#ff4d6d";
+  context.fillStyle = "#ee6c4d";
   context.beginPath();
   context.arc(foodCenterX, foodCenterY, foodRadius, 0, Math.PI * 2);
   context.fill();
@@ -173,13 +173,13 @@ function drawSnake(
   context.shadowBlur = 0;
   
   // Berry highlight (shiny effect)
-  context.fillStyle = "rgba(255, 255, 255, 0.5)";
+  context.fillStyle = "rgba(255, 255, 255, 0.6)";
   context.beginPath();
   context.ellipse(foodCenterX - foodRadius * 0.3, foodCenterY - foodRadius * 0.3, foodRadius * 0.3, foodRadius * 0.15, -Math.PI / 4, 0, Math.PI * 2);
   context.fill();
   
   // Berry leaf
-  context.fillStyle = "#74c69d";
+  context.fillStyle = "#98c1d9";
   context.beginPath();
   context.ellipse(foodCenterX + foodRadius * 0.2, foodCenterY - foodRadius * 0.7, foodRadius * 0.4, foodRadius * 0.15, Math.PI / 4, 0, Math.PI * 2);
   context.fill();
@@ -250,7 +250,7 @@ export default function SnakeGame({
     if (!canvas) return;
     const runtime = createFixedStepRuntime({
       stepMs: speed === "slow" ? 150 : speed === "normal" ? 100 : 70,
-      targetRenderFps: quality === "low" ? 30 : 60,
+      targetRenderFps: quality === "high" ? 120 : quality === "balanced" ? 60 : 30,
       onTick(tick) {
         previousBodyRef.current = stateRef.current.body.map(p => ({ ...p }));
 

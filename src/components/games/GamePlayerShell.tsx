@@ -8,6 +8,7 @@ import {
   Sparkles,
   Volume2,
   VolumeX,
+  Settings2,
 } from "lucide-react";
 import {
   useEffect,
@@ -27,7 +28,7 @@ import { resolveGameQuality } from "@/games/core/quality";
 import { acquireGameRuntimeSuspension } from "@/games/core/runtime";
 import { loadGameClientModule, type LoadedGameComponent } from "@/games/loaders.client";
 
-function AudioControls() {
+function AudioControls({ quality, onCycleQuality }: { quality: string, onCycleQuality: () => void }) {
   const audio = useGameAudio();
   return (
     <div className="flex flex-wrap items-center gap-2" aria-label="Game audio controls">
@@ -66,6 +67,14 @@ function AudioControls() {
         <Sparkles className="h-4 w-4" />
         Effects
       </Button>
+      <Button
+        variant="secondary"
+        onClick={onCycleQuality}
+        title="Cycle Graphics Quality"
+      >
+        <Settings2 className="h-4 w-4" />
+        {quality === "high" ? "High" : quality === "balanced" ? "Balanced" : "Low"}
+      </Button>
     </div>
   );
 }
@@ -83,6 +92,23 @@ function Player({
   const [reducedMotion, setReducedMotion] = useState(false);
   const [quality, setQuality] = useState<"low" | "balanced" | "high">("balanced");
   const resumeAfterVisibilityRef = useRef(false);
+  const [manualQuality, setManualQuality] = useState<"low" | "balanced" | "high" | null>(null);
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem("game:graphics:quality");
+      if (stored && ["low", "balanced", "high"].includes(stored)) {
+        setManualQuality(stored as any);
+      }
+    } catch {}
+  }, []);
+
+  const cycleQuality = () => {
+    const active = manualQuality || quality;
+    const next = active === "high" ? "balanced" : active === "balanced" ? "low" : "high";
+    setManualQuality(next);
+    try { localStorage.setItem("game:graphics:quality", next); } catch {}
+  };
 
   useEffect(() => {
     const motion = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -147,8 +173,8 @@ function Player({
     ...initialGameProps,
     onEngineStatusChange: setStatus,
     reducedMotion,
-    quality,
-  }), [initialGameProps, quality, reducedMotion]);
+    quality: manualQuality || quality,
+  }), [initialGameProps, quality, manualQuality, reducedMotion]);
 
   const TypedGame = Game as ComponentType<GameClientProps & Record<string, unknown>> | null;
 
@@ -163,7 +189,7 @@ function Player({
         <Link href="/games">
           <Button variant="secondary"><ArrowLeft className="h-4 w-4" />Game Hub</Button>
         </Link>
-        <AudioControls />
+        <AudioControls quality={manualQuality || quality} onCycleQuality={cycleQuality} />
       </div>
       <header className="mb-7 grid gap-3 border-b border-border/70 pb-7 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
         <div>

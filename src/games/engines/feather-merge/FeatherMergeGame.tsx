@@ -16,18 +16,18 @@ import {
 import { motion } from "framer-motion";
 
 const palette: Record<number, string> = {
-  0: "rgba(255,255,255,.14)",
-  2: "#f8e8dd",
-  4: "#f6d4c6",
-  8: "#eeb8b0",
-  16: "#d99c99",
-  32: "#c17f82",
-  64: "#9d6874",
-  128: "#7f5c70",
-  256: "#65516a",
-  512: "#4c435d",
-  1024: "#37364f",
-  2048: "#24283d",
+  0: "rgba(255,255,255,.1)",
+  2: "#e0fbfc",
+  4: "#98c1d9",
+  8: "#3d5a80",
+  16: "#293241",
+  32: "#ee6c4d",
+  64: "#f4a261",
+  128: "#e76f51",
+  256: "#f48c06",
+  512: "#d00000",
+  1024: "#6a040f",
+  2048: "#ffba08",
 };
 
 function generatePracticeSeed() {
@@ -266,8 +266,8 @@ export default function FeatherMergeGame({
       onPause={pause}
       onRestart={restart}
     >
-      <div className="relative aspect-square w-full max-w-[min(78dvh,42rem)] mx-auto overflow-hidden rounded-[1.5rem] bg-gradient-to-br from-[#fff5e7] to-[#cfb792] shadow-2xl border border-border">
-        <div className="absolute inset-[9%] rounded-[4.5%] bg-[rgba(55,44,35,.22)]">
+      <div className="relative aspect-square w-full max-w-[min(78dvh,42rem)] mx-auto overflow-hidden rounded-[1.5rem] bg-gradient-to-br from-[#1d2d44] to-[#0d1321] shadow-2xl border border-border">
+        <div className="absolute inset-[9%] rounded-[4.5%] bg-[rgba(255,255,255,.05)] shadow-inner">
           {/* Background grid */}
           {Array.from({ length: 16 }).map((_, index) => {
             const x = index % 4;
@@ -290,19 +290,23 @@ export default function FeatherMergeGame({
               <motion.div
                 key={cell.id}
                 layout
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                transition={{ type: "spring", stiffness: 400, damping: 28 }}
-                className="absolute flex items-center justify-center rounded-[14%] shadow-sm font-serif font-bold pointer-events-none select-none"
+                initial={{ scale: 0.2, opacity: 0 }}
+                animate={{ scale: [0.8, 1.15, 1], opacity: 1 }}
+                transition={{ 
+                  scale: { type: "spring", stiffness: 450, damping: 20 },
+                  layout: { type: "spring", stiffness: 350, damping: 28 }
+                }}
+                className="absolute flex items-center justify-center rounded-[14%] font-serif font-bold pointer-events-none select-none"
                 style={{
                   left: `${2.5 + x * 24.375}%`,
                   top: `${2.5 + y * 24.375}%`,
                   width: '21.875%',
                   height: '21.875%',
                   backgroundColor: palette[cell.value] ?? "#1d2436",
-                  color: cell.value >= 64 ? "#fffaf0" : "#45382f",
+                  color: [8, 16, 512, 1024].includes(cell.value) ? "#f8f9fa" : "#1d2d44",
                   fontSize: cell.value >= 1000 ? "1.5rem" : cell.value >= 100 ? "1.8rem" : "2.2rem",
-                  zIndex: cell.value
+                  zIndex: cell.value,
+                  boxShadow: cell.value >= 128 ? `0 0 15px ${palette[cell.value]}80, inset 0 0 10px rgba(255,255,255,0.5)` : "0 4px 6px rgba(0,0,0,0.15)"
                 }}
               >
                 {cell.value}

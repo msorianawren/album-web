@@ -32,6 +32,34 @@ export function GameAudioProvider({ children }: { children: ReactNode }) {
   const [volume, setVolumeState] = useState(0.55);
   const [musicEnabled, setMusicEnabledState] = useState(false);
   const [effectsEnabled, setEffectsEnabled] = useState(true);
+
+  // Hydrate from localStorage
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem("game:audio:prefs");
+      if (stored) {
+        const prefs = JSON.parse(stored);
+        if (typeof prefs.volume === "number") setVolumeState(prefs.volume);
+        if (typeof prefs.musicEnabled === "boolean") setMusicEnabledState(prefs.musicEnabled);
+        if (typeof prefs.effectsEnabled === "boolean") setEffectsEnabled(prefs.effectsEnabled);
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  // Save to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem("game:audio:prefs", JSON.stringify({
+        volume,
+        musicEnabled,
+        effectsEnabled,
+      }));
+    } catch {
+      // ignore
+    }
+  }, [volume, musicEnabled, effectsEnabled]);
   const [started, setStarted] = useState(false);
 
   const stopMusic = useCallback(() => {

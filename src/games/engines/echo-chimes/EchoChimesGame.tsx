@@ -20,6 +20,13 @@ const CHIME_COLORS = [
   "#8ecae6", // Glass
 ];
 
+const CHIME_GLOWS = [
+  "212, 163, 115",
+  "224, 225, 221",
+  "205, 127, 50",
+  "142, 202, 230",
+];
+
 const CHIME_PITCHES = [
   440, // A4
   554.37, // C#5
@@ -27,7 +34,7 @@ const CHIME_PITCHES = [
   880, // A5
 ];
 
-function drawChimes(canvas: HTMLCanvasElement, state: EchoChimesState, quality: GameClientProps["quality"]) {
+function drawChimes(canvas: HTMLCanvasElement, state: EchoChimesState, quality: GameClientProps["quality"], ripples?: Array<{x: number, y: number, radius: number, alpha: number, color: string}>) {
   const rect = canvas.getBoundingClientRect();
   const maxDpr = quality === "low" ? 1 : window.matchMedia("(pointer: coarse)").matches ? 1.25 : 1.5;
   const dpr = Math.min(window.devicePixelRatio || 1, maxDpr);
@@ -89,6 +96,23 @@ function drawChimes(canvas: HTMLCanvasElement, state: EchoChimesState, quality: 
     
     context.shadowBlur = 0;
   }
+  
+  // Draw Ripples
+  if (ripples && quality !== "low") {
+    for (let i = ripples.length - 1; i >= 0; i--) {
+      const r = ripples[i];
+      context.beginPath();
+      context.arc(r.x, r.y, r.radius, 0, Math.PI * 2);
+      context.strokeStyle = `rgba(${r.color}, ${r.alpha})`;
+      context.lineWidth = 3;
+      context.stroke();
+
+      const speed = quality === "high" ? 0.5 : 1;
+      r.radius += 3 * speed;
+      r.alpha -= 0.02 * speed;
+      if (r.alpha <= 0) ripples.splice(i, 1);
+    }
+  }
 }
 
 function generatePracticeSeed() {
@@ -105,6 +129,7 @@ export default function EchoChimesGame({
   const [currentSeed, setCurrentSeed] = useState("practice-initial");
   const stateRef = useRef(createEchoChimesState(currentSeed));
   const actionRef = useRef<Array<{ type: "press"; index: number }>>([]);
+  const ripplesRef = useRef<Array<{x: number, y: number, radius: number, alpha: number, color: string}>>([]);
   
   const traceRef = useRef<GameInputAction[]>([]);
   const sessionRef = useRef<{ id: string; nonce: string; seed: string } | null>(null);
@@ -157,15 +182,31 @@ export default function EchoChimesGame({
     let dirty = true;
     let lastActiveChime: number | null = null;
 
+    const stepMs = 1000 / 60; // Physics ALWAYS runs at 60Hz for deterministic server verification
+    const targetRenderFps = quality === "high" ? 120 : quality === "balanced" ? 60 : 30;
+
+    const spawnRipple = (index: number) => {
+      if (quality === "low") return;
+      const width = canvas.width;
+      const height = canvas.height;
+      const chimeWidth = width * 0.15;
+      const spacing = width * 0.05;
+      const startX = (width - (4 * chimeWidth + 3 * spacing)) / 2;
+      const rX = startX + index * (chimeWidth + spacing) + chimeWidth / 2;
+      const rY = height * 0.2 + (height * 0.5 + (index % 2 === 0 ? height * 0.1 : 0)) / 2;
+      ripplesRef.current.push({ x: rX, y: rY, radius: 10, alpha: 1, color: CHIME_GLOWS[index] });
+    };
+
     const runtime = createFixedStepRuntime({
-      stepMs: quality === "low" ? 1000 / 30 : 1000 / 60,
-      targetRenderFps: quality === "low" ? 30 : 60,
+      stepMs,
+      targetRenderFps,
       onTick(tick) {
         const action = actionRef.current.shift();
         if (action?.type === "press") {
           const valid = pressChime(stateRef.current, action.index);
           if (valid || stateRef.current.phase === "game_over") {
             playChimeAudio(action.index);
+            spawnRipple(action.index);
             traceRef.current.push({ tick, type: "press", payload: action.index });
             setScore(stateRef.current.score);
             dirty = true;
@@ -178,6 +219,7 @@ export default function EchoChimesGame({
           lastActiveChime = stateRef.current.activeChime;
           if (lastActiveChime !== null && stateRef.current.phase === "playing_sequence") {
             playChimeAudio(lastActiveChime);
+            spawnRipple(lastActiveChime);
           }
           dirty = true;
         }
@@ -189,13 +231,13 @@ export default function EchoChimesGame({
         }
       },
       onRender() {
-        if (!dirty) return;
-        drawChimes(canvas, stateRef.current, quality);
+        if (!dirty && ripplesRef.current.length === 0) return;
+        drawChimes(canvas, stateRef.current, quality, ripplesRef.current);
         dirty = false;
       },
     });
     runtimeRef.current = runtime;
-    drawChimes(canvas, stateRef.current, quality);
+    drawChimes(canvas, stateRef.current, quality, ripplesRef.current);
     
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "1") handlePress(0);
@@ -229,7 +271,7 @@ export default function EchoChimesGame({
 
     window.addEventListener("keydown", onKeyDown);
     canvas.addEventListener("pointerdown", onPointerDown);
-    const observer = new ResizeObserver(() => drawChimes(canvas, stateRef.current, quality));
+    const observer = new ResizeObserver(() => drawChimes(canvas, stateRef.current, quality, ripplesRef.current));
     observer.observe(canvas);
     return () => {
       runtime.destroy();
@@ -248,6 +290,7 @@ export default function EchoChimesGame({
       setScore(0);
       actionRef.current = [];
       traceRef.current = [];
+      ripplesRef.current = [];
       
       let nextSeed = generatePracticeSeed();
       
@@ -296,8 +339,9 @@ export default function EchoChimesGame({
     setStatus("ready");
     setCompletion(null);
     onEngineStatusChange?.("ready");
+    ripplesRef.current = [];
     const canvas = canvasRef.current;
-    if (canvas) drawChimes(canvas, stateRef.current, quality);
+    if (canvas) drawChimes(canvas, stateRef.current, quality, ripplesRef.current);
   }, [onEngineStatusChange, quality]);
 
   useEffect(() => {
@@ -308,7 +352,7 @@ export default function EchoChimesGame({
         formatVersion: 1,
         engineVersion: "echo-chimes-v1",
         seed: session.seed,
-        fixedStepMs: quality === "low" ? 1000 / 30 : 1000 / 60,
+        fixedStepMs: 1000 / 60,
         actions: traceRef.current,
       };
       

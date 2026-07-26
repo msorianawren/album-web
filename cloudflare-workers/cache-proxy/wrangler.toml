@@ -1,0 +1,22 @@
+name = "orianawren-cache-proxy"
+main = "src/index.ts"
+compatibility_date = "2024-04-05"
+
+[observability]
+enabled = true
+
+[[routes]]
+pattern = "orianawren.com/_next/image*"
+zone_name = "orianawren.com"
+
+[[routes]]
+pattern = "www.orianawren.com/_next/image*"
+zone_name = "orianawren.com"
+
+[[routes]]
+pattern = "orianawren.com/api/media*"
+zone_name = "orianawren.com"
+
+[[routes]]
+pattern = "www.orianawren.com/api/media*"
+zone_name = "orianawren.com"

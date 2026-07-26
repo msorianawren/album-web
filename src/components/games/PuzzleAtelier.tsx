@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/useToast";
 import { createPuzzleBoard, isSolved, legalSlidingPositions, moveSlidingTile, swapTiles } from "@/lib/puzzles/engine";
 import { estimatePuzzleReward } from "@/lib/puzzles/rewards";
 import type { PuzzleChallenge, PuzzleGridSize, PuzzleMode, PuzzleResult, PuzzleTile, SlidingMove, SwapMove } from "@/lib/puzzles/types";
+import { motion } from "framer-motion";
 
 const storageVersion = "oriana.puzzle.best.v1";
 const grids: PuzzleGridSize[] = [3, 4, 5];
@@ -95,23 +96,31 @@ function PuzzleBoard({
       aria-label={`${grid} by ${grid} ${mode} puzzle board`}
     >
       {board.map((tile, position) => tile === null ? (
-        <div key={`empty-${position}`} className="m-0.5 rounded-[0.65rem] border border-dashed border-border/70 bg-background/35" aria-label="Empty position" />
+        <motion.div layout key="empty" className="m-0.5 rounded-[0.65rem] border border-dashed border-border/70 bg-background/35" aria-label="Empty position" />
       ) : (
-        <button
+        <motion.button
+          layout
+          initial={false}
+          transition={{ type: "spring", stiffness: 500, damping: 30 }}
           key={tile}
           type="button"
           onClick={() => onTile(position)}
           aria-label={`Tile ${tile}, current position ${position + 1}, correct position ${tile}${mode === "sliding" && legal.has(position) ? ", movable" : ""}`}
           aria-pressed={mode === "swap" ? selected === position : undefined}
-          className={`group relative m-0.5 min-h-11 overflow-hidden rounded-[0.65rem] border bg-surface transition duration-200 motion-reduce:transition-none focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+          className={`group relative m-0.5 min-h-11 overflow-hidden rounded-[0.65rem] border bg-surface focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
             selected === position ? "border-accent ring-2 ring-accent/60" : highlighted && (mode === "swap" || legal.has(position)) ? "border-accent/80 ring-1 ring-accent/50" : "border-border/60"
-          } ${mode === "sliding" && legal.has(position) ? "cursor-pointer" : mode === "sliding" ? "cursor-not-allowed opacity-80" : "cursor-pointer"}`}
+          } ${mode === "sliding" && legal.has(position) ? "cursor-pointer" : mode === "sliding" ? "cursor-not-allowed opacity-80" : "cursor-pointer"} ${tile === position + 1 ? "shadow-[0_0_15px_rgba(233,196,106,0.6)] border-[#e9c46a] ring-1 ring-[#e9c46a]/50 z-10" : ""}`}
           disabled={mode === "sliding" && !legal.has(position)}
         >
           {imageUrl ? <span className="absolute inset-0 bg-cover bg-no-repeat" style={{ backgroundImage: `url("${imageUrl}")`, backgroundSize: `${grid * 100}% ${grid * 100}%`, backgroundPosition: tilePosition(tile, grid) }} /> : <span className="absolute inset-0 bg-surface-secondary" />}
+          
+          {tile === position + 1 && (
+            <span className="absolute inset-0 bg-gradient-to-tr from-transparent via-[#e9c46a]/10 to-transparent mix-blend-overlay" />
+          )}
+
           <span className="absolute inset-x-1 bottom-1 rounded bg-black/45 px-1 py-0.5 text-center text-[0.58rem] font-semibold text-white opacity-0 transition group-hover:opacity-100 focus:opacity-100">{tile}</span>
           <span className="sr-only">Tile {tile}</span>
-        </button>
+        </motion.button>
       ))}
     </div>
   );

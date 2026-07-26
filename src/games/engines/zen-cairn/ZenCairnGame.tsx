@@ -20,7 +20,8 @@ function drawZenCairn(
   state: ZenCairnState, 
   quality: GameClientProps["quality"],
   prevState?: ZenCairnState,
-  interpolation = 1
+  interpolation = 1,
+  particles?: Array<{x: number, y: number, vx: number, vy: number, life: number, color: string}>
 ) {
   const rect = canvas.getBoundingClientRect();
   const maxDpr = quality === "low" ? 1 : window.matchMedia("(pointer: coarse)").matches ? 1.25 : 1.5;
@@ -39,10 +40,20 @@ function drawZenCairn(
 
   // Background Gradient (Twilight)
   const gradient = context.createLinearGradient(0, 0, 0, height);
-  gradient.addColorStop(0, "#dbd1d0");
-  gradient.addColorStop(1, "#c1b0b5");
+  gradient.addColorStop(0, "#2b2d42");
+  gradient.addColorStop(1, "#8d99ae");
   context.fillStyle = gradient;
   context.fillRect(0, 0, width, height);
+  
+  // Stars / Fireflies
+  context.fillStyle = "rgba(255, 235, 150, 0.4)";
+  for (let i = 0; i < 15; i++) {
+    const fireflyX = (width + ((i * 100 + state.tickCounter * (0.2 + i * 0.1)) % (width + 50))) - 25;
+    const fireflyY = height * 0.1 + (i * 35) + Math.sin(state.tickCounter * 0.05 + i) * 20;
+    context.beginPath();
+    context.arc(fireflyX, fireflyY, 1.5, 0, Math.PI * 2);
+    context.fill();
+  }
 
   const t = state.complete ? 1 : Math.max(0, Math.min(1, interpolation));
 
@@ -112,6 +123,25 @@ function drawZenCairn(
     context.roundRect(x - w / 2 + 2, y + 2, w - 4, h / 3, Math.min(w * 0.1, h * 0.2));
     context.fill();
   }
+
+  // Draw Particles
+  if (particles && quality !== "low") {
+    for (let i = particles.length - 1; i >= 0; i--) {
+      const p = particles[i];
+      p.x += p.vx * (quality === "high" ? 0.5 : 1);
+      p.y += p.vy * (quality === "high" ? 0.5 : 1);
+      p.vy += 0.2 * (quality === "high" ? 0.5 : 1);
+      p.life -= 0.02 * (quality === "high" ? 0.5 : 1);
+      if (p.life <= 0) {
+        particles.splice(i, 1);
+      } else {
+        context.fillStyle = `rgba(255, 255, 255, ${p.life})`;
+        context.beginPath();
+        context.arc((p.x / 100) * width, (p.y / 100) * height, 2, 0, Math.PI * 2);
+        context.fill();
+      }
+    }
+  }
 }
 
 function generatePracticeSeed() {
@@ -132,6 +162,7 @@ export default function ZenCairnGame({
   
   const traceRef = useRef<GameInputAction[]>([]);
   const sessionRef = useRef<{ id: string; nonce: string; seed: string } | null>(null);
+  const particlesRef = useRef<Array<{x: number, y: number, vx: number, vy: number, life: number, color: string}>>([]);
 
   const runtimeRef = useRef<ReturnType<typeof createFixedStepRuntime> | null>(null);
   const [status, setStatus] = useState<"ready" | "running" | "paused" | "complete">("ready");
@@ -175,11 +206,14 @@ export default function ZenCairnGame({
     const canvas = canvasRef.current;
     if (!canvas) return;
     
-    drawZenCairn(canvas, stateRef.current, quality);
+    drawZenCairn(canvas, stateRef.current, quality, undefined, 1, particlesRef.current);
+
+    const stepMs = 1000 / 60; // Physics ALWAYS runs at 60Hz for deterministic server verification
+    const targetRenderFps = quality === "high" ? 120 : quality === "balanced" ? 60 : 30;
 
     const runtime = createFixedStepRuntime({
-      stepMs: quality === "low" ? 1000 / 30 : 1000 / 60,
-      targetRenderFps: quality === "low" ? 30 : 60,
+      stepMs,
+      targetRenderFps,
       onTick(tick) {
         // Deep clone state for interpolation
         prevStateRef.current = {
@@ -202,6 +236,29 @@ export default function ZenCairnGame({
           if (stateRef.current.score > prevScore) {
             setScore(stateRef.current.score);
             playEffect(660); // Stone clack
+            
+            // Add Particles
+            if (quality !== "low") {
+              const topBlock = stateRef.current.blocks[stateRef.current.blocks.length - 1];
+              if (topBlock) {
+                const towerHeight = stateRef.current.blocks.length * BLOCK_HEIGHT;
+                const topY = 90 - towerHeight;
+                let cameraPanY = 0;
+                if (topY < 40) cameraPanY = 40 - topY;
+                const yPos = 90 - stateRef.current.blocks.length * BLOCK_HEIGHT + cameraPanY;
+                
+                for (let i = 0; i < 15; i++) {
+                  particlesRef.current.push({
+                    x: topBlock.x + (Math.random() - 0.5) * topBlock.width,
+                    y: yPos + BLOCK_HEIGHT,
+                    vx: (Math.random() - 0.5) * 3,
+                    vy: (Math.random() - 1) * 2,
+                    life: 1,
+                    color: topBlock.color
+                  });
+                }
+              }
+            }
           } else if (stateRef.current.complete) {
             playEffect(180, 0.2); // Tumble sound
           }
@@ -216,7 +273,7 @@ export default function ZenCairnGame({
         }
       },
       onRender(interpolation) {
-        drawZenCairn(canvas, stateRef.current, quality, prevStateRef.current, interpolation);
+        drawZenCairn(canvas, stateRef.current, quality, prevStateRef.current, interpolation, particlesRef.current);
       },
     });
     
@@ -321,7 +378,7 @@ export default function ZenCairnGame({
         formatVersion: 1,
         engineVersion: "zen-cairn-v1",
         seed: session.seed,
-        fixedStepMs: quality === "low" ? 1000 / 30 : 1000 / 60,
+        fixedStepMs: 1000 / 60,
         actions: traceRef.current,
       };
       

@@ -40,12 +40,22 @@ function drawWrenFlight(
   if (!context) return;
   context.clearRect(0, 0, width, height);
 
-  // Background Gradient (Sky/Canopy)
+  // Background Gradient (Vibrant Sky/Canopy)
   const gradient = context.createLinearGradient(0, 0, 0, height);
-  gradient.addColorStop(0, "#84a98c");
-  gradient.addColorStop(1, "#52796f");
+  gradient.addColorStop(0, "#4a90e2"); // Sky blue
+  gradient.addColorStop(1, "#84a98c"); // Canopy green
   context.fillStyle = gradient;
   context.fillRect(0, 0, width, height);
+
+  // Parallax Clouds/Background elements (pseudo-random based on state.tickCounter)
+  context.fillStyle = "rgba(255, 255, 255, 0.15)";
+  for (let i = 0; i < 3; i++) {
+    const cloudX = (width + ((i * 300 - state.tickCounter * (1 + i)) % (width + 200))) - 100;
+    const cloudY = height * 0.2 + (i * 50);
+    context.beginPath();
+    context.ellipse(cloudX, cloudY, 80 + i * 20, 25 + i * 10, 0, 0, Math.PI * 2);
+    context.fill();
+  }
 
   const t = state.complete ? 1 : Math.max(0, Math.min(1, interpolation));
 
@@ -65,6 +75,10 @@ function drawWrenFlight(
     const gapHalf = (GAP_SIZE / 200) * height;
 
     // Top vine
+    const topGradient = context.createLinearGradient(x, 0, x + w, 0);
+    topGradient.addColorStop(0, "#2d6a4f");
+    topGradient.addColorStop(1, "#1b4332");
+    context.fillStyle = topGradient;
     context.beginPath();
     context.roundRect(x, -10, w, gapCenter - gapHalf + 10, w/3);
     context.fill();
@@ -174,9 +188,12 @@ export default function WrenFlightGame({
     // Initial draw
     drawWrenFlight(canvas, stateRef.current, quality);
 
+    const stepMs = 1000 / 60; // Physics ALWAYS runs at 60Hz for deterministic server verification
+    const targetRenderFps = quality === "high" ? 120 : quality === "balanced" ? 60 : 30;
+
     const runtime = createFixedStepRuntime({
-      stepMs: quality === "low" ? 1000 / 30 : 1000 / 60,
-      targetRenderFps: quality === "low" ? 30 : 60,
+      stepMs,
+      targetRenderFps,
       onTick(tick) {
         // deep clone state for interpolation
         prevStateRef.current = {
@@ -317,7 +334,7 @@ export default function WrenFlightGame({
         formatVersion: 1,
         engineVersion: "wren-flight-v1",
         seed: session.seed,
-        fixedStepMs: quality === "low" ? 1000 / 30 : 1000 / 60,
+        fixedStepMs: 1000 / 60,
         actions: traceRef.current,
       };
       

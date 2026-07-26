@@ -62,7 +62,7 @@ function drawFlower(
   context.restore();
 }
 
-function drawMemory(canvas: HTMLCanvasElement, state: MemoryGardenState, quality: GameClientProps["quality"]) {
+function drawMemory(canvas: HTMLCanvasElement, state: MemoryGardenState, quality: GameClientProps["quality"], flipProgress: number[]) {
   const rect = canvas.getBoundingClientRect();
   const maxDpr = quality === "low" ? 1 : window.matchMedia("(pointer: coarse)").matches ? 1.25 : 1.5;
   const dpr = Math.min(window.devicePixelRatio || 1, maxDpr);
@@ -75,32 +75,59 @@ function drawMemory(canvas: HTMLCanvasElement, state: MemoryGardenState, quality
   const context = canvas.getContext("2d");
   if (!context) return;
   context.clearRect(0, 0, width, height);
+  // Background Gradient (Mystic Garden)
   const gradient = context.createLinearGradient(0, 0, width, height);
-  gradient.addColorStop(0, "#243a31");
-  gradient.addColorStop(1, "#5d6954");
+  gradient.addColorStop(0, "#1c2b2d");
+  gradient.addColorStop(1, "#111a1c");
   context.fillStyle = gradient;
   context.fillRect(0, 0, width, height);
   const metrics = cardMetrics(width, height);
   state.cards.forEach((card, index) => {
     const x = metrics.left + metrics.gap + (index % 4) * (metrics.cell + metrics.gap);
     const y = metrics.top + metrics.gap + Math.floor(index / 4) * (metrics.cell + metrics.gap);
-    const visible = card.revealed || card.matched;
-    context.fillStyle = visible ? "rgba(255,250,238,.94)" : "rgba(238,229,203,.18)";
-    context.strokeStyle = index === state.cursor ? "#fff4d8" : "rgba(255,255,255,.18)";
-    context.lineWidth = index === state.cursor ? Math.max(2, metrics.cell * 0.035) : 1;
+    
+    const flip = flipProgress[index];
+    const isFaceUp = flip > 0.5;
+    const scaleX = Math.max(0.01, Math.abs(flip - 0.5) * 2);
+    
+    context.save();
+    context.translate(x + metrics.cell / 2, y + metrics.cell / 2);
+    context.scale(scaleX, 1);
+    context.translate(-(x + metrics.cell / 2), -(y + metrics.cell / 2));
+
+    context.fillStyle = isFaceUp ? "rgba(255,250,238,.94)" : "rgba(38,70,83,.6)";
+    context.strokeStyle = index === state.cursor ? "#e9c46a" : "rgba(255,255,255,.1)";
+    context.lineWidth = index === state.cursor ? Math.max(2, metrics.cell * 0.04) : 1;
+    
+    if (index === state.cursor) {
+      context.shadowBlur = 15;
+      context.shadowColor = "#e9c46a";
+    } else {
+      context.shadowBlur = 5;
+      context.shadowColor = "rgba(0,0,0,0.5)";
+    }
+    
     context.beginPath();
     context.roundRect(x, y, metrics.cell, metrics.cell, metrics.cell * 0.16);
     context.fill();
     context.stroke();
-    if (visible) {
+    
+    context.shadowBlur = 0; // reset shadow for contents
+    
+    if (isFaceUp) {
       const [color, petals] = flowers[card.pair];
+      context.shadowBlur = 20;
+      context.shadowColor = color; // Glowing flower
       drawFlower(context, x + metrics.cell / 2, y + metrics.cell / 2, metrics.cell * 0.28, color, petals);
+      context.shadowBlur = 0;
     } else {
-      context.fillStyle = "rgba(255,255,255,.2)";
+      // Card back pattern
+      context.fillStyle = "rgba(233, 196, 106, 0.15)";
       context.beginPath();
-      context.arc(x + metrics.cell / 2, y + metrics.cell / 2, metrics.cell * 0.08, 0, Math.PI * 2);
+      context.arc(x + metrics.cell / 2, y + metrics.cell / 2, metrics.cell * 0.12, 0, Math.PI * 2);
       context.fill();
     }
+    context.restore();
   });
 }
 
@@ -124,6 +151,8 @@ export default function MemoryGardenGame({
   const sessionRef = useRef<{ id: string; nonce: string; seed: string } | null>(null);
 
   const runtimeRef = useRef<ReturnType<typeof createFixedStepRuntime> | null>(null);
+  const flipProgressRef = useRef<number[]>(new Array(16).fill(0));
+  
   const [status, setStatus] = useState<"ready" | "running" | "paused" | "complete">("ready");
   const [score, setScore] = useState("0 / 8");
   const [completion, setCompletion] = useState<FinalizeGameSessionResponse | null>(null);
@@ -169,9 +198,13 @@ export default function MemoryGardenGame({
     const canvas = canvasRef.current;
     if (!canvas) return;
     let dirty = true;
+    
+    const stepMs = 1000 / 60; // Physics ALWAYS runs at 60Hz for deterministic server verification
+    const targetRenderFps = quality === "high" ? 120 : quality === "balanced" ? 60 : 30;
+
     const runtime = createFixedStepRuntime({
-      stepMs: quality === "low" ? 1000 / 30 : 1000 / 60,
-      targetRenderFps: quality === "low" ? 30 : 60,
+      stepMs,
+      targetRenderFps,
       onTick(tick) {
         const action = actionRef.current.shift();
         if (action?.type === "cursor") {
@@ -195,15 +228,29 @@ export default function MemoryGardenGame({
           setStatus("complete");
           onEngineStatusChange?.("paused");
         }
+        
+        // Update 3D flip animations
+        stateRef.current.cards.forEach((card, i) => {
+          const target = (card.revealed || card.matched) ? 1 : 0;
+          if (flipProgressRef.current[i] !== target) {
+            const diff = target - flipProgressRef.current[i];
+            const step = quality === "high" ? 0.05 : 0.1;
+            flipProgressRef.current[i] += Math.sign(diff) * step;
+            if (Math.abs(flipProgressRef.current[i] - target) < step) {
+              flipProgressRef.current[i] = target;
+            }
+            dirty = true;
+          }
+        });
       },
       onRender() {
         if (!dirty) return;
-        drawMemory(canvas, stateRef.current, quality);
+        drawMemory(canvas, stateRef.current, quality, flipProgressRef.current);
         dirty = false;
       },
     });
     runtimeRef.current = runtime;
-    drawMemory(canvas, stateRef.current, quality);
+    drawMemory(canvas, stateRef.current, quality, flipProgressRef.current);
     
     const onKeyDown = (event: KeyboardEvent) => {
       const move = ({
@@ -242,7 +289,7 @@ export default function MemoryGardenGame({
     };
     window.addEventListener("keydown", onKeyDown);
     canvas.addEventListener("pointerup", onPointerUp);
-    const observer = new ResizeObserver(() => drawMemory(canvas, stateRef.current, quality));
+    const observer = new ResizeObserver(() => drawMemory(canvas, stateRef.current, quality, flipProgressRef.current));
     observer.observe(canvas);
     return () => {
       runtime.destroy();
@@ -309,8 +356,10 @@ export default function MemoryGardenGame({
     setStatus("ready");
     setCompletion(null);
     onEngineStatusChange?.("ready");
+    
+    flipProgressRef.current = new Array(16).fill(0);
     const canvas = canvasRef.current;
-    if (canvas) drawMemory(canvas, stateRef.current, quality);
+    if (canvas) drawMemory(canvas, stateRef.current, quality, flipProgressRef.current);
   }, [onEngineStatusChange, quality]);
 
   useEffect(() => {
@@ -321,7 +370,7 @@ export default function MemoryGardenGame({
         formatVersion: 1,
         engineVersion: "memory-garden-v1",
         seed: session.seed,
-        fixedStepMs: quality === "low" ? 1000 / 30 : 1000 / 60,
+        fixedStepMs: 1000 / 60,
         actions: traceRef.current,
       };
       
