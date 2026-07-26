@@ -5,7 +5,6 @@ import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { useDepthEffects } from "@/hooks/useDepthEffects";
 import { useEnvironmentPreferences, useResolvedEnvironmentPhase } from "@/hooks/useEnvironmentPreferences";
-import { useUIPreferences } from "@/hooks/useUIPreferences";
 import { audioUX } from "@/lib/audio-ux";
 import {
   getGameRuntimeSuspensionSnapshot,
@@ -109,7 +108,6 @@ function PublicDepthEnvironmentContent({ pathname }: { pathname: string }) {
   const activeRectsRef = useRef<ReturnType<typeof useChimeAnchorRects>>([]);
   const { mode } = useDepthEffects();
   const { preferences } = useEnvironmentPreferences();
-  const { soundEnabled } = useUIPreferences();
   const phase = useResolvedEnvironmentPhase(preferences.phase);
   const artistSnapshot = useSyncExternalStore(subscribeArtistConfig, getArtistConfigSnapshot, getServerArtistConfigSnapshot);
   const capabilitySnapshot = useSyncExternalStore(subscribeRuntimeCapability, getRuntimeCapabilitySnapshot, () => "1280:false:false:true");
@@ -228,17 +226,9 @@ function PublicDepthEnvironmentContent({ pathname }: { pathname: string }) {
         ticking = true;
       }
     };
-    const onPointerDown = (event: PointerEvent) => {
-      if (!canUseChime(event)) return;
-      const point = toDocumentPoint(event);
-      const chime = hitChime(activeRectsRef.current, point.x, point.y);
-      if (chime) window.dispatchEvent(new CustomEvent("oriana-chime-pointer", { detail: { x: event.clientX, y: event.clientY, slotId: chime.id } }));
-    };
     window.addEventListener("pointermove", onPointerMove, { passive: true });
-    window.addEventListener("pointerdown", onPointerDown, { passive: true });
     return () => {
       window.removeEventListener("pointermove", onPointerMove);
-      window.removeEventListener("pointerdown", onPointerDown);
     };
   }, [interactiveChimesEnabled, reducedMotion]);
 
@@ -265,12 +255,12 @@ function PublicDepthEnvironmentContent({ pathname }: { pathname: string }) {
             className="public-chime-control"
             style={{ left: `${control.left}px`, top: `${control.top}px`, width: `${control.width}px`, height: `${control.height}px` }}
             aria-label={chimeLabel}
-            onClick={(event) => {
-              if (soundEnabled) audioUX.playWindChimePreview({ frequency: rect.tone, pan, material: rect.material, volume: preferences.chimeVolume / 100 });
-              if (event.detail === 0) window.dispatchEvent(new CustomEvent("oriana-chime-impulse", { detail: { slotId: rect.id } }));
+            onClick={() => {
+              audioUX.playWindChimePreview({ frequency: rect.tone, pan, material: rect.material, volume: preferences.chimeVolume / 100 });
+              window.dispatchEvent(new CustomEvent("oriana-chime-impulse", { detail: { slotId: rect.id } }));
             }}
             onDoubleClick={() => {
-              if (soundEnabled) audioUX.playWindChimeHarmony({ frequency: rect.tone, pan, material: rect.material, volume: preferences.chimeVolume / 100 });
+              audioUX.playWindChimeHarmony({ frequency: rect.tone, pan, material: rect.material, volume: preferences.chimeVolume / 100 });
               window.dispatchEvent(new CustomEvent("oriana-chime-cascade", { detail: { slotId: rect.id } }));
             }}
           >

@@ -116,6 +116,8 @@ test("explicit chime controls initialize and play distinct material previews", a
     readFile(new URL("../src/lib/environment/chime-materials.ts", import.meta.url), "utf8"),
   ]);
   assert.match(environment, /audioUX\.playWindChimePreview/);
+  assert.match(environment, /window\.dispatchEvent\(new CustomEvent\("oriana-chime-impulse"/);
+  assert.doesNotMatch(environment, /if \(soundEnabled\) audioUX\.playWindChime/);
   assert.match(audio, /public playWindChimePreview/);
   assert.match(audio, /this\.init\(\)/);
   assert.match(audio, /velocity: 0\.96/);
