@@ -2,6 +2,10 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createMediaDeliveryTarget, type MediaDeliveryTarget, type MediaDeliveryVariant } from "@/lib/media/delivery";
+import {
+  deliveryGrantRefreshDelay,
+  isDeliveryGrantFresh,
+} from "@/lib/media/delivery-grant-cache";
 
 type ViewerVariant = Extract<MediaDeliveryVariant, "thumbnail" | "medium" | "display" | "poster">;
 
@@ -13,7 +17,6 @@ type CachedGrant = {
 };
 
 const grants = new Map<string, CachedGrant>();
-const refreshLeewayMs = 30_000;
 
 function keyFor(mediaId: string, variant: ViewerVariant) {
   return `${mediaId}:${variant}`;
@@ -47,7 +50,7 @@ async function decodeBeforeSwap(src: string) {
 async function requestGrant(mediaId: string, variant: ViewerVariant) {
   const key = keyFor(mediaId, variant);
   const cached = grants.get(key);
-  if (cached && cached.expiresAt - Date.now() > refreshLeewayMs) return cached;
+  if (cached && isDeliveryGrantFresh(cached.expiresAt)) return cached;
 
   const response = await fetch(`/api/media/${encodeURIComponent(mediaId)}/delivery-grant`, {
     method: "POST",
@@ -82,6 +85,7 @@ export function useViewerDelivery({
 }) {
   const [target, setTarget] = useState<MediaDeliveryTarget>(fallback);
   const [pixelDemand, setPixelDemand] = useState(() => viewportPixelDemand(scale));
+  const [grantRevision, setGrantRevision] = useState(0);
   const requestId = useRef(0);
   const fallbackSignature = fallback.candidates.map((candidate) => candidate.src).join("\n");
   const fallbackRef = useRef(fallback);
@@ -99,9 +103,10 @@ export function useViewerDelivery({
   }, [fallback, fallbackSignature]);
 
   useEffect(() => {
+    const currentRequest = ++requestId.current;
+    let refreshTimer: number | undefined;
     setTarget(fallbackRef.current);
     if (!privateAlbum || !mediaId) return;
-    const currentRequest = ++requestId.current;
     void requestGrant(mediaId, variant)
       .then(async (grant) => {
         if (requestId.current !== currentRequest) return;
@@ -114,11 +119,18 @@ export function useViewerDelivery({
             ? [...signed.candidates, ...fallbackRef.current.candidates]
             : signed.candidates,
         });
+        refreshTimer = window.setTimeout(() => {
+          if (requestId.current === currentRequest) setGrantRevision((revision) => revision + 1);
+        }, deliveryGrantRefreshDelay(grant.expiresAt));
       })
       .catch(() => {
         if (requestId.current === currentRequest) setTarget(fallbackRef.current);
       });
-  }, [fallbackSignature, isVideo, mediaId, privateAlbum, variant]);
+    return () => {
+      if (refreshTimer) window.clearTimeout(refreshTimer);
+      if (requestId.current === currentRequest) requestId.current += 1;
+    };
+  }, [fallbackSignature, grantRevision, isVideo, mediaId, privateAlbum, variant]);
 
   const prefetch = useCallback((nextMediaId: string, nextIsVideo = false) => {
     if (!privateAlbum) return;
