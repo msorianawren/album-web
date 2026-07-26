@@ -1,5 +1,7 @@
 -- Normalize rewards by verified score so each game and difficulty uses a comparable target.
 
+begin;
+
 alter table public.game_reward_policies
   add column if not exists score_target integer not null default 1 check (score_target > 0);
 
@@ -89,3 +91,5 @@ begin
   execute definition;
 end;
 $$;
+
+commit;
