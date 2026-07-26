@@ -71,20 +71,32 @@ export function useViewerMachine() {
     key: Key,
     value: SetStateAction<ViewerMachineState[Key]>,
   ) => dispatch({ type: "set", key, value } as ViewerMachineAction), []);
+  const setLoadedImages = useCallback((value: SetStateAction<ViewerMachineState["loadedImages"]>) => set("loadedImages", value), [set]);
+  const setFailedVideos = useCallback((value: SetStateAction<ViewerMachineState["failedVideos"]>) => set("failedVideos", value), [set]);
+  const setAutoPlay = useCallback((value: SetStateAction<ViewerMachineState["autoPlay"]>) => set("autoPlay", value), [set]);
+  const setSlideshowPace = useCallback((value: SetStateAction<ViewerMachineState["slideshowPace"]>) => set("slideshowPace", value), [set]);
+  const setPreferencesReady = useCallback((value: SetStateAction<ViewerMachineState["preferencesReady"]>) => set("preferencesReady", value), [set]);
+  const setPageHidden = useCallback((value: SetStateAction<ViewerMachineState["pageHidden"]>) => set("pageHidden", value), [set]);
+  const setScale = useCallback((value: SetStateAction<ViewerMachineState["scale"]>) => set("scale", value), [set]);
+  const setTranslate = useCallback((value: SetStateAction<ViewerMachineState["translate"]>) => set("translate", value), [set]);
+  const setIsFullscreen = useCallback((value: SetStateAction<ViewerMachineState["isFullscreen"]>) => set("isFullscreen", value), [set]);
+  const setControlsVisible = useCallback((value: SetStateAction<ViewerMachineState["controlsVisible"]>) => set("controlsVisible", value), [set]);
+  const setInfoOpen = useCallback((value: SetStateAction<ViewerMachineState["infoOpen"]>) => set("infoOpen", value), [set]);
+  const setTransitionDirection = useCallback((value: SetStateAction<ViewerMachineState["transitionDirection"]>) => set("transitionDirection", value), [set]);
 
   return {
     ...state,
-    setLoadedImages: (value: SetStateAction<ViewerMachineState["loadedImages"]>) => set("loadedImages", value),
-    setFailedVideos: (value: SetStateAction<ViewerMachineState["failedVideos"]>) => set("failedVideos", value),
-    setAutoPlay: (value: SetStateAction<ViewerMachineState["autoPlay"]>) => set("autoPlay", value),
-    setSlideshowPace: (value: SetStateAction<ViewerMachineState["slideshowPace"]>) => set("slideshowPace", value),
-    setPreferencesReady: (value: SetStateAction<ViewerMachineState["preferencesReady"]>) => set("preferencesReady", value),
-    setPageHidden: (value: SetStateAction<ViewerMachineState["pageHidden"]>) => set("pageHidden", value),
-    setScale: (value: SetStateAction<ViewerMachineState["scale"]>) => set("scale", value),
-    setTranslate: (value: SetStateAction<ViewerMachineState["translate"]>) => set("translate", value),
-    setIsFullscreen: (value: SetStateAction<ViewerMachineState["isFullscreen"]>) => set("isFullscreen", value),
-    setControlsVisible: (value: SetStateAction<ViewerMachineState["controlsVisible"]>) => set("controlsVisible", value),
-    setInfoOpen: (value: SetStateAction<ViewerMachineState["infoOpen"]>) => set("infoOpen", value),
-    setTransitionDirection: (value: SetStateAction<ViewerMachineState["transitionDirection"]>) => set("transitionDirection", value),
+    setLoadedImages,
+    setFailedVideos,
+    setAutoPlay,
+    setSlideshowPace,
+    setPreferencesReady,
+    setPageHidden,
+    setScale,
+    setTranslate,
+    setIsFullscreen,
+    setControlsVisible,
+    setInfoOpen,
+    setTransitionDirection,
   };
 }
