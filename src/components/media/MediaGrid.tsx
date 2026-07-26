@@ -12,6 +12,7 @@ import {
   sortMedia,
   type MediaSortMode,
 } from "@/lib/media-sort";
+import { viewerIndexFromMediaId, viewerUrlForMedia, viewerUrlWithoutMedia } from "@/lib/media/viewer-routes";
 import type { AlbumStatus, Media } from "@/lib/types";
 import { isMediaReadyForDelivery } from "@/lib/media/delivery";
 
@@ -126,45 +127,43 @@ export function MediaGrid({
   useEffect(() => {
     const syncViewerFromLocation = () => {
       const mediaId = new URL(window.location.href).searchParams.get("media");
-      const index = mediaId ? viewerIndexById.get(mediaId) : undefined;
-      setHasOpenedViewer(index !== undefined);
-      setCurrentIndex(index ?? null);
+      const index = viewerIndexFromMediaId(viewableMedia, mediaId);
+      setHasOpenedViewer(index !== null);
+      setCurrentIndex(index);
     };
     syncViewerFromLocation();
     window.addEventListener("popstate", syncViewerFromLocation);
     return () => window.removeEventListener("popstate", syncViewerFromLocation);
-  }, [viewerIndexById]);
+  }, [viewableMedia]);
 
   useEffect(() => {
     if (!hasOpenedViewer || currentIndex === null) return;
     const current = viewableMedia[currentIndex];
     if (!current) return;
-    const url = new URL(window.location.href);
-    if (url.searchParams.get("media") === current.id) return;
-    url.searchParams.set("media", current.id);
-    window.history.replaceState(window.history.state, "", url);
+    if (new URL(window.location.href).searchParams.get("media") === current.id) return;
+    window.history.replaceState(window.history.state, "", viewerUrlForMedia(window.location.href, current.id));
   }, [currentIndex, hasOpenedViewer, viewableMedia]);
 
   const openMedia = useCallback((index: number) => {
     const selected = viewableMedia[index];
     if (!selected) return;
-    const url = new URL(window.location.href);
-    url.searchParams.set("media", selected.id);
     openedFromGridRef.current = true;
-    window.history.pushState({ ...window.history.state, orianaMediaViewer: true }, "", url);
+    window.history.pushState(
+      { ...window.history.state, orianaMediaViewer: true },
+      "",
+      viewerUrlForMedia(window.location.href, selected.id),
+    );
     setHasOpenedViewer(true);
     setCurrentIndex(index);
   }, [viewableMedia]);
 
   const closeViewer = useCallback(() => {
-    const url = new URL(window.location.href);
-    if (openedFromGridRef.current && url.searchParams.has("media")) {
+    if (openedFromGridRef.current && new URL(window.location.href).searchParams.has("media")) {
       openedFromGridRef.current = false;
       window.history.back();
       return;
     }
-    url.searchParams.delete("media");
-    window.history.replaceState(window.history.state, "", url);
+    window.history.replaceState(window.history.state, "", viewerUrlWithoutMedia(window.location.href));
     setCurrentIndex(null);
     setHasOpenedViewer(false);
   }, []);
