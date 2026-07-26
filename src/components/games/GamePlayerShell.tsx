@@ -97,9 +97,9 @@ function Player({
   useEffect(() => {
     try {
       const stored = localStorage.getItem("game:graphics:quality");
-      if (stored && ["low", "balanced", "high"].includes(stored)) {
-        setManualQuality(stored as any);
-      }
+      if (stored !== "low" && stored !== "balanced" && stored !== "high") return;
+      const frame = window.requestAnimationFrame(() => setManualQuality(stored));
+      return () => window.cancelAnimationFrame(frame);
     } catch {}
   }, []);
 
@@ -212,7 +212,7 @@ function Player({
             Fair Reward System
           </strong>
           <p>
-            This game uses a dynamic anti-inflation reward curve. Your Wren Feathers are calculated using a <em>Square Root</em> formula based on your final score and the game's difficulty multiplier. 
+            This game uses a dynamic anti-inflation reward curve. Your Wren Feathers are calculated using a <em>Square Root</em> formula based on your final score and the game&apos;s difficulty multiplier.
             The higher your score, the harder it becomes to earn the next feather. Play fair and aim for the top!
           </p>
         </div>

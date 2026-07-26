@@ -5,23 +5,49 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { GameSurface } from "@/components/games/GameSurface";
 import { Button } from "@/components/ui/Button";
 import { useGameAudio } from "@/games/core/audio-context.client";
+import { Burst, ParticleSystem } from "@/games/core/particles";
 import { createFixedStepRuntime } from "@/games/core/runtime";
+import { ScreenShake } from "@/games/core/screenshake";
 import type { GameClientProps, FinalizeGameSessionResponse, GameInputAction, GameReplayTrace } from "@/games/core/types";
 import {
   createSnakeState,
   queueSnakeDirection,
   stepSnake,
   type SnakeDirection,
+  type SnakePowerUpType,
   type SnakePoint,
   type SnakeState,
 } from "./model";
+
+const powerUpStyle: Record<SnakePowerUpType, { color: string; label: string; symbol: string }> = {
+  speed: { color: "#ff6b6b", label: "Speed burst", symbol: "↯" },
+  multiplier: { color: "#ffd166", label: "Double score", symbol: "★" },
+  ghost: { color: "#a78bfa", label: "Ghost trail", symbol: "◌" },
+  shrink: { color: "#5eead4", label: "Tail trim", symbol: "✦" },
+};
+
+function getSnakeStepMs(speed: "slow" | "normal" | "fast", state: SnakeState) {
+  const base = speed === "slow" ? 150 : speed === "normal" ? 100 : 70;
+  const levelAcceleration = Math.min(32, (state.level - 1) * 8);
+  const speedBurst = state.speedBoostUntil > state.tick ? 24 : 0;
+  return Math.max(42, base - levelAcceleration - speedBurst);
+}
+
+function getCanvasPoint(canvas: HTMLCanvasElement, state: SnakeState, point: SnakePoint) {
+  const cell = Math.min(canvas.width / state.width, canvas.height / state.height);
+  const offsetX = (canvas.width - cell * state.width) / 2;
+  const offsetY = (canvas.height - cell * state.height) / 2;
+  return { x: offsetX + (point.x + 0.5) * cell, y: offsetY + (point.y + 0.5) * cell };
+}
 
 function drawSnake(
   canvas: HTMLCanvasElement,
   state: SnakeState,
   quality: GameClientProps["quality"],
   previousBody: SnakePoint[],
-  interpolation: number
+  interpolation: number,
+  particles: ParticleSystem,
+  shake: ScreenShake,
 ) {
   const rect = canvas.getBoundingClientRect();
   const maxDpr = quality === "low" ? 1 : window.matchMedia("(pointer: coarse)").matches ? 1.25 : 1.5;
@@ -39,16 +65,21 @@ function drawSnake(
   const offsetY = (height - cell * state.height) / 2;
   
   context.clearRect(0, 0, width, height);
-  
-  // Base dark background outside the grid
-  context.fillStyle = "#1b262c";
+  context.save();
+  shake.apply(context, performance.now() / 1000);
+
+  const levelHue = 190 + Math.min(65, (state.level - 1) * 13);
+  const background = context.createLinearGradient(0, 0, width, height);
+  background.addColorStop(0, `hsl(${levelHue}, 30%, 13%)`);
+  background.addColorStop(1, `hsl(${levelHue + 24}, 36%, 8%)`);
+  context.fillStyle = background;
   context.fillRect(0, 0, width, height);
   
   // Draw Grass Checkerboard (Vibrant mystical forest)
   for (let y = 0; y < state.height; y += 1) {
     for (let x = 0; x < state.width; x += 1) {
       const isEven = (x + y) % 2 === 0;
-      context.fillStyle = isEven ? "#2a3b45" : "#212f38"; 
+      context.fillStyle = isEven ? "rgba(74, 111, 122, 0.42)" : "rgba(34, 55, 66, 0.52)";
       context.fillRect(offsetX + x * cell, offsetY + y * cell, cell + 0.5, cell + 0.5);
     }
   }
@@ -183,6 +214,31 @@ function drawSnake(
   context.beginPath();
   context.ellipse(foodCenterX + foodRadius * 0.2, foodCenterY - foodRadius * 0.7, foodRadius * 0.4, foodRadius * 0.15, Math.PI / 4, 0, Math.PI * 2);
   context.fill();
+
+  if (state.powerUp) {
+    const power = powerUpStyle[state.powerUp.type];
+    const centerX = offsetX + (state.powerUp.point.x + 0.5) * cell;
+    const centerY = offsetY + (state.powerUp.point.y + 0.5) * cell;
+    const pulse = 0.84 + Math.sin(performance.now() / 120) * 0.12;
+    context.save();
+    context.globalAlpha = Math.max(0.35, (state.powerUp.expiresAtTick - state.tick) / 12);
+    context.fillStyle = power.color;
+    context.shadowColor = power.color;
+    context.shadowBlur = cell * 0.85;
+    context.beginPath();
+    context.arc(centerX, centerY, cell * 0.31 * pulse, 0, Math.PI * 2);
+    context.fill();
+    context.shadowBlur = 0;
+    context.fillStyle = "#10212a";
+    context.font = `700 ${Math.max(10, cell * 0.42)}px system-ui`;
+    context.textAlign = "center";
+    context.textBaseline = "middle";
+    context.fillText(power.symbol, centerX, centerY + 1);
+    context.restore();
+  }
+
+  particles.render(context);
+  context.restore();
 }
 
 function generatePracticeSeed() {
@@ -204,14 +260,22 @@ export default function SnakeGame({
   const traceRef = useRef<GameInputAction[]>([]);
   const actionQueueRef = useRef<Array<{ tick: number, dir: SnakeDirection }>>([]);
   const previousBodyRef = useRef<SnakePoint[]>([]);
+  const particlesRef = useRef(new ParticleSystem());
+  const shakeRef = useRef(new ScreenShake(12, 1.8, 5));
+  const lastRenderAtRef = useRef<number | null>(null);
 
   const [status, setStatus] = useState<"ready" | "running" | "paused" | "complete">("ready");
   const [score, setScore] = useState(0);
   const [speed, setSpeed] = useState<"slow" | "normal" | "fast">("normal");
   const [completion, setCompletion] = useState<FinalizeGameSessionResponse | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [hud, setHud] = useState<{ level: number; combo: number; activePower: SnakePowerUpType | null }>({
+    level: 1,
+    combo: 0,
+    activePower: null,
+  });
 
-  const { playEffect, start: startAudio } = useGameAudio();
+  const { playSfx, start: startAudio } = useGameAudio();
 
   const pause = useCallback(() => {
     setStatus(s => {
@@ -250,7 +314,7 @@ export default function SnakeGame({
     if (!canvas) return;
     const runtime = createFixedStepRuntime({
       stepMs: speed === "slow" ? 150 : speed === "normal" ? 100 : 70,
-      targetRenderFps: quality === "high" ? 120 : quality === "balanced" ? 60 : 30,
+      targetRenderFps: quality === "low" ? 30 : 60,
       onTick(tick) {
         previousBodyRef.current = stateRef.current.body.map(p => ({ ...p }));
 
@@ -267,25 +331,57 @@ export default function SnakeGame({
           }
         }
         
-        const previousScore = stateRef.current.score;
-        stepSnake(stateRef.current);
-        if (stateRef.current.score !== previousScore) {
+        const result = stepSnake(stateRef.current);
+        runtime.setStepMs(getSnakeStepMs(speed, stateRef.current));
+
+        if (result.event === "food") {
           setScore(stateRef.current.score);
-          playEffect(660);
+          setHud((current) => ({ ...current, level: stateRef.current.level, combo: stateRef.current.combo }));
+          if (quality !== "low") {
+            const point = getCanvasPoint(canvas, stateRef.current, stateRef.current.body[0]);
+            particlesRef.current.emit(Burst.foodEat(point.x, point.y));
+          }
+          playSfx("snake-food");
+        }
+        if (result.event === "power-up" && result.powerUp) {
+          const point = getCanvasPoint(canvas, stateRef.current, stateRef.current.body[0]);
+          particlesRef.current.emit(Burst.sparkle(point.x, point.y, powerUpStyle[result.powerUp].color));
+          shakeRef.current.add(0.18);
+          setHud((current) => ({ ...current, activePower: result.powerUp! }));
+          playSfx("snake-power");
+        }
+        if (tick % 5 === 0) {
+          const activePower: SnakePowerUpType | null = stateRef.current.speedBoostUntil > stateRef.current.tick
+            ? "speed"
+            : stateRef.current.multiplierUntil > stateRef.current.tick
+              ? "multiplier"
+              : stateRef.current.ghostUntil > stateRef.current.tick
+                ? "ghost"
+                : null;
+          setHud((current) => current.activePower === activePower ? current : { ...current, activePower });
         }
         if (stateRef.current.complete) {
+          const point = getCanvasPoint(canvas, stateRef.current, stateRef.current.body[0]);
+          if (quality !== "low") particlesRef.current.emit(Burst.explosion(point.x, point.y, "#7dd3fc"));
+          shakeRef.current.add(0.85);
           runtime.pause();
           setStatus("complete");
           onEngineStatusChange?.("paused");
-          playEffect(180, 0.2);
+          playSfx("snake-crash");
         }
       },
       onRender(interpolation) {
-        drawSnake(canvas, stateRef.current, quality, previousBodyRef.current, interpolation);
+        const now = performance.now();
+        const previous = lastRenderAtRef.current ?? now;
+        const deltaSeconds = Math.min(0.1, Math.max(0, (now - previous) / 1000));
+        lastRenderAtRef.current = now;
+        particlesRef.current.update(deltaSeconds);
+        shakeRef.current.update(deltaSeconds);
+        drawSnake(canvas, stateRef.current, quality, previousBodyRef.current, interpolation, particlesRef.current, shakeRef.current);
       },
     });
     runtimeRef.current = runtime;
-    drawSnake(canvas, stateRef.current, quality, previousBodyRef.current, 1);
+    drawSnake(canvas, stateRef.current, quality, previousBodyRef.current, 1, particlesRef.current, shakeRef.current);
     const onKeyDown = (event: KeyboardEvent) => {
       const direction = ({
         ArrowUp: "up",
@@ -309,7 +405,7 @@ export default function SnakeGame({
       setDirection(direction);
     };
     window.addEventListener("keydown", onKeyDown);
-    const observer = new ResizeObserver(() => drawSnake(canvas, stateRef.current, quality, previousBodyRef.current, 1));
+    const observer = new ResizeObserver(() => drawSnake(canvas, stateRef.current, quality, previousBodyRef.current, 1, particlesRef.current, shakeRef.current));
     observer.observe(canvas);
     return () => {
       runtime.destroy();
@@ -317,7 +413,7 @@ export default function SnakeGame({
       observer.disconnect();
       window.removeEventListener("keydown", onKeyDown);
     };
-  }, [onEngineStatusChange, playEffect, quality, setDirection, speed, togglePause]);
+  }, [onEngineStatusChange, playSfx, quality, setDirection, speed, togglePause]);
 
   const start = useCallback(async () => {
     void startAudio();
@@ -349,15 +445,20 @@ export default function SnakeGame({
         }
       }
       
-      setCurrentSeed(nextSeed);
-      stateRef.current = createSnakeState(nextSeed);
-      runtimeRef.current?.reset();
+    setCurrentSeed(nextSeed);
+    stateRef.current = createSnakeState(nextSeed);
+    runtimeRef.current?.reset();
+    runtimeRef.current?.setStepMs(getSnakeStepMs(speed, stateRef.current));
+    particlesRef.current.clear();
+    shakeRef.current.reset();
+    lastRenderAtRef.current = null;
+    setHud({ level: 1, combo: 0, activePower: null });
     }
     
     runtimeRef.current?.start();
     setStatus("running");
     onEngineStatusChange?.("running");
-  }, [onEngineStatusChange, signedIn, startAudio, status]);
+  }, [onEngineStatusChange, signedIn, speed, startAudio, status]);
 
 
   const restart = useCallback(() => {
@@ -370,17 +471,22 @@ export default function SnakeGame({
     const nextSeed = generatePracticeSeed();
     setCurrentSeed(nextSeed);
     stateRef.current = createSnakeState(nextSeed);
+    runtimeRef.current?.setStepMs(getSnakeStepMs(speed, stateRef.current));
     
     setScore(0);
+    setHud({ level: 1, combo: 0, activePower: null });
+    particlesRef.current.clear();
+    shakeRef.current.reset();
+    lastRenderAtRef.current = null;
     setStatus("ready");
     setCompletion(null);
     onEngineStatusChange?.("ready");
     const canvas = canvasRef.current;
     if (canvas) {
       previousBodyRef.current = stateRef.current.body.map(p => ({ ...p }));
-      drawSnake(canvas, stateRef.current, quality, previousBodyRef.current, 1);
+      drawSnake(canvas, stateRef.current, quality, previousBodyRef.current, 1, particlesRef.current, shakeRef.current);
     }
-  }, [onEngineStatusChange, quality]);
+  }, [onEngineStatusChange, quality, speed]);
 
   useEffect(() => {
     if (status === "complete" && sessionRef.current && !completion && !submitting) {
@@ -426,6 +532,18 @@ export default function SnakeGame({
       onPause={pause}
       onRestart={restart}
     >
+      <div className="mb-3 flex flex-wrap items-center justify-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-text-secondary">
+        <span className="rounded-full bg-surface/70 px-3 py-1.5">Level {hud.level}</span>
+        {hud.combo > 1 && <span className="rounded-full bg-[color-mix(in_srgb,var(--preset-accent)_18%,transparent)] px-3 py-1.5 text-text-primary">Combo ×{hud.combo}</span>}
+        {hud.activePower && (
+          <span
+            className="rounded-full px-3 py-1.5 text-slate-950"
+            style={{ backgroundColor: powerUpStyle[hud.activePower].color }}
+          >
+            {powerUpStyle[hud.activePower].symbol} {powerUpStyle[hud.activePower].label}
+          </span>
+        )}
+      </div>
       {status === "ready" && (
         <div className="flex bg-surface/50 rounded-full p-1 border border-[var(--glass-border)] shadow-inner backdrop-blur-sm justify-center w-fit mx-auto mb-2">
           {(["slow", "normal", "fast"] as const).map(s => (

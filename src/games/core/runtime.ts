@@ -120,6 +120,9 @@ export function createFixedStepRuntime(options: FixedStepRuntimeOptions) {
       previousTimestamp = null;
       previousRenderTimestamp = null;
     },
+    setStepMs(stepMs: number) {
+      clock.setStepMs(stepMs);
+    },
     destroy() {
       requested = false;
       destroyed = true;

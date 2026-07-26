@@ -169,8 +169,9 @@ export default function ZenCairnGame({
   const [score, setScore] = useState(0);
   const [completion, setCompletion] = useState<FinalizeGameSessionResponse | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [perfectDrops, setPerfectDrops] = useState(0);
   
-  const { playEffect, start: startAudio } = useGameAudio();
+  const { playImpact, playSfx, playThud, start: startAudio } = useGameAudio();
 
   const pause = useCallback(() => {
     setStatus(s => {
@@ -235,7 +236,9 @@ export default function ZenCairnGame({
           
           if (stateRef.current.score > prevScore) {
             setScore(stateRef.current.score);
-            playEffect(660); // Stone clack
+            setPerfectDrops(stateRef.current.perfectDrops);
+            playSfx("cairn-drop");
+            playThud(0.55);
             
             // Add Particles
             if (quality !== "low") {
@@ -260,7 +263,7 @@ export default function ZenCairnGame({
               }
             }
           } else if (stateRef.current.complete) {
-            playEffect(180, 0.2); // Tumble sound
+            playImpact(0.8);
           }
         }
         
@@ -306,7 +309,7 @@ export default function ZenCairnGame({
       window.removeEventListener("keydown", onKeyDown);
       canvas.removeEventListener("pointerdown", onPointerDown);
     };
-  }, [handleDrop, onEngineStatusChange, playEffect, quality, togglePause]);
+  }, [handleDrop, onEngineStatusChange, playImpact, playSfx, playThud, quality, togglePause]);
 
   const start = useCallback(async () => {
     void startAudio();
@@ -314,6 +317,7 @@ export default function ZenCairnGame({
     if (status === "complete" || status === "ready") {
       setCompletion(null);
       setScore(0);
+      setPerfectDrops(0);
       actionRef.current = [];
       traceRef.current = [];
       
@@ -363,6 +367,7 @@ export default function ZenCairnGame({
     prevStateRef.current = undefined;
     
     setScore(0);
+    setPerfectDrops(0);
     setStatus("ready");
     setCompletion(null);
     onEngineStatusChange?.("ready");
@@ -414,6 +419,7 @@ export default function ZenCairnGame({
       onPause={pause}
       onRestart={restart}
     >
+      {perfectDrops > 0 && <div className="mb-3 text-center text-xs font-semibold uppercase tracking-[0.12em] text-amber-700">Perfect drops {perfectDrops}</div>}
       {completion && completion.rewardGranted > 0 && (
         <div className="mt-2 rounded-xl bg-[color-mix(in_srgb,var(--preset-accent)_20%,transparent)] p-4 text-center">
           <Check className="mx-auto mb-2 h-6 w-6 text-accent" />

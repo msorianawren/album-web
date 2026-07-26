@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import type { GameDifficulty, GamePublishedVersion, GameReplayTrace, GameVerificationResult } from "../../core/types";
-import { createQuietMeadowState, revealCell, toggleFlag } from "./model";
+import { chordReveal, createQuietMeadowState, revealCell, toggleFlag } from "./model";
 import type { QuietMeadowActionPayload } from "./trace";
 import type { QuietMeadowConfig } from "./types";
 
@@ -45,8 +45,10 @@ export function verifyQuietMeadow(
     let success = false;
     if (action.type === "reveal") {
       success = revealCell(state, payload.x, payload.y);
-    } else if (action.type === "flag" || action.type === "unflag") {
+    } else if (action.type === "flag" || action.type === "question" || action.type === "unflag") {
       success = toggleFlag(state, payload.x, payload.y);
+    } else if (action.type === "chord") {
+      success = chordReveal(state, payload.x, payload.y);
     } else {
       return { valid: false, reason: "Unknown action type", versionId: version.id, replayDigest, score: 0, durationTicks: 0 };
     }

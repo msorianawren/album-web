@@ -10,13 +10,13 @@ import {
   createWrenFlightState,
   stepWrenFlight,
   flapWren,
+  getWrenGapSize,
   type WrenFlightState,
 } from "./model";
 
 const WREN_X = 30;
 const WREN_RADIUS = 3;
 const OBSTACLE_WIDTH = 8;
-const GAP_SIZE = 35;
 
 function drawWrenFlight(
   canvas: HTMLCanvasElement, 
@@ -42,8 +42,9 @@ function drawWrenFlight(
 
   // Background Gradient (Vibrant Sky/Canopy)
   const gradient = context.createLinearGradient(0, 0, 0, height);
-  gradient.addColorStop(0, "#4a90e2"); // Sky blue
-  gradient.addColorStop(1, "#84a98c"); // Canopy green
+  const night = Math.min(0.72, state.score / 36);
+  gradient.addColorStop(0, `hsl(${210 + night * 26}, ${58 - night * 18}%, ${58 - night * 32}%)`);
+  gradient.addColorStop(1, `hsl(${132 + night * 18}, ${30 + night * 16}%, ${54 - night * 30}%)`);
   context.fillStyle = gradient;
   context.fillRect(0, 0, width, height);
 
@@ -72,7 +73,7 @@ function drawWrenFlight(
     const x = (obsX / 100) * width;
     const w = (OBSTACLE_WIDTH / 100) * width;
     const gapCenter = (obs.gapY / 100) * height;
-    const gapHalf = (GAP_SIZE / 200) * height;
+    const gapHalf = (getWrenGapSize(state.score) / 200) * height;
 
     // Top vine
     const topGradient = context.createLinearGradient(x, 0, x + w, 0);
@@ -101,6 +102,10 @@ function drawWrenFlight(
   context.fillStyle = "#f4a261"; // Orange/Amber bird
   context.beginPath();
   context.ellipse(x, y, rX, rY, 0, 0, Math.PI * 2);
+  context.fill();
+  context.fillStyle = "#f7d27a";
+  context.beginPath();
+  context.ellipse(x - rX * 0.1, y + Math.sin(state.tickCounter * 0.65) * rY * 0.4, rX * 0.72, rY * 0.32, -0.45, 0, Math.PI * 2);
   context.fill();
   
   // Eye
@@ -149,7 +154,7 @@ export default function WrenFlightGame({
   const [completion, setCompletion] = useState<FinalizeGameSessionResponse | null>(null);
   const [submitting, setSubmitting] = useState(false);
   
-  const { playEffect, start: startAudio } = useGameAudio();
+  const { playImpact, playSfx, start: startAudio } = useGameAudio();
 
   const pause = useCallback(() => {
     setStatus(s => {
@@ -189,7 +194,7 @@ export default function WrenFlightGame({
     drawWrenFlight(canvas, stateRef.current, quality);
 
     const stepMs = 1000 / 60; // Physics ALWAYS runs at 60Hz for deterministic server verification
-    const targetRenderFps = quality === "high" ? 120 : quality === "balanced" ? 60 : 30;
+    const targetRenderFps = quality === "low" ? 30 : 60;
 
     const runtime = createFixedStepRuntime({
       stepMs,
@@ -210,7 +215,7 @@ export default function WrenFlightGame({
         if (didFlap) {
           flapWren(stateRef.current);
           traceRef.current.push({ tick, type: "flap", payload: null });
-          playEffect(550, 0.5); // Short flap sound
+          playSfx("flight-flap");
         }
         
         const prevScore = stateRef.current.score;
@@ -218,14 +223,14 @@ export default function WrenFlightGame({
         
         if (stateRef.current.score > prevScore) {
           setScore(stateRef.current.score);
-          playEffect(660); // Score sound
+          playSfx("snake-food");
         }
 
         if (stateRef.current.complete) {
           runtime.pause();
           setStatus("complete");
           onEngineStatusChange?.("paused");
-          playEffect(180, 0.2); // Crash sound
+          playImpact(0.7);
         }
       },
       onRender(interpolation) {
@@ -262,7 +267,7 @@ export default function WrenFlightGame({
       window.removeEventListener("keydown", onKeyDown);
       canvas.removeEventListener("pointerdown", onPointerDown);
     };
-  }, [handleFlap, onEngineStatusChange, playEffect, quality, togglePause]);
+  }, [handleFlap, onEngineStatusChange, playImpact, playSfx, quality, togglePause]);
 
   const start = useCallback(async () => {
     void startAudio();

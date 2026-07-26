@@ -5,6 +5,7 @@ export type ZenCairnState = {
   blocks: Array<{ x: number; width: number; color: string }>;
   movingBlock: { x: number; width: number; direction: number; color: string } | null;
   score: number;
+  perfectDrops: number;
   tickCounter: number;
   complete: boolean;
 };
@@ -30,6 +31,7 @@ export function createZenCairnState(seed: string): ZenCairnState {
     blocks: [{ x: 50, width: BASE_WIDTH, color: baseColor }],
     movingBlock: { x: 10, width: BASE_WIDTH, direction: 1, color: nextColor },
     score: 0,
+    perfectDrops: 0,
     tickCounter: 0,
     complete: false,
   };
@@ -72,7 +74,12 @@ export function dropStone(state: ZenCairnState) {
       color: moving.color,
     });
     
-    state.score++;
+    if (diff < 2.5) {
+      state.score += 2;
+      state.perfectDrops++;
+    } else {
+      state.score++;
+    }
 
     // Spawn next block
     const nextColorIndex = (state.score + 1) % STONE_COLORS.length;

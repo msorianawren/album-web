@@ -18,7 +18,9 @@ const GRAVITY = 0.15;
 const FLAP_VELOCITY = -2.5;
 const OBSTACLE_SPEED = 1.5;
 const OBSTACLE_SPAWN_INTERVAL = 120; // ticks
-const GAP_SIZE = 35; // Size of the safe gap (out of 100)
+export function getWrenGapSize(score: number) {
+  return Math.max(24, 35 - Math.floor(score / 3) * 2);
+}
 const WREN_X = 30; // Wren is fixed at 30% width
 const WREN_RADIUS = 3; // roughly 3% width/height
 const OBSTACLE_WIDTH = 8; // 8% width
@@ -90,8 +92,9 @@ export function stepWrenFlight(state: WrenFlightState) {
     const obsRight = obs.x + OBSTACLE_WIDTH;
     
     // Gap boundaries
-    const gapTop = obs.gapY - GAP_SIZE / 2;
-    const gapBottom = obs.gapY + GAP_SIZE / 2;
+    const gapSize = getWrenGapSize(state.score);
+    const gapTop = obs.gapY - gapSize / 2;
+    const gapBottom = obs.gapY + gapSize / 2;
 
     if (wrenRight > obsLeft && wrenLeft < obsRight) {
       // In X range of obstacle. Check Y

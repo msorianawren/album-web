@@ -11,6 +11,8 @@ export type EchoChimesState = {
   complete: boolean;
 };
 
+export const ECHO_CHIME_COUNT = 8;
+
 export function createEchoChimesState(seed: string): EchoChimesState {
   const state: EchoChimesState = {
     seed,
@@ -30,7 +32,7 @@ export function createEchoChimesState(seed: string): EchoChimesState {
 
 function appendSequence(state: EchoChimesState) {
   const rng = createSeededRng(state.seed + state.sequence.length);
-  const nextNote = Math.floor(rng.next() * 4);
+  const nextNote = Math.floor(rng.next() * ECHO_CHIME_COUNT);
   state.sequence.push(nextNote);
 }
 

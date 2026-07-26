@@ -4,6 +4,7 @@ export interface QuietMeadowCell {
   isMine: boolean;
   isRevealed: boolean;
   isFlagged: boolean;
+  isQuestioned: boolean;
   adjacentMines: number;
 }
 

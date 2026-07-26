@@ -62,7 +62,7 @@ function drawFlower(
   context.restore();
 }
 
-function drawMemory(canvas: HTMLCanvasElement, state: MemoryGardenState, quality: GameClientProps["quality"], flipProgress: number[]) {
+function drawMemory(canvas: HTMLCanvasElement, state: MemoryGardenState, quality: GameClientProps["quality"], flipProgress: number[], hintIndexes: readonly number[]) {
   const rect = canvas.getBoundingClientRect();
   const maxDpr = quality === "low" ? 1 : window.matchMedia("(pointer: coarse)").matches ? 1.25 : 1.5;
   const dpr = Math.min(window.devicePixelRatio || 1, maxDpr);
@@ -96,12 +96,13 @@ function drawMemory(canvas: HTMLCanvasElement, state: MemoryGardenState, quality
     context.translate(-(x + metrics.cell / 2), -(y + metrics.cell / 2));
 
     context.fillStyle = isFaceUp ? "rgba(255,250,238,.94)" : "rgba(38,70,83,.6)";
-    context.strokeStyle = index === state.cursor ? "#e9c46a" : "rgba(255,255,255,.1)";
-    context.lineWidth = index === state.cursor ? Math.max(2, metrics.cell * 0.04) : 1;
+    const hinted = hintIndexes.includes(index);
+    context.strokeStyle = hinted ? "#f8d57e" : index === state.cursor ? "#e9c46a" : "rgba(255,255,255,.1)";
+    context.lineWidth = hinted || index === state.cursor ? Math.max(2, metrics.cell * 0.04) : 1;
     
-    if (index === state.cursor) {
+    if (hinted || index === state.cursor) {
       context.shadowBlur = 15;
-      context.shadowColor = "#e9c46a";
+      context.shadowColor = hinted ? "#f8d57e" : "#e9c46a";
     } else {
       context.shadowBlur = 5;
       context.shadowColor = "rgba(0,0,0,0.5)";
@@ -152,13 +153,18 @@ export default function MemoryGardenGame({
 
   const runtimeRef = useRef<ReturnType<typeof createFixedStepRuntime> | null>(null);
   const flipProgressRef = useRef<number[]>(new Array(16).fill(0));
+  const hintIndexesRef = useRef<number[]>([]);
+  const lastPlayerActionTickRef = useRef(0);
   
   const [status, setStatus] = useState<"ready" | "running" | "paused" | "complete">("ready");
   const [score, setScore] = useState("0 / 8");
   const [completion, setCompletion] = useState<FinalizeGameSessionResponse | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const [streak, setStreak] = useState(0);
+  const [hasHint, setHasHint] = useState(false);
   
-  const { playEffect, start: startAudio } = useGameAudio();
+  const { playSfx, start: startAudio } = useGameAudio();
 
   const pause = useCallback(() => {
     setStatus(s => {
@@ -200,11 +206,9 @@ export default function MemoryGardenGame({
     let dirty = true;
     
     const stepMs = 1000 / 60; // Physics ALWAYS runs at 60Hz for deterministic server verification
-    const targetRenderFps = quality === "high" ? 120 : quality === "balanced" ? 60 : 30;
-
     const runtime = createFixedStepRuntime({
       stepMs,
-      targetRenderFps,
+      targetRenderFps: quality === "low" ? 30 : 60,
       onTick(tick) {
         const action = actionRef.current.shift();
         if (action?.type === "cursor") {
@@ -212,21 +216,39 @@ export default function MemoryGardenGame({
           dirty = true;
         }
         if (action?.type === "reveal") {
+          lastPlayerActionTickRef.current = tick;
+          hintIndexesRef.current = [];
+          setHasHint(false);
           const index = action.index ?? stateRef.current.cursor;
           const before = stateRef.current.pairs;
           const changed = revealMemoryCard(stateRef.current, index, tick);
           if (changed) {
             traceRef.current.push({ tick, type: "reveal", payload: index });
-            playEffect(stateRef.current.pairs > before ? 720 : 460);
+            playSfx(stateRef.current.pairs > before ? "memory-match" : "memory-flip");
             setScore(`${stateRef.current.pairs} / 8`);
+            setStreak(stateRef.current.streak);
             dirty = true;
           }
         }
-        if (stepMemoryGarden(stateRef.current, tick)) dirty = true;
+        if (stepMemoryGarden(stateRef.current, tick)) {
+          playSfx("memory-miss");
+          dirty = true;
+        }
         if (stateRef.current.complete) {
           runtime.pause();
           setStatus("complete");
           onEngineStatusChange?.("paused");
+          playSfx("memory-win");
+        }
+        if (tick % 60 === 0) setElapsedSeconds(Math.floor(tick / 60));
+        if (tick - lastPlayerActionTickRef.current >= 1800 && hintIndexesRef.current.length === 0) {
+          const first = stateRef.current.cards.find((card) => !card.matched && !card.revealed);
+          const second = first && stateRef.current.cards.find((card) => card.id !== first.id && card.pair === first.pair && !card.matched && !card.revealed);
+          if (first && second) {
+            hintIndexesRef.current = [first.id, second.id];
+            setHasHint(true);
+            dirty = true;
+          }
         }
         
         // Update 3D flip animations
@@ -245,12 +267,12 @@ export default function MemoryGardenGame({
       },
       onRender() {
         if (!dirty) return;
-        drawMemory(canvas, stateRef.current, quality, flipProgressRef.current);
+        drawMemory(canvas, stateRef.current, quality, flipProgressRef.current, hintIndexesRef.current);
         dirty = false;
       },
     });
     runtimeRef.current = runtime;
-    drawMemory(canvas, stateRef.current, quality, flipProgressRef.current);
+    drawMemory(canvas, stateRef.current, quality, flipProgressRef.current, hintIndexesRef.current);
     
     const onKeyDown = (event: KeyboardEvent) => {
       const move = ({
@@ -289,7 +311,7 @@ export default function MemoryGardenGame({
     };
     window.addEventListener("keydown", onKeyDown);
     canvas.addEventListener("pointerup", onPointerUp);
-    const observer = new ResizeObserver(() => drawMemory(canvas, stateRef.current, quality, flipProgressRef.current));
+    const observer = new ResizeObserver(() => drawMemory(canvas, stateRef.current, quality, flipProgressRef.current, hintIndexesRef.current));
     observer.observe(canvas);
     return () => {
       runtime.destroy();
@@ -298,7 +320,7 @@ export default function MemoryGardenGame({
       window.removeEventListener("keydown", onKeyDown);
       canvas.removeEventListener("pointerup", onPointerUp);
     };
-  }, [moveCursor, onEngineStatusChange, playEffect, quality, reveal, togglePause]);
+  }, [moveCursor, onEngineStatusChange, playSfx, quality, reveal, togglePause]);
 
   const start = useCallback(async () => {
     void startAudio();
@@ -306,6 +328,11 @@ export default function MemoryGardenGame({
     if (status === "complete" || status === "ready") {
       setCompletion(null);
       setScore("0 / 8");
+      setElapsedSeconds(0);
+      setStreak(0);
+      setHasHint(false);
+      hintIndexesRef.current = [];
+      lastPlayerActionTickRef.current = 0;
       actionRef.current = [];
       traceRef.current = [];
       
@@ -353,13 +380,18 @@ export default function MemoryGardenGame({
     stateRef.current = createMemoryGardenState(nextSeed);
     
     setScore("0 / 8");
+    setElapsedSeconds(0);
+    setStreak(0);
+    setHasHint(false);
     setStatus("ready");
     setCompletion(null);
     onEngineStatusChange?.("ready");
     
     flipProgressRef.current = new Array(16).fill(0);
+    hintIndexesRef.current = [];
+    lastPlayerActionTickRef.current = 0;
     const canvas = canvasRef.current;
-    if (canvas) drawMemory(canvas, stateRef.current, quality, flipProgressRef.current);
+    if (canvas) drawMemory(canvas, stateRef.current, quality, flipProgressRef.current, hintIndexesRef.current);
   }, [onEngineStatusChange, quality]);
 
   useEffect(() => {
@@ -406,6 +438,11 @@ export default function MemoryGardenGame({
       onPause={pause}
       onRestart={restart}
     >
+      <div className="mb-3 flex flex-wrap justify-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-text-secondary">
+        <span className="rounded-full bg-surface/70 px-3 py-1.5">Time {Math.floor(elapsedSeconds / 60)}:{String(elapsedSeconds % 60).padStart(2, "0")}</span>
+        {streak > 1 && <span className="rounded-full bg-[color-mix(in_srgb,var(--preset-accent)_18%,transparent)] px-3 py-1.5 text-text-primary">Bloom streak ×{streak}</span>}
+        {hasHint && <span className="rounded-full bg-amber-100 px-3 py-1.5 text-amber-900">A pair is blooming</span>}
+      </div>
       {completion && (
         <div className="mt-2 rounded-xl bg-[color-mix(in_srgb,var(--preset-accent)_20%,transparent)] p-4 text-center">
           <Check className="mx-auto mb-2 h-6 w-6 text-accent" />

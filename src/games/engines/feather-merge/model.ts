@@ -10,6 +10,17 @@ export interface FeatherMergeState {
   complete: boolean;
 }
 
+export function cloneFeatherMergeState(state: FeatherMergeState): FeatherMergeState {
+  return {
+    ...state,
+    cells: state.cells.map((cell) => cell ? { ...cell } : null),
+  };
+}
+
+export function getHighestFeatherTile(state: FeatherMergeState) {
+  return state.cells.reduce((highest, cell) => Math.max(highest, cell?.value ?? 0), 0);
+}
+
 function transpose(cells: (FeatherCell | null)[]) {
   return cells.map((_, index) => cells[(index % 4) * 4 + Math.floor(index / 4)]);
 }

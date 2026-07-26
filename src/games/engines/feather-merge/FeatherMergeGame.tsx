@@ -1,7 +1,7 @@
 "use client";
 
-import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Check } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Check, Undo2 } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { GameSurface } from "@/components/games/GameSurface";
 import { Button } from "@/components/ui/Button";
 import { useGameAudio } from "@/games/core/audio-context.client";
@@ -9,6 +9,7 @@ import { createFixedStepRuntime } from "@/games/core/runtime";
 import type { GameClientProps, FinalizeGameSessionResponse, GameInputAction, GameReplayTrace } from "@/games/core/types";
 import {
   createFeatherMergeState,
+  cloneFeatherMergeState,
   moveFeatherMerge,
   type MergeDirection,
 } from "./model";
@@ -29,6 +30,12 @@ const palette: Record<number, string> = {
   1024: "#6a040f",
   2048: "#ffba08",
 };
+
+function readBestScore() {
+  if (typeof window === "undefined") return 0;
+  const stored = Number(window.localStorage.getItem("game:feather-merge:best"));
+  return Number.isFinite(stored) && stored > 0 ? stored : 0;
+}
 
 function generatePracticeSeed() {
   return "practice-" + Math.random().toString(36).slice(2);
@@ -54,8 +61,12 @@ export default function FeatherMergeGame({
   const [cells, setCells] = useState(initialState.cells);
   const [completion, setCompletion] = useState<FinalizeGameSessionResponse | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [bestScore, setBestScore] = useState(readBestScore);
+  const [undosLeft, setUndosLeft] = useState(3);
+  const [undoAvailable, setUndoAvailable] = useState(false);
+  const historyRef = useRef<Array<{ state: ReturnType<typeof cloneFeatherMergeState>; traceLength: number }>>([]);
 
-  const { playEffect, start: startAudio } = useGameAudio();
+  const { playSfx, start: startAudio } = useGameAudio();
 
   const pause = useCallback(() => {
     setStatus(s => {
@@ -97,11 +108,21 @@ export default function FeatherMergeGame({
         const direction = inputRef.current.shift();
         if (!direction) return;
         
-        traceRef.current.push({ tick, type: "direction", payload: direction });
-        
+        const beforeMove = cloneFeatherMergeState(stateRef.current);
+        const traceLength = traceRef.current.length;
+        const scoreBefore = stateRef.current.score;
         if (moveFeatherMerge(stateRef.current, direction)) {
+          historyRef.current.push({ state: beforeMove, traceLength });
+          if (historyRef.current.length > 3) historyRef.current.shift();
+          setUndoAvailable(true);
+          traceRef.current.push({ tick, type: "direction", payload: direction });
           setScore(stateRef.current.score);
-          playEffect(420 + Math.min(460, stateRef.current.score / 4));
+          setBestScore((currentBest) => {
+            const nextBest = Math.max(currentBest, stateRef.current.score);
+            if (nextBest !== currentBest) window.localStorage.setItem("game:feather-merge:best", String(nextBest));
+            return nextBest;
+          });
+          playSfx(stateRef.current.score > scoreBefore ? "merge-match" : "merge-move");
           dirty = true;
         }
         if (stateRef.current.complete) {
@@ -164,7 +185,19 @@ export default function FeatherMergeGame({
       window.removeEventListener("pointerdown", onPointerDown);
       window.removeEventListener("pointerup", onPointerUp);
     };
-  }, [onEngineStatusChange, playEffect, quality, queueMove, togglePause]);
+  }, [onEngineStatusChange, playSfx, quality, queueMove, togglePause]);
+
+  const undo = useCallback(() => {
+    if (status !== "running" || undosLeft === 0) return;
+    const previous = historyRef.current.pop();
+    if (!previous) return;
+    stateRef.current = cloneFeatherMergeState(previous.state);
+    traceRef.current = traceRef.current.slice(0, previous.traceLength);
+    setCells([...stateRef.current.cells]);
+    setScore(stateRef.current.score);
+    setUndosLeft((left) => left - 1);
+    setUndoAvailable(historyRef.current.length > 0);
+  }, [status, undosLeft]);
 
   const start = useCallback(async () => {
     void startAudio();
@@ -174,6 +207,9 @@ export default function FeatherMergeGame({
       setScore(0);
       inputRef.current = [];
       traceRef.current = [];
+      historyRef.current = [];
+      setUndosLeft(3);
+      setUndoAvailable(false);
 
       let nextSeed = generatePracticeSeed();
       
@@ -213,6 +249,8 @@ export default function FeatherMergeGame({
     runtimeRef.current?.reset();
     inputRef.current = [];
     traceRef.current = [];
+    historyRef.current = [];
+    setUndoAvailable(false);
     sessionRef.current = null;
 
     const nextSeed = generatePracticeSeed();
@@ -221,6 +259,7 @@ export default function FeatherMergeGame({
     setCells([...stateRef.current.cells]);
     
     setScore(0);
+    setUndosLeft(3);
     setStatus("ready");
     setCompletion(null);
     onEngineStatusChange?.("ready");
@@ -259,16 +298,28 @@ export default function FeatherMergeGame({
     }
   }, [status, completion, submitting, quality]);
 
+  const highestTile = useMemo(
+    () => cells.reduce((highest, cell) => Math.max(highest, cell?.value ?? 0), 0),
+    [cells],
+  );
+
   return (
     <GameSurface
       title="Feather Merge"
       status={status}
       score={String(score)}
-      detail="Swipe, use arrow keys, WASD, or the controls to merge equal feathers. Reach 2048 without filling the board. Target: 500 score to earn rewards."
+      detail="Swipe, use arrow keys, WASD, or the controls to merge equal feathers. Three undo moves are available. Target: 500 score to earn rewards."
       onStart={start}
       onPause={pause}
       onRestart={restart}
     >
+      <div className="mb-3 flex items-center justify-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-text-secondary">
+        <span className="rounded-full bg-surface/70 px-3 py-1.5">Best {bestScore}</span>
+        <span className="rounded-full bg-surface/70 px-3 py-1.5">Highest {highestTile}</span>
+        <Button variant="secondary" disabled={status !== "running" || undosLeft === 0 || !undoAvailable} onClick={undo}>
+          <Undo2 className="h-4 w-4" /> Undo ({undosLeft})
+        </Button>
+      </div>
       <div className="relative aspect-square w-full max-w-[min(78dvh,42rem)] mx-auto overflow-hidden rounded-[1.5rem] bg-gradient-to-br from-[#1d2d44] to-[#0d1321] shadow-2xl border border-border">
         <div className="absolute inset-[9%] rounded-[4.5%] bg-[rgba(255,255,255,.05)] shadow-inner">
           {/* Background grid */}
@@ -305,7 +356,9 @@ export default function FeatherMergeGame({
                   top: `${2.5 + y * 24.375}%`,
                   width: '21.875%',
                   height: '21.875%',
-                  backgroundColor: palette[cell.value] ?? "#1d2436",
+                  background: cell.value === 2048
+                    ? "linear-gradient(135deg, #f59e0b, #f43f5e, #8b5cf6, #22d3ee)"
+                    : `linear-gradient(135deg, ${palette[cell.value] ?? "#1d2436"}, color-mix(in srgb, ${palette[cell.value] ?? "#1d2436"} 64%, #ffffff))`,
                   color: [8, 16, 512, 1024].includes(cell.value) ? "#f8f9fa" : "#1d2d44",
                   fontSize: cell.value >= 1000 ? "1.5rem" : cell.value >= 100 ? "1.8rem" : "2.2rem",
                   zIndex: cell.value,

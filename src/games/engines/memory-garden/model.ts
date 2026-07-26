@@ -14,6 +14,8 @@ export interface MemoryGardenState {
   cursor: number;
   moves: number;
   pairs: number;
+  streak: number;
+  lastMatchTick: number;
   mismatchUntilTick: number | null;
   complete: boolean;
 }
@@ -32,6 +34,8 @@ export function createMemoryGardenState(seed: string): MemoryGardenState {
     cursor: 0,
     moves: 0,
     pairs: 0,
+    streak: 0,
+    lastMatchTick: -1,
     mismatchUntilTick: null,
     complete: false,
   };
@@ -57,8 +61,11 @@ export function revealMemoryCard(state: MemoryGardenState, index: number, tick: 
       second.matched = true;
       state.selected = [];
       state.pairs += 1;
+      state.streak += 1;
+      state.lastMatchTick = tick;
       state.complete = state.pairs === 8;
     } else {
+      state.streak = 0;
       state.mismatchUntilTick = tick + 42;
     }
   }

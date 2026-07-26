@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/Button";
 import { useGameAudio } from "@/games/core/audio-context.client";
 import type { GameClientProps, FinalizeGameSessionResponse, GameInputAction, GameReplayTrace } from "@/games/core/types";
 import { createFixedStepRuntime } from "@/games/core/runtime";
-import { createQuietMeadowState, revealCell, toggleFlag } from "./model";
+import { chordReveal, createQuietMeadowState, revealCell, toggleFlag } from "./model";
 import type { QuietMeadowState, QuietMeadowDifficulty } from "./types";
 import { quietMeadowDifficulties } from "./config";
 import { createGuestScoreStorage } from "@/games/core/storage";
@@ -39,17 +39,18 @@ export default function QuietMeadowGame({
   const [submitting, setSubmitting] = useState(false);
   const [flagMode, setFlagMode] = useState(false);
   
-  const { playEffect, start: startAudio } = useGameAudio();
+  const { playImpact, playSfx, start: startAudio } = useGameAudio();
 
   const updateState = useCallback(() => {
     setState({ ...stateRef.current });
     if (stateRef.current.status === "won" || stateRef.current.status === "lost") {
       setStatus("complete");
       onEngineStatusChange?.("paused");
-      if (stateRef.current.status === "won") playEffect(660);
-      else playEffect(180, 0.2);
+      if (stateRef.current.status === "won") playSfx("memory-win");
+      else if (stateRef.current.status === "lost") playImpact(0.85);
+      else playSfx("memory-flip");
     }
-  }, [onEngineStatusChange, playEffect]);
+  }, [onEngineStatusChange, playImpact, playSfx]);
 
   const handleReveal = useCallback((x: number, y: number) => {
     if (status !== "running" || stateRef.current.status === "won" || stateRef.current.status === "lost") return;
@@ -65,6 +66,8 @@ export default function QuietMeadowGame({
     const changed = toggleFlag(stateRef.current, x, y);
     if (changed) {
       traceRef.current.push({ tick: actionCounterRef.current++, type: stateRef.current.cells[y * stateRef.current.width + x].isFlagged ? "flag" : "unflag", payload: { x, y } });
+      const cell = stateRef.current.cells[y * stateRef.current.width + x];
+      traceRef.current[traceRef.current.length - 1].type = cell.isFlagged ? "flag" : cell.isQuestioned ? "question" : "unflag";
       updateState();
     }
   }, [status, updateState]);
@@ -78,6 +81,14 @@ export default function QuietMeadowGame({
     e.preventDefault();
     handleFlag(x, y);
   }, [handleFlag]);
+
+  const handleChord = useCallback((x: number, y: number) => {
+    if (status !== "running") return;
+    if (chordReveal(stateRef.current, x, y)) {
+      traceRef.current.push({ tick: actionCounterRef.current++, type: "chord", payload: { x, y } });
+      updateState();
+    }
+  }, [status, updateState]);
 
   const start = useCallback(async () => {
     void startAudio();
@@ -349,9 +360,10 @@ export default function QuietMeadowGame({
                 type="button"
                 role="gridcell"
                 onClick={() => handleCellAction(x, y)}
+                onDoubleClick={() => handleChord(x, y)}
                 onContextMenu={(e) => handleContextMenu(e, x, y)}
                 disabled={status !== "running" && status !== "complete"}
-                aria-label={cell.isRevealed ? (cell.isMine ? "Exploded mine" : cell.adjacentMines > 0 ? `Revealed ${cell.adjacentMines}` : "Revealed empty") : cell.isFlagged ? "Flagged" : "Hidden"}
+                aria-label={cell.isRevealed ? (cell.isMine ? "Exploded mine" : cell.adjacentMines > 0 ? `Revealed ${cell.adjacentMines}` : "Revealed empty") : cell.isFlagged ? "Flagged" : cell.isQuestioned ? "Questioned" : "Hidden"}
                 className={`aspect-square w-full rounded flex items-center justify-center text-sm font-bold transition-all duration-300
                   ${cell.isRevealed 
                     ? (cell.isMine ? "bg-red-200 text-red-700 shadow-inner scale-95" : "bg-[#e2e8df] text-[#3a4f41] shadow-inner scale-100") 
@@ -361,6 +373,7 @@ export default function QuietMeadowGame({
                 {cell.isRevealed && !cell.isMine && cell.adjacentMines > 0 && cell.adjacentMines}
                 {cell.isRevealed && cell.isMine && "💥"}
                 {!cell.isRevealed && cell.isFlagged && <Flag className="h-4 w-4 text-[#d97757] fill-current" />}
+                {!cell.isRevealed && cell.isQuestioned && <span className="text-[#4a6352]">?</span>}
               </button>
             );
           })}
@@ -373,6 +386,7 @@ export default function QuietMeadowGame({
           <ul className="mt-3 space-y-2 text-sm text-text-secondary">
             <li className="flex items-center gap-2"><MousePointer2 className="h-4 w-4" /> Left Click / Tap = Reveal</li>
             <li className="flex items-center gap-2"><Flag className="h-4 w-4" /> Right Click = Flag</li>
+            <li className="flex items-center gap-2">Double click a number = Auto reveal</li>
             <li className="flex items-center gap-2">Keyboard <strong>F</strong> = Toggle Flag Mode</li>
           </ul>
           <div className="mt-4 pt-4 border-t border-border">

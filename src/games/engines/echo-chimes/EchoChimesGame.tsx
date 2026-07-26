@@ -10,6 +10,7 @@ import {
   createEchoChimesState,
   stepEchoChimes,
   pressChime,
+  ECHO_CHIME_COUNT,
   type EchoChimesState,
 } from "./model";
 
@@ -18,6 +19,10 @@ const CHIME_COLORS = [
   "#e0e1dd", // Silver
   "#cd7f32", // Bronze
   "#8ecae6", // Glass
+  "#9b8afb", // Violet glass
+  "#e76f8d", // Rose brass
+  "#8ac9a4", // Jade glass
+  "#f6bd60", // Gold brass
 ];
 
 const CHIME_GLOWS = [
@@ -25,6 +30,10 @@ const CHIME_GLOWS = [
   "224, 225, 221",
   "205, 127, 50",
   "142, 202, 230",
+  "155, 138, 251",
+  "231, 111, 141",
+  "138, 201, 164",
+  "246, 189, 96",
 ];
 
 const CHIME_PITCHES = [
@@ -32,6 +41,10 @@ const CHIME_PITCHES = [
   554.37, // C#5
   659.25, // E5
   880, // A5
+  987.77, // B5
+  1108.73, // C#6
+  1318.51, // E6
+  1760, // A6
 ];
 
 function drawChimes(canvas: HTMLCanvasElement, state: EchoChimesState, quality: GameClientProps["quality"], ripples?: Array<{x: number, y: number, radius: number, alpha: number, color: string}>) {
@@ -55,12 +68,11 @@ function drawChimes(canvas: HTMLCanvasElement, state: EchoChimesState, quality: 
   context.fillStyle = gradient;
   context.fillRect(0, 0, width, height);
 
-  // Draw 4 chimes
-  const chimeWidth = width * 0.15;
-  const spacing = width * 0.05;
-  const startX = (width - (4 * chimeWidth + 3 * spacing)) / 2;
+  const chimeWidth = width * 0.075;
+  const spacing = width * 0.025;
+  const startX = (width - (ECHO_CHIME_COUNT * chimeWidth + (ECHO_CHIME_COUNT - 1) * spacing)) / 2;
 
-  for (let i = 0; i < 4; i++) {
+  for (let i = 0; i < ECHO_CHIME_COUNT; i++) {
     const x = startX + i * (chimeWidth + spacing);
     const y = height * 0.2;
     const chimeHeight = height * 0.5 + (i % 2 === 0 ? height * 0.1 : 0); // slight variation in length
@@ -140,11 +152,11 @@ export default function EchoChimesGame({
   const [completion, setCompletion] = useState<FinalizeGameSessionResponse | null>(null);
   const [submitting, setSubmitting] = useState(false);
   
-  const { start: startAudio, playEffect } = useGameAudio();
+  const { start: startAudio, playBell, playSfx } = useGameAudio();
 
   const playChimeAudio = useCallback((index: number) => {
-    playEffect(CHIME_PITCHES[index], 1.5);
-  }, [playEffect]);
+    playBell(CHIME_PITCHES[index], 1.2);
+  }, [playBell]);
 
   const pause = useCallback(() => {
     setStatus(s => {
@@ -189,9 +201,9 @@ export default function EchoChimesGame({
       if (quality === "low") return;
       const width = canvas.width;
       const height = canvas.height;
-      const chimeWidth = width * 0.15;
-      const spacing = width * 0.05;
-      const startX = (width - (4 * chimeWidth + 3 * spacing)) / 2;
+      const chimeWidth = width * 0.075;
+      const spacing = width * 0.025;
+      const startX = (width - (ECHO_CHIME_COUNT * chimeWidth + (ECHO_CHIME_COUNT - 1) * spacing)) / 2;
       const rX = startX + index * (chimeWidth + spacing) + chimeWidth / 2;
       const rY = height * 0.2 + (height * 0.5 + (index % 2 === 0 ? height * 0.1 : 0)) / 2;
       ripplesRef.current.push({ x: rX, y: rY, radius: 10, alpha: 1, color: CHIME_GLOWS[index] });
@@ -206,6 +218,7 @@ export default function EchoChimesGame({
           const valid = pressChime(stateRef.current, action.index);
           if (valid || stateRef.current.phase === "game_over") {
             playChimeAudio(action.index);
+            if (!valid) playSfx("chime-wrong");
             spawnRipple(action.index);
             traceRef.current.push({ tick, type: "press", payload: action.index });
             setScore(stateRef.current.score);
@@ -240,10 +253,8 @@ export default function EchoChimesGame({
     drawChimes(canvas, stateRef.current, quality, ripplesRef.current);
     
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "1") handlePress(0);
-      else if (event.key === "2") handlePress(1);
-      else if (event.key === "3") handlePress(2);
-      else if (event.key === "4") handlePress(3);
+      const index = Number.parseInt(event.key, 10) - 1;
+      if (Number.isInteger(index) && index >= 0 && index < ECHO_CHIME_COUNT) handlePress(index);
       else if (event.key === "Escape" || event.key === "p" || event.key === "P") {
         event.preventDefault();
         togglePause();
@@ -256,11 +267,11 @@ export default function EchoChimesGame({
       const x = (event.clientX - bounds.left) * scaleX;
       
       const width = canvas.width;
-      const chimeWidth = width * 0.15;
-      const spacing = width * 0.05;
-      const startX = (width - (4 * chimeWidth + 3 * spacing)) / 2;
+      const chimeWidth = width * 0.075;
+      const spacing = width * 0.025;
+      const startX = (width - (ECHO_CHIME_COUNT * chimeWidth + (ECHO_CHIME_COUNT - 1) * spacing)) / 2;
       
-      for (let i = 0; i < 4; i++) {
+      for (let i = 0; i < ECHO_CHIME_COUNT; i++) {
         const cx = startX + i * (chimeWidth + spacing);
         if (x >= cx && x <= cx + chimeWidth) {
           handlePress(i);
@@ -280,7 +291,7 @@ export default function EchoChimesGame({
       window.removeEventListener("keydown", onKeyDown);
       canvas.removeEventListener("pointerdown", onPointerDown);
     };
-  }, [handlePress, onEngineStatusChange, playChimeAudio, quality, togglePause]);
+  }, [handlePress, onEngineStatusChange, playChimeAudio, playSfx, quality, togglePause]);
 
   const start = useCallback(async () => {
     void startAudio();
@@ -383,7 +394,7 @@ export default function EchoChimesGame({
       title="Echo Chimes"
       status={status}
       score={String(score)}
-      detail="Listen to the wind chimes and repeat their delicate melody. Keyboard players can use keys 1, 2, 3, 4."
+      detail="Listen to eight wind chimes and repeat their delicate melody. Keyboard players can use keys 1 through 8."
       onStart={start}
       onPause={pause}
       onRestart={restart}

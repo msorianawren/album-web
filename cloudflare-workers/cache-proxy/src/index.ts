@@ -1,7 +1,5 @@
-export default {
-  async fetch(request: Request, env: any, ctx: ExecutionContext): Promise<Response> {
-    const url = new URL(request.url);
-    
+const cacheProxy = {
+  async fetch(request: Request, _env: Record<string, never>, ctx: ExecutionContext): Promise<Response> {
     // Pass through if not a GET request
     if (request.method !== "GET") {
       return fetch(request);
@@ -40,3 +38,5 @@ export default {
     return response;
   }
 };
+
+export default cacheProxy;

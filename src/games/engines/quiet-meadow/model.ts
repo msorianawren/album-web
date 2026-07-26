@@ -6,6 +6,7 @@ export function createQuietMeadowState(config: QuietMeadowConfig, seed: string):
     isMine: false,
     isRevealed: false,
     isFlagged: false,
+    isQuestioned: false,
     adjacentMines: 0,
   }));
 
@@ -152,12 +153,15 @@ export function toggleFlag(state: QuietMeadowState, x: number, y: number): boole
   if (cell.isRevealed) return false;
 
   state.elapsedActions++;
-  cell.isFlagged = !cell.isFlagged;
-  
-  if (cell.isFlagged) {
+  if (!cell.isFlagged && !cell.isQuestioned) {
+    cell.isFlagged = true;
     state.flagCount++;
-  } else {
+  } else if (cell.isFlagged) {
+    cell.isFlagged = false;
+    cell.isQuestioned = true;
     state.flagCount--;
+  } else {
+    cell.isQuestioned = false;
   }
 
   // Start the game if the first action is a flag, though mines won't be placed until a reveal.
@@ -166,4 +170,18 @@ export function toggleFlag(state: QuietMeadowState, x: number, y: number): boole
   }
 
   return true;
+}
+
+export function chordReveal(state: QuietMeadowState, x: number, y: number): boolean {
+  if (state.status !== "running" || x < 0 || x >= state.width || y < 0 || y >= state.height) return false;
+  const center = state.cells[y * state.width + x];
+  if (!center.isRevealed || center.adjacentMines === 0) return false;
+  const neighbors = getNeighbors(x, y, state.width, state.height);
+  if (neighbors.filter(([nx, ny]) => state.cells[ny * state.width + nx].isFlagged).length !== center.adjacentMines) return false;
+  let changed = false;
+  for (const [nx, ny] of neighbors) {
+    const neighbor = state.cells[ny * state.width + nx];
+    if (!neighbor.isRevealed && !neighbor.isFlagged) changed = revealCell(state, nx, ny) || changed;
+  }
+  return changed;
 }

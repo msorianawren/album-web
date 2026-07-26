@@ -7,7 +7,7 @@ export interface FixedStepAdvance {
 export class FixedStepClock {
   private accumulatorMs = 0;
   private tick = 0;
-  readonly stepMs: number;
+  private stepMs: number;
   readonly maximumCatchUpSteps: number;
 
   constructor(stepMs = 1000 / 60, maximumCatchUpSteps = 5) {
@@ -42,6 +42,14 @@ export class FixedStepClock {
   reset() {
     this.accumulatorMs = 0;
     this.tick = 0;
+  }
+
+  setStepMs(stepMs: number) {
+    if (!(stepMs > 0) || !Number.isFinite(stepMs)) {
+      throw new RangeError("A positive fixed-step duration is required.");
+    }
+    this.stepMs = stepMs;
+    this.accumulatorMs = Math.min(this.accumulatorMs, stepMs);
   }
 
   get currentTick() {
