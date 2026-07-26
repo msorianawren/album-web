@@ -481,6 +481,22 @@ export function MediaViewer({
                 </span>
               </div>
 
+              {media.length > 1 ? (
+                <label className="mb-4 flex w-full max-w-[min(42rem,calc(100vw-3rem))] items-center gap-3 text-[0.65rem] font-semibold uppercase tracking-[0.16em] text-white/45">
+                  <span className="sr-only">Browse album timeline</span>
+                  <input
+                    type="range"
+                    min="0"
+                    max={media.length - 1}
+                    value={currentIndex ?? 0}
+                    onChange={(event) => selectMedia(Number(event.currentTarget.value))}
+                    className="h-1 w-full cursor-pointer appearance-none rounded-full bg-white/20 accent-white"
+                    aria-label="Browse album timeline"
+                  />
+                  <span className="min-w-10 text-right">{currentIndex! + 1} / {media.length}</span>
+                </label>
+              ) : null}
+
               <div className="flex w-full max-w-[min(56rem,calc(100vw-2rem))] flex-col gap-3 rounded-[1.2rem] border border-lightbox-border bg-white/5 p-3 backdrop-blur-md sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex shrink-0 items-center justify-center gap-2">
                   <MediaLikeButton mediaId={item.id} />
