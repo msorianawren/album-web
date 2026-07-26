@@ -335,7 +335,7 @@ export default function SnakeGame({
           const response = await fetch("/api/game-sessions", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ gameSlug: "snake" }),
+            body: JSON.stringify({ gameSlug: "snake", difficultyKey: "standard" }),
           });
           if (response.ok) {
             const { data } = await response.json();
@@ -420,33 +420,29 @@ export default function SnakeGame({
       canvasRef={canvasRef}
       title="Wren Trail Snake"
       status={status}
-      score={
-        <div className="flex gap-4 items-center">
-          <span>{score}</span>
-          {status === "ready" && (
-            <div className="flex bg-surface/50 rounded-full p-1 border border-[var(--glass-border)] ml-3 shadow-inner backdrop-blur-sm">
-              {(["slow", "normal", "fast"] as const).map(s => (
-                <button
-                  key={s}
-                  onClick={() => setSpeed(s)}
-                  className={`px-3 py-1 text-xs font-semibold tracking-wide uppercase rounded-full transition-all duration-300 ${
-                    speed === s 
-                      ? "bg-accent text-accent-foreground shadow-sm shadow-accent/20" 
-                      : "text-text-secondary hover:text-text-primary"
-                  }`}
-                >
-                  {s}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-      }
+      score={score}
       detail="Guide a ribbon-tailed wren through a quiet moonlit garden. Target: 30 points to earn rewards."
       onStart={start}
       onPause={pause}
       onRestart={restart}
     >
+      {status === "ready" && (
+        <div className="flex bg-surface/50 rounded-full p-1 border border-[var(--glass-border)] shadow-inner backdrop-blur-sm justify-center w-fit mx-auto mb-2">
+          {(["slow", "normal", "fast"] as const).map(s => (
+            <button
+              key={s}
+              onClick={() => setSpeed(s)}
+              className={`px-4 py-1.5 text-[0.65rem] font-semibold tracking-widest uppercase rounded-full transition-all duration-300 ${
+                speed === s 
+                  ? "bg-accent text-accent-foreground shadow-sm shadow-accent/20" 
+                  : "text-text-secondary hover:text-text-primary"
+              }`}
+            >
+              {s}
+            </button>
+          ))}
+        </div>
+      )}
       <div className="grid grid-cols-3 gap-2" aria-label="Snake touch controls">
         <span />
         <Button variant="icon" aria-label="Move up" onClick={() => setDirection("up")}><ArrowUp className="h-4 w-4" /></Button>
