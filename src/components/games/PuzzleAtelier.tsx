@@ -8,7 +8,7 @@ import { useToast } from "@/hooks/useToast";
 import { createPuzzleBoard, isSolved, legalSlidingPositions, moveSlidingTile, swapTiles } from "@/lib/puzzles/engine";
 import { estimatePuzzleReward } from "@/lib/puzzles/rewards";
 import type { PuzzleChallenge, PuzzleGridSize, PuzzleMode, PuzzleResult, PuzzleTile, SlidingMove, SwapMove } from "@/lib/puzzles/types";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 
 const storageVersion = "oriana.puzzle.best.v1";
 const grids: PuzzleGridSize[] = [3, 4, 5];
@@ -74,6 +74,7 @@ function PuzzleBoard({
   highlighted: boolean;
   onTile: (position: number) => void;
 }) {
+  const reducedMotion = useReducedMotion();
   const legal = mode === "sliding" ? new Set(legalSlidingPositions(board, grid)) : new Set<number>();
   const onKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
     if (mode !== "sliding") return;
@@ -101,7 +102,7 @@ function PuzzleBoard({
         <motion.button
           layout
           initial={false}
-          transition={{ type: "spring", stiffness: 500, damping: 30 }}
+          transition={reducedMotion ? { duration: 0 } : { type: "spring", stiffness: 500, damping: 30 }}
           key={tile}
           type="button"
           onClick={() => onTile(position)}
@@ -118,7 +119,7 @@ function PuzzleBoard({
             <span className="absolute inset-0 bg-gradient-to-tr from-transparent via-[#e9c46a]/10 to-transparent mix-blend-overlay" />
           )}
 
-          <span className="absolute inset-x-1 bottom-1 rounded bg-black/45 px-1 py-0.5 text-center text-[0.58rem] font-semibold text-white opacity-0 transition group-hover:opacity-100 focus:opacity-100">{tile}</span>
+          <span className="absolute inset-x-1 bottom-1 rounded bg-black/45 px-1 py-0.5 text-center text-[0.58rem] font-semibold text-white opacity-0 transition motion-reduce:transition-none group-hover:opacity-100 focus:opacity-100">{tile}</span>
           <span className="sr-only">Tile {tile}</span>
         </motion.button>
       ))}
