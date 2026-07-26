@@ -93,7 +93,7 @@ export function MediaViewer({
   const resetZoom = useCallback(() => {
     setScale(1);
     setTranslate({ x: 0, y: 0 });
-  }, []);
+  }, [setScale, setTranslate]);
 
   const toggleFullscreen = useCallback(() => {
     if (document.fullscreenElement === containerRef.current) {
@@ -111,14 +111,14 @@ export function MediaViewer({
     else onPrevious();
     setInfoOpen(false);
     setControlsVisible(true);
-  }, [onNext, onPrevious, resetZoom]);
+  }, [onNext, onPrevious, resetZoom, setAutoPlay, setControlsVisible, setInfoOpen, setTransitionDirection]);
 
   const selectMedia = useCallback((index: number) => {
     setAutoPlay(false);
     resetZoom();
     setTransitionDirection(index >= (currentIndex ?? 0) ? 1 : -1);
     onSelect(index);
-  }, [currentIndex, onSelect, resetZoom]);
+  }, [currentIndex, onSelect, resetZoom, setAutoPlay, setTransitionDirection]);
 
   const { isPanning, onPointerDown, onPointerMove, onPointerUp, onPointerCancel, zoomAt } = useViewerGestures({
     stageRef,
@@ -162,7 +162,7 @@ export function MediaViewer({
       setPreferencesReady(true);
     }, 0);
     return () => window.clearTimeout(restoreTimer);
-  }, [getAlbumViewState, isClient, item]);
+  }, [getAlbumViewState, isClient, item, setPreferencesReady, setSlideshowPace]);
 
   useEffect(() => {
     if (!item || !preferencesReady) return;
@@ -184,7 +184,7 @@ export function MediaViewer({
     return () => {
       if (controlsTimer.current) window.clearTimeout(controlsTimer.current);
     };
-  }, [controlsVisible, infoOpen, item]);
+  }, [controlsVisible, infoOpen, item, setControlsVisible]);
 
   useEffect(() => {
     const handleFullscreenChange = () => {
@@ -194,7 +194,7 @@ export function MediaViewer({
     };
     document.addEventListener("fullscreenchange", handleFullscreenChange);
     return () => document.removeEventListener("fullscreenchange", handleFullscreenChange);
-  }, [resetZoom]);
+  }, [resetZoom, setIsFullscreen]);
 
   useEffect(() => {
     if (!item) return;
@@ -223,7 +223,7 @@ export function MediaViewer({
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [item, navigate, onClose, resetZoom, scale, toggleFullscreen, zoomAt]);
+  }, [item, navigate, onClose, resetZoom, scale, setAutoPlay, setControlsVisible, setInfoOpen, toggleFullscreen, zoomAt]);
 
   useEffect(() => {
     if (!item) return;
@@ -236,7 +236,7 @@ export function MediaViewer({
     updateVisibility();
     document.addEventListener("visibilitychange", updateVisibility);
     return () => document.removeEventListener("visibilitychange", updateVisibility);
-  }, []);
+  }, [setPageHidden]);
 
   useEffect(() => {
     if (item) {
