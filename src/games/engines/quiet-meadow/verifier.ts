@@ -60,6 +60,17 @@ export function verifyQuietMeadow(
 
   const score = state.revealedCount;
 
+  if (state.status !== "won") {
+    return {
+      valid: false,
+      reason: "Quiet Meadow must be cleared before rewards are granted",
+      versionId: version.id,
+      replayDigest,
+      score: 0,
+      durationTicks: trace.actions.length,
+    };
+  }
+
   return {
     valid: true,
     versionId: version.id,
