@@ -7,6 +7,7 @@ import { z } from "zod";
 
 const startSchema = z.object({
   gameSlug: z.string(),
+  difficultyKey: z.string().optional(),
 });
 
 export async function POST(request: NextRequest) {
@@ -22,9 +23,9 @@ export async function POST(request: NextRequest) {
       return apiError("INVALID_INPUT", "Invalid game session request.", 400);
     }
 
-    const { gameSlug } = parsed.data;
+    const { gameSlug, difficultyKey } = parsed.data;
 
-    if (!["memory-garden", "snake", "feather-merge", "quiet-meadow"].includes(gameSlug)) {
+    if (!["memory-garden", "snake", "feather-merge", "quiet-meadow", "echo-chimes", "wren-flight", "zen-cairn"].includes(gameSlug)) {
       return apiError("FORBIDDEN", "Rewards are not enabled for this game.", 403);
     }
 
@@ -54,7 +55,7 @@ export async function POST(request: NextRequest) {
       .from("game_difficulties")
       .select("id, active, config")
       .eq("game_version_id", version.id)
-      .eq("key", "standard")
+      .eq("key", difficultyKey ?? "standard")
       .single();
 
     if (!difficulty || !difficulty.active) {

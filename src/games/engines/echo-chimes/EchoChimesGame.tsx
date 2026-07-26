@@ -299,7 +299,7 @@ export default function EchoChimesGame({
           const response = await fetch("/api/game-sessions", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ gameSlug: "echo-chimes" }),
+            body: JSON.stringify({ gameSlug: "echo-chimes", difficultyKey: typeof difficulty !== "undefined" ? difficulty : "standard" }),
           });
           if (response.ok) {
             const { data } = await response.json();

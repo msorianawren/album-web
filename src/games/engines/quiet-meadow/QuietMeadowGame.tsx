@@ -321,15 +321,21 @@ export default function QuietMeadowGame({
             <span>Revealed: {state.revealedCount} / {state.width * state.height - state.totalMines}</span>
           </div>
           {status === "ready" && (
-            <select 
-              value={difficulty} 
-              onChange={e => setDifficulty(e.target.value as QuietMeadowDifficulty)}
-              className="bg-transparent outline-none border-b border-[#a3b8aa]"
-            >
-              <option value="meadow">Meadow (9x9)</option>
-              <option value="garden">Garden (12x12)</option>
-              <option value="wildfield">Wildfield (16x16)</option>
-            </select>
+            <div className="flex bg-surface/50 rounded-full p-1 border border-[var(--glass-border)] ml-3 shadow-inner backdrop-blur-sm">
+              {(["meadow", "garden", "wildfield"] as const).map(d => (
+                <button
+                  key={d}
+                  onClick={() => setDifficulty(d)}
+                  className={`px-3 py-1 text-xs font-semibold tracking-wide capitalize rounded-full transition-all duration-300 ${
+                    difficulty === d 
+                      ? "bg-accent text-accent-foreground shadow-sm shadow-accent/20" 
+                      : "text-[#4a6352] hover:text-[#2d3d32]"
+                  }`}
+                >
+                  {d}
+                </button>
+              ))}
+            </div>
           )}
         </div>
 

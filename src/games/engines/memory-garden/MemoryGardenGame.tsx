@@ -316,7 +316,7 @@ export default function MemoryGardenGame({
           const response = await fetch("/api/game-sessions", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ gameSlug: "memory-garden" }),
+            body: JSON.stringify({ gameSlug: "memory-garden", difficultyKey: typeof difficulty !== "undefined" ? difficulty : "standard" }),
           });
           if (response.ok) {
             const { data } = await response.json();

@@ -27,12 +27,12 @@ export function GameSurface({
 }) {
   return (
     <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_18rem]">
-      <div className="relative overflow-hidden rounded-[1.5rem] border border-[var(--glass-border)] bg-[color-mix(in_srgb,var(--preset-surface)_88%,transparent)] shadow-2xl shadow-text-primary/10">
+      <div className="relative overflow-hidden rounded-[1.5rem] border border-[var(--glass-border)] bg-[color-mix(in_srgb,var(--preset-surface)_88%,transparent)] shadow-2xl shadow-text-primary/10 flex items-center justify-center">
         <canvas
           ref={canvasRef}
           role="img"
           aria-label={`${title} game surface`}
-          className="block aspect-[4/3] w-full touch-none select-none"
+          className="block aspect-[4/3] w-full max-h-[calc(100vh-10rem)] object-contain touch-none select-none"
         />
         {status !== "running" && (
           <div className="absolute inset-0 flex items-center justify-center bg-background/45 p-5 backdrop-blur-[3px]">

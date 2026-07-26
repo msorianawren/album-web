@@ -424,15 +424,21 @@ export default function SnakeGame({
         <div className="flex gap-4 items-center">
           <span>{score}</span>
           {status === "ready" && (
-            <select 
-              value={speed} 
-              onChange={e => setSpeed(e.target.value as "slow" | "normal" | "fast")}
-              className="bg-transparent outline-none border-b border-[#a3b8aa] text-xs cursor-pointer"
-            >
-              <option value="slow">Slow</option>
-              <option value="normal">Normal</option>
-              <option value="fast">Fast</option>
-            </select>
+            <div className="flex bg-surface/50 rounded-full p-1 border border-[var(--glass-border)] ml-3 shadow-inner backdrop-blur-sm">
+              {(["slow", "normal", "fast"] as const).map(s => (
+                <button
+                  key={s}
+                  onClick={() => setSpeed(s)}
+                  className={`px-3 py-1 text-xs font-semibold tracking-wide uppercase rounded-full transition-all duration-300 ${
+                    speed === s 
+                      ? "bg-accent text-accent-foreground shadow-sm shadow-accent/20" 
+                      : "text-text-secondary hover:text-text-primary"
+                  }`}
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
           )}
         </div>
       }
