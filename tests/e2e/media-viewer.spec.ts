@@ -5,6 +5,8 @@ const publicAlbumPath = "/albums/where-morning-lingers";
 test("public viewer deep-links media, navigates, and closes back to the album", async ({ page }) => {
   await page.goto(publicAlbumPath);
   await expect(page.locator('[data-media-index="0"]').first()).toBeVisible();
+  await expect(page.locator(".public-chime-canvas")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Play the wind chime" })).toHaveCount(0);
 
   await page.locator('[data-media-index="0"]').first().click();
   const viewer = page.getByRole("dialog", { name: "Media viewer" });

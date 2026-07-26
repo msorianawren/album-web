@@ -101,6 +101,10 @@ function isEnvironmentRoute(pathname: string) {
     || pathname === "/profile";
 }
 
+function isAlbumDetailRoute(pathname: string) {
+  return pathname.startsWith("/albums/");
+}
+
 function PublicDepthEnvironmentContent({ pathname }: { pathname: string }) {
   const activeRectsRef = useRef<ReturnType<typeof useChimeAnchorRects>>([]);
   const { mode } = useDepthEffects();
@@ -127,16 +131,21 @@ function PublicDepthEnvironmentContent({ pathname }: { pathname: string }) {
     () => resolveEnvironmentQuality(mode, Number(viewportWidth), saveData === "true"),
     [mode, saveData, viewportWidth],
   );
-  const slots = useMemo(() => getWindChimeAnchors(pathname), [pathname]);
+  const prioritizeAlbumMedia = isAlbumDetailRoute(pathname);
+  const slots = useMemo(
+    () => prioritizeAlbumMedia ? [] : getWindChimeAnchors(pathname),
+    [pathname, prioritizeAlbumMedia],
+  );
   const rects = useChimeAnchorRects(slots);
   const showEnvironment = artistEnabled && !mediaViewerOpen && !gameRuntimeSuspended;
+  const interactiveChimesEnabled = showEnvironment && quality.enabled && !prioritizeAlbumMedia;
   const environmentRects = useMemo(
-    () => showEnvironment && quality.enabled ? rects : [],
-    [quality.enabled, rects, showEnvironment],
+    () => interactiveChimesEnabled ? rects : [],
+    [interactiveChimesEnabled, rects],
   );
   const activeRects = useMemo(() => environmentRects.filter((rect) => rect.visible), [environmentRects]);
   const chimeLabel = locale === "vi" ? "Nghe chuông gió" : "Play the wind chime";
-  const canvasActive = showEnvironment && quality.enabled && documentVisible === "true" && reducedMotion !== "true";
+  const canvasActive = interactiveChimesEnabled && documentVisible === "true" && reducedMotion !== "true";
 
   useEffect(() => {
     activeRectsRef.current = activeRects;
@@ -157,7 +166,7 @@ function PublicDepthEnvironmentContent({ pathname }: { pathname: string }) {
   }, [handleWebglUnavailable]);
 
   useEffect(() => {
-    if (!showEnvironment || !quality.enabled) return;
+    if (!canvasActive) return;
     let handle: number;
     const idleWindow = window as IdleCallbackWindow;
     if (idleWindow.requestIdleCallback) {
@@ -172,10 +181,10 @@ function PublicDepthEnvironmentContent({ pathname }: { pathname: string }) {
         clearTimeout(handle);
       }
     };
-  }, [showEnvironment, quality.enabled]);
+  }, [canvasActive]);
 
   useEffect(() => {
-    if (!showEnvironment || !quality.enabled) return;
+    if (!interactiveChimesEnabled) return;
     const finePointer = window.matchMedia("(hover: hover) and (pointer: fine)");
     let hoveredId: string | undefined;
     let previousX = 0;
@@ -199,7 +208,7 @@ function PublicDepthEnvironmentContent({ pathname }: { pathname: string }) {
           previousX = currentEvent.clientX;
           previousY = currentEvent.clientY;
           
-          if (!document.hidden) {
+          if (!document.hidden && activeRectsRef.current.length > 0) {
             window.dispatchEvent(new CustomEvent("oriana-environment-wind-impulse", { detail: { x: velocityX * .035, y: velocityY * .02 } }));
           }
           
@@ -231,7 +240,7 @@ function PublicDepthEnvironmentContent({ pathname }: { pathname: string }) {
       window.removeEventListener("pointermove", onPointerMove);
       window.removeEventListener("pointerdown", onPointerDown);
     };
-  }, [quality.enabled, reducedMotion, showEnvironment]);
+  }, [interactiveChimesEnabled, reducedMotion]);
 
   return (
     <>
@@ -269,7 +278,7 @@ function PublicDepthEnvironmentContent({ pathname }: { pathname: string }) {
           </button>
         );
       })}
-      {showEnvironment && quality.enabled && !webglUnavailable && isIdle ? (
+      {canvasActive && !webglUnavailable && isIdle ? (
         <PublicEnvironmentCanvas
           rects={environmentRects}
           reducedMotion={reducedMotion === "true"}

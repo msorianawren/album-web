@@ -79,6 +79,20 @@ test("document anchors scroll smoothly while pointer input only produces local i
   assert.doesNotMatch(scene, /position\.set\([^)]*pointer|lerp\([^)]*pointer/i);
 });
 
+test("album detail prioritizes media over the decorative WebGL scene and chime measurements stay stable", async () => {
+  const [environment, scene, anchorHook] = await Promise.all([
+    readFile(new URL("../src/components/environment/PublicDepthEnvironment.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../src/components/environment/WindChimeScene.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../src/components/environment/useChimeAnchorRects.ts", import.meta.url), "utf8"),
+  ]);
+  assert.match(environment, /function isAlbumDetailRoute/);
+  assert.match(environment, /prioritizeAlbumMedia \? \[\] : getWindChimeAnchors\(pathname\)/);
+  assert.match(environment, /const interactiveChimesEnabled = showEnvironment && quality\.enabled && !prioritizeAlbumMedia/);
+  assert.match(environment, /const canvasActive = interactiveChimesEnabled/);
+  assert.doesNotMatch(anchorHook, /MutationObserver/);
+  assert.doesNotMatch(scene, /onGlobalClick|new THREE\.Raycaster|window\.addEventListener\("click"/);
+});
+
 test("collision threshold and cooldown prevent repeated impact retriggers", () => {
   const state = createWindChimeState();
   const tube = state.tubes[0];

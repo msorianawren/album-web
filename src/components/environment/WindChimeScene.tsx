@@ -18,7 +18,6 @@ import { audioUX } from "@/lib/audio-ux";
 import { useUIPreferences } from "@/hooks/useUIPreferences";
 
 type ModelRefs = { group: THREE.Group; tubes: THREE.Group[] };
-type TubeMesh = { mesh: THREE.Object3D; slotId: string; tubeIndex: number };
 
 function setWorldPosition(target: THREE.Vector3, anchor: ChimeAnchorRect, scrollY: number, size: { width: number; height: number }, viewport: { width: number; height: number }) {
   const x = ((anchor.left + anchor.widthPx / 2) / size.width - 0.5) * viewport.width;
@@ -76,12 +75,10 @@ function ChimeModel({
   anchor,
   position,
   onReady,
-  registerTube,
 }: {
   anchor: ChimeAnchorRect;
   position: THREE.Vector3;
   onReady: (slotId: string, refs: ModelRefs) => void;
-  registerTube: (mesh: THREE.Object3D | null, slotId: string, tubeIndex: number) => void;
 }) {
   const group = useRef<THREE.Group>(null);
   const tubes = useRef<THREE.Group[]>([]);
@@ -123,8 +120,6 @@ function ChimeModel({
                 geometry={getTubeGeometry(length)}
                 material={metalMaterials[anchor.material][index % metalMaterials[anchor.material].length]}
                 castShadow
-                onUpdate={(mesh: THREE.Mesh) => { mesh.userData = { slotId: anchor.id, tubeIndex: index }; }}
-                ref={(mesh: THREE.Mesh | null) => registerTube(mesh, anchor.id, index)}
               />
               <mesh geometry={getTubeInterior(length)} material={interiorMaterial} />
               <mesh geometry={getTubeRim(length)} material={metalMaterials[anchor.material][index % metalMaterials[anchor.material].length]} position={[0, length / 2, 0]} />
@@ -161,12 +156,10 @@ export function WindChimeScene({
   state: EnvironmentState;
   active: boolean;
 }) {
-  const { camera, size, viewport, invalidate } = useThree();
+  const { size, viewport, invalidate } = useThree();
   const { soundEnabled } = useUIPreferences();
   const physical = useRef(new Map<string, WindChimeState>());
   const models = useRef(new Map<string, ModelRefs>());
-  const tubes = useRef<TubeMesh[]>([]);
-  const raycaster = useRef(new THREE.Raycaster());
   const scrollY = useRef(typeof window === "undefined" ? 0 : window.scrollY);
   const [initialScrollY] = useState(() => typeof window === "undefined" ? 0 : window.scrollY);
   const windAccumulator = useRef(0);
@@ -230,48 +223,6 @@ export function WindChimeScene({
       if (!detail) return;
       impulse(detail.slotId, Math.floor(Math.random() * 5), 0.6, 0.3);
     };
-    
-    const onGlobalClick = (event: MouseEvent) => {
-      if (reducedMotion) return;
-      if (typeof document !== "undefined" && document.body.dataset.orianaMediaViewerOpen === "true") return;
-      
-      const pointer = new THREE.Vector2(event.clientX / size.width * 2 - 1, -(event.clientY / size.height) * 2 + 1);
-      raycaster.current.setFromCamera(pointer, camera);
-      
-      const interactables: THREE.Object3D[] = [];
-      models.current.forEach(m => interactables.push(m.group));
-      
-      const intersections = raycaster.current.intersectObjects(interactables, true);
-      if (intersections.length > 0) {
-        let node: THREE.Object3D | null = intersections[0].object;
-        let slotId: string | null = null;
-        while (node) {
-          if (node.userData.slotId) {
-            slotId = node.userData.slotId;
-            break;
-          }
-          node = node.parent;
-        }
-        
-        if (slotId) {
-          const state = physical.current.get(slotId);
-          if (state) {
-            const direction = raycaster.current.ray.direction;
-            const forceX = direction.x * 2.2 || 1.1;
-            const forceY = -direction.y * 2.2 || 0.7;
-            
-            state.tubes.forEach((_, index) => {
-              impulse(slotId!, index, forceX * (0.7 + Math.random() * 0.6), forceY * (0.7 + Math.random() * 0.6));
-            });
-            
-            const anchor = anchors.find(a => a.id === slotId);
-            if (anchor && soundEnabled) {
-              audioUX.playWindChimePreview({ frequency: anchor.tone, pan: 0, material: anchor.material, volume: preferences.chimeVolume / 100 });
-            }
-          }
-        }
-      }
-    };
     const onKeyboard = (event: Event) => {
       const detail = (event as CustomEvent<{ slotId: string }>).detail;
       if (detail?.slotId) impulse(detail.slotId, 0, 0.42, 0.2);
@@ -289,19 +240,17 @@ export function WindChimeScene({
       if (!state || !detail?.slotId) return;
       state.tubes.forEach((_, index) => impulse(detail.slotId, index, 0.42 - index * 0.035, 0.2));
     };
-    window.addEventListener("click", onGlobalClick, { passive: true });
     window.addEventListener("oriana-chime-pointer", onPointer);
     window.addEventListener("oriana-chime-impulse", onKeyboard);
     window.addEventListener("oriana-chime-hover", onHover);
     window.addEventListener("oriana-chime-cascade", onCascade);
     return () => {
-      window.removeEventListener("click", onGlobalClick);
       window.removeEventListener("oriana-chime-pointer", onPointer);
       window.removeEventListener("oriana-chime-impulse", onKeyboard);
       window.removeEventListener("oriana-chime-hover", onHover);
       window.removeEventListener("oriana-chime-cascade", onCascade);
     };
-  }, [camera, impulse, reducedMotion, size.height, size.width, soundEnabled, anchors, preferences.chimeVolume]);
+  }, [impulse, reducedMotion]);
 
   useFrame(({ clock }, delta) => {
     let moving = false;
@@ -371,10 +320,6 @@ export function WindChimeScene({
           anchor={anchor}
           position={position}
           onReady={(slotId, refs) => models.current.set(slotId, refs)}
-          registerTube={(mesh, slotId, tubeIndex) => {
-            tubes.current = tubes.current.filter((item) => !(item.slotId === slotId && item.tubeIndex === tubeIndex));
-            if (mesh) tubes.current.push({ mesh, slotId, tubeIndex });
-          }}
         />
       ))}
     </>

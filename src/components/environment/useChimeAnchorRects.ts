@@ -43,7 +43,7 @@ export function useChimeAnchorRects(slots: ChimeAnchorSlot[]) {
         resizeObserver.observe(target);
         intersectionObserver.observe(target);
       });
-      const interactiveRects = Array.from(document.querySelectorAll<HTMLElement>("header, nav, form, button, a, input, textarea, select, [data-environment-exclusion]"))
+      const interactiveRects = Array.from(document.querySelectorAll<HTMLElement>("header, nav, [data-environment-exclusion]"))
         .filter((element) => element.offsetParent !== null)
         .map((element) => element.getBoundingClientRect());
       const positioned = entries.map(([slot, target]) => {
@@ -99,9 +99,8 @@ export function useChimeAnchorRects(slots: ChimeAnchorSlot[]) {
     const schedule = () => {
       if (!frame) frame = window.requestAnimationFrame(refresh);
     };
-    const mutationObserver = new MutationObserver(schedule);
-    mutationObserver.observe(document.body, { childList: true, subtree: true });
     window.addEventListener("resize", schedule, { passive: true });
+    window.addEventListener("orientationchange", schedule, { passive: true });
     window.addEventListener("load", schedule, { once: true });
     schedule();
 
@@ -109,8 +108,8 @@ export function useChimeAnchorRects(slots: ChimeAnchorSlot[]) {
       if (frame) window.cancelAnimationFrame(frame);
       resizeObserver.disconnect();
       intersectionObserver.disconnect();
-      mutationObserver.disconnect();
       window.removeEventListener("resize", schedule);
+      window.removeEventListener("orientationchange", schedule);
       window.removeEventListener("load", schedule);
     };
   }, [slots]);
