@@ -95,7 +95,7 @@ export default async function AlbumPage({ params }: AlbumPageProps) {
 
   if (!album) notFound();
 
-  if (!session?.userId) {
+  if (album.status === "private" && !session?.userId) {
     redirect(buildLoginHref(`/albums/${album.slug}`));
   }
 
