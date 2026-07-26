@@ -82,7 +82,7 @@ export default function ProfileClient({
             Your Sanctuary
           </p>
           <h1 className="text-4xl font-serif italic text-text-primary">
-            Profile & Preferences
+            User&apos;s setting
           </h1>
           <p className="mt-4 text-text-secondary leading-relaxed max-w-lg mx-auto">
             A quiet space to view your reading memory and tailor your sensory experience. 

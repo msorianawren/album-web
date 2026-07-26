@@ -5,7 +5,7 @@ import { getEnvironmentPreferencesFromMetadata } from "@/lib/environment/prefere
 import ProfileClient from "./ProfileClient";
 
 export const metadata = {
-  title: "My Profile & Rules",
+  title: "User's setting",
   description: "View your memory album progress and site settings.",
 };
 

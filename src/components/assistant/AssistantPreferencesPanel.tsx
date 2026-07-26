@@ -213,7 +213,7 @@ export function AssistantPreferencesPanel({
                         {groupCharacterIds.length}
                       </span>
                     </div>
-                    <div className="mt-3 grid grid-cols-2 gap-3 md:grid-cols-3 2xl:grid-cols-4">
+                    <div className="mt-3 grid grid-cols-2 gap-3 md:grid-cols-3">
                       {groupCharacterIds.map((characterId) => {
                         const mascot = assistantMascots[characterId];
                         const selected = preferences.character === characterId;
@@ -224,13 +224,13 @@ export function AssistantPreferencesPanel({
                             aria-pressed={selected}
                             onClick={() => updatePreference("character", characterId)}
                             className={cn(
-                              "group min-h-36 rounded-[1.2rem] border bg-background/55 p-3 text-left transition hover:-translate-y-0.5 hover:bg-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                              "group min-h-36 min-w-0 rounded-[1.2rem] border bg-background/55 p-3 text-left transition hover:-translate-y-0.5 hover:bg-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                               selected
                                 ? "border-accent shadow-lg shadow-text-primary/10"
                                 : "border-border",
                             )}
                           >
-                            <span className="flex h-16 w-16 items-center justify-center rounded-[1.1rem] border border-border bg-surface/75">
+                            <span className="flex aspect-square w-full max-w-16 items-center justify-center overflow-hidden rounded-[1.1rem] border border-border bg-surface/75">
                               {/* Static card previews stay as public img assets and avoid 20 animated pets. */}
                               {/* eslint-disable-next-line @next/next/no-img-element */}
                               <img
@@ -240,7 +240,7 @@ export function AssistantPreferencesPanel({
                                 height={48}
                                 loading="lazy"
                                 decoding="async"
-                                className="h-12 w-12 object-contain"
+                                className="h-auto max-h-12 w-full max-w-12 object-contain"
                               />
                             </span>
                             <span className="mt-3 block text-sm font-semibold text-text-primary">
