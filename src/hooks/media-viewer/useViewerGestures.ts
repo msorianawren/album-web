@@ -23,7 +23,6 @@ const swipeVelocity = 0.45;
 const closeDistance = 96;
 const infoDistance = 72;
 const tapDistance = 10;
-const doubleTapDelay = 280;
 
 const clamp = (value: number, minimum: number, maximum: number) => Math.min(Math.max(value, minimum), maximum);
 const distance = (first: Point, second: Point) => Math.hypot(second.x - first.x, second.y - first.y);
@@ -66,7 +65,7 @@ export function useViewerGestures({
   onPrevious,
   onClose,
   onOpenInfo,
-  onToggleControls,
+  onToggleFullscreen,
   onInteraction,
   onZoom,
 }: {
@@ -78,7 +77,7 @@ export function useViewerGestures({
   onPrevious: () => void;
   onClose: () => void;
   onOpenInfo: () => void;
-  onToggleControls: () => void;
+  onToggleFullscreen: () => void;
   onInteraction: () => void;
   onZoom: () => void;
 }) {
@@ -87,8 +86,6 @@ export function useViewerGestures({
   const transform = useRef<Transform>({ scale, translate });
   const pendingTransform = useRef<Transform | null>(null);
   const transformFrame = useRef<number | null>(null);
-  const lastTap = useRef<Point | null>(null);
-  const tapTimer = useRef<number | null>(null);
   const [isPanning, setIsPanning] = useState(false);
 
   useEffect(() => {
@@ -96,7 +93,6 @@ export function useViewerGestures({
   }, [scale, translate]);
 
   useEffect(() => () => {
-    if (tapTimer.current) window.clearTimeout(tapTimer.current);
     if (transformFrame.current) window.cancelAnimationFrame(transformFrame.current);
   }, []);
 
@@ -235,24 +231,9 @@ export function useViewerGestures({
     }
   }, [applyTransform, constrain, zoomAt]);
 
-  const resolveTap = useCallback((point: Point) => {
-    const previous = lastTap.current;
-    const isDoubleTap = previous && point.time - previous.time <= doubleTapDelay && distance(point, previous) <= 24;
-    if (isDoubleTap) {
-      if (tapTimer.current) window.clearTimeout(tapTimer.current);
-      tapTimer.current = null;
-      lastTap.current = null;
-      onZoom();
-      zoomAt(transform.current.scale > minimumScale ? minimumScale : 2, point);
-      return;
-    }
-    lastTap.current = point;
-    if (tapTimer.current) window.clearTimeout(tapTimer.current);
-    tapTimer.current = window.setTimeout(() => {
-      lastTap.current = null;
-      onToggleControls();
-    }, doubleTapDelay);
-  }, [onToggleControls, onZoom, zoomAt]);
+  const resolveTap = useCallback(() => {
+    onToggleFullscreen();
+  }, [onToggleFullscreen]);
 
   const finishPointer = useCallback((event: ReactPointerEvent<HTMLDivElement>, cancelled = false) => {
     flushTransform();
@@ -290,10 +271,12 @@ export function useViewerGestures({
       return;
     }
 
-    applyTransform(minimumScale, { x: 0, y: 0 });
+    if (transform.current.scale !== minimumScale || transform.current.translate.x !== 0 || transform.current.translate.y !== 0) {
+      applyTransform(minimumScale, { x: 0, y: 0 });
+    }
     if (cancelled) return;
     if (moved <= tapDistance && point.time - active.start.time < 500) {
-      resolveTap(point);
+      resolveTap();
       return;
     }
 

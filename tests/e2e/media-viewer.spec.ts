@@ -18,6 +18,11 @@ test("public viewer deep-links media, navigates, and closes back to the album", 
   await expect.poll(() => page.url()).not.toBe(firstUrl);
   await expect(viewer.getByRole("slider", { name: "Browse album timeline" })).toBeVisible();
 
+  await viewer.locator("[data-viewer-gesture-surface]").click();
+  await expect(viewer.getByRole("button", { name: "Exit fullscreen" })).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(viewer.getByRole("slider", { name: "Browse album timeline" })).toBeVisible();
+
   await page.keyboard.press("Escape");
   await expect(viewer).toBeHidden();
   await expect(page).toHaveURL(new RegExp(`${publicAlbumPath.replace("/", "\\/")}$`));

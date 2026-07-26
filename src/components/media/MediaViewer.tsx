@@ -157,7 +157,7 @@ export function MediaViewer({
       setInfoOpen(true);
       setControlsVisible(true);
     },
-    onToggleControls: () => setControlsVisible((visible) => !visible),
+    onToggleFullscreen: toggleFullscreen,
     onInteraction: () => setControlsVisible(true),
     onZoom: () => setAutoPlay(false),
   });
@@ -366,6 +366,7 @@ export function MediaViewer({
                   transition={driftEnabled ? { duration: slideshowPace === "slow" ? 10.5 : 7, ease: "linear" } : { duration: 0.18, ease: "easeOut" }}
                 >
                   <div
+                    data-viewer-gesture-surface
                     className={`relative flex h-full w-full touch-none select-none items-center justify-center ${scale > 1 ? (isPanning ? "cursor-grabbing" : "cursor-grab") : "cursor-default"}`}
                     onContextMenu={protectAssets ? (event) => event.preventDefault() : undefined}
                     onPointerDown={onPointerDown}
