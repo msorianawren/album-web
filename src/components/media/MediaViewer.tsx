@@ -53,6 +53,7 @@ export function MediaViewer({
   const [failedVideos, setFailedVideos] = useState<Record<string, boolean>>({});
   const [autoPlay, setAutoPlay] = useState(false);
   const [slideshowPace, setSlideshowPace] = useState<SlideshowPace>("still");
+  const [preferencesReady, setPreferencesReady] = useState(false);
   const [pageHidden, setPageHidden] = useState(false);
   const [scale, setScale] = useState(1);
   const [translate, setTranslate] = useState({ x: 0, y: 0 });
@@ -64,7 +65,7 @@ export function MediaViewer({
   const containerRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
   const reducedMotion = useReducedMotion();
-  const { markAlbumViewed } = useAlbumViewMemory();
+  const { isClient, markAlbumViewed, getAlbumViewState, saveViewerPreferences } = useAlbumViewMemory();
 
   const isImageLoading = item?.media_type === "image" && !loadedImages[item.id];
   const delivery = item
@@ -149,6 +150,25 @@ export function MediaViewer({
     }
     return () => window.clearTimeout(resetTimer);
   }, [currentIndex, item, markAlbumViewed, resetZoom]);
+
+  useEffect(() => {
+    if (!item || !isClient) return;
+    const restoreTimer = window.setTimeout(() => {
+      const savedPace = getAlbumViewState(item.album_id).record?.slideshowPace;
+      if (savedPace === "still" || savedPace === "slow" || savedPace === "cinema") setSlideshowPace(savedPace);
+      setPreferencesReady(true);
+    }, 0);
+    return () => window.clearTimeout(restoreTimer);
+  }, [getAlbumViewState, isClient, item]);
+
+  useEffect(() => {
+    if (!item || !preferencesReady) return;
+    saveViewerPreferences({
+      albumId: item.album_id,
+      slideshowPace,
+      controlsPreference: "auto",
+    });
+  }, [item, preferencesReady, saveViewerPreferences, slideshowPace]);
 
   useEffect(() => {
     if (!item || !controlsVisible) return;

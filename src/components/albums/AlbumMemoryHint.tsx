@@ -14,7 +14,7 @@ export function AlbumMemoryHint({ albumId, dict }: AlbumMemoryHintProps) {
   const viewState = getAlbumViewState(albumId);
 
   if (!isClient) return null;
-  if (!viewState.canContinue || !viewState.record?.lastMediaIndex) return null;
+  if (!viewState.canContinue || viewState.record?.lastMediaIndex === undefined) return null;
 
   return (
     <button

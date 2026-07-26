@@ -13,6 +13,9 @@ export interface AlbumViewRecord {
   viewCount: number;
   lastMediaId?: string;
   lastMediaIndex?: number;
+  viewerMode?: "interface" | "focus";
+  slideshowPace?: "still" | "slow" | "cinema";
+  controlsPreference?: "auto";
 }
 
 export interface AlbumViewState {
@@ -105,15 +108,44 @@ export function useAlbumViewMemory(settings?: { retentionDays?: number, recentTh
 
     const record: AlbumViewRecord = {
       albumId: params.albumId,
-      slug: params.slug,
+      slug: params.slug || existing?.slug || "",
       firstSeenAt: existing ? existing.firstSeenAt : now,
       lastSeenAt: now,
       viewCount: existing ? (existing.viewCount || 0) + 1 : 1,
       lastMediaId: params.mediaId ?? existing?.lastMediaId,
       lastMediaIndex: params.mediaIndex ?? existing?.lastMediaIndex,
+      viewerMode: existing?.viewerMode,
+      slideshowPace: existing?.slideshowPace,
+      controlsPreference: existing?.controlsPreference,
     };
 
     mem[params.albumId] = record;
+    saveRawMemory(mem);
+    setMemory(mem);
+  }, []);
+
+  const saveViewerPreferences = useCallback((params: {
+    albumId: string;
+    viewerMode?: "interface" | "focus";
+    slideshowPace?: "still" | "slow" | "cinema";
+    controlsPreference?: "auto";
+  }) => {
+    if (typeof window === "undefined") return;
+    const mem = getRawMemory();
+    const existing = mem[params.albumId];
+    const now = Date.now();
+    mem[params.albumId] = {
+      albumId: params.albumId,
+      slug: existing?.slug || "",
+      firstSeenAt: existing?.firstSeenAt || now,
+      lastSeenAt: existing?.lastSeenAt || now,
+      viewCount: existing?.viewCount || 0,
+      lastMediaId: existing?.lastMediaId,
+      lastMediaIndex: existing?.lastMediaIndex,
+      viewerMode: params.viewerMode ?? existing?.viewerMode ?? "interface",
+      slideshowPace: params.slideshowPace ?? existing?.slideshowPace ?? "still",
+      controlsPreference: params.controlsPreference ?? existing?.controlsPreference ?? "auto",
+    };
     saveRawMemory(mem);
     setMemory(mem);
   }, []);
@@ -154,6 +186,7 @@ export function useAlbumViewMemory(settings?: { retentionDays?: number, recentTh
     memory,
     isClient,
     markAlbumViewed,
+    saveViewerPreferences,
     getAlbumViewState,
     clearMemory
   };
