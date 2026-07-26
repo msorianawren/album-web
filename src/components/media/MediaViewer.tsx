@@ -2,7 +2,7 @@
 
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { ChevronLeft, ChevronRight, Pause, Play, X, Maximize, Minimize, ZoomIn, Info } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { DownloadButton } from "@/components/media/DownloadButton";
 import { MediaLikeButton } from "@/components/media/MediaLikeButton";
 import { ReliableMediaImage } from "@/components/media/ReliableMediaImage";
@@ -15,11 +15,12 @@ import {
   ORIANA_MEDIA_VIEWER_STATE_EVENT,
 } from "@/lib/assistant/runtime-events";
 import { getMediaDeliveryDescriptor } from "@/lib/media/delivery";
-import { cinematicDrift, slideshowInterval, type SlideshowPace } from "@/lib/media/cinematic-drift";
+import { cinematicDrift, slideshowInterval } from "@/lib/media/cinematic-drift";
 import type { AlbumStatus, Media } from "@/lib/types";
 import { useAlbumViewMemory } from "@/hooks/useAlbumViewMemory";
 import { useViewerDelivery } from "@/hooks/media-viewer/useViewerDelivery";
 import { useViewerGestures } from "@/hooks/media-viewer/useViewerGestures";
+import { useViewerState } from "@/hooks/media-viewer/useViewerState";
 
 interface MediaViewerProps {
   media: Media[];
@@ -49,18 +50,20 @@ export function MediaViewer({
   onSelect,
 }: MediaViewerProps) {
   const item = currentIndex === null ? null : media[currentIndex];
-  const [loadedImages, setLoadedImages] = useState<Record<string, boolean>>({});
-  const [failedVideos, setFailedVideos] = useState<Record<string, boolean>>({});
-  const [autoPlay, setAutoPlay] = useState(false);
-  const [slideshowPace, setSlideshowPace] = useState<SlideshowPace>("still");
-  const [preferencesReady, setPreferencesReady] = useState(false);
-  const [pageHidden, setPageHidden] = useState(false);
-  const [scale, setScale] = useState(1);
-  const [translate, setTranslate] = useState({ x: 0, y: 0 });
-  const [isFullscreen, setIsFullscreen] = useState(false);
-  const [controlsVisible, setControlsVisible] = useState(true);
-  const [infoOpen, setInfoOpen] = useState(false);
-  const [transitionDirection, setTransitionDirection] = useState(1);
+  const {
+    loadedImages, setLoadedImages,
+    failedVideos, setFailedVideos,
+    autoPlay, setAutoPlay,
+    slideshowPace, setSlideshowPace,
+    preferencesReady, setPreferencesReady,
+    pageHidden, setPageHidden,
+    scale, setScale,
+    translate, setTranslate,
+    isFullscreen, setIsFullscreen,
+    controlsVisible, setControlsVisible,
+    infoOpen, setInfoOpen,
+    transitionDirection, setTransitionDirection,
+  } = useViewerState();
   const controlsTimer = useRef<number | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
