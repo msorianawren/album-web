@@ -280,7 +280,7 @@ export default function WrenFlightGame({
           const response = await fetch("/api/game-sessions", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ gameSlug: "wren-flight", difficultyKey: typeof difficulty !== "undefined" ? difficulty : "standard" }),
+            body: JSON.stringify({ gameSlug: "wren-flight", difficultyKey: "standard" }),
           });
           if (response.ok) {
             const { data } = await response.json();
