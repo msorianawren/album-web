@@ -19,9 +19,29 @@ function keyFor(mediaId: string, variant: ViewerVariant) {
   return `${mediaId}:${variant}`;
 }
 
-function preferredVariant(scale: number, isVideo: boolean): ViewerVariant {
+function preferredVariant(scale: number, isVideo: boolean, pixelDemand: number): ViewerVariant {
   if (isVideo) return "display";
-  return scale > 2 ? "display" : scale > 1.25 ? "display" : "medium";
+  return scale > 1.25 || pixelDemand > 1800 ? "display" : "medium";
+}
+
+function viewportPixelDemand(scale: number) {
+  if (typeof window === "undefined") return 0;
+  const dpr = Math.min(window.devicePixelRatio || 1, 3);
+  return Math.max(window.innerWidth, window.innerHeight) * dpr * scale;
+}
+
+async function decodeBeforeSwap(src: string) {
+  if (typeof Image === "undefined") return;
+  const image = new Image();
+  image.src = src;
+  try {
+    await image.decode();
+  } catch {
+    await new Promise<void>((resolve) => {
+      image.onload = () => resolve();
+      image.onerror = () => resolve();
+    });
+  }
 }
 
 async function requestGrant(mediaId: string, variant: ViewerVariant) {
@@ -61,10 +81,18 @@ export function useViewerDelivery({
   isVideo: boolean;
 }) {
   const [target, setTarget] = useState<MediaDeliveryTarget>(fallback);
+  const [pixelDemand, setPixelDemand] = useState(() => viewportPixelDemand(scale));
   const requestId = useRef(0);
   const fallbackSignature = fallback.candidates.map((candidate) => candidate.src).join("\n");
   const fallbackRef = useRef(fallback);
-  const variant = preferredVariant(scale, isVideo);
+  const variant = preferredVariant(scale, isVideo, pixelDemand);
+
+  useEffect(() => {
+    const updateDemand = () => setPixelDemand(viewportPixelDemand(scale));
+    updateDemand();
+    window.addEventListener("resize", updateDemand);
+    return () => window.removeEventListener("resize", updateDemand);
+  }, [scale]);
 
   useEffect(() => {
     fallbackRef.current = fallback;
@@ -75,9 +103,11 @@ export function useViewerDelivery({
     if (!privateAlbum || !mediaId) return;
     const currentRequest = ++requestId.current;
     void requestGrant(mediaId, variant)
-      .then((grant) => {
+      .then(async (grant) => {
         if (requestId.current !== currentRequest) return;
         const signed = createMediaDeliveryTarget(grant.url, grant.variant, isVideo ? "video" : "image");
+        if (!isVideo && grant.variant === "display") await decodeBeforeSwap(grant.url);
+        if (requestId.current !== currentRequest) return;
         setTarget({
           src: signed.src,
           candidates: grant.allowProxyFallback
@@ -92,7 +122,7 @@ export function useViewerDelivery({
 
   const prefetch = useCallback((nextMediaId: string, nextIsVideo = false) => {
     if (!privateAlbum) return;
-    const nextVariant = preferredVariant(1, nextIsVideo);
+    const nextVariant = preferredVariant(1, nextIsVideo, viewportPixelDemand(1));
     void requestGrant(nextMediaId, nextVariant)
       .then((grant) => {
         if (typeof Image === "undefined" || nextIsVideo) return;
@@ -102,5 +132,5 @@ export function useViewerDelivery({
       .catch(() => undefined);
   }, [privateAlbum]);
 
-  return { target, prefetch, variant };
+  return { target, prefetch, variant, pixelDemand };
 }
