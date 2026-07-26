@@ -204,6 +204,19 @@ function Player({
           Engine {status}
         </p>
       </header>
+
+      {game.rewardMode === "verified" && (
+        <div className="mb-7 rounded-[1.2rem] border border-[var(--glass-border)] bg-[var(--glass-bg)] p-5 text-sm leading-6 text-text-secondary backdrop-blur-md">
+          <strong className="flex items-center gap-2 mb-2 text-text-primary">
+            <Sparkles className="h-4 w-4 text-[var(--preset-accent)]" />
+            Fair Reward System
+          </strong>
+          <p>
+            This game uses a dynamic anti-inflation reward curve. Your Wren Feathers are calculated using a <em>Square Root</em> formula based on your final score and the game's difficulty multiplier. 
+            The higher your score, the harder it becomes to earn the next feather. Play fair and aim for the top!
+          </p>
+        </div>
+      )}
       {loadError ? (
         <div className="rounded-[1.4rem] border border-border bg-surface/85 p-10 text-center text-text-secondary">
           {loadError}
