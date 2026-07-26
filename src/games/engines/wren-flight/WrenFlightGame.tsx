@@ -347,6 +347,9 @@ export default function WrenFlightGame({
         .then((json) => {
           if (json?.data) {
             setCompletion(json.data);
+            window.dispatchEvent(new CustomEvent("wren-feathers-update", {
+              detail: { rewardGranted: json.data.rewardGranted, balanceAfter: json.data.balanceAfter }
+            }));
           }
         })
         .finally(() => {

@@ -6,6 +6,7 @@ import { PublicMobileNav } from "@/components/PublicMobileNav";
 import { UserMenu } from "@/components/UserMenu";
 import { getSiteSettings } from "@/lib/site-settings";
 import { NotificationBell } from "@/components/layout/NotificationBell";
+import { LiveFeatherBadge } from "@/components/layout/LiveFeatherBadge";
 
 
 import { cookies } from "next/headers";
@@ -98,6 +99,7 @@ export async function AppHeader() {
               <span className="hidden lg:inline whitespace-nowrap">{dict.nav.studio}</span>
             </Link>
           ) : null}
+          {session?.userId && <LiveFeatherBadge initialBalance={session.wrenFeathers} />}
           {session?.userId && <NotificationBell />}
           <PublicMobileNav session={session} navItems={navItems} />
           <UserMenu session={session} dict={dict} />
