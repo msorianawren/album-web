@@ -39,10 +39,13 @@ function getPublicR2Credentials(): R2Credentials {
 }
 
 function getPrivateR2Credentials(): R2Credentials {
-  const publicCredentials = getPublicR2Credentials();
-  const accountId = process.env.R2_PRIVATE_ACCOUNT_ID ?? publicCredentials.accountId;
-  const accessKeyId = process.env.R2_PRIVATE_ACCESS_KEY_ID ?? publicCredentials.accessKeyId;
-  const secretAccessKey = process.env.R2_PRIVATE_SECRET_ACCESS_KEY ?? publicCredentials.secretAccessKey;
+  const accountId = process.env.R2_PRIVATE_ACCOUNT_ID ?? process.env.R2_ACCOUNT_ID;
+  const accessKeyId = process.env.R2_PRIVATE_ACCESS_KEY_ID ?? process.env.R2_ACCESS_KEY_ID;
+  const secretAccessKey = process.env.R2_PRIVATE_SECRET_ACCESS_KEY ?? process.env.R2_SECRET_ACCESS_KEY;
+
+  if (!accountId || !accessKeyId || !secretAccessKey) {
+    throw new Error("Missing Cloudflare private R2 environment variables.");
+  }
 
   return { accountId, accessKeyId, secretAccessKey };
 }

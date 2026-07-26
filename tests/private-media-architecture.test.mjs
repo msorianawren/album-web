@@ -131,6 +131,9 @@ test("private R2 delivery can use isolated credentials instead of duplicate publ
   assert.match(r2Boundary, /getR2ClientForRole\(bucketRole\)\.send/);
   assert.match(r2Boundary, /export function getR2Client\(\)/);
   assert.doesNotMatch(r2Boundary, /^const accountId = process\.env\.R2_ACCOUNT_ID/m);
+  const privateCredentials = r2Boundary.match(/function getPrivateR2Credentials\(\): R2Credentials \{([\s\S]*?)\n\}/)?.[1];
+  assert.ok(privateCredentials);
+  assert.doesNotMatch(privateCredentials, /getPublicR2Credentials\(\)/);
 });
 
 test("single byte range parser accepts valid video ranges and rejects malformed or multi ranges", () => {
