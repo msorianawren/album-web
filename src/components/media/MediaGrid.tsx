@@ -121,10 +121,52 @@ export function MediaGrid({
   }, [viewableMedia.length]);
 
   const [hasOpenedViewer, setHasOpenedViewer] = useState(false);
+  const openedFromGridRef = useRef(false);
+
+  useEffect(() => {
+    const syncViewerFromLocation = () => {
+      const mediaId = new URL(window.location.href).searchParams.get("media");
+      const index = mediaId ? viewerIndexById.get(mediaId) : undefined;
+      setHasOpenedViewer(index !== undefined);
+      setCurrentIndex(index ?? null);
+    };
+    syncViewerFromLocation();
+    window.addEventListener("popstate", syncViewerFromLocation);
+    return () => window.removeEventListener("popstate", syncViewerFromLocation);
+  }, [viewerIndexById]);
+
+  useEffect(() => {
+    if (!hasOpenedViewer || currentIndex === null) return;
+    const current = viewableMedia[currentIndex];
+    if (!current) return;
+    const url = new URL(window.location.href);
+    if (url.searchParams.get("media") === current.id) return;
+    url.searchParams.set("media", current.id);
+    window.history.replaceState(window.history.state, "", url);
+  }, [currentIndex, hasOpenedViewer, viewableMedia]);
 
   const openMedia = useCallback((index: number) => {
+    const selected = viewableMedia[index];
+    if (!selected) return;
+    const url = new URL(window.location.href);
+    url.searchParams.set("media", selected.id);
+    openedFromGridRef.current = true;
+    window.history.pushState({ ...window.history.state, orianaMediaViewer: true }, "", url);
     setHasOpenedViewer(true);
     setCurrentIndex(index);
+  }, [viewableMedia]);
+
+  const closeViewer = useCallback(() => {
+    const url = new URL(window.location.href);
+    if (openedFromGridRef.current && url.searchParams.has("media")) {
+      openedFromGridRef.current = false;
+      window.history.back();
+      return;
+    }
+    url.searchParams.delete("media");
+    window.history.replaceState(window.history.state, "", url);
+    setCurrentIndex(null);
+    setHasOpenedViewer(false);
   }, []);
 
   useEffect(() => {
@@ -235,7 +277,7 @@ export function MediaGrid({
           downloadAllowed={downloadAllowed}
           albumStatus={albumStatus}
           protectAssets={protectAssets}
-          onClose={() => setCurrentIndex(null)}
+          onClose={closeViewer}
           onNext={handleNext}
           onPrevious={handlePrevious}
           onSelect={setCurrentIndex}

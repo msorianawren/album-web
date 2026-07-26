@@ -164,6 +164,24 @@ export async function getPresignedPutUrl({
   });
 }
 
+export async function getPresignedGetUrl({
+  key,
+  expiresIn = 120,
+  bucketRole = "private",
+}: {
+  key: string;
+  expiresIn?: number;
+  bucketRole?: R2BucketRole;
+}) {
+  return withStorageFailure("r2.presign_get", () =>
+    getSignedUrl(
+      getR2ClientForRole(bucketRole),
+      new GetObjectCommand({ Bucket: getR2BucketForRole(bucketRole), Key: key }),
+      { expiresIn },
+    ),
+  );
+}
+
 export async function headR2Object(
   key: string,
   bucketRole: R2BucketRole = "public",

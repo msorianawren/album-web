@@ -1,16 +1,23 @@
 "use client";
 
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { ChevronLeft, ChevronRight, Pause, Play, X, Maximize, Minimize, ZoomIn } from "lucide-react";
+import { ChevronLeft, ChevronRight, Pause, Play, X, Maximize, Minimize, ZoomIn, Info } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { DownloadButton } from "@/components/media/DownloadButton";
 import { MediaLikeButton } from "@/components/media/MediaLikeButton";
 import { ReliableMediaImage } from "@/components/media/ReliableMediaImage";
 import { Button } from "@/components/ui/Button";
-import { ORIANA_MEDIA_VIEWER_STATE_EVENT } from "@/lib/assistant/runtime-events";
+import {
+  ORIANA_MEDIA_VIEWER_ACTIVE_EVENT,
+  ORIANA_MEDIA_VIEWER_CLOSE_EVENT,
+  ORIANA_MEDIA_VIEWER_IDLE_EVENT,
+  ORIANA_MEDIA_VIEWER_OPEN_EVENT,
+  ORIANA_MEDIA_VIEWER_STATE_EVENT,
+} from "@/lib/assistant/runtime-events";
 import { getMediaDeliveryDescriptor } from "@/lib/media/delivery";
 import type { AlbumStatus, Media } from "@/lib/types";
 import { useAlbumViewMemory } from "@/hooks/useAlbumViewMemory";
+import { useViewerDelivery } from "@/hooks/media-viewer/useViewerDelivery";
 
 interface MediaViewerProps {
   media: Media[];
@@ -25,6 +32,10 @@ interface MediaViewerProps {
 }
 
 const clamp = (value: number, limit: number) => Math.min(Math.max(value, -limit), limit);
+
+function backdropHue(blurhash: string | null | undefined) {
+  return [...(blurhash ?? "oriana")].reduce((total, character) => (total * 31 + character.charCodeAt(0)) % 360, 0);
+}
 
 export function MediaViewer({
   media,
@@ -45,8 +56,12 @@ export function MediaViewer({
   const [translate, setTranslate] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [controlsVisible, setControlsVisible] = useState(true);
+  const [infoOpen, setInfoOpen] = useState(false);
   const [transitionDirection, setTransitionDirection] = useState(1);
   const dragStartPos = useRef({ x: 0, y: 0 });
+  const pointerStart = useRef({ x: 0, y: 0 });
+  const controlsTimer = useRef<number | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
   const reducedMotion = useReducedMotion();
@@ -60,6 +75,15 @@ export function MediaViewer({
         downloadAllowed,
       })
     : null;
+  const { target: viewerTarget, prefetch } = useViewerDelivery({
+    mediaId: item?.id,
+    privateAlbum: albumStatus === "private",
+    fallback: delivery?.viewer ?? { src: null, candidates: [] },
+    scale,
+    isVideo: item?.media_type === "video",
+  });
+  const visibleFilmstrip = media.slice(Math.max(0, (currentIndex ?? 0) - 10), (currentIndex ?? 0) + 11);
+  const ambientHue = backdropHue(delivery?.blurhash);
 
   const resetZoom = useCallback(() => {
     setScale(1);
@@ -76,10 +100,19 @@ export function MediaViewer({
     return { x: clamp(value.x, maxX), y: clamp(value.y, maxY) };
   }, []);
 
-  const changeScale = useCallback((nextScale: number) => {
+  const changeScale = useCallback((nextScale: number, anchor?: { x: number; y: number }) => {
     setScale(nextScale);
-    setTranslate((current) => constrainTranslate(current, nextScale));
-  }, [constrainTranslate]);
+    setTranslate((current) => {
+      if (!anchor || !stageRef.current) return constrainTranslate(current, nextScale);
+      const bounds = stageRef.current.getBoundingClientRect();
+      const fromCenter = { x: anchor.x - bounds.left - bounds.width / 2, y: anchor.y - bounds.top - bounds.height / 2 };
+      const ratio = nextScale / scale;
+      return constrainTranslate({
+        x: fromCenter.x - (fromCenter.x - current.x) * ratio,
+        y: fromCenter.y - (fromCenter.y - current.y) * ratio,
+      }, nextScale);
+    });
+  }, [constrainTranslate, scale]);
 
   const toggleFullscreen = useCallback(() => {
     if (document.fullscreenElement === containerRef.current) {
@@ -94,6 +127,8 @@ export function MediaViewer({
     setTransitionDirection(direction);
     if (direction === 1) onNext();
     else onPrevious();
+    setInfoOpen(false);
+    setControlsVisible(true);
   }, [onNext, onPrevious, resetZoom]);
 
   const selectMedia = useCallback((index: number) => {
@@ -114,6 +149,19 @@ export function MediaViewer({
     }
     return () => window.clearTimeout(resetTimer);
   }, [currentIndex, item, markAlbumViewed, resetZoom]);
+
+  useEffect(() => {
+    if (!item || !controlsVisible) return;
+    if (controlsTimer.current) window.clearTimeout(controlsTimer.current);
+    controlsTimer.current = window.setTimeout(() => {
+      const active = document.activeElement;
+      if (active instanceof HTMLElement && containerRef.current?.contains(active) && active.matches("button, input, select, textarea")) return;
+      if (!infoOpen) setControlsVisible(false);
+    }, 1800);
+    return () => {
+      if (controlsTimer.current) window.clearTimeout(controlsTimer.current);
+    };
+  }, [controlsVisible, infoOpen, item]);
 
   useEffect(() => {
     const handleFullscreenChange = () => {
@@ -140,6 +188,11 @@ export function MediaViewer({
       }
       if (event.key === "ArrowRight") navigate(1);
       if (event.key === "ArrowLeft") navigate(-1);
+      if (event.key === " ") { event.preventDefault(); navigate(event.shiftKey ? -1 : 1); }
+      if (event.key.toLowerCase() === "f") toggleFullscreen();
+      if (event.key.toLowerCase() === "h") setControlsVisible((visible) => !visible);
+      if (event.key.toLowerCase() === "i") setInfoOpen((open) => !open);
+      if (event.key.toLowerCase() === "s") setAutoPlay((active) => !active);
       if (event.key === "=" || event.key === "+") changeScale(Math.min(scale + 0.5, 5));
       if (event.key === "-") changeScale(Math.max(scale - 0.5, 1));
       if (event.key === "0") resetZoom();
@@ -147,7 +200,7 @@ export function MediaViewer({
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [changeScale, item, navigate, onClose, resetZoom, scale]);
+  }, [changeScale, item, navigate, onClose, resetZoom, scale, toggleFullscreen]);
 
   useEffect(() => {
     if (!item) return;
@@ -156,30 +209,41 @@ export function MediaViewer({
   }, [item]);
 
   useEffect(() => {
-    if (item) document.body.dataset.orianaMediaViewerOpen = "true";
+    if (item) {
+      document.body.dataset.orianaMediaViewerOpen = "true";
+      window.dispatchEvent(new Event(ORIANA_MEDIA_VIEWER_OPEN_EVENT));
+    }
     else delete document.body.dataset.orianaMediaViewerOpen;
     window.dispatchEvent(new Event(ORIANA_MEDIA_VIEWER_STATE_EVENT));
 
     return () => {
       delete document.body.dataset.orianaMediaViewerOpen;
+      window.dispatchEvent(new Event(ORIANA_MEDIA_VIEWER_CLOSE_EVENT));
       window.dispatchEvent(new Event(ORIANA_MEDIA_VIEWER_STATE_EVENT));
     };
   }, [item]);
 
   useEffect(() => {
-    if (!item || !autoPlay) return;
+    if (!item) return;
+    window.dispatchEvent(new Event(controlsVisible ? ORIANA_MEDIA_VIEWER_ACTIVE_EVENT : ORIANA_MEDIA_VIEWER_IDLE_EVENT));
+  }, [controlsVisible, item]);
+
+  useEffect(() => {
+    if (!item || !autoPlay || scale > 1 || infoOpen) return;
     const timer = window.setInterval(() => navigate(1), item.media_type === "video" ? 9000 : 4200);
     return () => window.clearInterval(timer);
-  }, [autoPlay, item, navigate]);
+  }, [autoPlay, infoOpen, item, navigate, scale]);
 
   const handleWheel = (event: React.WheelEvent) => {
+    event.preventDefault();
     const nextScale = Math.min(Math.max(1, scale - event.deltaY * 0.005), 5);
-    changeScale(nextScale);
+    changeScale(nextScale, { x: event.clientX, y: event.clientY });
+    setControlsVisible(true);
   };
 
   const handlePointerDown = (event: React.PointerEvent) => {
-    if (scale <= 1) return;
-    setIsDragging(true);
+    pointerStart.current = { x: event.clientX, y: event.clientY };
+    setIsDragging(scale > 1);
     event.currentTarget.setPointerCapture(event.pointerId);
     dragStartPos.current = { x: event.clientX - translate.x, y: event.clientY - translate.y };
   };
@@ -193,7 +257,11 @@ export function MediaViewer({
   };
 
   const handlePointerUp = (event: React.PointerEvent) => {
-    if (!isDragging) return;
+    const deltaX = event.clientX - pointerStart.current.x;
+    const deltaY = event.clientY - pointerStart.current.y;
+    if (scale <= 1 && Math.abs(deltaX) > 56 && Math.abs(deltaX) > Math.abs(deltaY) * 1.4) {
+      navigate(deltaX < 0 ? 1 : -1);
+    }
     setIsDragging(false);
     if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
   };
@@ -203,7 +271,7 @@ export function MediaViewer({
       {item ? (
         <motion.div
           ref={containerRef}
-          className="media-viewer-shell fixed inset-0 z-50 flex min-h-[100dvh] flex-col bg-[#0a0a0a]/95 text-accent-foreground backdrop-blur-xl"
+          className="media-viewer-shell fixed inset-0 z-50 flex min-h-[100dvh] flex-col overflow-hidden bg-[#060608] text-accent-foreground"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -211,9 +279,15 @@ export function MediaViewer({
           role="dialog"
           aria-modal="true"
           aria-label="Media viewer"
+          onPointerMove={() => setControlsVisible(true)}
         >
-          {!isFullscreen && (
-            <div className="z-20 flex min-h-[80px] flex-none items-center justify-between p-4 sm:p-6" onClick={(event) => event.stopPropagation()}>
+          <div
+            className="pointer-events-none absolute inset-0 opacity-70 transition-colors duration-500"
+            style={{ background: `radial-gradient(circle at 50% 45%, hsl(${ambientHue} 30% 16% / 0.62), transparent 58%), radial-gradient(circle at 50% 50%, transparent 45%, rgba(0,0,0,.78) 100%)` }}
+            aria-hidden="true"
+          />
+          {!isFullscreen && controlsVisible && (
+            <div className="z-20 flex min-h-[80px] flex-none items-center justify-between p-4 transition-opacity sm:p-6" onClick={(event) => event.stopPropagation()}>
               <div className="flex items-center gap-2">
                 <Button
                   variant="secondary"
@@ -243,6 +317,15 @@ export function MediaViewer({
                   aria-label="Enter fullscreen"
                 >
                   <Maximize className="h-4 w-4" aria-hidden="true" />
+                </Button>
+                <Button
+                  variant="secondary"
+                  className="h-10 rounded-full border-lightbox-border bg-white/10 px-3 text-white backdrop-blur-md transition-colors hover:bg-white hover:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+                  onClick={() => setInfoOpen((open) => !open)}
+                  aria-label="Toggle media information"
+                  aria-pressed={infoOpen}
+                >
+                  <Info className="h-4 w-4" aria-hidden="true" />
                 </Button>
                 <Button
                   variant="secondary"
@@ -310,6 +393,7 @@ export function MediaViewer({
                   onPointerMove={handlePointerMove}
                   onPointerUp={handlePointerUp}
                   onPointerCancel={handlePointerUp}
+                  onDoubleClick={(event) => changeScale(scale > 1 ? 1 : 2, { x: event.clientX, y: event.clientY })}
                   style={{
                     transform: `translate3d(${translate.x}px, ${translate.y}px, 0) scale(${scale})`,
                     transition: isDragging ? "none" : "transform 0.1s ease-out",
@@ -320,7 +404,7 @@ export function MediaViewer({
                   ) : null}
                   {item.media_type === "image" && delivery ? (
                     <ReliableMediaImage
-                      target={delivery.viewer}
+                      target={viewerTarget}
                       alt={delivery.alt}
                       blurhash={delivery.blurhash}
                       width={delivery.width}
@@ -329,18 +413,22 @@ export function MediaViewer({
                       className="pointer-events-none h-auto w-auto max-h-full max-w-full object-contain transition-opacity duration-200"
                       priority
                       draggable={false}
-                      onLoad={() => setLoadedImages((current) => ({ ...current, [item.id]: true }))}
+                      onLoad={() => {
+                        setLoadedImages((current) => ({ ...current, [item.id]: true }));
+                        const next = media[(currentIndex! + 1) % media.length];
+                        if (next) prefetch(next.id, next.media_type === "video");
+                      }}
                       onUnavailable={() => setLoadedImages((current) => ({ ...current, [item.id]: true }))}
                     />
-                  ) : failedVideos[item.id] || !delivery?.viewer.src ? (
+                  ) : failedVideos[item.id] || !viewerTarget.src ? (
                     <div className="flex min-h-64 min-w-64 items-center justify-center rounded-[18px] border border-white/10 bg-white/5 px-8 text-center text-sm text-white/65">
                       Video unavailable
                     </div>
                   ) : (
                     <video
-                      key={delivery.viewer.src}
-                      src={delivery.viewer.src}
-                      poster={delivery.card.src ?? undefined}
+                      key={viewerTarget.src}
+                      src={viewerTarget.src}
+                      poster={delivery?.card.src ?? undefined}
                       controls
                       preload="metadata"
                       controlsList={protectAssets ? "nodownload" : undefined}
@@ -353,7 +441,15 @@ export function MediaViewer({
             </AnimatePresence>
           </div>
 
-          {!isFullscreen && (
+          {infoOpen ? (
+            <aside className="absolute bottom-4 right-4 z-30 w-[min(22rem,calc(100vw-2rem))] rounded-[1.25rem] border border-white/10 bg-black/65 p-5 text-sm text-white/75 shadow-2xl backdrop-blur-xl sm:bottom-auto sm:top-24">
+              <p className="text-base font-medium text-white">{item.title ?? item.original_filename ?? (item.media_type === "image" ? "Image" : "Video")}</p>
+              {item.description ? <p className="mt-3 leading-relaxed">{item.description}</p> : null}
+              <p className="mt-4 text-xs uppercase tracking-[0.16em] text-white/45">{currentIndex! + 1} of {media.length}</p>
+            </aside>
+          ) : null}
+
+          {!isFullscreen && controlsVisible && (
             <div className="z-20 flex min-h-[140px] flex-none flex-col items-center p-4 sm:p-6" onClick={(event) => event.stopPropagation()}>
               <div className="mb-4 text-center text-xs text-white/70 shadow-black drop-shadow-md">
                 <span className="font-semibold text-white">{currentIndex! + 1} / {media.length}</span>
@@ -370,7 +466,8 @@ export function MediaViewer({
                 </div>
                 {media.length > 1 && (
                   <div className="hidden min-w-0 flex-1 gap-2 overflow-x-auto sm:flex sm:justify-end">
-                    {media.map((thumb, index) => {
+                    {visibleFilmstrip.map((thumb) => {
+                      const index = media.findIndex((candidate) => candidate.id === thumb.id);
                       const thumbDelivery = getMediaDeliveryDescriptor(thumb, { albumStatus, isAuthorized: true });
                       return (
                         <button

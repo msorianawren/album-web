@@ -9,6 +9,7 @@ import { isMediaUuid, parseSingleByteRange } from "../src/lib/private-media-rang
 
 const read = (path) => readFileSync(join(process.cwd(), path), "utf8");
 const gateway = read("src/app/api/media/[id]/content/route.ts");
+const deliveryGrant = read("src/app/api/media/[id]/delivery-grant/route.ts");
 const repository = read("src/lib/albums.ts");
 const boundary = read("src/lib/private-media.ts");
 const r2Boundary = read("src/lib/r2.ts");
@@ -44,6 +45,16 @@ test("gateway authorizes before R2 streaming and never constructs a public URL",
   assert.match(gateway, /Content-Range/);
   assert.match(gateway, /X-Oriana-Media-Result/);
   assert.match(gateway, /NODE_ENV !== "production"/);
+});
+
+test("direct private delivery grant authorizes before signing and returns metadata only", () => {
+  assert.match(deliveryGrant, /PRIVATE_MEDIA_DIRECT_DELIVERY_ENABLED/);
+  assert.match(deliveryGrant, /PRIVATE_MEDIA_PROXY_FALLBACK_ENABLED/);
+  assert.ok(deliveryGrant.indexOf("authorizePrivateMediaAsset") < deliveryGrant.indexOf("getPresignedGetUrl"));
+  assert.match(deliveryGrant, /Cache-Control.*private, no-store/);
+  assert.doesNotMatch(deliveryGrant, /streamAuthorizedPrivateMedia|getR2ObjectStream/);
+  assert.doesNotMatch(deliveryGrant, /objectKey\s*:/);
+  assert.match(r2Boundary, /export async function getPresignedGetUrl/);
 });
 
 test("trusted manifest lookup is isolated behind the JWT/RLS media decision", () => {

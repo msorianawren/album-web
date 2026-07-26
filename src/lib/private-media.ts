@@ -66,6 +66,8 @@ export interface AuthorizedPrivateMediaAsset {
   contentType: string | null;
   fallbackObjectKey: string | null;
   deliverySource: "private_manifest" | "legacy_gateway_fallback";
+  width: number | null;
+  height: number | null;
 }
 
 function privateMediaUrl(mediaId: string, variant: Exclude<PrivateMediaVariant, "original">) {
@@ -281,7 +283,7 @@ export async function authorizePrivateMediaAsset(
   const trusted = createTrustedPrivateMediaDeliveryClient();
   const { data: media, error: mediaError } = await trusted
     .from("media")
-    .select("id,album_id,media_type,mime_type,albums!media_album_id_fkey!inner(status)")
+    .select("id,album_id,media_type,mime_type,width,height,albums!media_album_id_fkey!inner(status)")
     .eq("id", mediaId)
     .is("deleted_at", null)
     .maybeSingle();
@@ -309,6 +311,8 @@ export async function authorizePrivateMediaAsset(
     contentType: asset.contentType ?? (typeof media.mime_type === "string" ? media.mime_type : null),
     fallbackObjectKey: asset.fallbackObjectKey,
     deliverySource: asset.deliverySource,
+    width: typeof media.width === "number" && media.width > 0 ? media.width : null,
+    height: typeof media.height === "number" && media.height > 0 ? media.height : null,
   };
 }
 
