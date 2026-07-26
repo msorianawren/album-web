@@ -50,7 +50,7 @@ test("gateway authorizes before R2 streaming and never constructs a public URL",
 test("direct private delivery grant authorizes before signing and returns metadata only", () => {
   assert.match(deliveryGrant, /PRIVATE_MEDIA_DIRECT_DELIVERY_ENABLED/);
   assert.match(deliveryGrant, /PRIVATE_MEDIA_PROXY_FALLBACK_ENABLED/);
-  assert.ok(deliveryGrant.indexOf("authorizePrivateMediaAsset") < deliveryGrant.indexOf("getPresignedGetUrl"));
+  assert.ok(deliveryGrant.indexOf("const asset = await authorizePrivateMediaAsset") < deliveryGrant.indexOf("const url = await getPresignedGetUrl"));
   assert.match(deliveryGrant, /Cache-Control.*private, no-store/);
   assert.doesNotMatch(deliveryGrant, /streamAuthorizedPrivateMedia|getR2ObjectStream/);
   assert.doesNotMatch(deliveryGrant, /objectKey\s*:/);
