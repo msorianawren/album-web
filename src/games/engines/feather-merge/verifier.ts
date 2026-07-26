@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import type { GameDifficulty, GamePublishedVersion, GameReplayTrace, GameVerificationResult } from "../../core/types";
 import { createFeatherMergeState, moveFeatherMerge, type MergeDirection } from "./model";
 
@@ -6,8 +7,10 @@ export function verifyFeatherMerge(
   difficulty: GameDifficulty,
   trace: GameReplayTrace,
 ): GameVerificationResult {
+  const replayDigest = createHash("sha256").update(JSON.stringify(trace)).digest("hex");
+
   if (trace.engineVersion !== "feather-merge-v1") {
-    return { valid: false, reason: "Unsupported engine version", versionId: version.id, replayDigest: "0", score: 0, durationTicks: 0 };
+    return { valid: false, reason: "Unsupported engine version", versionId: version.id, replayDigest, score: 0, durationTicks: 0 };
   }
 
   const state = createFeatherMergeState(trace.seed);
@@ -15,7 +18,7 @@ export function verifyFeatherMerge(
 
   for (const action of trace.actions) {
     if (state.complete) {
-      return { valid: false, reason: "Extraneous actions after game completion", versionId: version.id, replayDigest: "0", score: 0, durationTicks: 0 };
+      return { valid: false, reason: "Extraneous actions after game completion", versionId: version.id, replayDigest, score: 0, durationTicks: 0 };
     }
     
     if (action.type === "direction") {
@@ -24,12 +27,10 @@ export function verifyFeatherMerge(
     }
   }
 
-  // Feather merge can end voluntarily if the player has no moves,
-  // or they just submit whatever they achieved. Let's assume the trace contains the complete run.
   return {
     valid: true,
     versionId: version.id,
-    replayDigest: "0",
+    replayDigest,
     score: state.score < 500 ? 0 : state.score,
     durationTicks: step,
   };

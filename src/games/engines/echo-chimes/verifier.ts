@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import type { GameDifficulty, GamePublishedVersion, GameReplayTrace, GameVerificationResult } from "../../core/types";
 import { createEchoChimesState, stepEchoChimes, pressChime } from "./model";
 
@@ -6,8 +7,10 @@ export function verifyEchoChimes(
   difficulty: GameDifficulty,
   trace: GameReplayTrace,
 ): GameVerificationResult {
+  const replayDigest = createHash("sha256").update(JSON.stringify(trace)).digest("hex");
+
   if (trace.engineVersion !== "echo-chimes-v1") {
-    return { valid: false, reason: "Unsupported engine version", versionId: version.id, replayDigest: "0", score: 0, durationTicks: 0 };
+    return { valid: false, reason: "Unsupported engine version", versionId: version.id, replayDigest, score: 0, durationTicks: 0 };
   }
 
   const state = createEchoChimesState(trace.seed);
@@ -28,13 +31,13 @@ export function verifyEchoChimes(
   }
 
   if (traceIndex < trace.actions.length) {
-    return { valid: false, reason: "Extraneous actions after game completion", versionId: version.id, replayDigest: "0", score: 0, durationTicks: 0 };
+    return { valid: false, reason: "Extraneous actions after game completion", versionId: version.id, replayDigest, score: 0, durationTicks: 0 };
   }
 
   return {
     valid: true,
     versionId: version.id,
-    replayDigest: "0",
+    replayDigest,
     score: state.score < 8 ? 0 : state.score,
     durationTicks: tick,
   };
