@@ -99,7 +99,10 @@ export async function AppHeader() {
               <span className="hidden lg:inline whitespace-nowrap">{dict.nav.studio}</span>
             </Link>
           ) : null}
-          {session?.userId && <LiveFeatherBadge initialBalance={session.wrenFeathers} />}
+          {session?.userId && <LiveFeatherBadge 
+            initialBalance={session.wrenFeathers} 
+            tooltipText={locale === "vi" ? "Chỉ kiếm được bằng cách chơi game. Dùng để mua quyền xem album riêng tư mà không cần phê duyệt." : "Earned by playing games. Used to unlock private albums without Admin approval."} 
+          />}
           {session?.userId && <NotificationBell />}
           <PublicMobileNav session={session} navItems={navItems} />
           <UserMenu session={session} dict={dict} />

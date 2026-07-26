@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from "react";
 import { Sparkles } from "lucide-react";
 import confetti from "canvas-confetti";
 
-export function LiveFeatherBadge({ initialBalance = 0 }: { initialBalance?: number | null }) {
+export function LiveFeatherBadge({ initialBalance = 0, tooltipText }: { initialBalance?: number | null, tooltipText: string }) {
   const [balance, setBalance] = useState(initialBalance ?? 0);
   const [animate, setAnimate] = useState(false);
   const [lastReward, setLastReward] = useState<number | null>(null);
@@ -69,7 +69,7 @@ export function LiveFeatherBadge({ initialBalance = 0 }: { initialBalance?: numb
             <Sparkles className="h-3.5 w-3.5 text-accent" /> Wren Feathers
           </p>
           <p className="text-text-secondary text-xs">
-            Chỉ kiếm được bằng cách chơi game. Dùng để mua quyền xem album private mà không cần Admin gán quyền.
+            {tooltipText}
           </p>
         </div>
       </div>
