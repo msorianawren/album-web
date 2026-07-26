@@ -21,7 +21,17 @@ begin
   loop
     new_version_id := gen_random_uuid();
     insert into public.game_versions (id, game_id, version, schema_version, engine_version, content_digest, config, verification_config, status)
-    values (new_version_id, game_row.game_id, game_row.version + 1, game_row.schema_version, game_row.engine_version, game_row.content_digest, game_row.config, game_row.verification_config, 'draft');
+    values (
+      new_version_id,
+      game_row.game_id,
+      (select coalesce(max(existing.version), 0) + 1 from public.game_versions as existing where existing.game_id = game_row.game_id),
+      game_row.schema_version,
+      game_row.engine_version,
+      game_row.content_digest,
+      game_row.config,
+      game_row.verification_config,
+      'draft'
+    );
 
     for difficulty_row in select * from public.game_difficulties where game_version_id = game_row.source_version_id loop
       new_difficulty_id := gen_random_uuid();
