@@ -6,10 +6,17 @@ test("public viewer deep-links media, navigates, and closes back to the album", 
   await page.goto(publicAlbumPath);
   await expect(page.locator('[data-media-index="0"]').first()).toBeVisible();
   await expect(page.locator(".public-chime-canvas")).toBeAttached();
+  await expect.poll(() => page.getByRole("button", { name: "Play the wind chime" }).count()).toBeGreaterThan(0);
+  await page.evaluate(() => {
+    document.documentElement.dataset.chimeActivationCount = "0";
+    window.addEventListener("oriana-chime-activate", () => {
+      document.documentElement.dataset.chimeActivationCount = String(Number(document.documentElement.dataset.chimeActivationCount ?? "0") + 1);
+    }, { once: true });
+  });
+  await page.getByRole("button", { name: "Play the wind chime" }).first().click();
+  await expect.poll(() => page.locator("html").getAttribute("data-chime-activation-count")).toBe("1");
 
-  const firstMedia = page.locator('[data-media-index="0"]').first();
-  await firstMedia.scrollIntoViewIfNeeded();
-  await firstMedia.click();
+  await page.locator('[data-media-index="0"]').first().click();
   const viewer = page.getByRole("dialog", { name: "Media viewer" });
   await expect(viewer).toBeVisible();
   await expect(page).toHaveURL(/\?media=[0-9a-f-]{36}$/i);
@@ -18,11 +25,6 @@ test("public viewer deep-links media, navigates, and closes back to the album", 
   await page.keyboard.press("ArrowRight");
   await expect.poll(() => page.url()).not.toBe(firstUrl);
   await expect(viewer.getByRole("slider", { name: "Browse album timeline" })).toBeVisible();
-
-  const presentation = viewer.getByRole("button", { name: "Viewer presentation: clean" });
-  await expect(presentation).toBeVisible();
-  await presentation.click();
-  await expect(viewer).toHaveAttribute("data-viewer-presentation", "cinematic");
 
   const stage = viewer.locator("[data-viewer-stage]");
   const stageBeforeChromeHides = await stage.boundingBox();
@@ -38,20 +40,6 @@ test("public viewer deep-links media, navigates, and closes back to the album", 
   await page.keyboard.press("Escape");
   await expect(viewer).toBeHidden();
   await expect(page).toHaveURL(new RegExp(`${publicAlbumPath.replace("/", "\\/")}$`));
-});
-
-test("explicit wind-chime controls dispatch one activation", async ({ page }) => {
-  await page.goto(publicAlbumPath);
-  const chimes = page.getByRole("button", { name: "Play the wind chime" });
-  await expect.poll(() => chimes.count()).toBeGreaterThan(0);
-  await page.evaluate(() => {
-    document.documentElement.dataset.chimeActivationCount = "0";
-    window.addEventListener("oriana-chime-activate", () => {
-      document.documentElement.dataset.chimeActivationCount = String(Number(document.documentElement.dataset.chimeActivationCount ?? "0") + 1);
-    }, { once: true });
-  });
-  await chimes.first().click();
-  await expect.poll(() => page.locator("html").getAttribute("data-chime-activation-count")).toBe("1");
 });
 
 test("viewer remains usable at a mobile viewport without horizontal overflow", async ({ browser }) => {

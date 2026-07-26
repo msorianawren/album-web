@@ -5,8 +5,6 @@ import { useEffect, useState, useCallback } from "react";
 const STORAGE_KEY = "oriana.albumSeen.v1";
 const MAX_RECORDS = 150;
 
-export type ViewerPresentation = "clean" | "cinematic";
-
 export interface AlbumViewRecord {
   albumId: string;
   slug: string;
@@ -15,7 +13,7 @@ export interface AlbumViewRecord {
   viewCount: number;
   lastMediaId?: string;
   lastMediaIndex?: number;
-  viewerMode?: ViewerPresentation | "interface" | "focus";
+  viewerMode?: "interface" | "focus";
   slideshowPace?: "still" | "slow" | "cinema";
   controlsPreference?: "auto";
 }
@@ -128,7 +126,7 @@ export function useAlbumViewMemory(settings?: { retentionDays?: number, recentTh
 
   const saveViewerPreferences = useCallback((params: {
     albumId: string;
-    viewerMode?: ViewerPresentation;
+    viewerMode?: "interface" | "focus";
     slideshowPace?: "still" | "slow" | "cinema";
     controlsPreference?: "auto";
   }) => {

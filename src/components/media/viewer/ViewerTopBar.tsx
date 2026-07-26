@@ -1,8 +1,7 @@
 "use client";
 
-import { Info, Maximize, Minimize, Pause, Play, Sparkles, X, ZoomIn } from "lucide-react";
+import { Info, Maximize, Minimize, Pause, Play, X, ZoomIn } from "lucide-react";
 import { Button } from "@/components/ui/Button";
-import type { ViewerPresentation } from "@/hooks/useAlbumViewMemory";
 import type { SlideshowPace } from "@/lib/media/cinematic-drift";
 
 interface ViewerTopBarProps {
@@ -11,13 +10,11 @@ interface ViewerTopBarProps {
   scale: number;
   isFullscreen: boolean;
   infoOpen: boolean;
-  presentation: ViewerPresentation;
   onToggleAutoplay: () => void;
   onCyclePace: () => void;
   onResetZoom: () => void;
   onToggleFullscreen: () => void;
   onToggleInfo: () => void;
-  onTogglePresentation: () => void;
   onClose: () => void;
 }
 
@@ -29,13 +26,11 @@ export function ViewerTopBar({
   scale,
   isFullscreen,
   infoOpen,
-  presentation,
   onToggleAutoplay,
   onCyclePace,
   onResetZoom,
   onToggleFullscreen,
   onToggleInfo,
-  onTogglePresentation,
   onClose,
 }: ViewerTopBarProps) {
   if (isFullscreen) {
@@ -60,16 +55,6 @@ export function ViewerTopBar({
         </Button>
         <Button variant="secondary" className={`${controlClassName} text-xs font-semibold`} onClick={onCyclePace} aria-label={`Slideshow pace: ${slideshowPace}`}>
           {slideshowPace === "still" ? "Still" : slideshowPace === "slow" ? "Slow" : "Cinema"}
-        </Button>
-        <Button
-          variant="secondary"
-          className={`${controlClassName} text-xs font-semibold`}
-          onClick={onTogglePresentation}
-          aria-label={`Viewer presentation: ${presentation}`}
-          aria-pressed={presentation === "cinematic"}
-        >
-          <Sparkles className="h-4 w-4" aria-hidden="true" />
-          <span className="hidden sm:inline">{presentation === "cinematic" ? "Cinematic" : "Clean"}</span>
         </Button>
         {scale > 1 ? (
           <Button variant="secondary" className={controlClassName} onClick={onResetZoom} aria-label="Reset zoom">

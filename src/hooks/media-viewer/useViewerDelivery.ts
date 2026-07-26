@@ -132,15 +132,8 @@ export function useViewerDelivery({
     };
   }, [fallbackSignature, grantRevision, isVideo, mediaId, privateAlbum, variant]);
 
-  const prefetch = useCallback((nextMediaId: string, nextIsVideo = false, publicFallback?: MediaDeliveryTarget) => {
-    if (!privateAlbum) {
-      const source = publicFallback?.src;
-      if (typeof Image !== "undefined" && source && !nextIsVideo) {
-        const image = new Image();
-        image.src = source;
-      }
-      return;
-    }
+  const prefetch = useCallback((nextMediaId: string, nextIsVideo = false) => {
+    if (!privateAlbum) return;
     const nextVariant = preferredVariant(1, nextIsVideo, viewportPixelDemand(1));
     void requestGrant(nextMediaId, nextVariant)
       .then((grant) => {
