@@ -1,12 +1,14 @@
 "use client";
 
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { ChevronLeft, ChevronRight, Pause, Play, X, Maximize, Minimize, ZoomIn, Info } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useCallback, useEffect, useRef } from "react";
-import { DownloadButton } from "@/components/media/DownloadButton";
-import { MediaLikeButton } from "@/components/media/MediaLikeButton";
 import { ReliableMediaImage } from "@/components/media/ReliableMediaImage";
 import { Button } from "@/components/ui/Button";
+import { ViewerBackdrop } from "@/components/media/viewer/ViewerBackdrop";
+import { ViewerFilmstrip } from "@/components/media/viewer/ViewerFilmstrip";
+import { ViewerInfoSheet } from "@/components/media/viewer/ViewerInfoSheet";
+import { ViewerTopBar } from "@/components/media/viewer/ViewerTopBar";
 import {
   ORIANA_MEDIA_VIEWER_ACTIVE_EVENT,
   ORIANA_MEDIA_VIEWER_CLOSE_EVENT,
@@ -85,7 +87,6 @@ export function MediaViewer({
     scale,
     isVideo: item?.media_type === "video",
   });
-  const visibleFilmstrip = media.slice(Math.max(0, (currentIndex ?? 0) - 10), (currentIndex ?? 0) + 11);
   const ambientHue = backdropHue(delivery?.blurhash);
   const drift = item ? cinematicDrift(item.id) : null;
   const driftEnabled = Boolean(autoPlay && slideshowPace !== "still" && item?.media_type === "image" && !reducedMotion);
@@ -287,86 +288,22 @@ export function MediaViewer({
           aria-label="Media viewer"
           onPointerMove={() => setControlsVisible(true)}
         >
-          <div
-            className="pointer-events-none absolute inset-0 opacity-70 transition-colors duration-500"
-            style={{ background: `radial-gradient(circle at 50% 45%, hsl(${ambientHue} 30% 16% / 0.62), transparent 58%), radial-gradient(circle at 50% 50%, transparent 45%, rgba(0,0,0,.78) 100%)` }}
-            aria-hidden="true"
-          />
-          {!isFullscreen && controlsVisible && (
-            <div className="z-20 flex min-h-[80px] flex-none items-center justify-between p-4 transition-opacity sm:p-6" onClick={(event) => event.stopPropagation()}>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="secondary"
-                  className="h-10 rounded-full border-lightbox-border bg-white/10 px-3 text-white backdrop-blur-md transition-colors hover:bg-white hover:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
-                  onClick={() => setAutoPlay((current) => !current)}
-                  aria-label={autoPlay ? "Pause slideshow" : "Start slideshow"}
-                >
-                  {autoPlay ? <Pause className="h-4 w-4" aria-hidden="true" /> : <Play className="h-4 w-4" aria-hidden="true" />}
-                </Button>
-                <Button
-                  variant="secondary"
-                  className="h-10 rounded-full border-lightbox-border bg-white/10 px-3 text-xs font-semibold text-white backdrop-blur-md transition-colors hover:bg-white hover:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
-                  onClick={() => setSlideshowPace((pace) => pace === "still" ? "slow" : pace === "slow" ? "cinema" : "still")}
-                  aria-label={`Slideshow pace: ${slideshowPace}`}
-                >
-                  {slideshowPace === "still" ? "Still" : slideshowPace === "slow" ? "Slow" : "Cinema"}
-                </Button>
-                {scale > 1 && (
-                  <Button
-                    variant="secondary"
-                    className="h-10 rounded-full border-lightbox-border bg-white/10 px-3 text-white backdrop-blur-md transition-colors hover:bg-white hover:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
-                    onClick={resetZoom}
-                    aria-label="Reset zoom"
-                  >
-                    <ZoomIn className="mr-2 h-4 w-4" aria-hidden="true" />
-                    <span className="text-xs font-semibold">Reset Zoom</span>
-                  </Button>
-                )}
-              </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="secondary"
-                  className="h-10 rounded-full border-lightbox-border bg-white/10 px-3 text-white backdrop-blur-md transition-colors hover:bg-white hover:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
-                  onClick={toggleFullscreen}
-                  aria-label="Enter fullscreen"
-                >
-                  <Maximize className="h-4 w-4" aria-hidden="true" />
-                </Button>
-                <Button
-                  variant="secondary"
-                  className="h-10 rounded-full border-lightbox-border bg-white/10 px-3 text-white backdrop-blur-md transition-colors hover:bg-white hover:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
-                  onClick={() => {
-                    setAutoPlay(false);
-                    setInfoOpen((open) => !open);
-                  }}
-                  aria-label="Toggle media information"
-                  aria-pressed={infoOpen}
-                >
-                  <Info className="h-4 w-4" aria-hidden="true" />
-                </Button>
-                <Button
-                  variant="secondary"
-                  className="h-10 rounded-full border-lightbox-border bg-white/10 px-3 text-white backdrop-blur-md transition-colors hover:bg-white hover:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
-                  onClick={onClose}
-                  aria-label="Close media viewer"
-                >
-                  <X className="h-4 w-4" aria-hidden="true" />
-                </Button>
-              </div>
-            </div>
-          )}
-
-          {isFullscreen && (
-            <Button
-              variant="secondary"
-              className="absolute right-[max(env(safe-area-inset-right),1rem)] top-[max(env(safe-area-inset-top),1rem)] z-30 h-10 rounded-full border-lightbox-border bg-black/45 px-3 text-white backdrop-blur-md transition-colors hover:bg-white hover:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
-              onClick={toggleFullscreen}
-              aria-label="Exit fullscreen"
-            >
-              <Minimize className="mr-2 h-4 w-4" aria-hidden="true" />
-              <span className="text-xs font-semibold">Exit fullscreen</span>
-            </Button>
-          )}
+          <ViewerBackdrop hue={ambientHue} />
+          {controlsVisible ? (
+            <ViewerTopBar
+              autoPlay={autoPlay}
+              slideshowPace={slideshowPace}
+              scale={scale}
+              isFullscreen={isFullscreen}
+              infoOpen={infoOpen}
+              onToggleAutoplay={() => setAutoPlay((current) => !current)}
+              onCyclePace={() => setSlideshowPace((pace) => pace === "still" ? "slow" : pace === "slow" ? "cinema" : "still")}
+              onResetZoom={resetZoom}
+              onToggleFullscreen={toggleFullscreen}
+              onToggleInfo={() => { setAutoPlay(false); setInfoOpen((open) => !open); }}
+              onClose={onClose}
+            />
+          ) : null}
 
           <div
             ref={stageRef}
@@ -463,91 +400,9 @@ export function MediaViewer({
             </AnimatePresence>
           </div>
 
-          {infoOpen ? (
-            <aside
-              className="absolute inset-x-3 bottom-3 z-30 rounded-[1.25rem] border border-white/10 bg-black/75 p-5 text-sm text-white/75 shadow-2xl backdrop-blur-xl sm:inset-x-auto sm:bottom-auto sm:right-6 sm:top-24 sm:w-[min(23rem,calc(100vw-3rem))]"
-              aria-label="Media information"
-            >
-              <div className="flex items-start justify-between gap-4">
-                <div className="min-w-0">
-                  <p className="text-[0.65rem] font-semibold uppercase tracking-[0.16em] text-white/45">{item.media_type === "image" ? "Artwork" : "Film"}</p>
-                  <p className="mt-2 text-base font-medium text-white">{item.title ?? item.original_filename ?? (item.media_type === "image" ? "Image" : "Video")}</p>
-                </div>
-                <Button
-                  variant="secondary"
-                  className="h-9 w-9 shrink-0 rounded-full border-lightbox-border bg-white/10 p-0 text-white hover:bg-white hover:text-black"
-                  onClick={() => setInfoOpen(false)}
-                  aria-label="Close media information"
-                >
-                  <X className="h-4 w-4" aria-hidden="true" />
-                </Button>
-              </div>
-              {item.description ? <p className="mt-4 leading-6 text-white/70">{item.description}</p> : null}
-              <dl className="mt-5 grid grid-cols-2 gap-x-4 gap-y-3 border-t border-white/10 pt-4 text-xs">
-                <div><dt className="uppercase tracking-[0.14em] text-white/40">Position</dt><dd className="mt-1 text-white/80">{currentIndex! + 1} of {media.length}</dd></div>
-                <div><dt className="uppercase tracking-[0.14em] text-white/40">Format</dt><dd className="mt-1 text-white/80">{delivery?.width} × {delivery?.height}</dd></div>
-              </dl>
-            </aside>
-          ) : null}
+          {infoOpen && delivery ? <ViewerInfoSheet item={item} delivery={delivery} currentIndex={currentIndex!} total={media.length} onClose={() => setInfoOpen(false)} /> : null}
 
-          {!isFullscreen && controlsVisible && (
-            <div className="z-20 flex min-h-[140px] flex-none flex-col items-center p-4 sm:p-6" onClick={(event) => event.stopPropagation()}>
-              <div className="mb-4 text-center text-xs text-white/70 shadow-black drop-shadow-md">
-                <span className="font-semibold text-white">{currentIndex! + 1} / {media.length}</span>
-                <span className="mx-2 opacity-50">|</span>
-                <span className="inline-block max-w-[60vw] truncate align-bottom">
-                  {item.title ?? item.original_filename ?? (item.media_type === "image" ? "Image" : "Video")}
-                </span>
-              </div>
-
-              {media.length > 1 ? (
-                <label className="mb-4 flex w-full max-w-[min(42rem,calc(100vw-3rem))] items-center gap-3 text-[0.65rem] font-semibold uppercase tracking-[0.16em] text-white/45">
-                  <span className="sr-only">Browse album timeline</span>
-                  <input
-                    type="range"
-                    min="0"
-                    max={media.length - 1}
-                    value={currentIndex ?? 0}
-                    onChange={(event) => selectMedia(Number(event.currentTarget.value))}
-                    className="h-1 w-full cursor-pointer appearance-none rounded-full bg-white/20 accent-white"
-                    aria-label="Browse album timeline"
-                  />
-                  <span className="min-w-10 text-right">{currentIndex! + 1} / {media.length}</span>
-                </label>
-              ) : null}
-
-              <div className="flex w-full max-w-[min(56rem,calc(100vw-2rem))] flex-col gap-3 rounded-[1.2rem] border border-lightbox-border bg-white/5 p-3 backdrop-blur-md sm:flex-row sm:items-center sm:justify-between">
-                <div className="flex shrink-0 items-center justify-center gap-2">
-                  <MediaLikeButton mediaId={item.id} />
-                  {downloadAllowed && delivery?.downloadHref ? <DownloadButton href={delivery.downloadHref} /> : null}
-                </div>
-                {media.length > 1 && (
-                  <div className="hidden min-w-0 flex-1 gap-2 overflow-x-auto sm:flex sm:justify-end">
-                    {visibleFilmstrip.map((thumb) => {
-                      const index = media.findIndex((candidate) => candidate.id === thumb.id);
-                      const thumbDelivery = getMediaDeliveryDescriptor(thumb, { albumStatus, isAuthorized: true });
-                      return (
-                        <button
-                          key={thumb.id}
-                          type="button"
-                          onClick={() => selectMedia(index)}
-                          className={`relative h-12 w-16 shrink-0 overflow-hidden rounded-lg border transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white ${
-                            index === currentIndex ? "border-white opacity-100" : "border-transparent opacity-50 hover:opacity-100 focus-visible:opacity-100"
-                          }`}
-                        >
-                          {thumbDelivery.card.src ? (
-                            <ReliableMediaImage target={thumbDelivery.card} alt="" fill sizes="64px" className="object-cover transition-opacity duration-150" />
-                          ) : (
-                            <span className="flex h-full w-full items-center justify-center bg-white/5 text-[0.55rem] uppercase tracking-wider text-white/50">Unavailable</span>
-                          )}
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
+          {!isFullscreen && controlsVisible ? <ViewerFilmstrip media={media} item={item} currentIndex={currentIndex!} albumStatus={albumStatus} downloadAllowed={downloadAllowed} onSelect={selectMedia} /> : null}
         </motion.div>
       ) : null}
     </AnimatePresence>
