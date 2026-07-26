@@ -15,6 +15,7 @@ import {
   ORIANA_MEDIA_VIEWER_STATE_EVENT,
 } from "@/lib/assistant/runtime-events";
 import { getMediaDeliveryDescriptor } from "@/lib/media/delivery";
+import { cinematicDrift, slideshowInterval, type SlideshowPace } from "@/lib/media/cinematic-drift";
 import type { AlbumStatus, Media } from "@/lib/types";
 import { useAlbumViewMemory } from "@/hooks/useAlbumViewMemory";
 import { useViewerDelivery } from "@/hooks/media-viewer/useViewerDelivery";
@@ -51,6 +52,8 @@ export function MediaViewer({
   const [loadedImages, setLoadedImages] = useState<Record<string, boolean>>({});
   const [failedVideos, setFailedVideos] = useState<Record<string, boolean>>({});
   const [autoPlay, setAutoPlay] = useState(false);
+  const [slideshowPace, setSlideshowPace] = useState<SlideshowPace>("still");
+  const [pageHidden, setPageHidden] = useState(false);
   const [scale, setScale] = useState(1);
   const [translate, setTranslate] = useState({ x: 0, y: 0 });
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -80,6 +83,8 @@ export function MediaViewer({
   });
   const visibleFilmstrip = media.slice(Math.max(0, (currentIndex ?? 0) - 10), (currentIndex ?? 0) + 11);
   const ambientHue = backdropHue(delivery?.blurhash);
+  const drift = item ? cinematicDrift(item.id) : null;
+  const driftEnabled = Boolean(autoPlay && slideshowPace !== "still" && item?.media_type === "image" && !reducedMotion);
 
   const resetZoom = useCallback(() => {
     setScale(1);
@@ -204,6 +209,13 @@ export function MediaViewer({
   }, [item]);
 
   useEffect(() => {
+    const updateVisibility = () => setPageHidden(document.visibilityState === "hidden");
+    updateVisibility();
+    document.addEventListener("visibilitychange", updateVisibility);
+    return () => document.removeEventListener("visibilitychange", updateVisibility);
+  }, []);
+
+  useEffect(() => {
     if (item) {
       document.body.dataset.orianaMediaViewerOpen = "true";
       window.dispatchEvent(new Event(ORIANA_MEDIA_VIEWER_OPEN_EVENT));
@@ -224,10 +236,10 @@ export function MediaViewer({
   }, [controlsVisible, item]);
 
   useEffect(() => {
-    if (!item || !autoPlay || scale > 1 || infoOpen) return;
-    const timer = window.setInterval(() => navigate(1, false), item.media_type === "video" ? 9000 : 4200);
+    if (!item || !autoPlay || pageHidden || scale > 1 || infoOpen) return;
+    const timer = window.setInterval(() => navigate(1, false), slideshowInterval(slideshowPace, item.media_type === "video"));
     return () => window.clearInterval(timer);
-  }, [autoPlay, infoOpen, item, navigate, scale]);
+  }, [autoPlay, infoOpen, item, navigate, pageHidden, scale, slideshowPace]);
 
   const handleWheel = (event: React.WheelEvent) => {
     event.preventDefault();
@@ -268,6 +280,14 @@ export function MediaViewer({
                 >
                   {autoPlay ? <Pause className="h-4 w-4" aria-hidden="true" /> : <Play className="h-4 w-4" aria-hidden="true" />}
                 </Button>
+                <Button
+                  variant="secondary"
+                  className="h-10 rounded-full border-lightbox-border bg-white/10 px-3 text-xs font-semibold text-white backdrop-blur-md transition-colors hover:bg-white hover:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+                  onClick={() => setSlideshowPace((pace) => pace === "still" ? "slow" : pace === "slow" ? "cinema" : "still")}
+                  aria-label={`Slideshow pace: ${slideshowPace}`}
+                >
+                  {slideshowPace === "still" ? "Still" : slideshowPace === "slow" ? "Slow" : "Cinema"}
+                </Button>
                 {scale > 1 && (
                   <Button
                     variant="secondary"
@@ -292,7 +312,10 @@ export function MediaViewer({
                 <Button
                   variant="secondary"
                   className="h-10 rounded-full border-lightbox-border bg-white/10 px-3 text-white backdrop-blur-md transition-colors hover:bg-white hover:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
-                  onClick={() => setInfoOpen((open) => !open)}
+                  onClick={() => {
+                    setAutoPlay(false);
+                    setInfoOpen((open) => !open);
+                  }}
                   aria-label="Toggle media information"
                   aria-pressed={infoOpen}
                 >
@@ -357,18 +380,23 @@ export function MediaViewer({
                 exit={reducedMotion ? { opacity: 0 } : { opacity: 0, x: transitionDirection * -10, scale: 0.99 }}
                 transition={{ duration: 0.21, ease: [0.22, 1, 0.36, 1] }}
               >
-                <div
-                  className={`relative flex h-full w-full touch-none select-none items-center justify-center ${scale > 1 ? (isPanning ? "cursor-grabbing" : "cursor-grab") : "cursor-default"}`}
-                  onContextMenu={protectAssets ? (event) => event.preventDefault() : undefined}
-                  onPointerDown={onPointerDown}
-                  onPointerMove={onPointerMove}
-                  onPointerUp={onPointerUp}
-                  onPointerCancel={onPointerCancel}
-                  style={{
-                    transform: `translate3d(${translate.x}px, ${translate.y}px, 0) scale(${scale})`,
-                    transition: isPanning ? "none" : "transform 0.16s cubic-bezier(.22,1,.36,1)",
-                  }}
+                <motion.div
+                  className="flex h-full w-full items-center justify-center"
+                  animate={driftEnabled && drift ? { scale: drift.scale, x: drift.x, y: drift.y } : { scale: 1, x: 0, y: 0 }}
+                  transition={driftEnabled ? { duration: slideshowPace === "slow" ? 10.5 : 7, ease: "linear" } : { duration: 0.18, ease: "easeOut" }}
                 >
+                  <div
+                    className={`relative flex h-full w-full touch-none select-none items-center justify-center ${scale > 1 ? (isPanning ? "cursor-grabbing" : "cursor-grab") : "cursor-default"}`}
+                    onContextMenu={protectAssets ? (event) => event.preventDefault() : undefined}
+                    onPointerDown={onPointerDown}
+                    onPointerMove={onPointerMove}
+                    onPointerUp={onPointerUp}
+                    onPointerCancel={onPointerCancel}
+                    style={{
+                      transform: `translate3d(${translate.x}px, ${translate.y}px, 0) scale(${scale})`,
+                      transition: isPanning ? "none" : "transform 0.16s cubic-bezier(.22,1,.36,1)",
+                    }}
+                  >
                   {isImageLoading ? (
                     <div className="absolute left-1/2 top-1/2 z-10 h-10 w-10 -translate-x-1/2 -translate-y-1/2 animate-spin rounded-full border border-lightbox-border border-t-accent-foreground" />
                   ) : null}
@@ -406,7 +434,8 @@ export function MediaViewer({
                       onError={() => setFailedVideos((current) => ({ ...current, [item.id]: true }))}
                     />
                   )}
-                </div>
+                  </div>
+                </motion.div>
               </motion.div>
             </AnimatePresence>
           </div>
