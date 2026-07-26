@@ -2,7 +2,7 @@
 
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ReliableMediaImage } from "@/components/media/ReliableMediaImage";
 import { Button } from "@/components/ui/Button";
 import { ViewerBackdrop } from "@/components/media/viewer/ViewerBackdrop";
@@ -19,7 +19,7 @@ import {
 import { getMediaDeliveryDescriptor } from "@/lib/media/delivery";
 import { cinematicDrift, slideshowInterval } from "@/lib/media/cinematic-drift";
 import type { AlbumStatus, Media } from "@/lib/types";
-import { useAlbumViewMemory } from "@/hooks/useAlbumViewMemory";
+import { useAlbumViewMemory, type ViewerPresentation } from "@/hooks/useAlbumViewMemory";
 import { useViewerDelivery } from "@/hooks/media-viewer/useViewerDelivery";
 import { useViewerGestures } from "@/hooks/media-viewer/useViewerGestures";
 import { useViewerMachine } from "@/hooks/media-viewer/useViewerMachine";
@@ -38,6 +38,10 @@ interface MediaViewerProps {
 
 function backdropHue(blurhash: string | null | undefined) {
   return [...(blurhash ?? "oriana")].reduce((total, character) => (total * 31 + character.charCodeAt(0)) % 360, 0);
+}
+
+function viewerPresentationFromMemory(value: string | undefined): ViewerPresentation {
+  return value === "cinematic" || value === "focus" ? "cinematic" : "clean";
 }
 
 export function MediaViewer({
@@ -70,6 +74,7 @@ export function MediaViewer({
   const containerRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
   const reducedMotion = useReducedMotion();
+  const [presentation, setPresentation] = useState<ViewerPresentation>("clean");
   const { isClient, markAlbumViewed, getAlbumViewState, saveViewerPreferences } = useAlbumViewMemory();
 
   const isImageLoading = item?.media_type === "image" && !loadedImages[item.id];
@@ -89,7 +94,7 @@ export function MediaViewer({
   });
   const ambientHue = backdropHue(delivery?.blurhash);
   const drift = item ? cinematicDrift(item.id) : null;
-  const driftEnabled = Boolean(autoPlay && slideshowPace !== "still" && item?.media_type === "image" && !reducedMotion);
+  const driftEnabled = Boolean(presentation === "cinematic" && autoPlay && slideshowPace !== "still" && item?.media_type === "image" && !reducedMotion);
   const controlsVisibleRef = useRef(controlsVisible);
 
   useEffect(() => {
@@ -131,16 +136,36 @@ export function MediaViewer({
     onSelect(index);
   }, [currentIndex, onSelect, resetZoom, setAutoPlay, setTransitionDirection]);
 
+  const prefetchAdjacent = useCallback((index: number) => {
+    if (media.length < 2) return;
+    const adjacentIndexes = [
+      (index + 1) % media.length,
+      (index - 1 + media.length) % media.length,
+    ];
+    adjacentIndexes.forEach((adjacentIndex) => {
+      const adjacent = media[adjacentIndex];
+      if (!adjacent || adjacent.id === item?.id) return;
+      const adjacentDelivery = getMediaDeliveryDescriptor(adjacent, {
+        albumStatus,
+        isAuthorized: true,
+        downloadAllowed,
+      });
+      prefetch(adjacent.id, adjacent.media_type === "video", adjacentDelivery.viewer);
+    });
+  }, [albumStatus, downloadAllowed, item?.id, media, prefetch]);
+
   const handleImageLoad = useCallback(() => {
-    if (!item || currentIndex === null) return;
+    if (!item) return;
     setLoadedImages((current) => ({ ...current, [item.id]: true }));
-    const next = media[(currentIndex + 1) % media.length];
-    if (next) prefetch(next.id, next.media_type === "video");
-  }, [currentIndex, item, media, prefetch, setLoadedImages]);
+  }, [item, setLoadedImages]);
 
   const handleImageUnavailable = useCallback(() => {
     if (item) setLoadedImages((current) => ({ ...current, [item.id]: true }));
   }, [item, setLoadedImages]);
+
+  useEffect(() => {
+    if (currentIndex !== null) prefetchAdjacent(currentIndex);
+  }, [currentIndex, prefetchAdjacent]);
 
   const { isPanning, onPointerDown, onPointerMove, onPointerUp, onPointerCancel, zoomAt } = useViewerGestures({
     stageRef,
@@ -181,6 +206,7 @@ export function MediaViewer({
     const restoreTimer = window.setTimeout(() => {
       const savedPace = getAlbumViewState(item.album_id).record?.slideshowPace;
       if (savedPace === "still" || savedPace === "slow" || savedPace === "cinema") setSlideshowPace(savedPace);
+      setPresentation(viewerPresentationFromMemory(getAlbumViewState(item.album_id).record?.viewerMode));
       setPreferencesReady(true);
     }, 0);
     return () => window.clearTimeout(restoreTimer);
@@ -190,10 +216,11 @@ export function MediaViewer({
     if (!item || !preferencesReady) return;
     saveViewerPreferences({
       albumId: item.album_id,
+      viewerMode: presentation,
       slideshowPace,
       controlsPreference: "auto",
     });
-  }, [item, preferencesReady, saveViewerPreferences, slideshowPace]);
+  }, [item, preferencesReady, presentation, saveViewerPreferences, slideshowPace]);
 
   useEffect(() => {
     if (!item || !controlsVisible) return;
@@ -307,9 +334,10 @@ export function MediaViewer({
           role="dialog"
           aria-modal="true"
           aria-label="Media viewer"
+          data-viewer-presentation={presentation}
           onPointerMove={revealControls}
         >
-          <ViewerBackdrop hue={ambientHue} />
+          <ViewerBackdrop hue={ambientHue} cinematic={presentation === "cinematic"} />
           {controlsVisible ? (
             <div data-viewer-chrome="top" className="absolute inset-x-0 top-0 z-20">
               <ViewerTopBar
@@ -318,11 +346,13 @@ export function MediaViewer({
                 scale={scale}
                 isFullscreen={isFullscreen}
                 infoOpen={infoOpen}
+                presentation={presentation}
                 onToggleAutoplay={() => setAutoPlay((current) => !current)}
                 onCyclePace={() => setSlideshowPace((pace) => pace === "still" ? "slow" : pace === "slow" ? "cinema" : "still")}
                 onResetZoom={resetZoom}
                 onToggleFullscreen={toggleFullscreen}
                 onToggleInfo={() => { setAutoPlay(false); setInfoOpen((open) => !open); }}
+                onTogglePresentation={() => setPresentation((current) => current === "clean" ? "cinematic" : "clean")}
                 onClose={onClose}
               />
             </div>
@@ -359,10 +389,10 @@ export function MediaViewer({
               <motion.div
                 key={item.id}
                 className="flex h-full w-full items-center justify-center"
-                initial={reducedMotion ? { opacity: 0 } : { opacity: 0, x: transitionDirection * 20, scale: 0.985 }}
+                initial={reducedMotion ? { opacity: 0 } : presentation === "cinematic" ? { opacity: 0, x: transitionDirection * 20, scale: 0.985 } : { opacity: 0, x: transitionDirection * 12 }}
                 animate={reducedMotion ? { opacity: 1 } : { opacity: 1, x: 0, scale: 1 }}
-                exit={reducedMotion ? { opacity: 0 } : { opacity: 0, x: transitionDirection * -10, scale: 0.99 }}
-                transition={{ duration: 0.21, ease: [0.22, 1, 0.36, 1] }}
+                exit={reducedMotion ? { opacity: 0 } : presentation === "cinematic" ? { opacity: 0, x: transitionDirection * -10, scale: 0.99 } : { opacity: 0, x: transitionDirection * -8 }}
+                transition={{ duration: presentation === "cinematic" ? 0.21 : 0.16, ease: [0.22, 1, 0.36, 1] }}
               >
                 <motion.div
                   className="flex h-full w-full items-center justify-center"
