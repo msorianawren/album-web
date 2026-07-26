@@ -20,7 +20,7 @@ import type { AlbumStatus, Media } from "@/lib/types";
 import { useAlbumViewMemory } from "@/hooks/useAlbumViewMemory";
 import { useViewerDelivery } from "@/hooks/media-viewer/useViewerDelivery";
 import { useViewerGestures } from "@/hooks/media-viewer/useViewerGestures";
-import { useViewerState } from "@/hooks/media-viewer/useViewerState";
+import { useViewerMachine } from "@/hooks/media-viewer/useViewerMachine";
 
 interface MediaViewerProps {
   media: Media[];
@@ -63,7 +63,7 @@ export function MediaViewer({
     controlsVisible, setControlsVisible,
     infoOpen, setInfoOpen,
     transitionDirection, setTransitionDirection,
-  } = useViewerState();
+  } = useViewerMachine();
   const controlsTimer = useRef<number | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
