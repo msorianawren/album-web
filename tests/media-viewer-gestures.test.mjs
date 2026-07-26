@@ -27,5 +27,7 @@ test("viewer batches drag transforms to the display frame and keeps the filmstri
   assert.match(gestures, /onToggleFullscreen\(\)/);
   assert.match(viewer, /onPointerMove=\{revealControls\}/);
   assert.match(viewer, /data-viewer-gesture-surface/);
+  assert.match(viewer, /data-viewer-chrome="top"[\s\S]*absolute inset-x-0 top-0/);
+  assert.match(viewer, /data-viewer-chrome="bottom"[\s\S]*absolute inset-x-0 bottom-0/);
   assert.match(filmstrip, /memo\(function ViewerFilmstrip/);
 });

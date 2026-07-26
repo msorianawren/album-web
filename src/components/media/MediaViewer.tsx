@@ -106,12 +106,13 @@ export function MediaViewer({
   }, [setScale, setTranslate]);
 
   const toggleFullscreen = useCallback(() => {
+    setControlsVisible(true);
     if (document.fullscreenElement === containerRef.current) {
       void document.exitFullscreen().catch(() => {});
       return;
     }
     void containerRef.current?.requestFullscreen().catch(() => {});
-  }, []);
+  }, [setControlsVisible]);
 
   const navigate = useCallback((direction: -1 | 1, manual = true) => {
     if (manual) setAutoPlay(false);
@@ -310,23 +311,26 @@ export function MediaViewer({
         >
           <ViewerBackdrop hue={ambientHue} />
           {controlsVisible ? (
-            <ViewerTopBar
-              autoPlay={autoPlay}
-              slideshowPace={slideshowPace}
-              scale={scale}
-              isFullscreen={isFullscreen}
-              infoOpen={infoOpen}
-              onToggleAutoplay={() => setAutoPlay((current) => !current)}
-              onCyclePace={() => setSlideshowPace((pace) => pace === "still" ? "slow" : pace === "slow" ? "cinema" : "still")}
-              onResetZoom={resetZoom}
-              onToggleFullscreen={toggleFullscreen}
-              onToggleInfo={() => { setAutoPlay(false); setInfoOpen((open) => !open); }}
-              onClose={onClose}
-            />
+            <div data-viewer-chrome="top" className="absolute inset-x-0 top-0 z-20">
+              <ViewerTopBar
+                autoPlay={autoPlay}
+                slideshowPace={slideshowPace}
+                scale={scale}
+                isFullscreen={isFullscreen}
+                infoOpen={infoOpen}
+                onToggleAutoplay={() => setAutoPlay((current) => !current)}
+                onCyclePace={() => setSlideshowPace((pace) => pace === "still" ? "slow" : pace === "slow" ? "cinema" : "still")}
+                onResetZoom={resetZoom}
+                onToggleFullscreen={toggleFullscreen}
+                onToggleInfo={() => { setAutoPlay(false); setInfoOpen((open) => !open); }}
+                onClose={onClose}
+              />
+            </div>
           ) : null}
 
           <div
             ref={stageRef}
+            data-viewer-stage
             className={`relative flex min-h-0 flex-1 items-center justify-center overflow-hidden ${isFullscreen ? "h-[100dvh] min-h-[100dvh] w-screen p-0" : "w-full px-12 md:px-24"}`}
             onWheel={handleWheel}
           >
@@ -419,7 +423,11 @@ export function MediaViewer({
 
           {infoOpen && delivery ? <ViewerInfoSheet item={item} delivery={delivery} currentIndex={currentIndex!} total={media.length} onClose={() => setInfoOpen(false)} /> : null}
 
-          {!isFullscreen && controlsVisible ? <ViewerFilmstrip media={media} item={item} currentIndex={currentIndex!} albumStatus={albumStatus} downloadAllowed={downloadAllowed} onSelect={selectMedia} /> : null}
+          {!isFullscreen && controlsVisible ? (
+            <div data-viewer-chrome="bottom" className="absolute inset-x-0 bottom-0 z-20">
+              <ViewerFilmstrip media={media} item={item} currentIndex={currentIndex!} albumStatus={albumStatus} downloadAllowed={downloadAllowed} onSelect={selectMedia} />
+            </div>
+          ) : null}
         </motion.div>
       ) : null}
     </AnimatePresence>
