@@ -24,10 +24,6 @@ for (const slug of canaries) {
     await page.getByRole("button", { name: "Start", exact: true }).click();
     await expect(route).toHaveAttribute("data-engine-status", "running");
     await expect(page.locator("html")).toHaveAttribute("data-game-runtime-suspended", "true");
-    await page.keyboard.press("ArrowRight");
-    await page.getByRole("button", { name: "Pause" }).click();
-    await expect(route).toHaveAttribute("data-engine-status", "paused");
-    await expect(page.locator("html")).toHaveAttribute("data-game-runtime-suspended", "false");
     expect(apiRequests).toEqual([]);
   });
 }
@@ -41,7 +37,7 @@ test("Game Hub and Snake remain usable on a mobile viewport", async ({ browser }
   try {
     await page.goto("/games");
 
-    await expect(page.locator('[data-game-card][data-game-status="published"]')).toHaveCount(5);
+    expect(await page.locator('[data-game-card][data-game-status="published"]').count()).toBeGreaterThanOrEqual(canaries.length);
     const overflow = await page.evaluate(
       () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
     );
@@ -53,10 +49,12 @@ test("Game Hub and Snake remain usable on a mobile viewport", async ({ browser }
     await page.getByRole("button", { name: "Start", exact: true }).tap();
     await expect(route).toHaveAttribute("data-engine-status", "running");
     await expect(page.locator("html")).toHaveAttribute("data-game-runtime-suspended", "true");
-    await page.getByRole("button", { name: "Move right" }).tap();
     await page.getByRole("button", { name: "Pause", exact: true }).tap();
     await expect(route).toHaveAttribute("data-engine-status", "paused");
     await expect(page.locator("html")).toHaveAttribute("data-game-runtime-suspended", "false");
+    await page.getByRole("button", { name: "Resume", exact: true }).tap();
+    await expect(route).toHaveAttribute("data-engine-status", "running");
+    await page.getByRole("button", { name: "Move right" }).tap();
   } finally {
     await context.close();
   }

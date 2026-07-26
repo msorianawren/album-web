@@ -302,7 +302,7 @@ export default function QuietMeadowGame({
         <canvas ref={canvasRef} className="absolute inset-0 pointer-events-none z-0 w-full h-full opacity-60 mix-blend-screen" />
         
         {status !== "running" && (
-          <div className="absolute z-10 inset-0 flex items-center justify-center bg-background/45 p-5 backdrop-blur-[3px]">
+          <div className="absolute z-20 inset-0 flex items-center justify-center bg-background/45 p-5 backdrop-blur-[3px]">
             <div className="max-w-sm text-center">
               <p className="font-serif text-3xl text-[#3a4f41]">
                 {status === "complete" ? (state.status === "won" ? "Meadow Cleared" : "Mine Triggered") : status === "paused" ? "Paused" : "Quiet Meadow"}
@@ -350,7 +350,7 @@ export default function QuietMeadowGame({
           )}
         </div>
 
-        <div style={boardStyle} aria-label="Minesweeper board" role="grid" className="relative z-10 touch-none select-none">
+        <div style={boardStyle} aria-label="Minesweeper board" role="grid" className="relative z-0 touch-none select-none">
           {state.cells.map((cell, i) => {
             const x = i % state.width;
             const y = Math.floor(i / state.width);

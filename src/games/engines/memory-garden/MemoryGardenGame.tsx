@@ -438,6 +438,11 @@ export default function MemoryGardenGame({
       onPause={pause}
       onRestart={restart}
     >
+      {!signedIn && (
+        <p className="rounded-full bg-surface/70 px-3 py-1.5 text-center text-xs font-semibold uppercase tracking-[0.12em] text-text-secondary">
+          Practice mode
+        </p>
+      )}
       <div className="mb-3 flex flex-wrap justify-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-text-secondary">
         <span className="rounded-full bg-surface/70 px-3 py-1.5">Time {Math.floor(elapsedSeconds / 60)}:{String(elapsedSeconds % 60).padStart(2, "0")}</span>
         {streak > 1 && <span className="rounded-full bg-[color-mix(in_srgb,var(--preset-accent)_18%,transparent)] px-3 py-1.5 text-text-primary">Bloom streak ×{streak}</span>}
