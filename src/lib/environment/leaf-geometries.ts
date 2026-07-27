@@ -191,6 +191,42 @@ function makeFernGeometry(): THREE.BufferGeometry {
   return geom;
 }
 
+function makeOakGeometry(): THREE.BufferGeometry {
+  const shape = new THREE.Shape();
+  const pts: [number, number][] = [
+    [0, -0.6],     // stem base
+    [0.05, -0.4],
+    [0.3, -0.3],   // lobe 1 right
+    [0.15, -0.15],
+    [0.4, -0.05],  // lobe 2 right
+    [0.2, 0.15],
+    [0.45, 0.35],  // lobe 3 right
+    [0.15, 0.5],
+    [0.1, 0.65],   // top lobe right
+    [0, 0.75],     // apex
+    [-0.1, 0.65],  // top lobe left
+    [-0.15, 0.5],
+    [-0.45, 0.35], // lobe 3 left
+    [-0.2, 0.15],
+    [-0.4, -0.05], // lobe 2 left
+    [-0.15, -0.15],
+    [-0.3, -0.3],  // lobe 1 left
+    [-0.05, -0.4],
+    [0, -0.6],     // back to stem
+  ];
+  shape.moveTo(pts[0][0], pts[0][1]);
+  for (let i = 1; i < pts.length - 1; i++) {
+    const mx = (pts[i][0] + pts[i + 1][0]) / 2;
+    const my = (pts[i][1] + pts[i + 1][1]) / 2;
+    shape.quadraticCurveTo(pts[i][0], pts[i][1], mx, my);
+  }
+  shape.closePath();
+  const geom = new THREE.ShapeGeometry(shape, 6);
+  geom.computeBoundingBox();
+  geom.computeBoundingSphere();
+  return geom;
+}
+
 export function getLeafGeometry(type: LeafGeometryType): THREE.BufferGeometry {
   if (cache.has(type)) return cache.get(type)!;
 
@@ -202,6 +238,7 @@ export function getLeafGeometry(type: LeafGeometryType): THREE.BufferGeometry {
     case "broadleaf": geom = makeBroadleafGeometry(); break;
     case "needle":    geom = makeNeedleGeometry(); break;
     case "fern":      geom = makeFernGeometry(); break;
+    case "oak":       geom = makeOakGeometry(); break;
   }
 
   cache.set(type, geom!);

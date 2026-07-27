@@ -15,6 +15,7 @@ const VegetationScene = dynamic(() => import("./vegetation/VegetationScene").the
 const CanopyShadowOverlay = dynamic(() => import("./vegetation/CanopyShadowOverlay").then(m => m.CanopyShadowOverlay), { ssr: false });
 const WeatherSystem = dynamic(() => import("./weather/WeatherSystem").then(m => m.WeatherSystem), { ssr: false });
 const WindChimeScene = dynamic(() => import("./WindChimeScene").then(m => m.WindChimeScene), { ssr: false });
+const EnvironmentParticles = dynamic(() => import("./EnvironmentParticles").then(m => m.EnvironmentParticles), { ssr: false });
 const EnvironmentAtmosphere = dynamic(() => import("./EnvironmentParticles").then(m => m.EnvironmentAtmosphere), { ssr: false });
 const EnvironmentBirds = dynamic(() => import("./EnvironmentBirds").then(m => m.EnvironmentBirds), { ssr: false });
 const EnvironmentBranches = dynamic(() => import("./EnvironmentBranches").then(m => m.EnvironmentBranches), { ssr: false });
@@ -68,7 +69,10 @@ export function EnvironmentScene({
       
       {!chimeOnly ? <group scale={[1, 1, scaleZ]}>
         {!dev.vegetationOnly && state.preset !== "mist" && (
-          <EnvironmentAtmosphere state={state} preferences={preferences} wind={wind} active={active && !reducedMotion} />
+          <>
+            <EnvironmentAtmosphere state={state} preferences={preferences} wind={wind} active={active && !reducedMotion} />
+            <EnvironmentParticles state={state} preferences={preferences} quality={quality} wind={wind} active={active && !reducedMotion} />
+          </>
         )}
         
         {!dev.atmosphereOnly && (state.preset === "sakura" ? (
@@ -86,6 +90,8 @@ export function EnvironmentScene({
           />
         ) : state.preset === "mist" ? (
           <SharedBotanicalScene profile={botanicalProfiles.cedar} quality={quality} wind={wind} preferences={preferences} active={active && !reducedMotion} />
+        ) : state.preset === "fireflies" ? (
+          <SharedBotanicalScene profile={botanicalProfiles.oak} quality={quality} wind={wind} preferences={preferences} active={active && !reducedMotion} />
         ) : (
           <EnvironmentBranches state={state} preferences={preferences} wind={wind} active={active && !reducedMotion} reduced={quality.tier === "reduced"} />
         ))}
@@ -102,9 +108,9 @@ export function EnvironmentScene({
       {!dev.atmosphereOnly && !dev.vegetationOnly && (
         <WindChimeScene
           anchors={anchors.slice(0, quality.chimeCap)}
-        reducedMotion={reducedMotion}
-        wind={wind}
-        preferences={preferences}
+          reducedMotion={reducedMotion}
+          wind={wind}
+          preferences={preferences}
           state={state}
           active={active}
           demandDriven={chimeOnly}
@@ -113,4 +119,3 @@ export function EnvironmentScene({
     </>
   );
 }
-

@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { useRef, useMemo, useEffect } from "react";
+import { useRef, useMemo, useEffect, useState } from "react";
 import { useFrame } from "@react-three/fiber";
 import type { BotanicalArchetype } from "@/lib/environment/botanical-profiles";
 import { createSeededRandom } from "@/lib/environment/deterministic-random";
@@ -31,16 +31,42 @@ export function FoliageInstances({
 
   const colors = useMemo(() => profile.foliage.colors.map(c => new THREE.Color(c)), [profile.foliage.colors]);
 
-  // Use the shared cached geometry for this leaf type
-  const leafGeometry = useMemo(
-    () => getLeafGeometry(profile.foliage.leafType),
-    [profile.foliage.leafType]
-  );
+  // Use the shared cached geometry for this leaf type (or a plane for textured oak)
+  const leafGeometry = useMemo(() => {
+    if (profile.foliage.leafType === "oak") {
+      return new THREE.PlaneGeometry(1, 1);
+    }
+    return getLeafGeometry(profile.foliage.leafType);
+  }, [profile.foliage.leafType]);
+
+  const [oakTexture, setOakTexture] = useState<THREE.Texture | null>(null);
+
+  useEffect(() => {
+    if (profile.foliage.leafType === "oak") {
+      const loader = new THREE.TextureLoader();
+      loader.load('/textures/oak_leaf.png', (tex) => {
+        tex.colorSpace = THREE.SRGBColorSpace;
+        setOakTexture(tex);
+      });
+    }
+  }, [profile.foliage.leafType]);
 
   const material = useMemo(() => new THREE.MeshStandardMaterial({
     roughness: 0.8,
     side: THREE.DoubleSide,
+    transparent: true,
+    alphaTest: 0.3,
   }), []);
+
+  useEffect(() => {
+    if (oakTexture) {
+      material.map = oakTexture;
+      material.needsUpdate = true;
+    } else {
+      material.map = null;
+      material.needsUpdate = true;
+    }
+  }, [material, oakTexture]);
 
   const instanceData = useMemo(() => {
     const prng = createSeededRandom(profile.seed * 2 + seedOffset);

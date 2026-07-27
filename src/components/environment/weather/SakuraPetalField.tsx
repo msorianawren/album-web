@@ -97,6 +97,7 @@ export function SakuraPetalField({
 
     for (let i = 0; i < petalCount; i++) {
       const inst = physicsRef.current[i];
+      if (!inst) continue;
       
       // Update position
       inst.position.y -= inst.speed * delta * (1 + strength * 0.2);

@@ -1,7 +1,7 @@
 import type { EnvironmentQuality } from "./quality";
 
 export type Vector3Tuple = [number, number, number];
-export type LeafGeometryType = "willow" | "maple" | "ginkgo" | "broadleaf" | "needle" | "fern";
+export type LeafGeometryType = "willow" | "maple" | "ginkgo" | "broadleaf" | "needle" | "fern" | "oak";
 
 export interface BranchingRules {
   spread: number;
@@ -195,9 +195,49 @@ export const cedarProfile: BotanicalArchetype = {
   canopyShadow: { opacity: 0.25, scale: 0.8, speed: 0.3 },
 };
 
+// ─── OAK (Ancient Firefly Grove) ──────────────────────────────────────────────
+export const oakProfile: BotanicalArchetype = {
+  id: "oak",
+  seed: 888,
+  branching: {
+    spread: 2.8,         // Majestic, wide reaching
+    taper: 0.6,
+    droop: 2.5,          // Weeping branches sweeping down
+    upwardBias: -0.3,    // Branches tend downwards like a willow
+    stiffness: 0.6,      // More flexible secondary branches
+    segments: 8,
+    trunkColor: "#2a2420", // Very dark, old bark
+    roughness: 0.95,
+    trunkRadius: 0.35,   // Thick base
+  },
+  foliage: {
+    leafType: "oak",
+    aspectRatio: 0.6,    // Oak leaves are slightly elongated
+    density: 220,        // Very dense weeping clusters
+    colors: ["#ffffff", "#eef5e6", "#d9e3c8", "#f7fff0"], // Light tints to preserve texture color
+    scaleRange: [0.7, 1.4],
+    flutter: 0.7,
+    windDrag: 0.6,
+  },
+  placements: {
+    hero: [-3, 8, -2],     // Central massive hero tree
+    midground: [
+      [8, 7, -6],
+      [-10, 6, -8],
+    ],
+    far: [
+      [12, 9, -15],
+      [-14, 8, -12],
+    ],
+  },
+  qualityMultipliers: { full: 1.0, reduced: 0.4, off: 0.0 },
+  canopyShadow: { opacity: 0.6, scale: 2.0, speed: 0.4 },
+};
+
 export const botanicalProfiles: Record<string, BotanicalArchetype> = {
   willow: willowProfile,
   maple: mapleProfile,
   ginkgo: ginkgoProfile,
   cedar: cedarProfile,
+  oak: oakProfile,
 };
