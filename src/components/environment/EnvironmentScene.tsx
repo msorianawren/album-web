@@ -23,6 +23,8 @@ const SharedBotanicalScene = dynamic(() => import("./shared/SharedBotanicalScene
 
 import { botanicalProfiles } from "@/lib/environment/botanical-profiles";
 import { getEnvironmentDevLabState } from "@/lib/environment/dev-lab";
+import { Snowman } from "./Snowman";
+import { EnvironmentPineForest } from "./EnvironmentPineForest";
 
 export function EnvironmentScene({
   state,
@@ -77,6 +79,11 @@ export function EnvironmentScene({
         
         {!dev.atmosphereOnly && (state.preset === "sakura" ? (
           <VegetationScene state={state} preferences={preferences} wind={wind} active={active && !reducedMotion} reduced={quality.tier === "reduced"} />
+        ) : state.preset === "snow" ? (
+          <group>
+            <EnvironmentPineForest count={100} scale={1.2} />
+            <Snowman position={[2, -2, -2]} scale={0.7} />
+          </group>
         ) : state.preset === "rain" ? (
           <SharedBotanicalScene profile={botanicalProfiles.willow} quality={quality} wind={wind} preferences={preferences} active={active && !reducedMotion} />
         ) : state.preset === "autumn" ? (

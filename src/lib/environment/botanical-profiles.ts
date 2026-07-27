@@ -234,10 +234,53 @@ export const oakProfile: BotanicalArchetype = {
   canopyShadow: { opacity: 0.6, scale: 2.0, speed: 0.4 },
 };
 
+// ─── PINE (Winter Snow Forest) ────────────────────────────────────────────────
+export const pineProfile: BotanicalArchetype = {
+  id: "pine",
+  seed: 999,
+  branching: {
+    spread: 1.2,
+    taper: 0.8,
+    droop: 1.2, // Branches heavy with snow
+    upwardBias: 1.0, // Christmas tree shape
+    stiffness: 0.85,
+    segments: 7,
+    trunkColor: "#332c28",
+    roughness: 0.9,
+    trunkHeight: 1.5,
+    branchOriginHeight: 0.2, // Branches start low
+    trunkRadius: 0.3,
+  },
+  foliage: {
+    leafType: "needle",
+    aspectRatio: 0.8,
+    density: 180,
+    // Frosty whites and icy blues for snow-covered needles
+    colors: ["#ffffff", "#eef4f7", "#d8e6eb", "#c5d7df", "#a8c0c9"],
+    scaleRange: [0.8, 1.5],
+    flutter: 0.2, // Heavy snow doesn't flutter much
+    windDrag: 0.4,
+  },
+  placements: {
+    hero: [-4, 5, -2],
+    midground: [
+      [7, 3, -5],
+      [-8, 4, -7],
+    ],
+    far: [
+      [11, 4, -14],
+      [-12, 5, -12],
+    ],
+  },
+  qualityMultipliers: { full: 1.0, reduced: 0.5, off: 0.0 },
+  canopyShadow: { opacity: 0.7, scale: 1.6, speed: 0.2 },
+};
+
 export const botanicalProfiles: Record<string, BotanicalArchetype> = {
   willow: willowProfile,
   maple: mapleProfile,
   ginkgo: ginkgoProfile,
   cedar: cedarProfile,
   oak: oakProfile,
+  pine: pineProfile,
 };

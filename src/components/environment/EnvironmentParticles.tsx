@@ -70,7 +70,11 @@ export function EnvironmentParticles({
     const field = wind.current.current;
     const elapsed = clock.elapsedTime;
     particles.forEach((particle, i) => {
-      const fall = state.preset === "fireflies" || state.preset === "mist" ? 0 : particle.speed * delta * (state.preset === "rain" ? 7 : 1.25);
+      // Non-linear gravity for snow: lighter falls slower
+      const fall = state.preset === "fireflies" || state.preset === "mist" ? 0 
+                 : state.preset === "snow" ? particle.speed * delta * (0.8 + particle.scale * 0.4) 
+                 : particle.speed * delta * (state.preset === "rain" ? 7 : 1.25);
+      
       particle.y -= fall;
       particle.x += field.x * delta * particle.speed * (state.preset === "rain" ? 1.8 : .72);
       if (particle.y < -5.2) particle.y = 5.2;
@@ -79,15 +83,26 @@ export function EnvironmentParticles({
       
       const floatY = state.preset === "fireflies" 
         ? Math.sin(elapsed * particle.speed + particle.phase) * 0.8 + Math.pow(Math.max(0, Math.sin(elapsed * 1.5 * particle.speed + particle.phase)), 3) * 0.6
-        : state.preset === "mist" ? Math.sin(elapsed * particle.speed + particle.phase) * .6 : 0;
+        : state.preset === "mist" ? Math.sin(elapsed * particle.speed + particle.phase) * .6 
+        : state.preset === "snow" ? Math.cos(elapsed * 0.5 * particle.speed + particle.phase) * 0.4
+        : 0;
         
-      const driftX = state.preset === "fireflies" ? Math.cos(elapsed * 0.4 * particle.speed + particle.phase * 2) * 1.5 : 0;
-      const driftZ = state.preset === "fireflies" ? Math.sin(elapsed * 0.5 * particle.speed + particle.phase * 3) * 1.5 : 0;
+      const driftX = state.preset === "fireflies" ? Math.cos(elapsed * 0.4 * particle.speed + particle.phase * 2) * 1.5 
+        : state.preset === "snow" ? Math.sin(elapsed * 0.8 * particle.speed + particle.phase) * 1.5
+        : 0;
+
+      const driftZ = state.preset === "fireflies" ? Math.sin(elapsed * 0.3 * particle.speed + particle.phase * 3) * 1.5 
+        : state.preset === "snow" ? Math.cos(elapsed * 0.7 * particle.speed + particle.phase) * 1.5
+        : 0;
       
       dummy.position.set(particle.x + driftX, particle.y + floatY, particle.z + driftZ);
       
-      if (state.preset === "fireflies") {
+      if (state.preset === "fireflies" || state.preset === "snow") {
         dummy.quaternion.copy(camera.quaternion);
+        if (state.preset === "snow") {
+          dummy.rotateZ(elapsed * particle.speed * 0.5 + particle.phase); // Gentle spin
+          dummy.rotateX(Math.sin(elapsed * particle.speed + particle.phase) * 0.4); // Flutter
+        }
       } else {
         dummy.rotation.set(0, elapsed * .15 + particle.phase, state.preset === "rain" ? -.18 : Math.sin(elapsed + particle.phase) * .4);
       }
@@ -127,8 +142,83 @@ export function EnvironmentParticles({
       ? <cylinderGeometry args={[.015, .015, 1, 3]} />
     : state.preset === "sakura" || state.preset === "autumn"
       ? <sphereGeometry args={[.085, 5, 4]} />
-      : <sphereGeometry args={[state.preset === "mist" ? .42 : .045, 6, 5]} />
+      : state.preset === "snow"
+        ? <planeGeometry args={[0.3, 0.3]} />
+        : <sphereGeometry args={[state.preset === "mist" ? .42 : .045, 6, 5]} />
   , [state.preset]);
+
+  const snowTex = useMemo(() => {
+    if (state.preset !== "snow") return null;
+    const canvas = document.createElement("canvas");
+    // High-res for exquisite detail
+    canvas.width = 512; canvas.height = 512;
+    const ctx = canvas.getContext("2d")!;
+    ctx.clearRect(0, 0, 512, 512);
+
+    ctx.translate(256, 256);
+    
+    // Draw 6-sided crystalline snowflake with extreme detail
+    ctx.fillStyle = "rgba(255, 255, 255, 0.95)";
+    ctx.strokeStyle = "rgba(200, 230, 255, 0.9)";
+    ctx.lineWidth = 4;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+
+    for (let i = 0; i < 6; i++) {
+      ctx.rotate(Math.PI / 3);
+      
+      // Main branch
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.lineTo(0, 200);
+      ctx.stroke();
+
+      // Intricate Sub-branches
+      for (let j = 1; j <= 4; j++) {
+        const y = j * 40;
+        const length = 80 - j * 15;
+        
+        // V-shapes pointing outwards
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(-length, y + length);
+        ctx.moveTo(0, y);
+        ctx.lineTo(length, y + length);
+        ctx.stroke();
+        
+        // Inner delicate crystals
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(0, y + 10);
+        ctx.lineTo(-length * 0.4, y + 10 + length * 0.4);
+        ctx.moveTo(0, y + 10);
+        ctx.lineTo(length * 0.4, y + 10 + length * 0.4);
+        ctx.stroke();
+        ctx.lineWidth = 4;
+      }
+
+      // Center hexagon core
+      ctx.beginPath();
+      ctx.moveTo(0, 30);
+      ctx.lineTo(26, 15);
+      ctx.stroke();
+    }
+    
+    // Soft halo glow
+    const grad = ctx.createRadialGradient(0, 0, 0, 0, 0, 256);
+    grad.addColorStop(0, "rgba(255, 255, 255, 0.8)");
+    grad.addColorStop(0.2, "rgba(200, 230, 255, 0.4)");
+    grad.addColorStop(0.5, "rgba(150, 200, 255, 0.1)");
+    grad.addColorStop(1, "rgba(100, 150, 255, 0)");
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(0, 0, 256, 0, Math.PI * 2);
+    ctx.fill();
+
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    return tex;
+  }, [state.preset]);
 
   const [fireflyBodyTex, fireflyGlowTex] = useMemo(() => {
     if (state.preset !== "fireflies") return [null, null];
@@ -280,16 +370,19 @@ export function EnvironmentParticles({
     );
   }
 
+  if (state.preset === "snow" && !snowTex) return null;
+
   return (
     <instancedMesh ref={mesh} args={[undefined, undefined, count]} frustumCulled={false}>
       {geometry}
       <meshBasicMaterial
         ref={material}
-        color={state.particle[0]}
+        color={state.preset === "snow" ? "#ffffff" : state.particle[0]}
         transparent
-        opacity={state.preset === "mist" ? preferences.atmosphere / 260 : .62}
+        map={state.preset === "snow" ? snowTex : null}
+        opacity={state.preset === "mist" ? preferences.atmosphere / 260 : .8}
         depthWrite={false}
-        blending={THREE.NormalBlending}
+        blending={state.preset === "snow" ? THREE.AdditiveBlending : THREE.NormalBlending}
       />
     </instancedMesh>
   );

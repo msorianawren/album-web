@@ -33,40 +33,41 @@ export function FoliageInstances({
 
   // Use the shared cached geometry for this leaf type (or a plane for textured oak)
   const leafGeometry = useMemo(() => {
-    if (profile.foliage.leafType === "oak") {
+    if (profile.foliage.leafType === "oak" || profile.id === "pine") {
       return new THREE.PlaneGeometry(1, 1);
     }
     return getLeafGeometry(profile.foliage.leafType);
-  }, [profile.foliage.leafType]);
+  }, [profile.foliage.leafType, profile.id]);
 
-  const [oakTexture, setOakTexture] = useState<THREE.Texture | null>(null);
+  const [specialTexture, setSpecialTexture] = useState<THREE.Texture | null>(null);
 
   useEffect(() => {
     if (profile.foliage.leafType === "oak") {
       const loader = new THREE.TextureLoader();
       loader.load('/textures/oak_leaf.png', (tex) => {
         tex.colorSpace = THREE.SRGBColorSpace;
-        setOakTexture(tex);
+        setSpecialTexture(tex);
+      });
+    } else if (profile.id === "pine") {
+      const loader = new THREE.TextureLoader();
+      loader.load('/textures/pine_branch.jpg', (tex) => {
+        tex.colorSpace = THREE.SRGBColorSpace;
+        setSpecialTexture(tex);
       });
     }
-  }, [profile.foliage.leafType]);
+  }, [profile.foliage.leafType, profile.id]);
 
-  const material = useMemo(() => new THREE.MeshStandardMaterial({
-    roughness: 0.8,
-    side: THREE.DoubleSide,
-    transparent: true,
-    alphaTest: 0.3,
-  }), []);
-
-  useEffect(() => {
-    if (oakTexture) {
-      material.map = oakTexture;
-      material.needsUpdate = true;
-    } else {
-      material.map = null;
-      material.needsUpdate = true;
-    }
-  }, [material, oakTexture]);
+  const material = useMemo(() => {
+    return new THREE.MeshStandardMaterial({
+      roughness: 0.8,
+      side: THREE.DoubleSide,
+      transparent: true,
+      alphaTest: profile.id === "pine" ? 0 : 0.3,
+      blending: profile.id === "pine" ? THREE.AdditiveBlending : THREE.NormalBlending,
+      depthWrite: profile.id !== "pine",
+      map: specialTexture || null
+    });
+  }, [profile.id, specialTexture]);
 
   const instanceData = useMemo(() => {
     const prng = createSeededRandom(profile.seed * 2 + seedOffset);
@@ -154,7 +155,9 @@ export function FoliageInstances({
 
   return (
     <group position={position}>
-      <instancedMesh ref={mesh} args={[leafGeometry, material, count]} castShadow />
+      {((profile.id !== "pine" && profile.foliage.leafType !== "oak") || specialTexture) && (
+        <instancedMesh ref={mesh} args={[leafGeometry, material, count]} castShadow />
+      )}
     </group>
   );
 }

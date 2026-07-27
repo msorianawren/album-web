@@ -70,7 +70,7 @@ export default async function RootLayout({
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
       </head>
-      <body className={`${playfair.variable} font-sans flex min-h-full flex-col`}>
+      <body className={`${playfair.variable} font-sans flex min-h-full flex-col`} suppressHydrationWarning>
         <AudioUXProvider 
           defaultAmbient={stringSetting(settings.advanced_settings?.default_ambient_sound, "drone")}
           defaultClick={stringSetting(settings.advanced_settings?.default_click_sound, "water")}
