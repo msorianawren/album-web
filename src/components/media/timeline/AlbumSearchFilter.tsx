@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState, type RefObject } from "react";
 import { Filter, Search, X } from "lucide-react";
 import type { Media } from "@/lib/types";
 
@@ -50,6 +50,7 @@ function matchesFilter(item: Media, f: AlbumFilterState): boolean {
 interface AlbumSearchFilterProps {
   media: Media[];
   onFiltered: (filtered: Media[]) => void;
+  searchInputRef?: RefObject<HTMLInputElement | null>;
 }
 
 /**
@@ -60,10 +61,11 @@ interface AlbumSearchFilterProps {
  *
  * Behavioral design informed by Immich v3.0.3 filter chips pattern.
  */
-export function AlbumSearchFilter({ media, onFiltered }: AlbumSearchFilterProps) {
+export function AlbumSearchFilter({ media, onFiltered, searchInputRef: externalRef }: AlbumSearchFilterProps) {
   const [filter, setFilter] = useState<AlbumFilterState>(EMPTY_FILTER);
   const [panelOpen, setPanelOpen] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const internalRef = useRef<HTMLInputElement>(null);
+  const inputRef = externalRef ?? internalRef;
 
   const applyFilter = useCallback(
     (next: AlbumFilterState) => {

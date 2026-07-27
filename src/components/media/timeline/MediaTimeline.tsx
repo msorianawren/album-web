@@ -34,6 +34,7 @@ import {
   loadScrollPosition,
 } from "@/lib/timeline/engine";
 import type { DateGroup, ScrubberEntry, TimelineMediaItem } from "@/lib/timeline/types";
+import { emitScrollBusy } from "@/lib/timeline/scroll-busy";
 import { viewerIndexFromMediaId, viewerUrlForMedia, viewerUrlWithoutMedia } from "@/lib/media/viewer-routes";
 import type { AlbumStatus, Media } from "@/lib/types";
 import { isMediaReadyForDelivery } from "@/lib/media/delivery";
@@ -222,6 +223,7 @@ export function MediaTimeline({
 
   // ── Scroll handler (throttled) ────────────────────────────────────────────
   const handleScroll = useCallback((event: React.UIEvent<HTMLDivElement>) => {
+    emitScrollBusy(); // pause WebGL environment during scroll
     const top = (event.currentTarget as HTMLDivElement).scrollTop;
     lastScrollRef.current = top;
     if (scrollTimerRef.current !== null) return; // already scheduled
@@ -413,6 +415,32 @@ export function MediaTimeline({
     );
   }, [viewableMedia.length]);
 
+  // ── Keyboard shortcuts (M8) ───────────────────────────────────────────────
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  const handleKeyDown = useCallback(
+    (event: React.KeyboardEvent) => {
+      // Don't intercept when viewer is open or focus is in input/textarea
+      if (currentIndex !== null) return;
+      const target = event.target as HTMLElement;
+      if (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable) return;
+
+      if (event.key === "/") {
+        event.preventDefault();
+        searchInputRef.current?.focus();
+      } else if (event.key === "Escape") {
+        if (sel.state.isActive) {
+          event.preventDefault();
+          sel.clear();
+        }
+      } else if ((event.metaKey || event.ctrlKey) && event.key === "a") {
+        event.preventDefault();
+        sel.selectAll(allEntries);
+      }
+    },
+    [currentIndex, sel, allEntries],
+  );
+
   // ── Empty state ───────────────────────────────────────────────────────────
   if (!media.length) {
     return (
@@ -434,10 +462,15 @@ export function MediaTimeline({
   const visibleGroups = virtualRange.visibleGroupIndices.map((i) => groups[i]).filter(Boolean) as DateGroup[];
 
   return (
-    <section className="mx-auto w-full max-w-[1200px] px-4 pb-20 sm:px-6 sm:pb-32">
-      {/* Search and filter */}
+    // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions
+    <section
+      className="mx-auto w-full max-w-[1200px] px-4 pb-20 sm:px-6 sm:pb-32"
+      tabIndex={-1}
+      onKeyDown={handleKeyDown}
+    >
       <AlbumSearchFilter
         media={sortedMedia.filter(isMediaReadyForDelivery)}
+        searchInputRef={searchInputRef}
         onFiltered={(filtered) =>
           setFilteredMedia(
             filtered.length === sortedMedia.length ? null : filtered,
