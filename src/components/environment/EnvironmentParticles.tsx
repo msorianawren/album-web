@@ -285,10 +285,9 @@ export function EnvironmentParticles({
       {geometry}
       <meshBasicMaterial
         ref={material}
-        color={state.preset === "fireflies" ? "#ffffff" : state.particle[0]}
+        color={state.particle[0]}
         transparent
-        map={fireflyTex}
-        opacity={state.preset === "mist" ? preferences.atmosphere / 260 : state.preset === "fireflies" ? 1.0 : .62}
+        opacity={state.preset === "mist" ? preferences.atmosphere / 260 : .62}
         depthWrite={false}
         blending={THREE.NormalBlending}
       />
