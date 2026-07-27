@@ -57,7 +57,7 @@ export function useChimeAnchorRects(slots: ChimeAnchorSlot[]) {
         const safeLeft = widthPx / 2 + 24;
         const safeRight = window.innerWidth - widthPx / 2 - 24;
         let centerY = targetRect.top + window.scrollY;
-        for (let attempt = 0; attempt < 4; attempt += 1) {
+        for (let attempt = 0; attempt < 24; attempt += 1) {
           const viewportTop = centerY - window.scrollY - heightPx / 2;
           const candidate = { left: centerX - widthPx / 2, right: centerX + widthPx / 2, top: viewportTop, bottom: viewportTop + heightPx };
           const collision = interactiveRects.some((rect) => candidate.left < rect.right + 16 && candidate.right > rect.left - 16 && candidate.top < rect.bottom + 16 && candidate.bottom > rect.top - 16);
