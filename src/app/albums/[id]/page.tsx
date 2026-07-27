@@ -9,6 +9,7 @@ import { CommentSection } from "@/components/comments/CommentSection";
 import { LikeButton } from "@/components/media/LikeButton";
 
 import { MediaGrid } from "@/components/media/MediaGrid";
+import { MediaTimeline } from "@/components/media/timeline/MediaTimeline";
 import { getAlbum, getAlbumMetadata } from "@/lib/albums";
 import { getSiteSettings } from "@/lib/site-settings";
 import { getLandingPage } from "@/lib/landing";
@@ -130,14 +131,25 @@ export default async function AlbumPage({ params }: AlbumPageProps) {
           <section className="mx-auto flex w-full max-w-[1440px] justify-end px-4 pb-6 sm:px-8 lg:px-12">
             <LikeButton albumId={album.id} />
           </section>
-          <MediaGrid
-            albumId={album.id}
-            media={album.media}
-            albumStatus={album.status}
-            downloadAllowed={album.download_allowed}
-            protectAssets={settings.disable_public_right_click}
-            defaultSortMode={album.default_media_sort}
-          />
+          {process.env.NEXT_PUBLIC_TIMELINE_V2 === "true" ? (
+            <MediaTimeline
+              albumId={album.id}
+              media={album.media}
+              albumStatus={album.status}
+              downloadAllowed={album.download_allowed}
+              protectAssets={settings.disable_public_right_click}
+              defaultSortMode={album.default_media_sort}
+            />
+          ) : (
+            <MediaGrid
+              albumId={album.id}
+              media={album.media}
+              albumStatus={album.status}
+              downloadAllowed={album.download_allowed}
+              protectAssets={settings.disable_public_right_click}
+              defaultSortMode={album.default_media_sort}
+            />
+          )}
           <AlbumDownloadButton
             albumId={album.id}
             disabled={
