@@ -13,6 +13,9 @@ import { Camera, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { TimelineDateGroup } from "@/components/media/timeline/TimelineDateGroup";
 import { TimelineScrubber } from "@/components/media/timeline/TimelineScrubber";
+import { SelectionActionBar } from "@/components/media/timeline/SelectionActionBar";
+import { useSelectionController } from "@/hooks/useSelectionController";
+import { AlbumSearchFilter } from "@/components/media/timeline/AlbumSearchFilter";
 import {
   mediaSortLabels,
   mediaSortModes,
@@ -115,9 +118,12 @@ export function MediaTimeline({
     [media, shuffleSeed, sortMode],
   );
 
+  // Filter state: null means no filter active (use sortedMedia directly)
+  const [filteredMedia, setFilteredMedia] = useState<Media[] | null>(null);
+
   const viewableMedia = useMemo(
-    () => sortedMedia.filter(isMediaReadyForDelivery),
-    [sortedMedia],
+    () => (filteredMedia ?? sortedMedia).filter(isMediaReadyForDelivery),
+    [sortedMedia, filteredMedia],
   );
 
   const timelineItems = useMemo<TimelineMediaItem[]>(
@@ -274,6 +280,44 @@ export function MediaTimeline({
     });
   }, [defaultMode, storageKey]);
 
+  // ── Selection ─────────────────────────────────────────────────────────────
+  const sel = useSelectionController();
+
+  const allEntries = useMemo(
+    () => viewableMedia.map((item, idx) => ({ mediaId: item.id, mediaIndex: idx })),
+    [viewableMedia],
+  );
+
+  const handleLongPress = useCallback(
+    (mediaIndex: number) => {
+      sel.toggle({ mediaId: viewableMedia[mediaIndex]?.id ?? "", mediaIndex });
+    },
+    [sel, viewableMedia],
+  );
+
+  const handleSelect = useCallback(
+    (mediaIndex: number, shiftKey: boolean) => {
+      const entry = { mediaId: viewableMedia[mediaIndex]?.id ?? "", mediaIndex };
+      if (shiftKey) {
+        sel.expandRange(entry, allEntries);
+      } else {
+        sel.toggle(entry);
+      }
+    },
+    [sel, viewableMedia, allEntries],
+  );
+
+  const handleBulkDownload = useCallback(() => {
+    const ids = sel.selectedIds();
+    for (const id of ids) {
+      const a = document.createElement("a");
+      a.href = `/api/media/${encodeURIComponent(id)}/download`;
+      a.download = "";
+      a.click();
+    }
+    sel.clear();
+  }, [sel]);
+
   // ── Viewer state ──────────────────────────────────────────────────────────
   const [currentIndex, setCurrentIndex] = useState<number | null>(null);
   const [hasOpenedViewer, setHasOpenedViewer] = useState(false);
@@ -391,6 +435,16 @@ export function MediaTimeline({
 
   return (
     <section className="mx-auto w-full max-w-[1200px] px-4 pb-20 sm:px-6 sm:pb-32">
+      {/* Search and filter */}
+      <AlbumSearchFilter
+        media={sortedMedia.filter(isMediaReadyForDelivery)}
+        onFiltered={(filtered) =>
+          setFilteredMedia(
+            filtered.length === sortedMedia.length ? null : filtered,
+          )
+        }
+      />
+
       {/* Sort controls */}
       <div className="mb-8 sm:mb-10 flex flex-col md:flex-row md:items-center justify-between gap-6 pb-6 border-b border-border/40">
         <div className="flex items-center gap-3">
@@ -470,6 +524,11 @@ export function MediaTimeline({
                   protectAssets={protectAssets}
                   onOpen={openMedia}
                   gap={GAP}
+                  selectionActive={sel.state.isActive}
+                  isSelected={sel.isSelected}
+                  isRangeCandidate={sel.isRangeCandidate}
+                  onSelect={handleSelect}
+                  onLongPress={handleLongPress}
                 />
               </div>
             ))}
@@ -496,7 +555,20 @@ export function MediaTimeline({
       {/* Media count summary */}
       <div className="mt-6 text-center text-[0.65rem] font-medium uppercase tracking-widest text-text-secondary/50">
         {viewableMedia.length} {viewableMedia.length === 1 ? "item" : "items"}
+        {sel.state.count > 0 && (
+          <span className="ml-2 text-text-primary">
+            · {sel.state.count} selected
+          </span>
+        )}
       </div>
+
+      {/* Selection action bar */}
+      <SelectionActionBar
+        count={sel.state.count}
+        downloadAllowed={downloadAllowed}
+        onDownload={handleBulkDownload}
+        onClear={sel.clear}
+      />
 
       {/* Viewer */}
       {hasOpenedViewer && (

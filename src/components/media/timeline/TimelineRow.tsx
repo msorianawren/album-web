@@ -13,6 +13,12 @@ interface TimelineRowProps {
   protectAssets: boolean;
   onOpen: (mediaIndex: number) => void;
   isFirstInGroup?: boolean;
+  // Selection
+  selectionActive?: boolean;
+  isSelected?: (mediaId: string) => boolean;
+  isRangeCandidate?: (mediaId: string) => boolean;
+  onSelect?: (mediaIndex: number, shiftKey: boolean) => void;
+  onLongPress?: (mediaIndex: number) => void;
 }
 
 /**
@@ -29,6 +35,11 @@ export const TimelineRow = memo(function TimelineRow({
   protectAssets,
   onOpen,
   isFirstInGroup = false,
+  selectionActive = false,
+  isSelected,
+  isRangeCandidate,
+  onSelect,
+  onLongPress,
 }: TimelineRowProps) {
   // Row height without the gap padding
   const rowDisplayHeight = row.cells[0]?.height ?? row.height;
@@ -58,6 +69,11 @@ export const TimelineRow = memo(function TimelineRow({
               protectAssets={protectAssets}
               onOpen={onOpen}
               priority={isFirstInGroup && idx === 0}
+              selectionActive={selectionActive}
+              isSelected={isSelected?.(cell.mediaId) ?? false}
+              isRangeCandidate={isRangeCandidate?.(cell.mediaId) ?? false}
+              onSelect={onSelect}
+              onLongPress={onLongPress}
             />
           </div>
         );

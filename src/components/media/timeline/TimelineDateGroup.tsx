@@ -13,6 +13,12 @@ interface TimelineDateGroupProps {
   protectAssets: boolean;
   onOpen: (mediaIndex: number) => void;
   gap?: number;
+  // Selection
+  selectionActive?: boolean;
+  isSelected?: (mediaId: string) => boolean;
+  isRangeCandidate?: (mediaId: string) => boolean;
+  onSelect?: (mediaIndex: number, shiftKey: boolean) => void;
+  onLongPress?: (mediaIndex: number) => void;
 }
 
 const DEFAULT_GAP = 4;
@@ -31,6 +37,11 @@ export const TimelineDateGroup = memo(function TimelineDateGroup({
   protectAssets,
   onOpen,
   gap = DEFAULT_GAP,
+  selectionActive = false,
+  isSelected,
+  isRangeCandidate,
+  onSelect,
+  onLongPress,
 }: TimelineDateGroupProps) {
   return (
     <div
@@ -65,6 +76,11 @@ export const TimelineDateGroup = memo(function TimelineDateGroup({
             protectAssets={protectAssets}
             onOpen={onOpen}
             isFirstInGroup={rowIdx === 0}
+            selectionActive={selectionActive}
+            isSelected={isSelected}
+            isRangeCandidate={isRangeCandidate}
+            onSelect={onSelect}
+            onLongPress={onLongPress}
           />
         ))}
       </div>

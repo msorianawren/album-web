@@ -1,11 +1,11 @@
 "use client";
 
 import { useCallback, useRef, useState } from "react";
+import { Check, Play } from "lucide-react";
 import { ReliableMediaImage } from "@/components/media/ReliableMediaImage";
 import { getMediaDeliveryDescriptor } from "@/lib/media/delivery";
 import type { AlbumStatus, Media } from "@/lib/types";
 import type { ThumbnailCell } from "@/lib/timeline/types";
-import { Play } from "lucide-react";
 
 interface MediaThumbnailProps {
   media: Media;
@@ -15,6 +15,12 @@ interface MediaThumbnailProps {
   protectAssets: boolean;
   onOpen: (mediaIndex: number) => void;
   priority?: boolean;
+  // Selection
+  selectionActive?: boolean;
+  isSelected?: boolean;
+  isRangeCandidate?: boolean;
+  onSelect?: (mediaIndex: number, shiftKey: boolean) => void;
+  onLongPress?: (mediaIndex: number) => void;
 }
 
 export function MediaThumbnail({
@@ -25,9 +31,15 @@ export function MediaThumbnail({
   protectAssets,
   onOpen,
   priority = false,
+  selectionActive = false,
+  isSelected = false,
+  isRangeCandidate = false,
+  onSelect,
+  onLongPress,
 }: MediaThumbnailProps) {
   const [loaded, setLoaded] = useState(false);
   const pointerDownPos = useRef<{ x: number; y: number } | null>(null);
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const descriptor = getMediaDeliveryDescriptor(media, {
     albumStatus,
@@ -37,39 +49,67 @@ export function MediaThumbnail({
 
   const handlePointerDown = useCallback((event: React.PointerEvent) => {
     pointerDownPos.current = { x: event.clientX, y: event.clientY };
+    if (onLongPress) {
+      longPressTimer.current = setTimeout(() => {
+        longPressTimer.current = null;
+        onLongPress(cell.mediaIndex);
+      }, 500);
+    }
+  }, [cell.mediaIndex, onLongPress]);
+
+  const handlePointerUp = useCallback(() => {
+    if (longPressTimer.current !== null) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
   }, []);
 
   const handleClick = useCallback(
     (event: React.MouseEvent) => {
       event.preventDefault();
+      if (longPressTimer.current !== null) {
+        clearTimeout(longPressTimer.current);
+        longPressTimer.current = null;
+      }
       // Ignore click if pointer moved significantly (drag/swipe)
       if (pointerDownPos.current) {
         const dx = event.clientX - pointerDownPos.current.x;
         const dy = event.clientY - pointerDownPos.current.y;
         if (Math.hypot(dx, dy) > 8) return;
       }
+      if (selectionActive && onSelect) {
+        onSelect(cell.mediaIndex, event.shiftKey);
+        return;
+      }
       onOpen(cell.mediaIndex);
     },
-    [cell.mediaIndex, onOpen],
+    [cell.mediaIndex, onOpen, selectionActive, onSelect],
   );
 
   const handleKeyDown = useCallback(
     (event: React.KeyboardEvent) => {
       if (event.key === "Enter" || event.key === " ") {
         event.preventDefault();
+        if (selectionActive && onSelect) {
+          onSelect(cell.mediaIndex, false);
+          return;
+        }
         onOpen(cell.mediaIndex);
       }
     },
-    [cell.mediaIndex, onOpen],
+    [cell.mediaIndex, onOpen, selectionActive, onSelect],
   );
 
   const src = descriptor.card.src;
   const isVideo = media.media_type === "video";
+  const isHighlighted = isSelected || isRangeCandidate;
 
   return (
     <button
       type="button"
-      className="group relative block overflow-hidden bg-surface/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
+      className={`group relative block overflow-hidden bg-surface/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 ${
+        isHighlighted ? "ring-2 ring-white/80 ring-inset" : ""
+      }`}
       style={{
         width: cell.width,
         height: cell.height,
@@ -78,6 +118,7 @@ export function MediaThumbnail({
       }}
       aria-label={descriptor.alt}
       onPointerDown={handlePointerDown}
+      onPointerUp={handlePointerUp}
       onClick={handleClick}
       onKeyDown={handleKeyDown}
     >
@@ -137,6 +178,19 @@ export function MediaThumbnail({
           onContextMenu={(event) => event.preventDefault()}
           aria-hidden="true"
         />
+      )}
+      {/* Selection checkbox overlay */}
+      {(selectionActive || isHighlighted) && (
+        <div
+          className={`pointer-events-none absolute left-2 top-2 flex h-5 w-5 items-center justify-center rounded-full border-2 transition-all duration-100 ${
+            isSelected
+              ? "border-white bg-white"
+              : "border-white/80 bg-black/30"
+          }`}
+          aria-hidden="true"
+        >
+          {isSelected && <Check className="h-3 w-3 text-text-primary" />}
+        </div>
       )}
     </button>
   );
