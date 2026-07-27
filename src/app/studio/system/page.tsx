@@ -58,16 +58,27 @@ export default async function StudioSystemPage() {
         </Panel>
       </section>
 
-      <Panel title="Runtime warnings">
-        {[
-          !health.env.NEXT_PUBLIC_SUPABASE_URL ? "NEXT_PUBLIC_SUPABASE_URL is missing." : null,
-          !health.env.SUPABASE_SERVICE_ROLE_KEY ? "SUPABASE_SERVICE_ROLE_KEY is missing." : null,
-          !health.env.R2_PUBLIC_URL ? "R2_PUBLIC_URL is missing." : null,
-          !health.tableChecks.every((check) => check.ok) ? "One or more required tables are missing." : null,
-        ].filter(Boolean).map((warning) => (
-          <p key={warning} className="rounded-[1rem] border border-border bg-background/60 p-3 text-sm text-text-secondary">{warning}</p>
-        ))}
-      </Panel>
+      <section className="grid gap-5 xl:grid-cols-2">
+        <Panel title="Immich Integration (Layer B)">
+          <Status label="IMMICH_ENABLED" ok={health.env.IMMICH_ENABLED} />
+          <Status label="NEXT_PUBLIC_TIMELINE_V2" ok={health.env.NEXT_PUBLIC_TIMELINE_V2} />
+          <Status label="IMMICH_HOST Configured" ok={health.env.IMMICH_HOST} />
+          <Status label="IMMICH_API_KEY Configured" ok={health.env.IMMICH_API_KEY} />
+          <p className="rounded-[1rem] border border-border bg-background/60 p-3 text-xs text-text-secondary">
+            <strong>Hybrid Architecture:</strong> Supabase remains the authoritative record for user access and metadata. Immich integration operates server-side via <code>immich_asset_mapping</code>. Immich credentials are never sent to the client.
+          </p>
+        </Panel>
+        <Panel title="Runtime warnings">
+          {[
+            !health.env.NEXT_PUBLIC_SUPABASE_URL ? "NEXT_PUBLIC_SUPABASE_URL is missing." : null,
+            !health.env.SUPABASE_SERVICE_ROLE_KEY ? "SUPABASE_SERVICE_ROLE_KEY is missing." : null,
+            !health.env.R2_PUBLIC_URL ? "R2_PUBLIC_URL is missing." : null,
+            !health.tableChecks.every((check) => check.ok) ? "One or more required tables are missing." : null,
+          ].filter(Boolean).map((warning) => (
+            <p key={warning} className="rounded-[1rem] border border-border bg-background/60 p-3 text-sm text-text-secondary">{warning}</p>
+          ))}
+        </Panel>
+      </section>
     </div>
   );
 }

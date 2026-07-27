@@ -222,12 +222,16 @@ export function MediaViewer({
     if (!item) return;
 
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
+      const target = event.target as HTMLElement;
+      if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable)) return;
+
+      if (event.key === "Escape" || event.key.toLowerCase() === "g") {
         if (document.fullscreenElement === containerRef.current) {
           event.preventDefault();
           void document.exitFullscreen().catch(() => {});
           return;
         }
+        event.preventDefault();
         onClose();
         return;
       }

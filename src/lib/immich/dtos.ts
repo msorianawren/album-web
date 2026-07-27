@@ -7,7 +7,6 @@
  * Only the fields relevant to Oriana are included.
  * Do not import Immich SDK types directly — this is an isolated boundary.
  */
-import "server-only";
 import { z } from "zod";
 
 // ── Asset ────────────────────────────────────────────────────────────────────
