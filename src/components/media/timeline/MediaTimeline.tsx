@@ -132,10 +132,11 @@ export function MediaTimeline({
     [viewableMedia],
   );
 
-  const viewerIndexById = useMemo(
-    () => new Map(viewableMedia.map((item, index) => [item.id, index])),
-    [viewableMedia],
-  );
+  // ── Viewer state ──────────────────────────────────────────────────────────
+  const [currentIndex, setCurrentIndex] = useState<number | null>(null);
+  const [hasOpenedViewer, setHasOpenedViewer] = useState(false);
+  const openedFromTimelineRef = useRef(false);
+  const scrollBeforeViewerRef = useRef(0);
 
   // ── Container + layout state ──────────────────────────────────────────────
   const containerRef = useRef<HTMLDivElement>(null);
@@ -144,19 +145,18 @@ export function MediaTimeline({
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
-    const observer = new ResizeObserver((entries) => {
-      const entry = entries[0];
-      if (!entry) return;
-      const width = entry.contentRect.width;
-      if (width > 0) setContainerWidth(Math.floor(width));
-    });
+
+    const updateWidth = () => {
+      setContainerWidth(container.clientWidth);
+    };
+
+    updateWidth();
+    const observer = new ResizeObserver(updateWidth);
     observer.observe(container);
-    // Initial measurement
-    setContainerWidth(Math.floor(container.offsetWidth));
     return () => observer.disconnect();
   }, []);
 
-  // ── Timeline groups + layout ──────────────────────────────────────────────
+  // ── Layout calculation ────────────────────────────────────────────────────
   const { groups, totalHeight, scrubberEntries } = useMemo(() => {
     const rawGroups = groupMediaByDate(timelineItems);
 
@@ -213,12 +213,10 @@ export function MediaTimeline({
     }
   }, [containerWidth, groups.length, scrollKey]);
 
-  // ── Active month tracking for scrubber ────────────────────────────────────
-  const [activeMonthKey, setActiveMonthKey] = useState<string | null>(null);
-
-  useEffect(() => {
+  // ── Active month tracking for scrubber (computed during render) ───────────
+  const activeMonthKey = useMemo(() => {
     const group = findGroupAtScrollTop(groups, scrollTop);
-    if (group) setActiveMonthKey(group.monthKey);
+    return group ? group.monthKey : null;
   }, [groups, scrollTop]);
 
   // ── Scroll handler (throttled) ────────────────────────────────────────────
@@ -320,12 +318,7 @@ export function MediaTimeline({
     sel.clear();
   }, [sel]);
 
-  // ── Viewer state ──────────────────────────────────────────────────────────
-  const [currentIndex, setCurrentIndex] = useState<number | null>(null);
-  const [hasOpenedViewer, setHasOpenedViewer] = useState(false);
-  const openedFromTimelineRef = useRef(false);
-  const scrollBeforeViewerRef = useRef(0);
-
+  // ── Viewer Effects & Handlers ─────────────────────────────────────────────
   useEffect(() => {
     const syncViewerFromLocation = () => {
       const mediaId = new URL(window.location.href).searchParams.get("media");
@@ -462,7 +455,6 @@ export function MediaTimeline({
   const visibleGroups = virtualRange.visibleGroupIndices.map((i) => groups[i]).filter(Boolean) as DateGroup[];
 
   return (
-    // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions
     <section
       className="mx-auto w-full max-w-[1200px] px-4 pb-20 sm:px-6 sm:pb-32"
       tabIndex={-1}

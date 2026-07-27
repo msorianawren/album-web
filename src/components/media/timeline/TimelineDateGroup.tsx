@@ -22,7 +22,6 @@ interface TimelineDateGroupProps {
 }
 
 const DEFAULT_GAP = 4;
-const DEFAULT_HEADER_HEIGHT = 44;
 
 /**
  * Renders a single date group: sticky label + justified rows.
