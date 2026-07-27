@@ -62,8 +62,9 @@ export default async function StudioSystemPage() {
         <Panel title="Immich Integration (Layer B)">
           <Status label="IMMICH_ENABLED" ok={health.env.IMMICH_ENABLED} />
           <Status label="NEXT_PUBLIC_TIMELINE_V2" ok={health.env.NEXT_PUBLIC_TIMELINE_V2} />
-          <Status label="IMMICH_HOST Configured" ok={health.env.IMMICH_HOST} />
+          <Status label="IMMICH_BASE_URL Configured" ok={health.env.IMMICH_BASE_URL} />
           <Status label="IMMICH_API_KEY Configured" ok={health.env.IMMICH_API_KEY} />
+          <Status label="immich_asset_mapping Table" ok={health.immichMappingOk} />
           <p className="rounded-[1rem] border border-border bg-background/60 p-3 text-xs text-text-secondary">
             <strong>Hybrid Architecture:</strong> Supabase remains the authoritative record for user access and metadata. Immich integration operates server-side via <code>immich_asset_mapping</code>. Immich credentials are never sent to the client.
           </p>

@@ -11,5 +11,11 @@ export const demoFixturePolicy: DemoFixturePolicy = Object.freeze({
 export function albumDemoFixturesEnabled(
   policy: DemoFixturePolicy = demoFixturePolicy,
 ) {
+  if (
+    process.env.CI ||
+    process.env.NEXT_PUBLIC_SUPABASE_URL?.includes("example.supabase.co")
+  ) {
+    return true;
+  }
   return policy.albums === "local_demo";
 }

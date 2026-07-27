@@ -26,48 +26,44 @@ export function useEnvironmentPreferences({
   userId?: string | null;
   initialPreferences?: unknown;
 } = {}) {
-  const [preferences, setPreferencesState] = useState<EnvironmentPreferences>(artistEnvironmentDefaults);
-  const preferencesRef = useRef<EnvironmentPreferences>(artistEnvironmentDefaults);
-  const [hydrated, setHydrated] = useState(false);
+  const [preferences, setPreferencesState] = useState<EnvironmentPreferences>(() => {
+    if (initialPreferences !== undefined) return normalizeEnvironmentPreferences(initialPreferences);
+    return readEnvironmentPreferences();
+  });
+  const preferencesRef = useRef<EnvironmentPreferences>(preferences);
+  const [hydrated, setHydrated] = useState(typeof window !== "undefined");
   const [syncState, setSyncState] = useState<SyncState>(userId ? "saved" : "local");
   const skipNextSync = useRef(true);
 
   useEffect(() => {
     let active = true;
-    const timer = window.setTimeout(() => {
-      const hasLocal = window.localStorage.getItem(ENVIRONMENT_PREFERENCES_KEY) !== null;
-      const initial = initialPreferences !== undefined
-        ? normalizeEnvironmentPreferences(initialPreferences)
-        : hasLocal
-          ? readEnvironmentPreferences()
-          : normalizeEnvironmentPreferences(readEnvironmentPreferences());
-      if (hasLocal || initialPreferences !== undefined || window.localStorage.getItem("ui_bg_theme") || window.localStorage.getItem("album-theme")) {
-        writeEnvironmentPreferences(initial);
-      }
-      preferencesRef.current = initial;
-      setPreferencesState(initial);
-      setHydrated(true);
-      skipNextSync.current = true;
-      if (userId && initialPreferences === undefined && !hasLocal) {
-        void fetch("/api/profile/environment-preferences", { headers: { Accept: "application/json" } })
-          .then((response) => response.ok ? response.json() : null)
-          .then((payload) => {
-            if (!active || !payload?.success) return;
-            const remote = normalizeEnvironmentPreferences(payload.data?.preferences);
-            preferencesRef.current = remote;
-            skipNextSync.current = true;
-            writeEnvironmentPreferences(remote);
-            setPreferencesState(remote);
-            setSyncState("saved");
-          })
-          .catch(() => {
-            if (active) setSyncState("error");
-          });
-      }
-    }, 0);
+    const hasLocal = window.localStorage.getItem(ENVIRONMENT_PREFERENCES_KEY) !== null;
+    const initial = initialPreferences !== undefined
+      ? normalizeEnvironmentPreferences(initialPreferences)
+      : readEnvironmentPreferences();
+    if (hasLocal || initialPreferences !== undefined || window.localStorage.getItem("ui_bg_theme") || window.localStorage.getItem("album-theme")) {
+      writeEnvironmentPreferences(initial);
+    }
+    preferencesRef.current = initial;
+    skipNextSync.current = true;
+    if (userId && initialPreferences === undefined && !hasLocal) {
+      void fetch("/api/profile/environment-preferences", { headers: { Accept: "application/json" } })
+        .then((response) => response.ok ? response.json() : null)
+        .then((payload) => {
+          if (!active || !payload?.success) return;
+          const remote = normalizeEnvironmentPreferences(payload.data?.preferences);
+          preferencesRef.current = remote;
+          skipNextSync.current = true;
+          writeEnvironmentPreferences(remote);
+          setPreferencesState(remote);
+          setSyncState("saved");
+        })
+        .catch(() => {
+          if (active) setSyncState("error");
+        });
+    }
     return () => {
       active = false;
-      window.clearTimeout(timer);
     };
   }, [initialPreferences, userId]);
 

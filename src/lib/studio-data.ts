@@ -357,11 +357,12 @@ export async function getSystemHealth(session?: PublicSession) {
     "security_rate_limits",
     "landing_page_settings",
     "site_settings",
-    "immich_asset_mapping",
   ];
   const tableChecks = await Promise.all(
     requiredTables.map(async (table) => ({ table, ok: await tableExists(table) })),
   );
+
+  const immichMappingOk = await tableExists("immich_asset_mapping");
 
   return {
     environment: process.env.VERCEL_ENV ?? process.env.NODE_ENV ?? "unknown",
@@ -382,11 +383,12 @@ export async function getSystemHealth(session?: PublicSession) {
       R2_PRIVATE_ACCESS_KEY_ID: Boolean(process.env.R2_PRIVATE_ACCESS_KEY_ID),
       R2_PRIVATE_SECRET_ACCESS_KEY: Boolean(process.env.R2_PRIVATE_SECRET_ACCESS_KEY),
       R2_PUBLIC_URL: Boolean(process.env.R2_PUBLIC_URL),
-      IMMICH_HOST: Boolean(process.env.IMMICH_HOST),
+      IMMICH_BASE_URL: Boolean(process.env.IMMICH_BASE_URL),
       IMMICH_API_KEY: Boolean(process.env.IMMICH_API_KEY),
       IMMICH_ENABLED: process.env.IMMICH_ENABLED === "true",
       NEXT_PUBLIC_TIMELINE_V2: process.env.NEXT_PUBLIC_TIMELINE_V2 === "true",
     },
+    immichMappingOk,
     currentAdmin: session
       ? {
           isAdmin: session.isAdmin,
