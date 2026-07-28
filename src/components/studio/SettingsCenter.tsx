@@ -8,8 +8,7 @@ import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
 import type { AlbumStatus, LandingBackgroundSettings, LandingPageContent, SiteSettings, AboutProfile, TranslationMap } from "@/lib/types";
 import { AboutSettingsTab } from "@/components/studio/settings/AboutSettingsTab";
-import { MetaIntegrationPanel } from "@/components/studio/MetaIntegrationPanel";
-import { MetaFeedLandingEditor } from "@/components/studio/MetaFeedLandingEditor";
+import { FacebookFeedLandingEditor } from "@/components/studio/FacebookFeedLandingEditor";
 import dynamic from "next/dynamic";
 const PerformanceSettingsTab = dynamic(() => import("@/components/studio/settings/PerformanceSettingsTab"));
 import { LOCALES } from "@/lib/i18n";
@@ -19,7 +18,6 @@ import { AlertCircle } from "lucide-react";
 type TabKey =
   | "general"
   | "landing"
-  | "integrations"
   | "about"
   | "appearance"
   | "albums"
@@ -52,7 +50,6 @@ interface SystemHealthSummary {
 const tabs: Array<{ key: TabKey; label: string }> = [
   { key: "general", label: "General" },
   { key: "landing", label: "Landing" },
-  { key: "integrations", label: "Integrations" },
   { key: "about", label: "About Profile" },
   { key: "appearance", label: "Appearance" },
   { key: "albums", label: "Albums" },
@@ -129,10 +126,10 @@ export function SettingsCenter({
     }
   }
 
-  function getMetaFeedLocalized(key: "eyebrow" | "heading" | "description") {
-    const fallback = landing.meta_feed_settings?.[key] ?? "";
+  function getFacebookFeedLocalized(key: "eyebrow" | "heading" | "description") {
+    const fallback = landing.facebook_feed_settings?.[key] ?? "";
     if (activeLandingLocale === "en") return fallback;
-    return landing.translations?.[activeLandingLocale]?.[`meta_feed_${key}`] ?? fallback;
+    return landing.translations?.[activeLandingLocale]?.[`facebook_feed_${key}`] ?? fallback;
   }
 
   async function save() {
@@ -776,29 +773,24 @@ export function SettingsCenter({
                   <Toggle label="Creative Services" checked={landing.section_toggles?.creative_services !== false} onChange={(v) => updateLanding("section_toggles", { ...landing.section_toggles, creative_services: v })} />
                   <Toggle label="Collaborators" checked={landing.section_toggles?.collaborators !== false} onChange={(v) => updateLanding("section_toggles", { ...landing.section_toggles, collaborators: v })} />
                   <Toggle label="Personal Letter" checked={landing.section_toggles?.personal_letter !== false} onChange={(v) => updateLanding("section_toggles", { ...landing.section_toggles, personal_letter: v })} />
-                  <Toggle label="Facebook Video Feed" checked={landing.meta_feed_settings?.enabled === true} onChange={(v) => updateLanding("meta_feed_settings", { ...(landing.meta_feed_settings!), enabled: v })} />
+                  <Toggle label="Facebook Profile Feed" checked={landing.facebook_feed_settings?.enabled === true} onChange={(v) => updateLanding("facebook_feed_settings", { ...(landing.facebook_feed_settings!), enabled: v })} />
                 </div>
               </div>
-              {landing.meta_feed_settings ? <MetaFeedLandingEditor value={landing.meta_feed_settings} onChange={(value) => updateLanding("meta_feed_settings", value)} copy={{ eyebrow: getMetaFeedLocalized("eyebrow"), heading: getMetaFeedLocalized("heading"), description: getMetaFeedLocalized("description") }} onCopyChange={(copy) => {
+              {landing.facebook_feed_settings ? <FacebookFeedLandingEditor value={landing.facebook_feed_settings} onChange={(value) => updateLanding("facebook_feed_settings", value)} copy={{ eyebrow: getFacebookFeedLocalized("eyebrow"), heading: getFacebookFeedLocalized("heading"), description: getFacebookFeedLocalized("description") }} onCopyChange={(copy) => {
                 if (activeLandingLocale === "en") {
-                  updateLanding("meta_feed_settings", { ...landing.meta_feed_settings!, ...copy });
+                  updateLanding("facebook_feed_settings", { ...landing.facebook_feed_settings!, ...copy });
                 } else {
                   const translations: TranslationMap = { ...(landing.translations || {}) };
-                  translations[activeLandingLocale] = { ...translations[activeLandingLocale], meta_feed_eyebrow: copy.eyebrow, meta_feed_heading: copy.heading, meta_feed_description: copy.description };
+                  translations[activeLandingLocale] = { ...translations[activeLandingLocale], facebook_feed_eyebrow: copy.eyebrow, facebook_feed_heading: copy.heading, facebook_feed_description: copy.description };
                   updateLanding("translations", translations);
                 }
-              }} /> : null}
+              }} uploadPoster={async (file) => uploadLandingAsset("media", file)} /> : null}
             </div>
             <LandingPreview landing={landing} activeLandingLocale={activeLandingLocale} />
           </div>
         </Panel>
       ) : null}
 
-      {activeTab === "integrations" ? (
-        <Panel title="Integrations" description="Connect server-side services that enrich the public site without exposing credentials to visitors.">
-          <MetaIntegrationPanel />
-        </Panel>
-      ) : null}
 
       {activeTab === "about" ? (
         <AboutSettingsTab

@@ -51,7 +51,6 @@ const nextConfig: NextConfig = {
         https://*.supabase.co
         https://*.r2.dev
         https://pub-6723a3eac8f14389ad2429799e3b98a5.r2.dev
-        https://*.fbcdn.net
         ${r2PublicOrigin};
 
       media-src 'self' blob:

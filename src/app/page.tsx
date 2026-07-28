@@ -11,14 +11,14 @@ import { HomeMediaGallery } from "@/components/landing/HomeMediaGallery";
 import { HomeCollaborators } from "@/components/landing/HomeCollaborators";
 import { HomePersonalLetterWrapper } from "@/components/landing/HomePersonalLetterWrapper";
 import { HomeAlbumWorldsWrapper } from "@/components/landing/HomeAlbumWorldsWrapper";
-import { HomeMetaFeed } from "@/components/landing/HomeMetaFeed";
+import { HomeFacebookFeed } from "@/components/landing/HomeFacebookFeed";
 import { Suspense } from "react";
 
 import { getLandingPage } from "@/lib/landing";
 import { getFeaturedAlbums } from "@/lib/albums";
 import { getAboutProfile } from "@/lib/about";
 import { getSiteSettings } from "@/lib/site-settings";
-import { getLandingMetaFeedItems, metaFeedDisplayItems } from "@/lib/meta/data";
+import { getLandingFacebookFeedItems } from "@/lib/facebook-feed/data";
 
 import { cookies } from "next/headers";
 import { AppLocale } from "@/lib/i18n";
@@ -35,15 +35,15 @@ export default async function Home() {
   const cookieStore = await cookies();
   const locale = (cookieStore.get("NEXT_LOCALE")?.value || "en") as AppLocale;
   const dict = await getDictionary(locale);
-  const metaFeedSettings = landing.meta_feed_settings;
-  const localizedMetaFeedSettings = metaFeedSettings && locale !== "en" ? {
-    ...metaFeedSettings,
-    eyebrow: landing.translations?.[locale]?.meta_feed_eyebrow ?? metaFeedSettings.eyebrow,
-    heading: landing.translations?.[locale]?.meta_feed_heading ?? metaFeedSettings.heading,
-    description: landing.translations?.[locale]?.meta_feed_description ?? metaFeedSettings.description,
-  } : metaFeedSettings;
-  const metaFeedItems = metaFeedSettings?.enabled
-    ? metaFeedDisplayItems(metaFeedSettings, await getLandingMetaFeedItems(metaFeedSettings.selectedItemIds, metaFeedSettings.autoFillLatest, metaFeedSettings.maxItems))
+  const facebookFeedSettings = landing.facebook_feed_settings;
+  const localizedFacebookFeedSettings = facebookFeedSettings && locale !== "en" ? {
+    ...facebookFeedSettings,
+    eyebrow: landing.translations?.[locale]?.facebook_feed_eyebrow ?? facebookFeedSettings.eyebrow,
+    heading: landing.translations?.[locale]?.facebook_feed_heading ?? facebookFeedSettings.heading,
+    description: landing.translations?.[locale]?.facebook_feed_description ?? facebookFeedSettings.description,
+  } : facebookFeedSettings;
+  const facebookFeedItems = facebookFeedSettings?.enabled
+    ? await getLandingFacebookFeedItems(facebookFeedSettings.selectedItemIds)
     : [];
 
   return (
@@ -52,7 +52,7 @@ export default async function Home() {
       <main className="relative z-10 min-h-screen bg-transparent">
         <AppHeader />
       <HomeHero landing={landing} settings={settings} locale={locale} dict={dict} />
-      {localizedMetaFeedSettings ? <HomeMetaFeed settings={localizedMetaFeedSettings} items={metaFeedItems} /> : null}
+      {localizedFacebookFeedSettings ? <HomeFacebookFeed settings={localizedFacebookFeedSettings} items={facebookFeedItems} /> : null}
       
       {landing.section_toggles?.editorial_intro !== false && <HomeEditorialIntro landing={landing} settings={settings} />}
       {landing.section_toggles?.album_worlds !== false && (

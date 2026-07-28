@@ -1,8 +1,9 @@
 import { unstable_cache } from "next/cache";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createPublicServerClient } from "@/lib/db/public";
-import type { LandingPageContent, LandingBackgroundSettings, LandingMetaFeedSettings, LandingSocialLink, TranslationMap } from "@/lib/types";
+import type { LandingPageContent, LandingBackgroundSettings, LandingFacebookFeedSettings, LandingSocialLink, TranslationMap } from "@/lib/types";
 import { albumDemoFixturesEnabled } from "@/lib/demo-fixtures";
+import { normalizeFacebookFeedSelection } from "@/lib/facebook-feed/settings";
 
 const landingId = "home";
 
@@ -64,7 +65,7 @@ export const defaultLandingPage: LandingPageContent = {
   },
   translations: {},
   section_toggles: {},
-  meta_feed_settings: {
+  facebook_feed_settings: {
     enabled: false,
     eyebrow: "Recent Motion",
     heading: "Stories in motion",
@@ -72,11 +73,9 @@ export const defaultLandingPage: LandingPageContent = {
     selectedItemIds: [],
     featuredItemId: null,
     layout: "editorial",
-    playMode: "inline",
     showCaption: true,
     showPublishedDate: true,
     showFacebookBranding: true,
-    autoFillLatest: false,
     maxItems: 4,
     itemOverrides: {},
   },
@@ -127,12 +126,10 @@ function normalizeTranslations(value: unknown): TranslationMap {
   return output;
 }
 
-export function normalizeMetaFeedSettings(value: unknown): LandingMetaFeedSettings {
-  const saved = typeof value === "object" && value !== null ? value as Partial<LandingMetaFeedSettings> : {};
-  const defaults = defaultLandingPage.meta_feed_settings!;
-  const selectedItemIds = Array.isArray(saved.selectedItemIds)
-    ? [...new Set(saved.selectedItemIds.filter((id): id is string => typeof id === "string" && /^[0-9a-f-]{36}$/i.test(id)))].slice(0, 6)
-    : [];
+export function normalizeFacebookFeedSettings(value: unknown): LandingFacebookFeedSettings {
+  const saved = typeof value === "object" && value !== null ? value as Partial<LandingFacebookFeedSettings> : {};
+  const defaults = defaultLandingPage.facebook_feed_settings!;
+  const selectedItemIds = normalizeFacebookFeedSelection(saved.selectedItemIds);
   const featuredItemId = typeof saved.featuredItemId === "string" && selectedItemIds.includes(saved.featuredItemId) ? saved.featuredItemId : null;
   const itemOverrides = typeof saved.itemOverrides === "object" && saved.itemOverrides !== null
     ? Object.fromEntries(Object.entries(saved.itemOverrides).flatMap(([id, item]) => {
@@ -154,11 +151,9 @@ export function normalizeMetaFeedSettings(value: unknown): LandingMetaFeedSettin
     selectedItemIds,
     featuredItemId,
     layout: saved.layout === "filmstrip" || saved.layout === "carousel" ? saved.layout : "editorial",
-    playMode: saved.playMode === "facebook" ? "facebook" : "inline",
     showCaption: saved.showCaption !== false,
     showPublishedDate: saved.showPublishedDate !== false,
     showFacebookBranding: saved.showFacebookBranding !== false,
-    autoFillLatest: Boolean(saved.autoFillLatest),
     maxItems: Math.min(6, Math.max(1, typeof saved.maxItems === "number" && Number.isInteger(saved.maxItems) ? saved.maxItems : defaults.maxItems)),
     itemOverrides,
   };
@@ -187,7 +182,7 @@ export function normalizeLandingPage(value: Partial<LandingPageContent> | null |
     collaborators: Array.isArray(value?.collaborators) ? value?.collaborators : defaultLandingPage.collaborators,
     background_settings: normalizeBackgroundSettings(value?.background_settings),
     section_toggles: typeof value?.section_toggles === 'object' && value.section_toggles !== null ? value.section_toggles : {},
-    meta_feed_settings: normalizeMetaFeedSettings(value?.meta_feed_settings),
+    facebook_feed_settings: normalizeFacebookFeedSettings(value?.facebook_feed_settings),
   } as LandingPageContent;
 }
 
@@ -243,7 +238,7 @@ export function landingPayloadFromInput(input: Record<string, unknown>) {
       : defaultLandingPage.background_settings,
     translations: normalizeTranslations(input.translations),
     section_toggles: typeof input.section_toggles === "object" && input.section_toggles !== null ? (input.section_toggles as Record<string, boolean>) : {},
-    meta_feed_settings: normalizeMetaFeedSettings(input.meta_feed_settings),
+    facebook_feed_settings: normalizeFacebookFeedSettings(input.facebook_feed_settings),
   } satisfies LandingPageContent;
 }
 
