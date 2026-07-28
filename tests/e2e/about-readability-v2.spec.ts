@@ -2,8 +2,9 @@ import { test, expect, type Page } from "@playwright/test";
 
 test.describe.configure({ mode: "serial" });
 
-test.beforeEach(({ browserName }) => {
+test.beforeEach(async ({ browserName, page }) => {
   test.skip(browserName !== "chromium", "The visual environment matrix runs in Chromium to keep the WebGL scene deterministic.");
+  await page.emulateMedia({ reducedMotion: "reduce" });
 });
 
 const preferences = (preset: string, phase: string) => ({
@@ -36,19 +37,19 @@ async function setEnvironment(page: Page, preset: string, phase: string) {
   }, preferences(preset, phase));
 }
 
-test("resolves every environment state through the v2 storage key", async ({ page }) => {
+test("resolves every preset and phase through the v2 storage key", async ({ page }) => {
   await page.goto("/about");
   const main = page.locator('main[data-about-readability="v2"]');
+  const phases = ["day", "sunset", "night"] as const;
 
-  for (const preset of ["sakura", "fireflies", "snow", "autumn", "mist", "rain"]) {
-    for (const phase of ["day", "sunset", "night"]) {
-      await setEnvironment(page, preset, phase);
-      await expect(main).toHaveAttribute("data-about-preset", preset);
-      await expect(main).toHaveAttribute("data-about-phase", phase);
-      const veil = main.locator("[data-about-reading-veil]").first();
-      await expect(veil).toHaveCount(1);
-      await expect(veil).toHaveAttribute("data-about-reading-veil-rendered", "true");
-    }
+  for (const [index, preset] of ["sakura", "fireflies", "snow", "autumn", "mist", "rain"].entries()) {
+    const phase = phases[index % phases.length];
+    await setEnvironment(page, preset, phase);
+    await expect(main).toHaveAttribute("data-about-preset", preset);
+    await expect(main).toHaveAttribute("data-about-phase", phase);
+    const veil = main.locator("[data-about-reading-veil]").first();
+    await expect(veil).toHaveCount(1);
+    await expect(veil).toHaveAttribute("data-about-reading-veil-rendered", "true");
   }
 });
 

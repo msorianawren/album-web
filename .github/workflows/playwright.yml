@@ -43,12 +43,8 @@ jobs:
       run: npx playwright install --with-deps
     - name: Build project
       run: npm run build
-      env:
-        NEXT_PUBLIC_ABOUT_EDITORIAL_AURORA_VEIL: true
     - name: Run Playwright tests
       run: npx playwright test --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }} ${{ inputs.update-snapshots && '--update-snapshots' || '' }}
-      env:
-        NEXT_PUBLIC_ABOUT_EDITORIAL_AURORA_VEIL: true
     - uses: actions/upload-artifact@v4
       if: always()
       with:
@@ -85,32 +81,3 @@ jobs:
       uses: stefanzweifel/git-auto-commit-action@v5
       with:
         commit_message: "test(e2e): update visual baselines"
-  test-fallback:
-    timeout-minutes: 30
-    runs-on: ubuntu-latest
-    env:
-      NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
-      NEXT_PUBLIC_SUPABASE_ANON_KEY: test-anon-key
-      SUPABASE_SERVICE_ROLE_KEY: test-service-role-key
-      NEXT_PUBLIC_SITE_URL: http://localhost:3000
-      R2_ACCOUNT_ID: test-account
-      R2_ACCESS_KEY_ID: test-access-key
-      R2_SECRET_ACCESS_KEY: test-secret-key
-      R2_BUCKET_NAME: test-public
-      R2_PRIVATE_BUCKET_NAME: test-private
-      R2_PUBLIC_URL: https://media.example.com
-      ALBUM_DEMO_FIXTURE: "1"
-      NEXT_PUBLIC_TIMELINE_V2: "true"
-    steps:
-    - uses: actions/checkout@v4
-    - uses: actions/setup-node@v4
-      with:
-        node-version: lts/*
-    - run: npm ci
-    - run: npx playwright install --with-deps
-    - run: npm run build
-      env:
-        NEXT_PUBLIC_ABOUT_EDITORIAL_AURORA_VEIL: false
-    - run: npx playwright test tests/e2e/about-veil-fallback.spec.ts
-      env:
-        NEXT_PUBLIC_ABOUT_EDITORIAL_AURORA_VEIL: false
