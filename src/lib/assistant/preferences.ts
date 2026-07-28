@@ -63,7 +63,7 @@ export const assistantMotionCopy: Record<AssistantMotion, { label: string; descr
   },
   playful: {
     label: "Playful",
-    description: "More expressive, still lightweight.",
+    description: "More expressive, still lightweight. Turns on Expressive mode so the Companion stays available.",
   },
 };
 

@@ -105,6 +105,13 @@ export function AssistantPreferencesPanel({
     assistantMascots[preferences.character] ?? assistantMascots[DEFAULT_ASSISTANT_CHARACTER];
   const previewMoodForMotion = preferences.motion === "reduced" ? "idle" : previewMood;
 
+  function selectMotion(motion: (typeof assistantMotions)[number]) {
+    updatePreference("motion", motion);
+    if (motion === "playful" && preferences.mode !== "expressive") {
+      updatePreference("mode", "expressive");
+    }
+  }
+
   const visibleCharacterIds = useMemo(() => {
     const query = characterSearch.trim().toLowerCase();
     if (!query) return assistantCharacterIds;
@@ -297,7 +304,7 @@ export function AssistantPreferencesPanel({
                     key={motion}
                     type="button"
                     aria-pressed={selected}
-                    onClick={() => updatePreference("motion", motion)}
+                    onClick={() => selectMotion(motion)}
                     className={cn(
                       "rounded-[1.1rem] border bg-background/55 p-4 text-left transition hover:bg-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                       selected ? "border-accent" : "border-border",
