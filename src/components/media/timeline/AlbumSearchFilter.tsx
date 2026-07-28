@@ -11,16 +11,20 @@ export interface AlbumFilterState {
   query: string;
   mediaType: MediaTypeFilter;
   orientation: OrientationFilter;
+  dateFrom: string;
+  dateTo: string;
 }
 
 const EMPTY_FILTER: AlbumFilterState = {
   query: "",
   mediaType: "all",
   orientation: "all",
+  dateFrom: "",
+  dateTo: "",
 };
 
 function isFilterActive(f: AlbumFilterState): boolean {
-  return f.query.trim() !== "" || f.mediaType !== "all" || f.orientation !== "all";
+  return f.query.trim() !== "" || f.mediaType !== "all" || f.orientation !== "all" || f.dateFrom !== "" || f.dateTo !== "";
 }
 
 function matchesFilter(item: Media, f: AlbumFilterState): boolean {
@@ -36,6 +40,10 @@ function matchesFilter(item: Media, f: AlbumFilterState): boolean {
     if (f.orientation === "square" && !(Math.abs(w - h) <= Math.max(4, w * 0.05))) return false;
   }
 
+  const itemDate = item.sort_date ?? item.taken_at ?? item.created_at;
+  if (f.dateFrom && itemDate.slice(0, 10) < f.dateFrom) return false;
+  if (f.dateTo && itemDate.slice(0, 10) > f.dateTo) return false;
+
   // Text query: match title or original_filename (case-insensitive)
   const q = f.query.trim().toLowerCase();
   if (q) {
@@ -48,6 +56,7 @@ function matchesFilter(item: Media, f: AlbumFilterState): boolean {
 }
 
 interface AlbumSearchFilterProps {
+  albumId: string;
   media: Media[];
   onFiltered: (filtered: Media[]) => void;
   searchInputRef?: RefObject<HTMLInputElement | null>;
@@ -63,6 +72,7 @@ interface AlbumSearchFilterProps {
  * Behavioral design informed by Immich v3.0.3 filter chips pattern.
  */
 export function AlbumSearchFilter({
+  albumId,
   media,
   onFiltered,
   searchInputRef: externalRef,
@@ -96,6 +106,11 @@ export function AlbumSearchFilter({
 
   const updateOrientation = useCallback(
     (orientation: OrientationFilter) => applyFilter({ ...filter, orientation }),
+    [applyFilter, filter],
+  );
+
+  const updateDate = useCallback(
+    (key: "dateFrom" | "dateTo", value: string) => applyFilter({ ...filter, [key]: value }),
     [applyFilter, filter],
   );
 
@@ -168,7 +183,7 @@ export function AlbumSearchFilter({
 
       {/* Filter panel */}
       {panelOpen && (
-        <div className="flex flex-wrap items-center gap-4 rounded-2xl border border-border/30 bg-surface/10 px-4 py-3">
+        <div className="fixed inset-x-4 bottom-4 z-40 flex max-h-[70dvh] flex-col gap-4 overflow-y-auto rounded-2xl border border-border/30 bg-background/95 px-4 py-4 shadow-2xl backdrop-blur-xl sm:static sm:max-h-none sm:flex-row sm:flex-wrap sm:items-center sm:bg-surface/10 sm:py-3 sm:shadow-none sm:backdrop-blur-none">
           {/* Media type */}
           <div className="flex items-center gap-2">
             <span className="text-[0.6rem] font-semibold uppercase tracking-widest text-text-secondary/60">
@@ -217,6 +232,19 @@ export function AlbumSearchFilter({
                   : orient === "all" ? "All" : orient}
               </button>
             ))}
+          </div>
+
+          <div className="h-4 w-px bg-border/30" aria-hidden="true" />
+
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-[0.6rem] font-semibold uppercase tracking-widest text-text-secondary/60">
+              {locale === "vi" ? "NgÃ y" : "Date"}
+            </span>
+            <label className="sr-only" htmlFor={`album-date-from-${albumId}`}>{locale === "vi" ? "Tá»« ngÃ y" : "From date"}</label>
+            <input id={`album-date-from-${albumId}`} type="date" value={filter.dateFrom} max={filter.dateTo || undefined} onChange={(event) => updateDate("dateFrom", event.target.value)} className="h-8 rounded-full border border-border/30 bg-surface/20 px-3 text-xs text-text-primary outline-none focus:border-text-primary/40" />
+            <span className="text-xs text-text-secondary/50">â€”</span>
+            <label className="sr-only" htmlFor={`album-date-to-${albumId}`}>{locale === "vi" ? "Äáº¿n ngÃ y" : "To date"}</label>
+            <input id={`album-date-to-${albumId}`} type="date" value={filter.dateTo} min={filter.dateFrom || undefined} onChange={(event) => updateDate("dateTo", event.target.value)} className="h-8 rounded-full border border-border/30 bg-surface/20 px-3 text-xs text-text-primary outline-none focus:border-text-primary/40" />
           </div>
         </div>
       )}

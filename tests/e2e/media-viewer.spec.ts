@@ -34,9 +34,9 @@ test("public viewer deep-links media, navigates, and closes back to the album", 
   const stageAfterChromeHides = await stage.boundingBox();
   expect(stageAfterChromeHides?.height).toBe(stageBeforeChromeHides?.height);
 
-  await viewer.locator("[data-viewer-gesture-surface]").click();
-  await expect(viewer.getByRole("button", { name: "Exit fullscreen" })).toBeVisible();
-  await page.keyboard.press("Escape");
+  await viewer.locator("[data-viewer-gesture-surface]").dblclick();
+  await expect(viewer.getByRole("button", { name: "Reset zoom" })).toBeVisible();
+  await viewer.getByRole("button", { name: "Reset zoom" }).click();
   await expect(viewer.getByRole("slider", { name: "Browse album timeline" })).toBeVisible();
 
   await page.keyboard.press("Escape");

@@ -7,6 +7,7 @@ interface SelectionActionBarProps {
   count: number;
   downloadAllowed: boolean;
   onDownload: () => void;
+  onSelectAll: () => void;
   onClear: () => void;
   locale?: "en" | "vi";
 }
@@ -19,6 +20,7 @@ export const SelectionActionBar = memo(function SelectionActionBar({
   count,
   downloadAllowed,
   onDownload,
+  onSelectAll,
   onClear,
   locale = "en",
 }: SelectionActionBarProps) {
@@ -41,6 +43,14 @@ export const SelectionActionBar = memo(function SelectionActionBar({
       </span>
 
       <div className="mx-1 h-4 w-px bg-border/40" aria-hidden="true" />
+
+      <button
+        type="button"
+        onClick={onSelectAll}
+        className="rounded-full px-3 py-1.5 text-[0.7rem] font-semibold text-text-secondary transition-colors hover:bg-surface hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-text-primary/30"
+      >
+        {locale === "vi" ? "Chá»n táº¥t cáº£" : "Select all"}
+      </button>
 
       {/* Download */}
       {downloadAllowed && (

@@ -112,9 +112,8 @@ export function MediaThumbnail({
   const isHighlighted = isSelected || isRangeCandidate;
 
   return (
-    <button
-      type="button"
-      className={`group relative block overflow-hidden bg-surface/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 ${
+    <div
+      className={`group relative block overflow-hidden bg-surface/20 ${
         isHighlighted ? "ring-2 ring-white/80 ring-inset" : ""
       }`}
       style={{
@@ -123,13 +122,17 @@ export function MediaThumbnail({
         flexShrink: 0,
         flexGrow: 0,
       }}
-      aria-label={descriptor.alt}
-      data-media-index={cell.mediaIndex}
-      onPointerDown={handlePointerDown}
-      onPointerUp={handlePointerUp}
-      onClick={handleClick}
-      onKeyDown={handleKeyDown}
     >
+      <button
+        type="button"
+        className="absolute inset-0 block h-full w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
+        aria-label={descriptor.alt}
+        data-media-index={cell.mediaIndex}
+        onPointerDown={handlePointerDown}
+        onPointerUp={handlePointerUp}
+        onClick={handleClick}
+        onKeyDown={handleKeyDown}
+      >
       {/* Blurhash / placeholder before image loads */}
       {!loaded && descriptor.blurhash && (
         <div
@@ -187,19 +190,26 @@ export function MediaThumbnail({
           aria-hidden="true"
         />
       )}
-      {/* Selection checkbox overlay */}
-      {(selectionActive || isHighlighted) && (
-        <div
-          className={`pointer-events-none absolute left-2 top-2 flex h-5 w-5 items-center justify-center rounded-full border-2 transition-all duration-100 ${
+      </button>
+      {onSelect ? (
+        <button
+          type="button"
+          className={`absolute left-2 top-2 z-10 flex h-6 w-6 items-center justify-center rounded-full border-2 transition-all duration-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white ${
             isSelected
-              ? "border-white bg-white"
-              : "border-white/80 bg-black/30"
-          }`}
-          aria-hidden="true"
+              ? "border-white bg-white text-text-primary opacity-100"
+              : "border-white/80 bg-black/30 text-white opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 sm:opacity-0"
+          } ${selectionActive ? "opacity-100" : ""}`}
+          aria-label={isSelected ? `Deselect ${descriptor.alt}` : `Select ${descriptor.alt}`}
+          aria-pressed={isSelected}
+          onClick={(event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            onSelect(cell.mediaIndex, event.shiftKey);
+          }}
         >
-          {isSelected && <Check className="h-3 w-3 text-text-primary" />}
-        </div>
-      )}
-    </button>
+          {isSelected && <Check className="h-3 w-3" aria-hidden="true" />}
+        </button>
+      ) : null}
+    </div>
   );
 }

@@ -139,6 +139,9 @@ export function MediaTimeline({
     () => (filteredMedia ?? sortedMedia).filter(isMediaReadyForDelivery),
     [sortedMedia, filteredMedia],
   );
+  const handleFilteredMedia = useCallback((filtered: Media[]) => {
+    setFilteredMedia(filtered.length === sortedMedia.length ? null : filtered);
+  }, [sortedMedia.length]);
 
   const timelineItems = useMemo<TimelineMediaItem[]>(
     () => viewableMedia.map((item, idx) => toTimelineItem(item, idx)),
@@ -527,14 +530,11 @@ export function MediaTimeline({
       onKeyDown={handleKeyDown}
     >
       <AlbumSearchFilter
+        albumId={albumId}
         media={sortedMedia.filter(isMediaReadyForDelivery)}
         searchInputRef={searchInputRef}
         locale={locale}
-        onFiltered={(filtered) =>
-          setFilteredMedia(
-            filtered.length === sortedMedia.length ? null : filtered,
-          )
-        }
+        onFiltered={handleFilteredMedia}
       />
 
       {/* Sort controls */}
@@ -664,6 +664,7 @@ export function MediaTimeline({
         count={sel.state.count}
         downloadAllowed={downloadAllowed}
         onDownload={handleBulkDownload}
+        onSelectAll={() => sel.selectAll(allEntries)}
         onClear={sel.clear}
         locale={locale}
       />

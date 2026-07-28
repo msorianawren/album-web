@@ -65,7 +65,7 @@ export function useViewerGestures({
   onPrevious,
   onClose,
   onOpenInfo,
-  onToggleFullscreen,
+  onToggleControls,
   onInteraction,
   onZoom,
 }: {
@@ -77,7 +77,7 @@ export function useViewerGestures({
   onPrevious: () => void;
   onClose: () => void;
   onOpenInfo: () => void;
-  onToggleFullscreen: () => void;
+  onToggleControls: () => void;
   onInteraction: () => void;
   onZoom: () => void;
 }) {
@@ -232,8 +232,8 @@ export function useViewerGestures({
   }, [applyTransform, constrain, zoomAt]);
 
   const resolveTap = useCallback(() => {
-    onToggleFullscreen();
-  }, [onToggleFullscreen]);
+    onToggleControls();
+  }, [onToggleControls]);
 
   const finishPointer = useCallback((event: ReactPointerEvent<HTMLDivElement>, cancelled = false) => {
     flushTransform();
