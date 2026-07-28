@@ -14,7 +14,7 @@ import {
   type AssistantLocale,
 } from "@/lib/assistant/locales";
 import { getAssistantUICopy } from "@/lib/assistant/ui-copy";
-import type { AssistantMode } from "@/lib/assistant/preferences";
+import type { CompanionHelpLevel } from "@/lib/assistant/preferences";
 
 export const ASSISTANT_PANEL_STORAGE_KEY = "oriana.assistant.panel.v1";
 export const ASSISTANT_HANDOFF_STORAGE_KEY = "oriana.assistant.handoff.v1";
@@ -23,7 +23,7 @@ export interface AssistantAnswerContext {
   locale?: AssistantLocale;
   isAuthenticated?: boolean;
   currentPath?: string;
-  assistantMode?: AssistantMode;
+  assistantHelpLevel?: CompanionHelpLevel;
   notificationCount?: number | null;
 }
 

@@ -3,10 +3,12 @@ import { FixedStepClock } from "./lifecycle.ts";
 const listeners = new Set<() => void>();
 const suspensionReasons = new Map<string, number>();
 let suspensionCount = 0;
+export const GAME_RUNTIME_SUSPENSION_EVENT = "oriana-game-runtime-state";
 
 function publishSuspension() {
   if (typeof document !== "undefined") {
     document.documentElement.dataset.gameRuntimeSuspended = suspensionCount > 0 ? "true" : "false";
+    window.dispatchEvent(new Event(GAME_RUNTIME_SUSPENSION_EVENT));
   }
   listeners.forEach((listener) => listener());
 }
@@ -31,11 +33,20 @@ export function acquireGameRuntimeSuspension(reason: string) {
 
 export function subscribeGameRuntimeSuspension(listener: () => void) {
   listeners.add(listener);
-  return () => listeners.delete(listener);
+  if (typeof window !== "undefined") {
+    window.addEventListener(GAME_RUNTIME_SUSPENSION_EVENT, listener);
+  }
+  return () => {
+    listeners.delete(listener);
+    if (typeof window !== "undefined") {
+      window.removeEventListener(GAME_RUNTIME_SUSPENSION_EVENT, listener);
+    }
+  };
 }
 
 export function getGameRuntimeSuspensionSnapshot() {
-  return suspensionCount > 0;
+  return suspensionCount > 0
+    || (typeof document !== "undefined" && document.documentElement.dataset.gameRuntimeSuspended === "true");
 }
 
 export function getServerGameRuntimeSuspensionSnapshot() {

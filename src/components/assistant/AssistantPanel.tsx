@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import { Bell, Copy, HelpCircle, Lock, MessageSquare, Send, ShieldCheck, X } from "lucide-react";
 import { AssistantPet } from "@/components/assistant/AssistantPet";
@@ -12,11 +12,14 @@ import {
 } from "@/lib/assistant/answer-engine";
 import { getAssistantQuickActions, getPuzzleAssistantQuickActions, type AssistantQuickAction } from "@/lib/assistant/knowledge";
 import {
+  DEFAULT_ASSISTANT_LOCALE,
   readSelectedAssistantLocale,
+  subscribeAssistantLocale,
   type AssistantLocale,
 } from "@/lib/assistant/locales";
 import { getAssistantUICopy } from "@/lib/assistant/ui-copy";
-import { assistantModeCopy, type AssistantPreferences } from "@/lib/assistant/preferences";
+import { getCompanionPreset, type AssistantPreferences } from "@/lib/assistant/preferences";
+import type { CompanionEvent } from "@/lib/assistant/companion-state-machine";
 import { AssistantMessageList, type AssistantMessage } from "@/components/assistant/AssistantMessageList";
 import { AssistantQuickActions } from "@/components/assistant/AssistantQuickActions";
 import { AssistantSearchBox } from "@/components/assistant/AssistantSearchBox";
@@ -32,6 +35,7 @@ interface AssistantPanelProps {
   session: PublicSession;
   currentPath: string;
   telegram: PublicTelegramContact | null;
+  onCompanionEvent?: (event: CompanionEvent) => void;
 }
 
 function makeId(prefix: string) {
@@ -68,6 +72,7 @@ export function AssistantPanel({
   session,
   currentPath,
   telegram,
+  onCompanionEvent,
 }: AssistantPanelProps) {
   const [messages, setMessages] = useState<AssistantMessage[]>([]);
   const [notificationCount, setNotificationCount] = useState<number | null>(null);
@@ -75,7 +80,11 @@ export function AssistantPanel({
   const [helpThreadId, setHelpThreadId] = useState<string | null>(null);
   const [handoffError, setHandoffError] = useState("");
   const [telegramFeedback, setTelegramFeedback] = useState("");
-  const locale: AssistantLocale = readSelectedAssistantLocale();
+  const locale: AssistantLocale = useSyncExternalStore(
+    subscribeAssistantLocale,
+    readSelectedAssistantLocale,
+    () => DEFAULT_ASSISTANT_LOCALE,
+  );
   const panelRef = useRef<HTMLElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
@@ -152,8 +161,12 @@ export function AssistantPanel({
   useEffect(() => {
     if (!open) return;
     writePanelMemory();
+    onCompanionEvent?.("panel_opened");
+    return () => onCompanionEvent?.("panel_closed");
+  }, [onCompanionEvent, open]);
 
-    if (!session.userId) return;
+  useEffect(() => {
+    if (!open || !session.userId) return;
     let active = true;
     fetch("/api/notifications?mode=count", { cache: "no-store" })
       .then((response) => (response.ok ? response.json() : null))
@@ -174,14 +187,17 @@ export function AssistantPanel({
   function answer(question: string) {
     const safeQuestion = sanitizeAssistantQuestion(question);
     if (!safeQuestion) return;
+    onCompanionEvent?.("answer_lookup_started");
 
     const response = answerAssistantQuestion(safeQuestion, {
       locale,
       isAuthenticated: Boolean(session.userId),
       currentPath,
-      assistantMode: preferences.mode,
+      assistantHelpLevel: preferences.helpLevel,
       notificationCount,
     });
+
+    onCompanionEvent?.(response.intent === "unknown" ? "answer_unknown" : "answer_found");
 
     setMessages((current) => [
       ...current,
@@ -225,6 +241,7 @@ export function AssistantPanel({
       return;
     }
     setHandoffError("");
+    onCompanionEvent?.("operation_pending");
     try {
       const response = await fetch("/api/help/threads", {
         method: "POST",
@@ -235,14 +252,16 @@ export function AssistantPanel({
       if (!response.ok) throw new Error(payload.message || "Could not start a conversation.");
       setHandoffMessage(null);
       setHelpThreadId(payload.thread.id);
+      onCompanionEvent?.("operation_succeeded");
     } catch (error) {
       setHandoffError(error instanceof Error ? error.message : "Could not start a conversation.");
+      onCompanionEvent?.("operation_failed");
     }
   }
 
   const portalTarget = typeof document === "undefined" ? null : document.body;
 
-  if (!portalTarget || !open || preferences.mode === "off") return null;
+  if (!portalTarget || !open || preferences.presence === "hidden") return null;
 
   return createPortal(
     <div
@@ -276,7 +295,8 @@ export function AssistantPanel({
                 <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[1.2rem] border border-border bg-surface">
                   <AssistantPet
                     character={preferences.character}
-                    mood={preferences.motion === "reduced" ? "idle" : "qa"}
+                    state="listening"
+                    motion={preferences.motion}
                     size="sm"
                     decorative
                   />
@@ -289,7 +309,9 @@ export function AssistantPanel({
                     {copy.subtitle}
                   </h2>
                   <p className="mt-1 text-xs text-text-secondary">
-                    {copy.companionLabel}: {assistantModeCopy[preferences.mode].label}
+                    {copy.companionLabel}: {getCompanionPreset(preferences) === "custom"
+                      ? "Custom"
+                      : getCompanionPreset(preferences).replace("_", " ")}
                   </p>
                 </div>
               </div>
@@ -390,6 +412,7 @@ export function AssistantPanel({
           <footer className="border-t border-border bg-surface p-4">
             <AssistantSearchBox
               onSubmit={answer}
+              onTyping={() => onCompanionEvent?.("user_typing")}
               placeholder={copy.inputPlaceholder}
               inputLabel={copy.inputLabel}
               sendLabel={copy.sendLabel}

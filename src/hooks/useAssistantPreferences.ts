@@ -38,7 +38,10 @@ export function useAssistantPreferences({
   const dirty = !samePreferences(preferences, savedPreferences);
 
   const updatePreference = useCallback(
-    <Key extends keyof AssistantPreferences>(key: Key, value: AssistantPreferences[Key]) => {
+    <Key extends Exclude<keyof AssistantPreferences, "version">>(
+      key: Key,
+      value: AssistantPreferences[Key],
+    ) => {
       setPreferences((current) => ({
         ...current,
         [key]: value,
@@ -51,6 +54,12 @@ export function useAssistantPreferences({
 
   const resetToDefaults = useCallback(() => {
     setPreferences(defaultAssistantPreferences);
+    setSaveState("idle");
+    setError(null);
+  }, []);
+
+  const replacePreferences = useCallback((nextPreferences: AssistantPreferences) => {
+    setPreferences(normalizeAssistantPreferences(nextPreferences));
     setSaveState("idle");
     setError(null);
   }, []);
@@ -95,6 +104,7 @@ export function useAssistantPreferences({
   return {
     preferences,
     updatePreference,
+    replacePreferences,
     resetToDefaults,
     save,
     dirty,
