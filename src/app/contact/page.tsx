@@ -31,7 +31,13 @@ export default async function ContactPage() {
       : { data: [] };
     legacyThreads = (data ?? []).map((thread) => ({
       ...thread,
-      replies: (replies ?? []).filter((reply) => reply.message_id === thread.id).map(({ message_id: _messageId, ...reply }) => reply),
+      replies: (replies ?? []).filter((reply) => reply.message_id === thread.id).map((reply) => ({
+        id: reply.id,
+        author_type: reply.author_type,
+        body: reply.body,
+        public_display_name: reply.public_display_name,
+        created_at: reply.created_at,
+      })),
     }));
   }
 
