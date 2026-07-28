@@ -14,6 +14,25 @@ export const companionStates = [
 
 export type CompanionState = (typeof companionStates)[number];
 
+/**
+ * Every state gets a distinct visual cue, including characters that currently
+ * share a single portrait. The cue is rendered by AssistantPet as a semantic
+ * badge and state ring, so state remains legible without relying on motion.
+ */
+export const companionStateVisualCues: Record<CompanionState, string> = {
+  idle: "rest",
+  listening: "listen",
+  thinking: "think",
+  answering: "answer",
+  waiting: "wait",
+  success: "success",
+  celebration: "celebrate",
+  warning: "warning",
+  error: "error",
+  unavailable: "unavailable",
+  sleeping: "sleep",
+};
+
 export type CompanionEvent =
   | "panel_opened"
   | "panel_closed"

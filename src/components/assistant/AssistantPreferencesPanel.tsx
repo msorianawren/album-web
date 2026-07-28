@@ -3,7 +3,6 @@
 import { useMemo, useState, useSyncExternalStore } from "react";
 import {
   Check,
-  ChevronRight,
   CircleHelp,
   EyeOff,
   Loader2,
@@ -58,6 +57,10 @@ const previewStates: CompanionState[] = [
   "celebration",
 ];
 
+function subscribeToCompanionHydration() {
+  return () => {};
+}
+
 function ToggleRow({
   title,
   description,
@@ -108,7 +111,7 @@ function ChoiceRow<T extends string>({
   onChange: (value: T) => void;
 }) {
   return (
-    <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+    <div className="grid gap-3 sm:grid-cols-2">
       {options.map((option) => {
         const selected = value === option;
         return (
@@ -151,6 +154,11 @@ export function AssistantPreferencesPanel({
     readSelectedAssistantLocale,
     () => DEFAULT_ASSISTANT_LOCALE,
   );
+  const isInteractive = useSyncExternalStore(
+    subscribeToCompanionHydration,
+    () => true,
+    () => false,
+  );
   const copy = getCompanionSettingsCopy(locale);
   const selectedMascot = assistantMascots[preferences.character] ?? assistantMascots[DEFAULT_ASSISTANT_CHARACTER];
   const preset = getCompanionPreset(preferences);
@@ -181,6 +189,9 @@ export function AssistantPreferencesPanel({
     <section
       id="oriana-companion"
       className="rounded-[1.4rem] border border-border bg-surface/65 p-5 shadow-xl shadow-text-primary/5 backdrop-blur-xl md:p-8"
+      aria-busy={!isInteractive}
+      data-companion-hydrated={isInteractive ? "true" : "false"}
+      inert={!isInteractive}
     >
       <div className="flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
         <div>
@@ -255,12 +266,12 @@ export function AssistantPreferencesPanel({
         </div>
       </div>
 
-      <div className="mt-8 grid gap-6 xl:grid-cols-[minmax(0,1fr)_23rem]">
+      <div className="mt-8 grid gap-6 xl:grid-cols-[minmax(0,1fr)_20rem]">
         <div className="space-y-8">
           <div>
             <h3 className="text-lg font-semibold text-text-primary">{copy.character}</h3>
             <p className="mt-1 max-w-3xl text-xs leading-relaxed text-text-secondary">{copy.characterDescription}</p>
-            <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
+            <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-3">
               {flagshipCompanionCharacterIds.map((characterId) => {
                 const mascot = assistantMascots[characterId];
                 const selected = preferences.character === characterId;
@@ -271,7 +282,7 @@ export function AssistantPreferencesPanel({
                     aria-pressed={selected}
                     onClick={() => updatePreference("character", characterId)}
                     className={cn(
-                      "group min-h-48 rounded-[1.2rem] border bg-background/55 p-3 text-left transition hover:-translate-y-0.5 hover:bg-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                      "group min-h-48 min-w-0 rounded-[1.2rem] border bg-background/55 p-3 text-left transition hover:-translate-y-0.5 hover:bg-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                       selected ? "border-accent shadow-lg shadow-text-primary/10" : "border-border",
                     )}
                   >
@@ -279,8 +290,7 @@ export function AssistantPreferencesPanel({
                       <AssistantPet character={characterId} state="idle" size="md" decorative />
                     </span>
                     <span className="mt-3 block text-sm font-semibold text-text-primary">{mascot.name}</span>
-                    <span className="mt-1 block text-xs text-text-secondary">{mascot.personalityLabel}</span>
-                    <span className="mt-2 inline-flex items-center gap-1 text-[0.68rem] font-semibold uppercase tracking-[0.12em] text-muted-accent">{mascot.description.split(".")[0]} <ChevronRight className="h-3 w-3" /></span>
+                    <span className="mt-1 block line-clamp-2 text-xs leading-relaxed text-text-secondary">{mascot.personalityLabel}</span>
                   </button>
                 );
               })}

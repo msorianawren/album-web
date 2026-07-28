@@ -23,6 +23,7 @@ import {
 } from "../src/lib/assistant/companion-assets.ts";
 import {
   companionStates,
+  companionStateVisualCues,
   resolveCompanionTransition,
 } from "../src/lib/assistant/companion-state-machine.ts";
 
@@ -144,4 +145,9 @@ test("asset manifest has a fallback for every character and actual default state
     assert.ok(statSync(file).size <= asset.byteBudget, `${state} asset meets budget`);
   }
   assert.equal(getCompanionAsset("fox", "error").src, companionAssets.fox.portrait.src);
+});
+
+test("every Companion state has its own visible fallback cue", () => {
+  const cues = companionStates.map((state) => companionStateVisualCues[state]);
+  assert.equal(new Set(cues).size, companionStates.length);
 });

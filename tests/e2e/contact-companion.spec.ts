@@ -91,6 +91,17 @@ test("Hidden is persisted for guests and removes every runtime entry except sett
   await expect(page.getByRole("button", { name: "Ask Oriana Companion" })).toHaveCount(0);
 });
 
+test("Profile playground gives every selected state a visible cue without overflowing settings", async ({ page }) => {
+  await page.goto("/profile");
+  await expect(page.locator("#oriana-companion")).toHaveAttribute("data-companion-hydrated", "true");
+  const thinking = page.getByTestId("companion-preview-thinking");
+  await thinking.click();
+  await expect(thinking).toHaveAttribute("aria-pressed", "true");
+  await expect(page.locator("aside[data-companion-state='thinking']")).toBeVisible();
+  await expect(page.locator("[data-companion-cue='think']")).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+});
+
 test("On demand has no dock while its explicit menu trigger remains useful", async ({ page }) => {
   await setGuestCompanionPreferences(page, { presence: "on_demand", motion: "lively" });
   await page.goto("/contact");
