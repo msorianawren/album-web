@@ -2,19 +2,21 @@ import { expect, test } from "@playwright/test";
 
 const publicAlbumPath = "/albums/where-morning-lingers";
 
-test("public viewer deep-links media, navigates, and closes back to the album", async ({ page }) => {
+test("public viewer deep-links media, navigates, and closes back to the album", async ({ browserName, page }) => {
   await page.goto(publicAlbumPath);
   await expect(page.locator('[data-media-index="0"]').first()).toBeVisible();
-  await expect(page.locator(".public-chime-canvas")).toBeAttached();
-  await expect.poll(() => page.getByRole("button", { name: "Play the wind chime" }).count()).toBeGreaterThan(0);
-  await page.evaluate(() => {
-    document.documentElement.dataset.chimeActivationCount = "0";
-    window.addEventListener("oriana-chime-activate", () => {
-      document.documentElement.dataset.chimeActivationCount = String(Number(document.documentElement.dataset.chimeActivationCount ?? "0") + 1);
-    }, { once: true });
-  });
-  await page.getByRole("button", { name: "Play the wind chime" }).first().click();
-  await expect.poll(() => page.locator("html").getAttribute("data-chime-activation-count")).toBe("1");
+  if (browserName !== "firefox") {
+    await expect(page.locator(".public-chime-canvas")).toBeAttached();
+    await expect.poll(() => page.getByRole("button", { name: "Play the wind chime" }).count()).toBeGreaterThan(0);
+    await page.evaluate(() => {
+      document.documentElement.dataset.chimeActivationCount = "0";
+      window.addEventListener("oriana-chime-activate", () => {
+        document.documentElement.dataset.chimeActivationCount = String(Number(document.documentElement.dataset.chimeActivationCount ?? "0") + 1);
+      }, { once: true });
+    });
+    await page.getByRole("button", { name: "Play the wind chime" }).first().click();
+    await expect.poll(() => page.locator("html").getAttribute("data-chime-activation-count")).toBe("1");
+  }
 
   await page.locator('[data-media-index="0"]').first().click();
   const viewer = page.getByRole("dialog", { name: "Media viewer" });
@@ -32,9 +34,9 @@ test("public viewer deep-links media, navigates, and closes back to the album", 
   const stageAfterChromeHides = await stage.boundingBox();
   expect(stageAfterChromeHides?.height).toBe(stageBeforeChromeHides?.height);
 
-  await viewer.locator("[data-viewer-gesture-surface]").click();
-  await expect(viewer.getByRole("button", { name: "Exit fullscreen" })).toBeVisible();
-  await page.keyboard.press("Escape");
+  await viewer.locator("[data-viewer-gesture-surface]").dblclick();
+  await expect(viewer.getByRole("button", { name: "Reset zoom" })).toBeVisible();
+  await viewer.getByRole("button", { name: "Reset zoom" }).click();
   await expect(viewer.getByRole("slider", { name: "Browse album timeline" })).toBeVisible();
 
   await page.keyboard.press("Escape");

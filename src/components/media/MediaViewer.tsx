@@ -69,6 +69,7 @@ export function MediaViewer({
   const controlsTimer = useRef<number | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
+  const focusBeforeOpenRef = useRef<HTMLElement | null>(null);
   const reducedMotion = useReducedMotion();
   const { isClient, markAlbumViewed, getAlbumViewState, saveViewerPreferences } = useAlbumViewMemory();
 
@@ -99,6 +100,10 @@ export function MediaViewer({
   const revealControls = useCallback(() => {
     if (!controlsVisibleRef.current) setControlsVisible(true);
   }, [setControlsVisible]);
+
+  const toggleControls = useCallback(() => {
+    if (!infoOpen) setControlsVisible((visible) => !visible);
+  }, [infoOpen, setControlsVisible]);
 
   const resetZoom = useCallback(() => {
     setScale(1);
@@ -134,9 +139,7 @@ export function MediaViewer({
   const handleImageLoad = useCallback(() => {
     if (!item || currentIndex === null) return;
     setLoadedImages((current) => ({ ...current, [item.id]: true }));
-    const next = media[(currentIndex + 1) % media.length];
-    if (next) prefetch(next.id, next.media_type === "video");
-  }, [currentIndex, item, media, prefetch, setLoadedImages]);
+  }, [currentIndex, item, setLoadedImages]);
 
   const handleImageUnavailable = useCallback(() => {
     if (item) setLoadedImages((current) => ({ ...current, [item.id]: true }));
@@ -158,7 +161,7 @@ export function MediaViewer({
       setInfoOpen(true);
       setControlsVisible(true);
     },
-    onToggleFullscreen: toggleFullscreen,
+    onToggleControls: toggleControls,
     onInteraction: () => setControlsVisible(true),
     onZoom: () => setAutoPlay(false),
   });
@@ -175,6 +178,23 @@ export function MediaViewer({
     }
     return () => window.clearTimeout(resetTimer);
   }, [currentIndex, item, markAlbumViewed, resetZoom]);
+
+  useEffect(() => {
+    if (!item || currentIndex === null || media.length < 2) return;
+    const next = media[(currentIndex + 1) % media.length];
+    const previous = media[(currentIndex - 1 + media.length) % media.length];
+    if (next) prefetch(next.id, next.media_type === "video");
+    if (previous && previous.id !== next?.id) prefetch(previous.id, previous.media_type === "video");
+  }, [currentIndex, item, media, prefetch]);
+
+  useEffect(() => {
+    focusBeforeOpenRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const frame = window.requestAnimationFrame(() => containerRef.current?.focus());
+    return () => {
+      window.cancelAnimationFrame(frame);
+      focusBeforeOpenRef.current?.focus({ preventScroll: true });
+    };
+  }, []);
 
   useEffect(() => {
     if (!item || !isClient) return;
@@ -222,14 +242,39 @@ export function MediaViewer({
     if (!item) return;
 
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
+      const target = event.target as HTMLElement;
+      if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable)) return;
+
+      if (event.key === "Escape" || event.key.toLowerCase() === "g") {
         if (document.fullscreenElement === containerRef.current) {
           event.preventDefault();
           void document.exitFullscreen().catch(() => {});
           return;
         }
+        event.preventDefault();
         onClose();
         return;
+      }
+      if (event.key === "Tab") {
+        const root = containerRef.current;
+        if (!root) return;
+        const focusable = Array.from(root.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        )).filter((element) => !element.hasAttribute("hidden") && element.offsetParent !== null);
+        if (!focusable.length) {
+          event.preventDefault();
+          root.focus();
+          return;
+        }
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (event.shiftKey && document.activeElement === first) {
+          event.preventDefault();
+          last.focus();
+        } else if (!event.shiftKey && document.activeElement === last) {
+          event.preventDefault();
+          first.focus();
+        }
       }
       if (event.key === "ArrowRight") navigate(1);
       if (event.key === "ArrowLeft") navigate(-1);
@@ -307,6 +352,7 @@ export function MediaViewer({
           role="dialog"
           aria-modal="true"
           aria-label="Media viewer"
+          tabIndex={-1}
           onPointerMove={revealControls}
         >
           <ViewerBackdrop hue={ambientHue} />
@@ -377,6 +423,13 @@ export function MediaViewer({
                     onPointerMove={onPointerMove}
                     onPointerUp={onPointerUp}
                     onPointerCancel={onPointerCancel}
+                    onDoubleClick={(event) => {
+                      if (item.media_type !== "image") return;
+                      event.preventDefault();
+                      setAutoPlay(false);
+                      setControlsVisible(true);
+                      zoomAt(scale > 1 ? 1 : 2, { x: event.clientX, y: event.clientY });
+                    }}
                     style={{
                       transform: `translate3d(${translate.x}px, ${translate.y}px, 0) scale(${scale})`,
                       transition: isPanning ? "none" : "transform 0.16s cubic-bezier(.22,1,.36,1)",

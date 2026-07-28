@@ -11,5 +11,10 @@ export const demoFixturePolicy: DemoFixturePolicy = Object.freeze({
 export function albumDemoFixturesEnabled(
   policy: DemoFixturePolicy = demoFixturePolicy,
 ) {
+  // ALBUM_DEMO_FIXTURE=1 is a build-time opt-in used exclusively in CI/E2E
+  // builds. It is never set in production or normal local development.
+  if (process.env.ALBUM_DEMO_FIXTURE === "1") {
+    return true;
+  }
   return policy.albums === "local_demo";
 }

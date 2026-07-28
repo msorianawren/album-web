@@ -18,6 +18,7 @@ import { enforceRateLimit } from "@/lib/security-rate-limit";
 import { getSiteSettings } from "@/lib/site-settings";
 import { supabase } from "@/lib/supabase";
 import { commentCreateSchema } from "@/lib/validators";
+import { albumDemoFixturesEnabled } from "@/lib/demo-fixtures";
 
 async function mediaBelongsToAlbum(
   albumId: string,
@@ -39,6 +40,7 @@ export async function GET(request: NextRequest) {
   const albumId = request.nextUrl.searchParams.get("albumId");
   const mediaId = request.nextUrl.searchParams.get("mediaId");
   if (!albumId) return apiError("INVALID_INPUT", "albumId is required.", 400);
+  if (albumDemoFixturesEnabled()) return apiSuccess({ comments: [] });
 
   const database = await getTrustedAdminDatabase(request);
   const session = database?.session ?? await getPublicSession(request);

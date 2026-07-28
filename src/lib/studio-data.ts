@@ -381,6 +381,7 @@ export async function getSystemHealth(session?: PublicSession) {
       R2_PRIVATE_ACCESS_KEY_ID: Boolean(process.env.R2_PRIVATE_ACCESS_KEY_ID),
       R2_PRIVATE_SECRET_ACCESS_KEY: Boolean(process.env.R2_PRIVATE_SECRET_ACCESS_KEY),
       R2_PUBLIC_URL: Boolean(process.env.R2_PUBLIC_URL),
+      NEXT_PUBLIC_TIMELINE_V2: process.env.NEXT_PUBLIC_TIMELINE_V2 === "true",
     },
     currentAdmin: session
       ? {

@@ -58,16 +58,24 @@ export default async function StudioSystemPage() {
         </Panel>
       </section>
 
-      <Panel title="Runtime warnings">
-        {[
-          !health.env.NEXT_PUBLIC_SUPABASE_URL ? "NEXT_PUBLIC_SUPABASE_URL is missing." : null,
-          !health.env.SUPABASE_SERVICE_ROLE_KEY ? "SUPABASE_SERVICE_ROLE_KEY is missing." : null,
-          !health.env.R2_PUBLIC_URL ? "R2_PUBLIC_URL is missing." : null,
-          !health.tableChecks.every((check) => check.ok) ? "One or more required tables are missing." : null,
-        ].filter(Boolean).map((warning) => (
-          <p key={warning} className="rounded-[1rem] border border-border bg-background/60 p-3 text-sm text-text-secondary">{warning}</p>
-        ))}
-      </Panel>
+      <section className="grid gap-5 xl:grid-cols-2">
+        <Panel title="Album timeline">
+          <Status label="NEXT_PUBLIC_TIMELINE_V2" ok={health.env.NEXT_PUBLIC_TIMELINE_V2} />
+          <p className="rounded-[1rem] border border-border bg-background/60 p-3 text-xs text-text-secondary">
+            <strong>Status:</strong> The album timeline uses Oriana&apos;s existing Supabase and R2 media delivery. No external media service is connected.
+          </p>
+        </Panel>
+        <Panel title="Runtime warnings">
+          {[
+            !health.env.NEXT_PUBLIC_SUPABASE_URL ? "NEXT_PUBLIC_SUPABASE_URL is missing." : null,
+            !health.env.SUPABASE_SERVICE_ROLE_KEY ? "SUPABASE_SERVICE_ROLE_KEY is missing." : null,
+            !health.env.R2_PUBLIC_URL ? "R2_PUBLIC_URL is missing." : null,
+            !health.tableChecks.every((check) => check.ok) ? "One or more required tables are missing." : null,
+          ].filter(Boolean).map((warning) => (
+            <p key={warning} className="rounded-[1rem] border border-border bg-background/60 p-3 text-sm text-text-secondary">{warning}</p>
+          ))}
+        </Panel>
+      </section>
     </div>
   );
 }

@@ -21,6 +21,7 @@ import { getWindChimeAnchors } from "@/lib/wind-chime-anchors";
 import { isChimeControlTarget, isOverlayInteractionActive, isProtectedInteractiveTarget } from "./chime-interaction";
 import { EnvironmentStaticFallback } from "./EnvironmentStaticFallback";
 import { useChimeAnchorRects } from "./useChimeAnchorRects";
+import { useScrollBusy } from "@/lib/timeline/scroll-busy";
 
 type IdleCallbackWindow = Window & {
   requestIdleCallback?: (callback: IdleRequestCallback, options?: IdleRequestOptions) => number;
@@ -148,7 +149,8 @@ function PublicDepthEnvironmentContent({ pathname }: { pathname: string }) {
   );
   const activeRects = useMemo(() => environmentRects.filter((rect) => rect.visible), [environmentRects]);
   const chimeLabel = locale === "vi" ? "Nghe chuông gió" : "Play the wind chime";
-  const canvasActive = interactiveChimesEnabled && documentVisible === "true" && reducedMotion !== "true";
+  const scrollBusy = useScrollBusy();
+  const canvasActive = interactiveChimesEnabled && documentVisible === "true" && reducedMotion !== "true" && !scrollBusy;
   const playChime = useCallback((rect: typeof activeRects[number]) => {
     const pan = Math.max(-.65, Math.min(.65, (rect.left + rect.widthPx / 2) / Math.max(1, Number(viewportWidth)) * 2 - 1));
     // A direct, deliberate tap must remain audible even when the background's

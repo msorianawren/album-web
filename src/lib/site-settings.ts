@@ -6,6 +6,7 @@ import { supabase } from "@/lib/supabase";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { SiteSettings } from "@/lib/types";
 import { DEFAULT_PRIVATE_ALBUM_FEATHER_PRICE, normalizeFeatherPrice } from "@/lib/wren-feathers";
+import { albumDemoFixturesEnabled } from "@/lib/demo-fixtures";
 
 export const defaultSiteSettings: SiteSettings = {
   id: "default",
@@ -244,6 +245,9 @@ const getCachedSiteSettings = unstable_cache(
 );
 
 export function getSiteSettings(client?: SupabaseClient) {
+  if (!client && albumDemoFixturesEnabled()) {
+    return Promise.resolve(defaultSiteSettings);
+  }
   return client ? readSiteSettings(client) : getCachedSiteSettings();
 }
 

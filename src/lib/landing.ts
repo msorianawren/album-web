@@ -2,6 +2,7 @@ import { unstable_cache } from "next/cache";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createPublicServerClient } from "@/lib/db/public";
 import type { LandingPageContent, LandingBackgroundSettings, LandingSocialLink, TranslationMap } from "@/lib/types";
+import { albumDemoFixturesEnabled } from "@/lib/demo-fixtures";
 
 const landingId = "home";
 
@@ -148,6 +149,9 @@ const getCachedLandingPage = unstable_cache(async () => {
 }, ["landing-page"], { tags: ["landing-page"], revalidate: 3600 });
 
 export function getLandingPage() {
+  if (albumDemoFixturesEnabled()) {
+    return Promise.resolve(defaultLandingPage);
+  }
   return getCachedLandingPage();
 }
 
