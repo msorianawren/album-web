@@ -10,6 +10,7 @@ interface AssistantSearchBoxProps {
   placeholder: string;
   inputLabel: string;
   sendLabel: string;
+  onTyping?: () => void;
 }
 
 export function AssistantSearchBox({
@@ -17,6 +18,7 @@ export function AssistantSearchBox({
   placeholder,
   inputLabel,
   sendLabel,
+  onTyping,
 }: AssistantSearchBoxProps) {
   const [question, setQuestion] = useState("");
 
@@ -32,7 +34,10 @@ export function AssistantSearchBox({
     <form id="assistant-search" name="assistantSearch" onSubmit={handleSubmit} className="flex gap-2">
       <Input
         value={question}
-        onChange={(event) => setQuestion(event.target.value)}
+        onChange={(event) => {
+          setQuestion(event.target.value);
+          onTyping?.();
+        }}
         maxLength={300}
         placeholder={placeholder}
         aria-label={inputLabel}

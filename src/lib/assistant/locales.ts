@@ -111,3 +111,11 @@ export function readSelectedAssistantLocale(): AssistantLocale {
 
   return normalizeAssistantLocale(window.navigator?.language);
 }
+
+/**
+ * Locale changes reload the page through LanguageSwitcher, so a no-op
+ * subscription is enough while useSyncExternalStore keeps hydration stable.
+ */
+export function subscribeAssistantLocale() {
+  return () => {};
+}

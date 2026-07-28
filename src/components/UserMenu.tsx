@@ -8,7 +8,7 @@ import { AssistantPet } from "@/components/assistant/AssistantPet";
 import { Avatar } from "@/components/ui/Avatar";
 import { useStoredAssistantPreferences } from "@/hooks/useAssistantPreferences";
 import { buildLoginHref } from "@/lib/auth-redirect";
-import { assistantModeCopy } from "@/lib/assistant/preferences";
+import { companionPresetCopy, getCompanionPreset, resolveCompanionRuntimeBehavior } from "@/lib/assistant/preferences";
 import {
   isOrianaCompanionRuntimePath,
   ORIANA_COMPANION_OPEN_EVENT,
@@ -34,8 +34,10 @@ export function UserMenu({ session, dict }: UserMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null);
   const pathname = usePathname() ?? "";
   const searchParams = useSearchParams();
+  const assistantBehavior = resolveCompanionRuntimeBehavior(assistantPreferences);
   const canOpenAssistant =
-    assistantPreferences.mode !== "off" && isOrianaCompanionRuntimePath(pathname);
+    assistantBehavior.manualTriggerEnabled && isOrianaCompanionRuntimePath(pathname);
+  const assistantPreset = getCompanionPreset(assistantPreferences);
 
   const name = session.displayName ?? session.email ?? (dict?.common?.guest || "Guest");
   const roleLabel = session.isFounder
@@ -196,7 +198,7 @@ export function UserMenu({ session, dict }: UserMenuProps) {
             className="flex w-full items-center justify-between gap-3 rounded-[1rem] px-3 py-3 text-left text-sm font-medium text-text-primary transition hover:bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             <span className="inline-flex min-w-0 items-center gap-3">
-              {assistantPreferences.mode === "off" ? (
+              {!assistantBehavior.runtimeEnabled ? (
                 <Sparkles className="h-4 w-4 shrink-0 text-muted-accent" aria-hidden="true" />
               ) : (
                 <AssistantPet
@@ -208,9 +210,9 @@ export function UserMenu({ session, dict }: UserMenuProps) {
               )}
               <span className="truncate">Assistant preferences</span>
             </span>
-            {assistantPreferences.mode !== "off" ? (
+            {assistantBehavior.runtimeEnabled ? (
               <span className="shrink-0 rounded-full border border-border bg-background px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-text-secondary">
-                Companion: {assistantModeCopy[assistantPreferences.mode].label}
+                {assistantPreset === "custom" ? "Custom" : companionPresetCopy[assistantPreset].label}
               </span>
             ) : null}
           </Link>

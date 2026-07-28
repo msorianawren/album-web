@@ -27,7 +27,8 @@
     "perf:privacy": "node scripts/performance/check-private-media-leaks.mjs",
     "perf:queries": "node scripts/performance/check-query-shapes.mjs",
     "perf:games": "node scripts/performance/check-game-platform.mjs",
-    "perf:gate": "npm run perf:bundle && npm run perf:privacy && npm run perf:queries && npm run perf:games",
+    "perf:companion": "node scripts/performance/check-companion-assets.mjs",
+    "perf:gate": "npm run perf:bundle && npm run perf:privacy && npm run perf:queries && npm run perf:games && npm run perf:companion",
     "perf:lighthouse": "npx --yes @lhci/cli@0.15.1 autorun"
   },
   "dependencies": {
