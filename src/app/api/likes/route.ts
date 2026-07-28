@@ -9,6 +9,7 @@ import { enforceRateLimit } from "@/lib/security-rate-limit";
 import { getSiteSettings } from "@/lib/site-settings";
 import { supabase } from "@/lib/supabase";
 import { likeCreateSchema } from "@/lib/validators";
+import { albumDemoFixturesEnabled } from "@/lib/demo-fixtures";
 
 function likeTargetQuery(client: SupabaseClient, albumId?: string | null, mediaId?: string | null) {
   const query = client.from("likes").select("*");
@@ -41,6 +42,9 @@ async function resolveLikeAlbumId(
 }
 
 export async function GET(request: NextRequest) {
+  if (albumDemoFixturesEnabled()) {
+    return apiSuccess({ count: 0, liked: false });
+  }
   const session = await getPublicSession(request);
   const userClient = session.userId ? await createAuthenticatedUserClient(request) : null;
   const readClient = userClient ?? createPublicServerClient();

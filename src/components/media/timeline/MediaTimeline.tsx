@@ -18,7 +18,6 @@ import { useSelectionController } from "@/hooks/useSelectionController";
 import { AlbumSearchFilter } from "@/components/media/timeline/AlbumSearchFilter";
 import {
   mediaSortLabels,
-  mediaSortModes,
   parseMediaSortMode,
   sortMedia,
   type MediaSortMode,
@@ -83,7 +82,11 @@ interface MediaTimelineProps {
   albumStatus: AlbumStatus;
   protectAssets?: boolean;
   defaultSortMode?: string | null;
+  locale?: "en" | "vi";
+  timeZone?: string;
 }
+
+const TIMELINE_SORT_MODES = ["taken_desc", "taken_asc"] as const;
 
 // ---------------------------------------------------------------------------
 // Component
@@ -95,22 +98,32 @@ export function MediaTimeline({
   downloadAllowed,
   albumStatus,
   protectAssets = false,
-  defaultSortMode = "smart",
+  defaultSortMode = "taken_desc",
+  locale = "en",
+  timeZone = "Asia/Ho_Chi_Minh",
 }: MediaTimelineProps) {
   // ── Sort state ────────────────────────────────────────────────────────────
-  const storageKey = `album:${albumId}:sort`;
-  const defaultMode = parseMediaSortMode(defaultSortMode, "smart");
+  const storageKey = `album:${albumId}:timeline-sort`;
+  const parsedDefaultMode = parseMediaSortMode(defaultSortMode, "taken_desc");
+  const defaultMode: MediaSortMode = TIMELINE_SORT_MODES.includes(
+    parsedDefaultMode as (typeof TIMELINE_SORT_MODES)[number],
+  )
+    ? parsedDefaultMode
+    : "taken_desc";
 
   const [sortMode, setSortMode] = useState<MediaSortMode>(() => {
     if (typeof window === "undefined") return defaultMode;
     try {
-      return parseMediaSortMode(window.localStorage.getItem(storageKey), defaultMode);
+      const stored = parseMediaSortMode(window.localStorage.getItem(storageKey), defaultMode);
+      return TIMELINE_SORT_MODES.includes(stored as (typeof TIMELINE_SORT_MODES)[number])
+        ? stored
+        : defaultMode;
     } catch {
       return defaultMode;
     }
   });
 
-  const [shuffleSeed, setShuffleSeed] = useState(() => `${albumId}:${Date.now()}`);
+  const shuffleSeed = albumId;
   const [isPending, startTransition] = useTransition();
 
   // ── Media arrays ──────────────────────────────────────────────────────────
@@ -137,6 +150,7 @@ export function MediaTimeline({
   const [hasOpenedViewer, setHasOpenedViewer] = useState(false);
   const openedFromTimelineRef = useRef(false);
   const scrollBeforeViewerRef = useRef(0);
+  const focusedIndexBeforeViewerRef = useRef<number | null>(null);
 
   // ── Container + layout state ──────────────────────────────────────────────
   const containerRef = useRef<HTMLDivElement>(null);
@@ -158,7 +172,8 @@ export function MediaTimeline({
 
   // ── Layout calculation ────────────────────────────────────────────────────
   const { groups, totalHeight, scrubberEntries } = useMemo(() => {
-    const rawGroups = groupMediaByDate(timelineItems);
+    const datePolicy = { locale, timeZone };
+    const rawGroups = groupMediaByDate(timelineItems, datePolicy);
 
     if (containerWidth <= 0) {
       return { groups: rawGroups, totalHeight: 0, scrubberEntries: [] };
@@ -177,9 +192,9 @@ export function MediaTimeline({
     return {
       groups: computedGroups,
       totalHeight: height,
-      scrubberEntries: computeScrubberEntries(computedGroups),
+      scrubberEntries: computeScrubberEntries(computedGroups, datePolicy),
     };
-  }, [containerWidth, timelineItems]);
+  }, [containerWidth, locale, timelineItems, timeZone]);
 
   // ── Virtual range state ───────────────────────────────────────────────────
   const [scrollTop, setScrollTop] = useState(0);
@@ -208,7 +223,10 @@ export function MediaTimeline({
     if (saved > 0 && containerRef.current) {
       // Defer to next frame so layout is ready
       requestAnimationFrame(() => {
-        containerRef.current?.scrollTo({ top: saved, behavior: "instant" });
+        const container = containerRef.current;
+        if (!container) return;
+        const documentTop = window.scrollY + container.getBoundingClientRect().top;
+        window.scrollTo({ top: documentTop + saved, behavior: "instant" });
       });
     }
   }, [containerWidth, groups.length, scrollKey]);
@@ -220,54 +238,65 @@ export function MediaTimeline({
   }, [groups, scrollTop]);
 
   // ── Scroll handler (throttled) ────────────────────────────────────────────
-  const handleScroll = useCallback((event: React.UIEvent<HTMLDivElement>) => {
-    emitScrollBusy(); // pause WebGL environment during scroll
-    const top = (event.currentTarget as HTMLDivElement).scrollTop;
+  const scrollTimelineTo = useCallback(
+    (top: number, behavior: ScrollBehavior = "instant") => {
+      const container = containerRef.current;
+      if (!container) return;
+      const documentTop = window.scrollY + container.getBoundingClientRect().top;
+      window.scrollTo({ top: documentTop + top, behavior });
+    },
+    [],
+  );
+
+  const updateScrollState = useCallback(() => {
+    const container = containerRef.current;
+    if (!container) return;
+    emitScrollBusy();
+    const maxScroll = Math.max(0, totalHeight - window.innerHeight);
+    const top = Math.max(0, Math.min(maxScroll, -container.getBoundingClientRect().top));
     lastScrollRef.current = top;
-    if (scrollTimerRef.current !== null) return; // already scheduled
+    if (scrollTimerRef.current !== null) return;
     scrollTimerRef.current = window.setTimeout(() => {
       scrollTimerRef.current = null;
       setScrollTop(lastScrollRef.current);
       saveScrollPosition(scrollKey, lastScrollRef.current);
     }, SCROLL_THROTTLE_MS);
-  }, [scrollKey]);
+  }, [scrollKey, totalHeight]);
 
-  // Sync viewport height on resize
   useEffect(() => {
     const update = () => {
-      if (containerRef.current) {
-        setViewportHeight(containerRef.current.clientHeight);
-      }
+      setViewportHeight(window.innerHeight);
+      updateScrollState();
     };
     update();
-    const observer = new ResizeObserver(update);
-    if (containerRef.current) observer.observe(containerRef.current);
-    return () => observer.disconnect();
-  }, []);
+    window.addEventListener("scroll", updateScrollState, { passive: true });
+    window.addEventListener("resize", update, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", updateScrollState);
+      window.removeEventListener("resize", update);
+    };
+  }, [updateScrollState]);
 
   // ── Scrubber ──────────────────────────────────────────────────────────────
   const handleScrub = useCallback(
     (top: number) => {
-      if (containerRef.current) {
-        containerRef.current.scrollTo({ top, behavior: "smooth" });
-      }
+      scrollTimelineTo(top, "smooth");
     },
-    [],
+    [scrollTimelineTo],
   );
 
   // ── Sort controls ─────────────────────────────────────────────────────────
   const chooseSortMode = useCallback(
     (value: MediaSortMode) => {
       startTransition(() => {
-        if (value === "shuffle") setShuffleSeed(`${albumId}:${Date.now()}:${Math.random()}`);
         setSortMode(value);
         try { window.localStorage.setItem(storageKey, value); } catch { /* ignore */ }
         setCurrentIndex(null);
         restoredRef.current = false; // allow scroll restoration recalc
-        if (containerRef.current) containerRef.current.scrollTo({ top: 0, behavior: "instant" });
+        scrollTimelineTo(0);
       });
     },
-    [albumId, storageKey],
+    [scrollTimelineTo, storageKey],
   );
 
   const resetSortMode = useCallback(() => {
@@ -276,9 +305,9 @@ export function MediaTimeline({
       try { window.localStorage.removeItem(storageKey); } catch { /* ignore */ }
       setCurrentIndex(null);
       restoredRef.current = false;
-      if (containerRef.current) containerRef.current.scrollTo({ top: 0, behavior: "instant" });
+      scrollTimelineTo(0);
     });
-  }, [defaultMode, storageKey]);
+  }, [defaultMode, scrollTimelineTo, storageKey]);
 
   // ── Selection ─────────────────────────────────────────────────────────────
   const sel = useSelectionController();
@@ -308,15 +337,24 @@ export function MediaTimeline({
   );
 
   const handleBulkDownload = useCallback(() => {
-    const ids = sel.selectedIds();
-    for (const id of ids) {
-      const a = document.createElement("a");
-      a.href = `/api/media/${encodeURIComponent(id)}/download`;
-      a.download = "";
-      a.click();
-    }
+    const selected = new Set(sel.selectedIds());
+    const ids = viewableMedia
+      .filter(
+        (item) =>
+          selected.has(item.id) &&
+          item.media_type === "image" &&
+          item.download_allowed !== false,
+      )
+      .slice(0, 100)
+      .map((item) => item.id);
+    if (!ids.length) return;
+    const params = new URLSearchParams({ media: ids.join(",") });
+    const anchor = document.createElement("a");
+    anchor.href = `/api/albums/${encodeURIComponent(albumId)}/download?${params}`;
+    anchor.download = "";
+    anchor.click();
     sel.clear();
-  }, [sel]);
+  }, [albumId, sel, viewableMedia]);
 
   // ── Viewer Effects & Handlers ─────────────────────────────────────────────
   useEffect(() => {
@@ -325,11 +363,24 @@ export function MediaTimeline({
       const index = viewerIndexFromMediaId(viewableMedia, mediaId);
       setHasOpenedViewer(index !== null);
       setCurrentIndex(index);
+      if (index === null && openedFromTimelineRef.current) {
+        openedFromTimelineRef.current = false;
+        const savedScroll = scrollBeforeViewerRef.current;
+        const savedIndex = focusedIndexBeforeViewerRef.current;
+        requestAnimationFrame(() => {
+          scrollTimelineTo(savedScroll);
+          requestAnimationFrame(() => {
+            document
+              .querySelector<HTMLElement>(`[data-media-index="${savedIndex ?? ""}"]`)
+              ?.focus();
+          });
+        });
+      }
     };
     syncViewerFromLocation();
     window.addEventListener("popstate", syncViewerFromLocation);
     return () => window.removeEventListener("popstate", syncViewerFromLocation);
-  }, [viewableMedia]);
+  }, [scrollTimelineTo, viewableMedia]);
 
   useEffect(() => {
     if (!hasOpenedViewer || currentIndex === null) return;
@@ -348,7 +399,10 @@ export function MediaTimeline({
       const selected = viewableMedia[mediaIndex];
       if (!selected) return;
       // Save scroll position before opening viewer
-      scrollBeforeViewerRef.current = containerRef.current?.scrollTop ?? 0;
+      scrollBeforeViewerRef.current = containerRef.current
+        ? Math.max(0, -containerRef.current.getBoundingClientRect().top)
+        : scrollTop;
+      focusedIndexBeforeViewerRef.current = mediaIndex;
       openedFromTimelineRef.current = true;
       window.history.pushState(
         { ...window.history.state, orianaMediaViewer: true },
@@ -358,7 +412,7 @@ export function MediaTimeline({
       setHasOpenedViewer(true);
       setCurrentIndex(mediaIndex);
     },
-    [viewableMedia],
+    [scrollTop, viewableMedia],
   );
 
   const closeViewer = useCallback(() => {
@@ -369,9 +423,12 @@ export function MediaTimeline({
       const savedScroll = scrollBeforeViewerRef.current;
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
-          if (containerRef.current && savedScroll > 0) {
-            containerRef.current.scrollTo({ top: savedScroll, behavior: "instant" });
-          }
+          scrollTimelineTo(savedScroll);
+          document
+            .querySelector<HTMLElement>(
+              `[data-media-index="${focusedIndexBeforeViewerRef.current ?? ""}"]`,
+            )
+            ?.focus();
         });
       });
       return;
@@ -386,11 +443,14 @@ export function MediaTimeline({
     // Restore scroll
     const savedScroll = scrollBeforeViewerRef.current;
     requestAnimationFrame(() => {
-      if (containerRef.current && savedScroll > 0) {
-        containerRef.current.scrollTo({ top: savedScroll, behavior: "instant" });
-      }
+      scrollTimelineTo(savedScroll);
+      document
+        .querySelector<HTMLElement>(
+          `[data-media-index="${focusedIndexBeforeViewerRef.current ?? ""}"]`,
+        )
+        ?.focus();
     });
-  }, []);
+  }, [scrollTimelineTo]);
 
   const handleNext = useCallback(() => {
     setCurrentIndex((index) =>
@@ -453,6 +513,12 @@ export function MediaTimeline({
 
   // ── Render ────────────────────────────────────────────────────────────────
   const visibleGroups = virtualRange.visibleGroupIndices.map((i) => groups[i]).filter(Boolean) as DateGroup[];
+  const timelineSortLabels = locale === "vi"
+    ? {
+        taken_desc: "Ngày chụp, mới nhất",
+        taken_asc: "Ngày chụp, cũ nhất",
+      }
+    : mediaSortLabels;
 
   return (
     <section
@@ -463,6 +529,7 @@ export function MediaTimeline({
       <AlbumSearchFilter
         media={sortedMedia.filter(isMediaReadyForDelivery)}
         searchInputRef={searchInputRef}
+        locale={locale}
         onFiltered={(filtered) =>
           setFilteredMedia(
             filtered.length === sortedMedia.length ? null : filtered,
@@ -474,13 +541,17 @@ export function MediaTimeline({
       <div className="mb-8 sm:mb-10 flex flex-col md:flex-row md:items-center justify-between gap-6 pb-6 border-b border-border/40">
         <div className="flex items-center gap-3">
           <span className="text-[0.65rem] font-semibold uppercase tracking-[0.25em] text-text-secondary">
-            Sort Layout
+            {locale === "vi" ? "Dòng thời gian" : "Timeline order"}
           </span>
-          {isPending && <span className="text-[0.65rem] italic text-text-secondary/50">Curating...</span>}
+          {isPending && (
+            <span className="text-[0.65rem] italic text-text-secondary/50">
+              {locale === "vi" ? "Đang sắp xếp..." : "Curating..."}
+            </span>
+          )}
         </div>
 
         <div className="hidden flex-wrap items-center gap-2 lg:flex">
-          {(["smart", "manual", "taken_desc", "portrait_first", "liked_desc", "shuffle"] as MediaSortMode[]).map((mode) => (
+          {TIMELINE_SORT_MODES.map((mode) => (
             <button
               key={mode}
               type="button"
@@ -492,30 +563,32 @@ export function MediaTimeline({
               }`}
               aria-pressed={sortMode === mode}
             >
-              {mediaSortLabels[mode]}
+              {timelineSortLabels[mode]}
             </button>
           ))}
           <Button
             variant="icon"
             className="h-9 w-9 rounded-full text-text-secondary hover:text-text-primary"
             onClick={resetSortMode}
-            aria-label="Reset sort"
+            aria-label={locale === "vi" ? "Đặt lại sắp xếp" : "Reset sort"}
           >
             <RotateCcw className="h-3.5 w-3.5" />
           </Button>
         </div>
 
         <div className="grid gap-2 lg:hidden w-full max-w-xs">
-          <label className="sr-only" htmlFor={`album-sort-${albumId}`}>Sort media</label>
+          <label className="sr-only" htmlFor={`album-sort-${albumId}`}>
+            {locale === "vi" ? "Sắp xếp dòng thời gian" : "Sort timeline"}
+          </label>
           <select
             id={`album-sort-${albumId}`}
             value={sortMode}
             onChange={(event) => chooseSortMode(parseMediaSortMode(event.target.value))}
             className="h-10 w-full rounded-full border border-border/40 bg-surface/30 px-4 text-[0.8rem] font-medium text-text-primary outline-none focus:border-text-primary/30 appearance-none"
           >
-            {mediaSortModes.map((mode) => (
+            {TIMELINE_SORT_MODES.map((mode) => (
               <option key={mode} value={mode}>
-                {mediaSortLabels[mode]}
+                {timelineSortLabels[mode]}
               </option>
             ))}
           </select>
@@ -527,9 +600,7 @@ export function MediaTimeline({
         {/* Virtual scroll container */}
         <div
           ref={containerRef}
-          className="relative w-full overflow-y-auto"
-          style={{ maxHeight: "calc(100vh - 200px)", minHeight: 400 }}
-          onScroll={handleScroll}
+          className="relative min-h-[400px] w-full"
           aria-label="Photo timeline"
           role="region"
         >
@@ -562,10 +633,10 @@ export function MediaTimeline({
           {/* Scrubber (absolute right edge of container) */}
           {scrubberEntries.length > 1 && (
             <div
-              className="pointer-events-none sticky inset-y-0 right-0 top-0 z-20 ml-auto flex h-full w-8 justify-end"
+              className="pointer-events-none absolute inset-y-0 right-0 z-20 w-8"
               aria-hidden="false"
             >
-              <div className="pointer-events-auto relative h-full w-8">
+              <div className="pointer-events-auto sticky top-24 h-[calc(100vh-8rem)] w-8">
                 <TimelineScrubber
                   entries={scrubberEntries as ScrubberEntry[]}
                   activeMonthKey={activeMonthKey}
@@ -579,10 +650,11 @@ export function MediaTimeline({
 
       {/* Media count summary */}
       <div className="mt-6 text-center text-[0.65rem] font-medium uppercase tracking-widest text-text-secondary/50">
-        {viewableMedia.length} {viewableMedia.length === 1 ? "item" : "items"}
+        {viewableMedia.length}{" "}
+        {locale === "vi" ? "mục" : viewableMedia.length === 1 ? "item" : "items"}
         {sel.state.count > 0 && (
           <span className="ml-2 text-text-primary">
-            · {sel.state.count} selected
+            · {sel.state.count} {locale === "vi" ? "đã chọn" : "selected"}
           </span>
         )}
       </div>
@@ -593,6 +665,7 @@ export function MediaTimeline({
         downloadAllowed={downloadAllowed}
         onDownload={handleBulkDownload}
         onClear={sel.clear}
+        locale={locale}
       />
 
       {/* Viewer */}

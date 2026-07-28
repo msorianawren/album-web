@@ -343,7 +343,27 @@ async function getDemoAlbum(slugOrId: string, isAdmin: boolean) {
   if (sample.status === "private" && !isAdmin) {
     return { ...sample, media: [], locked: true, download_allowed: false };
   }
-  return sample;
+  const fixtureImages = [
+    "/textures/snowman.jpg",
+    "/textures/snowflake.jpg",
+    "/textures/pine_tree.jpg",
+    "/textures/pine_branch.jpg",
+  ];
+  const media = sample.media.map((item, index) => {
+    const localUrl = fixtureImages[index % fixtureImages.length];
+    return {
+      ...item,
+      url: localUrl,
+      thumbnail_url: localUrl,
+      medium_url: localUrl,
+      poster_url: localUrl,
+    };
+  });
+  return {
+    ...sample,
+    cover_url: media[0]?.thumbnail_url ?? "/brand/oriana-wren-logo-master.svg",
+    media,
+  };
 }
 
 function decodeAlbumCursor(cursor: string | undefined): AlbumCursor | null {
@@ -466,9 +486,15 @@ const getCachedFeaturedAlbums = unstable_cache(
   { tags: ["albums:public"], revalidate: 300 },
 );
 
-export const getFeaturedAlbums = cache((limit = 4) =>
-  getCachedFeaturedAlbums(limit),
-);
+export const getFeaturedAlbums = cache(async (limit = 4) => {
+  if (albumDemoFixturesEnabled()) {
+    const { sampleAlbums } = await import("@/lib/sample-data");
+    return sampleAlbums
+      .filter((album) => album.status === "public")
+      .slice(0, normalizePageLimit(limit));
+  }
+  return getCachedFeaturedAlbums(limit);
+});
 
 async function readAlbumRow(
   slugOrId: string,
@@ -506,13 +532,19 @@ export async function getAlbumMetadata(
   } = {},
 ): Promise<AlbumDetail | null> {
   noStore();
+
+  // Fast-path: check fixtures before creating Supabase clients.
+  const demoResult = await getDemoAlbum(slugOrId, options.isAdmin ?? false);
+  if (demoResult) return demoResult;
+
   const session = options.isAdmin === undefined ? await getPublicSession() : null;
   const isAdmin = options.isAdmin ?? session?.isAdmin ?? false;
   const userClient = options.userClient ?? (
     (session?.userId || isAdmin) ? await createAuthenticatedUserClient() : null
   );
   const row = await readAlbumRow(slugOrId, createPublicServerClient());
-  if (!row) return getDemoAlbum(slugOrId, isAdmin);
+  if (!row) return null;
+
   const album = normalizeAlbum(row);
 
   if (album.status === "private") {
@@ -596,6 +628,11 @@ export async function getAlbum(
 ): Promise<AlbumDetail | null> {
   noStore();
 
+  // Fast-path: in E2E/demo builds, check static fixtures first to avoid
+  // making any network calls to the (possibly unreachable) Supabase host.
+  const demoResult = await getDemoAlbum(slugOrId, options.isAdmin ?? false);
+  if (demoResult) return demoResult;
+
   const session = options.isAdmin === undefined ? await getPublicSession() : null;
   const isAdmin = options.isAdmin ?? session?.isAdmin ?? false;
   const userClient = options.userClient ?? (
@@ -605,7 +642,8 @@ export async function getAlbum(
   try {
     const publicClient = createPublicServerClient();
     const albumRow = await readAlbumRow(slugOrId, publicClient);
-    if (!albumRow) return getDemoAlbum(slugOrId, isAdmin);
+    if (!albumRow) return null;
+
 
     const album = normalizeAlbum(albumRow);
 

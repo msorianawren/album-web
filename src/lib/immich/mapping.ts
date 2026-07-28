@@ -3,11 +3,12 @@
  *
  * Server-only. Immich asset IDs must not leak to clients.
  *
- * Uses Supabase service client for mapping table access.
+ * Callers must supply an explicitly authorized server client. The mapping
+ * module never creates or widens database privileges on its own.
  * Migration: supabase/migrations/XXXX_immich_asset_mapping.sql
  */
 import "server-only";
-import { createPublicServerClient } from "@/lib/db/public";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 export interface ImmichAssetMapping {
   orianaMediaId: string;
@@ -18,9 +19,9 @@ export interface ImmichAssetMapping {
 
 /** Look up the Immich asset ID for an Oriana media ID. Returns null if not mapped. */
 export async function getImmichAssetId(
+  client: SupabaseClient,
   orianaMediaId: string,
 ): Promise<string | null> {
-  const client = createPublicServerClient();
   const { data, error } = await client
     .from("immich_asset_mapping")
     .select("immich_asset_id")
@@ -35,9 +36,9 @@ export async function getImmichAssetId(
 
 /** Look up the Oriana media ID for an Immich asset ID. Returns null if not mapped. */
 export async function getOrianaMediaId(
+  client: SupabaseClient,
   immichAssetId: string,
 ): Promise<string | null> {
-  const client = createPublicServerClient();
   const { data, error } = await client
     .from("immich_asset_mapping")
     .select("oriana_media_id")
@@ -55,10 +56,10 @@ export async function getOrianaMediaId(
  * Does not automatically publish Oriana media.
  */
 export async function upsertImmichMapping(
+  client: SupabaseClient,
   orianaMediaId: string,
   immichAssetId: string,
 ): Promise<void> {
-  const client = createPublicServerClient();
   await client
     .from("immich_asset_mapping")
     .upsert(
@@ -74,8 +75,10 @@ export async function upsertImmichMapping(
 }
 
 /** Mark a mapping as removed (does not delete Oriana or Immich data). */
-export async function removeImmichMapping(orianaMediaId: string): Promise<void> {
-  const client = createPublicServerClient();
+export async function removeImmichMapping(
+  client: SupabaseClient,
+  orianaMediaId: string,
+): Promise<void> {
   await client
     .from("immich_asset_mapping")
     .update({ sync_state: "removed", updated_at: new Date().toISOString() })

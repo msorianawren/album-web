@@ -112,6 +112,18 @@ describe("groupMediaByDate", () => {
     assert.equal(groups[0].monthKey, "2026-06");
     assert.equal(groups[1].monthKey, "2026-07");
   });
+
+  it("uses the configured public-album timezone at day boundaries", () => {
+    const items = makeItems([
+      "2026-07-01T16:30:00.000Z",
+      "2026-07-01T17:30:00.000Z",
+    ]).map((item, i) => ({ ...item, mediaIndex: i }));
+    const groups = groupMediaByDate(items, {
+      locale: "vi",
+      timeZone: "Asia/Ho_Chi_Minh",
+    });
+    assert.deepEqual(groups.map((group) => group.key), ["2026-07-01", "2026-07-02"]);
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -137,6 +149,17 @@ describe("formatMonthLabel", () => {
     assert.equal(formatMonthLabel("2026-07"), "July 2026");
     assert.equal(formatMonthLabel("2026-01"), "January 2026");
     assert.equal(formatMonthLabel("2025-12"), "December 2025");
+  });
+
+  it("localizes Vietnamese timeline labels", () => {
+    assert.match(
+      formatGroupLabel("2026-07-01", { locale: "vi", timeZone: "Asia/Ho_Chi_Minh" }),
+      /tháng 7|Tháng 7/i,
+    );
+    assert.match(
+      formatMonthLabel("2026-07", { locale: "vi", timeZone: "Asia/Ho_Chi_Minh" }),
+      /tháng 7|Tháng 7/i,
+    );
   });
 });
 

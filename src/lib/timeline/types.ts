@@ -11,6 +11,13 @@
 export type DateGroupKey = string; // "YYYY-MM-DD"
 export type MonthKey = string; // "YYYY-MM"
 
+export interface TimelineDatePolicy {
+  /** BCP 47 locale used for visible date labels. */
+  locale: "en" | "vi";
+  /** IANA timezone used to assign media instants to calendar days. */
+  timeZone: string;
+}
+
 /** A single thumbnail cell within a justified row. */
 export interface ThumbnailCell {
   mediaId: string;

@@ -19,6 +19,7 @@ import {
 export const runtime = "nodejs";
 const maxZipImages = 100;
 const maxZipSourceBytes = 150 * 1024 * 1024;
+const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 interface AlbumDownloadProps {
   params: Promise<{ id: string }>;
@@ -54,9 +55,21 @@ export async function GET(request: NextRequest, { params }: AlbumDownloadProps) 
       return apiError("FORBIDDEN", "Album downloads are not available.", 403);
     }
 
+    const requestedMedia = request.nextUrl.searchParams.get("media");
+    const requestedIds = requestedMedia
+      ? requestedMedia.split(",").map((value) => value.trim()).filter(Boolean)
+      : [];
+    if (
+      requestedIds.length > maxZipImages ||
+      requestedIds.some((value) => !uuidPattern.test(value))
+    ) {
+      return apiError("INVALID_INPUT", "Selected media IDs are invalid or exceed the ZIP limit.", 400);
+    }
+    const selectedIds = requestedIds.length ? new Set(requestedIds) : null;
+
     const images = album.media.filter(
       (item) => item.media_type === "image" && (session.isAdmin || item.download_allowed !== false),
-    );
+    ).filter((item) => !selectedIds || selectedIds.has(item.id));
     if (!images.length) {
       return apiError("INVALID_INPUT", "This album has no images to download.", 400);
     }

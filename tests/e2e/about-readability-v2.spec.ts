@@ -56,8 +56,18 @@ test("About readability veil has a valid visible computed background", async ({ 
   await page.goto("/about");
   await setEnvironment(page, "sakura", "day");
 
-  const result = await page.locator("[data-about-reading-veil]").first().evaluate((veil) => {
-    const styles = window.getComputedStyle(veil);
+  const main = page.locator('main[data-about-readability="v2"]');
+  await expect(main).toHaveAttribute("data-about-preset", "sakura");
+  await expect(main).toHaveAttribute("data-about-phase", "day");
+
+  const veil = page.locator("[data-about-reading-veil]").first();
+  await expect(veil).toHaveCount(1);
+  await expect.poll(() => veil.evaluate((element) => (
+    window.getComputedStyle(element).backgroundImage
+  ))).toContain("radial-gradient");
+
+  const result = await veil.evaluate((element) => {
+    const styles = window.getComputedStyle(element);
     const probe = document.createElement("div");
     probe.style.backgroundImage = styles.backgroundImage;
 
@@ -73,6 +83,11 @@ test("About readability veil has a valid visible computed background", async ({ 
 });
 
 test("About reading zones stay contained across target responsive viewports", async ({ page }) => {
+  await page.goto("/about");
+  const main = page.locator('main[data-about-readability="v2"]');
+  await setEnvironment(page, "sakura", "day");
+  await expect(main).toHaveAttribute("data-about-preset", "sakura");
+
   for (const viewport of [
     { width: 320, height: 568 },
     { width: 390, height: 844 },
@@ -84,10 +99,6 @@ test("About reading zones stay contained across target responsive viewports", as
   { width: 2560, height: 1080 },
   ]) {
     await page.setViewportSize(viewport);
-    await page.goto("/about");
-    const main = page.locator('main[data-about-readability="v2"]');
-    await setEnvironment(page, "sakura", "day");
-    await expect(main).toHaveAttribute("data-about-preset", "sakura");
     await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   }
 });

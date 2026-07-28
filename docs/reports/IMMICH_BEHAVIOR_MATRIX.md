@@ -12,13 +12,13 @@ Each row documents an Immich behavior, whether it is adopted, the Oriana equival
 
 | Behavior | Immich Source | Oriana Implementation | Test |
 |----------|--------------|----------------------|------|
-| Group media by calendar day (UTC) | `timeline-manager.svelte.ts: groupByDate` | `engine.ts: groupMediaByDate` | `timeline-engine.test.mjs: groupMediaByDate` |
+| Group media by calendar day | `timeline-manager.svelte.ts: groupByDate` | `engine.ts: groupMediaByDate`; explicit public-album policy is `Asia/Ho_Chi_Minh`, with vi/en labels | `timeline-engine.test.mjs: groupMediaByDate` |
 | Justified row layout (aspect-ratio preserving) | `layout-support.svelte.ts: updateGeometry` | `engine.ts: computeJustifiedLayout` | `timeline-engine.test.mjs: computeJustifiedLayout` |
 | Exact containerWidth row fill (scale rows) | `layout-support.svelte.ts` | `engine.ts` (row width within ±2px) | `produces rows with cells summing to containerWidth` |
 | Portrait items narrower than landscape | `layout-support.svelte.ts` | `engine.ts: safeAspectRatio` | `portrait items get narrower cells` |
 | Last partial row at natural height (no stretch) | Immich: last row uses naturalWidth < 0.85 threshold | Same threshold (0.85) | `computeJustifiedLayout: single item` |
 | Date group header (sticky) | Svelte sticky date labels | `TimelineDateGroup: sticky z-10` | — manual |
-| Virtual scroll: only render visible groups | `VirtualScrollManager + intersection-support` | `computeVirtualRange (overscan)` | `computeVirtualRange: includes groups within viewport` |
+| Virtual scroll: only render visible groups | `VirtualScrollManager + intersection-support` | `computeVirtualRange (overscan)` driven by native document/window scrolling; server time-bucket pagination remains open | `computeVirtualRange: includes groups within viewport` |
 | Overscan groups (buffer above/below) | `VirtualScrollManager: overscan` | `OVERSCAN=2` | `computeVirtualRange: includes overscan groups` |
 | Scroll restoration after viewer close | `gridScrollTarget` in viewer manager | `scrollBeforeViewerRef + requestAnimationFrame` | `media-viewer-machine.test.mjs` (existing) |
 | Scroll position persistence | `PersistedLocalStorage` | `sessionStorage via engine.ts scrollRestorationKey` | `scrollRestorationKey` tests |
@@ -52,7 +52,7 @@ Each row documents an Immich behavior, whether it is adopted, the Oriana equival
 | isActive computed from count > 0 | `selectionActive = $derived(map.size > 0)` | `isActive: next.size > 0` | Multiple tests |
 | Long-press to enter selection mode (mobile) | Implicit via touch events | 500ms `longPressTimer` in `MediaThumbnail` | — manual |
 | Checkbox overlay when selection active | Immich asset thumbnail checkbox | `MediaThumbnail: isHighlighted ring + checkbox div` | — manual |
-| Bulk download selected items | `download-manager.svelte.ts` | `handleBulkDownload: anchor.click() loop` | — |
+| Bulk download selected items | `download-manager.svelte.ts` | One bounded request to the existing revocation-aware album ZIP route with selected media IDs | — |
 | Floating action bar | Immich selection bar | `SelectionActionBar` component | — manual |
 
 ## Search & Filters

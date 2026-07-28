@@ -17,10 +17,20 @@ import {
   demoFixturePolicy,
 } from "../src/lib/demo-fixtures.ts";
 
-test("album demo fixtures are disabled by default and require an explicit code policy", () => {
-  assert.equal(demoFixturePolicy.albums, "disabled");
-  assert.equal(albumDemoFixturesEnabled(), false);
-  assert.equal(albumDemoFixturesEnabled({ albums: "local_demo" }), true);
+test("album demo fixtures are disabled by default and require an explicit opt-in", () => {
+  const previous = process.env.ALBUM_DEMO_FIXTURE;
+  try {
+    delete process.env.ALBUM_DEMO_FIXTURE;
+    assert.equal(demoFixturePolicy.albums, "disabled");
+    assert.equal(albumDemoFixturesEnabled(), false);
+    assert.equal(albumDemoFixturesEnabled({ albums: "local_demo" }), true);
+
+    process.env.ALBUM_DEMO_FIXTURE = "1";
+    assert.equal(albumDemoFixturesEnabled(), true);
+  } finally {
+    if (previous === undefined) delete process.env.ALBUM_DEMO_FIXTURE;
+    else process.env.ALBUM_DEMO_FIXTURE = previous;
+  }
 });
 
 test("request IDs preserve safe upstream IDs and replace unsafe values", () => {

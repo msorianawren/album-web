@@ -40,6 +40,7 @@ export function MediaThumbnail({
   const [loaded, setLoaded] = useState(false);
   const pointerDownPos = useRef<{ x: number; y: number } | null>(null);
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const longPressTriggered = useRef(false);
 
   const descriptor = getMediaDeliveryDescriptor(media, {
     albumStatus,
@@ -49,9 +50,11 @@ export function MediaThumbnail({
 
   const handlePointerDown = useCallback((event: React.PointerEvent) => {
     pointerDownPos.current = { x: event.clientX, y: event.clientY };
+    longPressTriggered.current = false;
     if (onLongPress) {
       longPressTimer.current = setTimeout(() => {
         longPressTimer.current = null;
+        longPressTriggered.current = true;
         onLongPress(cell.mediaIndex);
       }, 500);
     }
@@ -70,6 +73,10 @@ export function MediaThumbnail({
       if (longPressTimer.current !== null) {
         clearTimeout(longPressTimer.current);
         longPressTimer.current = null;
+      }
+      if (longPressTriggered.current) {
+        longPressTriggered.current = false;
+        return;
       }
       // Ignore click if pointer moved significantly (drag/swipe)
       if (pointerDownPos.current) {
@@ -117,6 +124,7 @@ export function MediaThumbnail({
         flexGrow: 0,
       }}
       aria-label={descriptor.alt}
+      data-media-index={cell.mediaIndex}
       onPointerDown={handlePointerDown}
       onPointerUp={handlePointerUp}
       onClick={handleClick}

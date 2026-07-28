@@ -30,12 +30,15 @@ test.describe("MediaViewer Shortcut G Behavior", () => {
     const viewer = page.getByRole("dialog", { name: "Media viewer" });
     await expect(viewer).toBeVisible();
 
-    // Open info sheet via shortcut 'i'
-    await page.keyboard.press("i");
-    const info = page.getByRole("complementary", { name: "Media information" });
-    await expect(info).toBeVisible();
+    await viewer.evaluate((dialog) => {
+      const input = document.createElement("input");
+      input.setAttribute("aria-label", "Viewer keyboard input probe");
+      dialog.appendChild(input);
+      input.focus();
+    });
+    await page.getByRole("textbox", { name: "Viewer keyboard input probe" }).press("g");
 
-    // Viewer stays visible
     await expect(viewer).toBeVisible();
+    await expect(page).toHaveURL(/\?media=[0-9a-f-]{36}$/i);
   });
 });

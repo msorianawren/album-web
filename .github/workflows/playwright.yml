@@ -25,6 +25,8 @@ jobs:
       R2_BUCKET_NAME: test-public
       R2_PRIVATE_BUCKET_NAME: test-private
       R2_PUBLIC_URL: https://media.example.com
+      ALBUM_DEMO_FIXTURE: "1"
+      NEXT_PUBLIC_TIMELINE_V2: "true"
     strategy:
       fail-fast: false
       matrix:
@@ -97,6 +99,8 @@ jobs:
       R2_BUCKET_NAME: test-public
       R2_PRIVATE_BUCKET_NAME: test-private
       R2_PUBLIC_URL: https://media.example.com
+      ALBUM_DEMO_FIXTURE: "1"
+      NEXT_PUBLIC_TIMELINE_V2: "true"
     steps:
     - uses: actions/checkout@v4
     - uses: actions/setup-node@v4

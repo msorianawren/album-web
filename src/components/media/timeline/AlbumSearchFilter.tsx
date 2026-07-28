@@ -51,6 +51,7 @@ interface AlbumSearchFilterProps {
   media: Media[];
   onFiltered: (filtered: Media[]) => void;
   searchInputRef?: RefObject<HTMLInputElement | null>;
+  locale?: "en" | "vi";
 }
 
 /**
@@ -61,7 +62,12 @@ interface AlbumSearchFilterProps {
  *
  * Behavioral design informed by Immich v3.0.3 filter chips pattern.
  */
-export function AlbumSearchFilter({ media, onFiltered, searchInputRef: externalRef }: AlbumSearchFilterProps) {
+export function AlbumSearchFilter({
+  media,
+  onFiltered,
+  searchInputRef: externalRef,
+  locale = "en",
+}: AlbumSearchFilterProps) {
   const [filter, setFilter] = useState<AlbumFilterState>(EMPTY_FILTER);
   const [panelOpen, setPanelOpen] = useState(false);
   const internalRef = useRef<HTMLInputElement>(null);
@@ -116,16 +122,16 @@ export function AlbumSearchFilter({ media, onFiltered, searchInputRef: externalR
             type="search"
             value={filter.query}
             onChange={(event) => updateQuery(event.target.value)}
-            placeholder="Search by title or filename…"
+            placeholder={locale === "vi" ? "Tìm theo tiêu đề hoặc tên tệp…" : "Search by title or filename…"}
             className="h-9 w-full rounded-full border border-border/40 bg-surface/20 pl-9 pr-4 text-[0.8rem] text-text-primary placeholder:text-text-secondary/40 outline-none focus:border-text-primary/30 focus:bg-surface/40 transition-colors"
-            aria-label="Search media in album"
+            aria-label={locale === "vi" ? "Tìm trong album" : "Search media in album"}
           />
           {filter.query && (
             <button
               type="button"
               onClick={() => updateQuery("")}
               className="absolute right-3 top-1/2 -translate-y-1/2 text-text-secondary/50 hover:text-text-primary"
-              aria-label="Clear search"
+              aria-label={locale === "vi" ? "Xóa tìm kiếm" : "Clear search"}
             >
               <X className="h-3.5 w-3.5" />
             </button>
@@ -142,10 +148,10 @@ export function AlbumSearchFilter({ media, onFiltered, searchInputRef: externalR
               : "border-border/40 bg-surface/20 text-text-secondary hover:text-text-primary"
           }`}
           aria-expanded={panelOpen}
-          aria-label="Toggle filters"
+          aria-label={locale === "vi" ? "Hiện bộ lọc" : "Toggle filters"}
         >
           <Filter className="h-3.5 w-3.5" />
-          Filters
+          {locale === "vi" ? "Bộ lọc" : "Filters"}
         </button>
 
         {/* Clear all */}
@@ -155,7 +161,7 @@ export function AlbumSearchFilter({ media, onFiltered, searchInputRef: externalR
             onClick={clearAll}
             className="text-[0.7rem] font-medium text-text-secondary/60 hover:text-text-primary underline underline-offset-2 transition-colors"
           >
-            Clear
+            {locale === "vi" ? "Xóa" : "Clear"}
           </button>
         )}
       </div>
@@ -166,7 +172,7 @@ export function AlbumSearchFilter({ media, onFiltered, searchInputRef: externalR
           {/* Media type */}
           <div className="flex items-center gap-2">
             <span className="text-[0.6rem] font-semibold uppercase tracking-widest text-text-secondary/60">
-              Type
+              {locale === "vi" ? "Loại" : "Type"}
             </span>
             {(["all", "image", "video"] as MediaTypeFilter[]).map((type) => (
               <button
@@ -180,7 +186,9 @@ export function AlbumSearchFilter({ media, onFiltered, searchInputRef: externalR
                 }`}
                 aria-pressed={filter.mediaType === type}
               >
-                {type === "all" ? "All" : type === "image" ? "Photos" : "Videos"}
+                {locale === "vi"
+                  ? type === "all" ? "Tất cả" : type === "image" ? "Ảnh" : "Video"
+                  : type === "all" ? "All" : type === "image" ? "Photos" : "Videos"}
               </button>
             ))}
           </div>
@@ -190,7 +198,7 @@ export function AlbumSearchFilter({ media, onFiltered, searchInputRef: externalR
           {/* Orientation */}
           <div className="flex items-center gap-2">
             <span className="text-[0.6rem] font-semibold uppercase tracking-widest text-text-secondary/60">
-              Orientation
+              {locale === "vi" ? "Hướng ảnh" : "Orientation"}
             </span>
             {(["all", "landscape", "portrait", "square"] as OrientationFilter[]).map((orient) => (
               <button
@@ -204,7 +212,9 @@ export function AlbumSearchFilter({ media, onFiltered, searchInputRef: externalR
                 }`}
                 aria-pressed={filter.orientation === orient}
               >
-                {orient === "all" ? "All" : orient}
+                {locale === "vi"
+                  ? orient === "all" ? "Tất cả" : orient === "landscape" ? "Ngang" : orient === "portrait" ? "Dọc" : "Vuông"
+                  : orient === "all" ? "All" : orient}
               </button>
             ))}
           </div>
@@ -214,7 +224,9 @@ export function AlbumSearchFilter({ media, onFiltered, searchInputRef: externalR
       {/* Result count */}
       {active && (
         <p className="text-[0.65rem] font-medium text-text-secondary/60">
-          Showing {resultCount} of {media.length} {media.length === 1 ? "item" : "items"}
+          {locale === "vi"
+            ? `Hiển thị ${resultCount} / ${media.length} mục`
+            : `Showing ${resultCount} of ${media.length} ${media.length === 1 ? "item" : "items"}`}
         </p>
       )}
     </div>

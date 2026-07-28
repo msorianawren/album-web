@@ -24,6 +24,7 @@ import type {
   MonthKey,
   RowLayout,
   ScrubberEntry,
+  TimelineDatePolicy,
   ThumbnailCell,
   TimelineLayoutOptions,
   TimelineMediaItem,
@@ -44,6 +45,10 @@ const MIN_CELL_WIDTH = 80;
 const MIN_ASPECT_RATIO = 0.25; // taller than 4:1 portrait
 const MAX_ASPECT_RATIO = 4.0; // wider than 4:1 landscape
 const FALLBACK_ASPECT_RATIO = 4 / 3;
+const DEFAULT_DATE_POLICY: TimelineDatePolicy = {
+  locale: "en",
+  timeZone: "UTC",
+};
 
 // ---------------------------------------------------------------------------
 // Date utilities
@@ -59,60 +64,114 @@ function resolveSortDate(item: TimelineMediaItem): Date {
   return new Date(0);
 }
 
-function toDateGroupKey(d: Date): DateGroupKey {
-  const y = d.getUTCFullYear();
-  const m = String(d.getUTCMonth() + 1).padStart(2, "0");
-  const day = String(d.getUTCDate()).padStart(2, "0");
-  return `${y}-${m}-${day}`;
+function datePartsInTimeZone(
+  date: Date,
+  policy: TimelineDatePolicy,
+): { year: number; month: number; day: number } {
+  let formatter: Intl.DateTimeFormat;
+  try {
+    formatter = new Intl.DateTimeFormat("en-US", {
+      timeZone: policy.timeZone,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    });
+  } catch {
+    formatter = new Intl.DateTimeFormat("en-US", {
+      timeZone: DEFAULT_DATE_POLICY.timeZone,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    });
+  }
+  const parts = Object.fromEntries(
+    formatter
+      .formatToParts(date)
+      .filter((part) => part.type !== "literal")
+      .map((part) => [part.type, part.value]),
+  );
+  return {
+    year: Number(parts.year),
+    month: Number(parts.month),
+    day: Number(parts.day),
+  };
 }
 
-function toMonthKey(d: Date): MonthKey {
-  const y = d.getUTCFullYear();
-  const m = String(d.getUTCMonth() + 1).padStart(2, "0");
-  return `${y}-${m}`;
+function toDateGroupKey(parts: { year: number; month: number; day: number }): DateGroupKey {
+  return `${parts.year}-${String(parts.month).padStart(2, "0")}-${String(parts.day).padStart(2, "0")}`;
 }
 
-const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-const MONTH_NAMES = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December",
-];
-const MONTH_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+function toMonthKey(parts: { year: number; month: number }): MonthKey {
+  return `${parts.year}-${String(parts.month).padStart(2, "0")}`;
+}
+
+function parseCalendarKey(key: string, expectedParts: 2 | 3): number[] | null {
+  const parts = key.split("-").map(Number);
+  if (
+    parts.length !== expectedParts ||
+    !parts.every(Number.isInteger) ||
+    parts[0] < 1 ||
+    parts[1] < 1 ||
+    parts[1] > 12 ||
+    (expectedParts === 3 && (parts[2] < 1 || parts[2] > 31))
+  ) {
+    return null;
+  }
+  return parts;
+}
 
 /** Format a group header label from a DateGroupKey. */
-export function formatGroupLabel(key: DateGroupKey): string {
-  // key is "YYYY-MM-DD"
-  const parts = key.split("-");
-  if (parts.length !== 3) return key;
-  const y = Number(parts[0]);
-  const m = Number(parts[1]) - 1; // 0-indexed
-  const d = Number(parts[2]);
-  if (!Number.isInteger(y) || !Number.isInteger(m + 1) || !Number.isInteger(d) ||
-      m < 0 || m > 11 || d < 1 || d > 31) {
+export function formatGroupLabel(
+  key: DateGroupKey,
+  policy: TimelineDatePolicy = DEFAULT_DATE_POLICY,
+): string {
+  const parts = parseCalendarKey(key, 3);
+  if (!parts) return key;
+  const [year, month, day] = parts;
+  const date = new Date(Date.UTC(year, month - 1, day));
+  if (
+    date.getUTCFullYear() !== year ||
+    date.getUTCMonth() !== month - 1 ||
+    date.getUTCDate() !== day
+  ) {
     return key;
   }
-  // Reconstruct as UTC date to match key derivation
-  const date = new Date(Date.UTC(y, m, d));
-  const dow = DAY_NAMES[date.getUTCDay()];
-  const monthName = MONTH_NAMES[m];
-  return `${dow}, ${d} ${monthName} ${y}`;
+  return new Intl.DateTimeFormat(policy.locale, {
+    timeZone: "UTC",
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  }).format(date);
 }
 
-export function formatGroupShortLabel(key: DateGroupKey): string {
-  const parts = key.split("-");
-  if (parts.length !== 3) return key;
-  const m = Number(parts[1]) - 1;
-  const d = Number(parts[2]);
-  const y = parts[0];
-  return `${d} ${MONTH_SHORT[m]} ${y}`;
+export function formatGroupShortLabel(
+  key: DateGroupKey,
+  policy: TimelineDatePolicy = DEFAULT_DATE_POLICY,
+): string {
+  const parts = parseCalendarKey(key, 3);
+  if (!parts) return key;
+  const [year, month, day] = parts;
+  return new Intl.DateTimeFormat(policy.locale, {
+    timeZone: "UTC",
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  }).format(new Date(Date.UTC(year, month - 1, day)));
 }
 
-export function formatMonthLabel(monthKey: MonthKey): string {
-  const parts = monthKey.split("-");
-  if (parts.length !== 2) return monthKey;
-  const m = Number(parts[1]) - 1;
-  const y = parts[0];
-  return `${MONTH_NAMES[m]} ${y}`;
+export function formatMonthLabel(
+  monthKey: MonthKey,
+  policy: TimelineDatePolicy = DEFAULT_DATE_POLICY,
+): string {
+  const parts = parseCalendarKey(monthKey, 2);
+  if (!parts) return monthKey;
+  const [year, month] = parts;
+  return new Intl.DateTimeFormat(policy.locale, {
+    timeZone: "UTC",
+    month: "long",
+    year: "numeric",
+  }).format(new Date(Date.UTC(year, month - 1, 1)));
 }
 
 // ---------------------------------------------------------------------------
@@ -120,27 +179,31 @@ export function formatMonthLabel(monthKey: MonthKey): string {
 // ---------------------------------------------------------------------------
 
 /**
- * Group an ordered media array by calendar day (UTC).
+ * Group an ordered media array by calendar day using one explicit timezone.
  * Assumes media is already sorted in the desired order; groups preserve that order.
  */
-export function groupMediaByDate(media: TimelineMediaItem[]): DateGroup[] {
+export function groupMediaByDate(
+  media: TimelineMediaItem[],
+  policy: TimelineDatePolicy = DEFAULT_DATE_POLICY,
+): DateGroup[] {
   const groupMap = new Map<DateGroupKey, DateGroup>();
   const groupOrder: DateGroupKey[] = [];
 
   for (const item of media) {
     const d = resolveSortDate(item);
-    const key = toDateGroupKey(d);
+    const dateParts = datePartsInTimeZone(d, policy);
+    const key = toDateGroupKey(dateParts);
 
     if (!groupMap.has(key)) {
-      const monthKey = toMonthKey(d);
+      const monthKey = toMonthKey(dateParts);
       groupMap.set(key, {
         key,
-        label: formatGroupLabel(key),
-        shortLabel: formatGroupShortLabel(key),
+        label: formatGroupLabel(key, policy),
+        shortLabel: formatGroupShortLabel(key, policy),
         monthKey,
-        year: d.getUTCFullYear(),
-        month: d.getUTCMonth() + 1,
-        day: d.getUTCDate(),
+        year: dateParts.year,
+        month: dateParts.month,
+        day: dateParts.day,
         mediaIndices: [],
         rows: [],
         height: 0,
@@ -381,7 +444,10 @@ export function computeVirtualRange(
  * Derive scrubber entries (one per month) from date groups.
  * Used by TimelineScrubber to render month labels and jump targets.
  */
-export function computeScrubberEntries(groups: DateGroup[]): ScrubberEntry[] {
+export function computeScrubberEntries(
+  groups: DateGroup[],
+  policy: TimelineDatePolicy = DEFAULT_DATE_POLICY,
+): ScrubberEntry[] {
   const monthMap = new Map<MonthKey, ScrubberEntry>();
   const monthOrder: MonthKey[] = [];
 
@@ -389,7 +455,7 @@ export function computeScrubberEntries(groups: DateGroup[]): ScrubberEntry[] {
     const { monthKey } = group;
     if (!monthMap.has(monthKey)) {
       monthMap.set(monthKey, {
-        label: formatMonthLabel(monthKey),
+        label: formatMonthLabel(monthKey, policy),
         monthKey,
         top: group.top,
         count: 0,

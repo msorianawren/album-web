@@ -59,14 +59,14 @@ export default async function StudioSystemPage() {
       </section>
 
       <section className="grid gap-5 xl:grid-cols-2">
-        <Panel title="Immich Integration (Layer B)">
+        <Panel title="Immich adapter scaffold (not connected)">
           <Status label="IMMICH_ENABLED" ok={health.env.IMMICH_ENABLED} />
           <Status label="NEXT_PUBLIC_TIMELINE_V2" ok={health.env.NEXT_PUBLIC_TIMELINE_V2} />
           <Status label="IMMICH_BASE_URL Configured" ok={health.env.IMMICH_BASE_URL} />
           <Status label="IMMICH_API_KEY Configured" ok={health.env.IMMICH_API_KEY} />
           <Status label="immich_asset_mapping Table" ok={health.immichMappingOk} />
           <p className="rounded-[1rem] border border-border bg-background/60 p-3 text-xs text-text-secondary">
-            <strong>Hybrid Architecture:</strong> Supabase remains the authoritative record for user access and metadata. Immich integration operates server-side via <code>immich_asset_mapping</code>. Immich credentials are never sent to the client.
+            <strong>Status:</strong> These checks confirm configuration and schema presence only. Connection health, version compatibility, album mapping, dry runs, synchronization, retries, and removal handling are not implemented. Supabase remains authoritative for access.
           </p>
         </Panel>
         <Panel title="Runtime warnings">

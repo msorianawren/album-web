@@ -9,7 +9,7 @@ import { CommentSection } from "@/components/comments/CommentSection";
 import { LikeButton } from "@/components/media/LikeButton";
 
 import { MediaGrid } from "@/components/media/MediaGrid";
-import { MediaTimeline } from "@/components/media/timeline/MediaTimeline";
+import { AlbumMediaExperience } from "@/components/media/AlbumMediaExperience";
 import { getAlbum, getAlbumMetadata } from "@/lib/albums";
 import { getSiteSettings } from "@/lib/site-settings";
 import { getLandingPage } from "@/lib/landing";
@@ -132,13 +132,15 @@ export default async function AlbumPage({ params }: AlbumPageProps) {
             <LikeButton albumId={album.id} />
           </section>
           {process.env.NEXT_PUBLIC_TIMELINE_V2 === "true" ? (
-            <MediaTimeline
+            <AlbumMediaExperience
               albumId={album.id}
               media={album.media}
               albumStatus={album.status}
               downloadAllowed={album.download_allowed}
               protectAssets={settings.disable_public_right_click}
               defaultSortMode={album.default_media_sort}
+              locale={locale}
+              timeZone="Asia/Ho_Chi_Minh"
             />
           ) : (
             <MediaGrid

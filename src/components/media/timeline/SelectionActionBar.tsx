@@ -8,6 +8,7 @@ interface SelectionActionBarProps {
   downloadAllowed: boolean;
   onDownload: () => void;
   onClear: () => void;
+  locale?: "en" | "vi";
 }
 
 /**
@@ -19,6 +20,7 @@ export const SelectionActionBar = memo(function SelectionActionBar({
   downloadAllowed,
   onDownload,
   onClear,
+  locale = "en",
 }: SelectionActionBarProps) {
   if (count === 0) return null;
 
@@ -33,7 +35,9 @@ export const SelectionActionBar = memo(function SelectionActionBar({
         {count}
       </span>
       <span className="text-[0.7rem] font-medium text-text-secondary">
-        {count === 1 ? "item selected" : "items selected"}
+        {locale === "vi"
+          ? `${count} mục đã chọn`
+          : count === 1 ? "item selected" : "items selected"}
       </span>
 
       <div className="mx-1 h-4 w-px bg-border/40" aria-hidden="true" />
@@ -44,10 +48,12 @@ export const SelectionActionBar = memo(function SelectionActionBar({
           type="button"
           onClick={onDownload}
           className="flex items-center gap-2 rounded-full px-3 py-1.5 text-[0.7rem] font-semibold text-text-secondary transition-colors hover:bg-surface hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-text-primary/30"
-          aria-label={`Download ${count} ${count === 1 ? "item" : "items"}`}
+          aria-label={locale === "vi"
+            ? `Tải xuống ${count} mục`
+            : `Download ${count} ${count === 1 ? "item" : "items"}`}
         >
           <Download className="h-3.5 w-3.5" />
-          Download
+          {locale === "vi" ? "Tải xuống" : "Download"}
         </button>
       )}
 
@@ -56,10 +62,10 @@ export const SelectionActionBar = memo(function SelectionActionBar({
         type="button"
         onClick={onClear}
         className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[0.7rem] font-semibold text-text-secondary transition-colors hover:bg-surface hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-text-primary/30"
-        aria-label="Clear selection"
+        aria-label={locale === "vi" ? "Bỏ chọn tất cả" : "Clear selection"}
       >
         <X className="h-3.5 w-3.5" />
-        Clear
+        {locale === "vi" ? "Bỏ chọn" : "Clear"}
       </button>
     </div>
   );
