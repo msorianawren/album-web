@@ -2,7 +2,7 @@ import "server-only";
 import { isValidWorkerAuthorization } from "@/lib/authorization/worker-secret";
 import { createTrustedServiceRoleClient } from "@/lib/db/trusted-service";
 
-export type TrustedWorkerPurpose = "access-auto-approval" | "log-retention" | "media-processing";
+export type TrustedWorkerPurpose = "access-auto-approval" | "log-retention" | "media-processing" | "meta-sync";
 
 export interface TrustedWorkerDatabase {
   purpose: TrustedWorkerPurpose;
