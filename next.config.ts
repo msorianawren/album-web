@@ -58,6 +58,8 @@ const nextConfig: NextConfig = {
         https://pub-6723a3eac8f14389ad2429799e3b98a5.r2.dev
         ${r2PublicOrigin};
 
+      frame-src 'self' https://www.facebook.com https://web.facebook.com;
+
       ${siteUsesHttps ? "upgrade-insecure-requests;" : ""}
     `
       .replace(/\s{2,}/g, " ")
