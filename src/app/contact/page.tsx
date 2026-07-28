@@ -1,167 +1,64 @@
+import type { Metadata } from "next";
 import { AppHeader } from "@/components/AppHeader";
-import { getSiteSettings } from "@/lib/site-settings";
-import { getLandingPage } from "@/lib/landing";
-import { NatureAnimatedBackground } from "@/components/landing/NatureAnimatedBackground";
-import { Lock, Camera, Download, Mail } from "lucide-react";
 import { ContactForm } from "@/components/contact/ContactForm";
-import { CopyEmailButton } from "@/components/contact/CopyEmailButton";
-import { getPublicSession } from "@/lib/auth";
-import { supabase } from "@/lib/supabase";
 import { UserConversationList } from "@/components/contact/UserConversationList";
 import { HelpInbox } from "@/components/help/HelpInbox";
+import { NatureAnimatedBackground } from "@/components/landing/NatureAnimatedBackground";
+import { LockKeyhole, Mail } from "lucide-react";
+import { TelegramContactCard } from "@/components/contact/TelegramContactCard";
+import { getPublicSession } from "@/lib/auth";
+import { resolvePublicTelegramContact } from "@/lib/contact/telegram";
+import { getLandingPage } from "@/lib/landing";
+import { getSiteSettings } from "@/lib/site-settings";
+import { supabase } from "@/lib/supabase";
 
-interface ContactThreadRow {
-  id: string;
-  subject: string;
-  message_body: string;
-  created_at: string;
-  status: string;
-}
-
-interface ContactReplyRow {
-  id: string;
-  message_id: string;
-  author_type: "user" | "admin";
-  body: string;
-  public_display_name: string;
-  created_at: string;
-}
-
-interface UserMessageThread extends ContactThreadRow {
-  replies: ContactReplyRow[];
-}
+export const metadata: Metadata = {
+  title: "Contact her",
+  description: "A private line to Oriana for album access, editorial work, licensing, or a hello.",
+};
 
 export default async function ContactPage() {
-  const [settings, landing, session] = await Promise.all([
-    getSiteSettings(),
-    getLandingPage(),
-    getPublicSession()
-  ]);
-  const hasEmail = Boolean(settings.contact_email);
+  const [settings, landing, session] = await Promise.all([getSiteSettings(), getLandingPage(), getPublicSession()]);
+  const telegram = resolvePublicTelegramContact(landing.social_links);
+  const hasForm = Boolean(settings.contact_email) || settings.contact_form_mode !== "mailto_only";
+  let legacyThreads: Array<{ id: string; subject: string; message_body: string; created_at: string; status: string; replies: Array<{ id: string; author_type: "user" | "admin"; body: string; public_display_name: string; created_at: string }> }> = [];
 
-  let userMessages: UserMessageThread[] = [];
-  if (session?.userId) {
-    const { data: threads } = await supabase
-      .from("contact_messages")
-      .select("id, subject, message_body, created_at, status")
-      .eq("user_id", session.userId)
-      .order("created_at", { ascending: false });
-
-    if (threads) {
-      const threadIds = threads.map(t => t.id);
-      const { data: allReplies } = await supabase
-        .from("contact_message_replies")
-        .select("id, message_id, author_type, body, public_display_name, created_at")
-        .in("message_id", threadIds)
-        .eq("is_internal_note", false)
-        .order("created_at", { ascending: true });
-
-      userMessages = threads.map(t => ({
-        ...t,
-        replies: allReplies?.filter(r => r.message_id === t.id) || []
-      }));
-    }
+  if (session.userId) {
+    const { data } = await supabase.from("contact_messages").select("id, subject, message_body, created_at, status").eq("user_id", session.userId).order("created_at", { ascending: false });
+    const threadIds = (data ?? []).map((thread) => thread.id);
+    const { data: replies } = threadIds.length > 0
+      ? await supabase.from("contact_message_replies").select("id, message_id, author_type, body, public_display_name, created_at").in("message_id", threadIds).eq("is_internal_note", false).order("created_at", { ascending: true })
+      : { data: [] };
+    legacyThreads = (data ?? []).map((thread) => ({
+      ...thread,
+      replies: (replies ?? []).filter((reply) => reply.message_id === thread.id).map(({ message_id: _messageId, ...reply }) => reply),
+    }));
   }
 
-  return (
-    <>
-      <NatureAnimatedBackground config={landing.background_settings} />
-      <main className="relative z-10 min-h-screen bg-transparent pb-20">
-        <AppHeader />
-      
-      <section className="mx-auto w-full max-w-[1024px] px-4 py-12 sm:px-8 sm:py-20">
-        <div className="max-w-2xl">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-text-secondary">
-            Inquiries
-          </p>
-          <h1 className="mt-4 break-words text-4xl font-semibold tracking-tight text-text-primary sm:text-5xl">
-            Let&apos;s connect
-          </h1>
-          <p className="mt-5 text-lg leading-relaxed text-text-secondary">
-            Reach out regarding private album access, editorial collaborations, or commercial usage permissions.
-          </p>
+  return <>
+    <NatureAnimatedBackground config={landing.background_settings} />
+    <main className="relative z-10 min-h-screen pb-20">
+      <AppHeader />
+      <section className="mx-auto w-full max-w-[1180px] px-4 py-14 sm:px-8 sm:py-24">
+        <div className="max-w-3xl">
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-text-secondary">A private line to Oriana</p>
+          <h1 className="mt-4 text-4xl font-semibold tracking-tight text-text-primary sm:text-6xl">Contact her</h1>
+          <p className="mt-6 max-w-2xl text-lg leading-relaxed text-text-secondary">For private album access, editorial work, licensing, or simply saying hello. Choose the way that feels most natural.</p>
         </div>
 
-        <div className="mt-16 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="rounded-[1.5rem] border border-border bg-surface p-6 shadow-sm">
-            <Lock className="h-6 w-6 text-accent" />
-            <h3 className="mt-4 text-base font-semibold text-text-primary">Private Access</h3>
-            <p className="mt-2 text-sm text-text-secondary">Request permission to view restricted portfolio galleries.</p>
-          </div>
-          <div className="rounded-[1.5rem] border border-border bg-surface p-6 shadow-sm">
-            <Camera className="h-6 w-6 text-accent" />
-            <h3 className="mt-4 text-base font-semibold text-text-primary">Collaboration</h3>
-            <p className="mt-2 text-sm text-text-secondary">Booking inquiries for editorial and campaign shoots.</p>
-          </div>
-          <div className="rounded-[1.5rem] border border-border bg-surface p-6 shadow-sm">
-            <Download className="h-6 w-6 text-accent" />
-            <h3 className="mt-4 text-base font-semibold text-text-primary">Downloads</h3>
-            <p className="mt-2 text-sm text-text-secondary">Commercial licensing and high-resolution media access.</p>
-          </div>
-          <div className="rounded-[1.5rem] border border-border bg-surface p-6 shadow-sm">
-            <Mail className="h-6 w-6 text-accent" />
-            <h3 className="mt-4 text-base font-semibold text-text-primary">General</h3>
-            <p className="mt-2 text-sm text-text-secondary">Any other questions or greetings you might have.</p>
+        <div className="mt-14 grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
+          {telegram ? <TelegramContactCard telegram={telegram} /> : null}
+
+          <div className="rounded-[2rem] border border-border bg-surface/85 p-6 shadow-xl shadow-text-primary/5 sm:p-8">
+            <div className="flex items-start gap-4"><div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-border bg-background/70"><Mail className="h-5 w-5 text-muted-accent" aria-hidden="true" /></div><div><h2 className="text-2xl font-semibold text-text-primary">Send a private message</h2><p className="mt-2 text-sm leading-relaxed text-text-secondary">A quieter option for detailed requests.</p></div></div>
+            {hasForm ? <div className="mt-8"><ContactForm contactEmail={settings.contact_email ?? undefined} formMode={settings.contact_form_mode} allowedTypes={settings.contact_allowed_inquiry_types} maxMessage={settings.contact_max_message_length} maxSubject={settings.contact_max_subject_length} maxName={settings.contact_max_name_length} initialEmail={session.email ?? ""} initialName={session.displayName ?? ""} useUnifiedInbox={Boolean(session.userId)} isAuthenticated={Boolean(session.userId)} senderLabel={session.displayName || session.email || ""} /></div> : <div className="mt-8 rounded-2xl border border-dashed border-border p-8 text-center text-sm text-text-secondary">Private messages are temporarily unavailable. Please request access from an album page.</div>}
           </div>
         </div>
 
-        <div className="mt-16 overflow-hidden rounded-[2rem] border border-border bg-surface-secondary/30">
-          <div className="grid md:grid-cols-2">
-            <div className="p-8 sm:p-12">
-              <h2 className="text-2xl font-semibold text-text-primary">Direct Message</h2>
-              <p className="mt-4 text-sm leading-relaxed text-text-secondary">
-                {hasEmail 
-                  ? "Use the form to draft an email directly to the owner. Please include relevant details about your inquiry."
-                  : "Direct contact is currently being prepared. Check back later or request access via the album pages."}
-              </p>
-              
-                <div className="mt-12">
-                  <div className="flex items-center space-x-4">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-surface/80 border border-border">
-                      <Mail className="h-5 w-5 text-accent" />
-                    </div>
-                    <div>
-                      <p className="text-xs font-medium uppercase tracking-wider text-text-secondary">Email Address</p>
-                      <div className="flex items-center mt-0.5">
-                        <p className="text-sm font-medium text-text-primary">
-                          {settings.contact_email || "Unavailable"}
-                        </p>
-                        {settings.contact_email && <CopyEmailButton email={settings.contact_email} />}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-            </div>
-            <div className="bg-surface/50 p-8 sm:p-12 border-t border-border md:border-t-0 md:border-l">
-              {hasEmail || settings.contact_form_mode !== "mailto_only" ? (
-                <ContactForm 
-                  contactEmail={settings.contact_email!} 
-                  formMode={settings.contact_form_mode}
-                  allowedTypes={settings.contact_allowed_inquiry_types}
-                  maxMessage={settings.contact_max_message_length}
-                  maxSubject={settings.contact_max_subject_length}
-                  maxName={settings.contact_max_name_length}
-                  initialEmail={session?.email || ""}
-                  initialName={session?.displayName || ""}
-                  useUnifiedInbox={Boolean(session?.userId)}
-                />
-              ) : (
-                <div className="h-full w-full rounded-2xl border border-dashed border-border flex flex-col items-center justify-center text-text-secondary p-8 text-center min-h-[300px]">
-                  <Mail className="h-12 w-12 opacity-20 mb-4" />
-                  <p>Contact form is currently unavailable</p>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* User Inquiries Section */}
-        {session?.userId && userMessages.length > 0 && (
-          <UserConversationList initialThreads={userMessages} />
-        )}
-        {session?.userId ? <HelpInbox /> : null}
+        {session.userId ? <HelpInbox /> : null}
+        {legacyThreads.length > 0 ? <section className="mt-12 border-t border-border pt-10"><p className="text-xs font-semibold uppercase tracking-[0.18em] text-text-secondary">Older conversations</p><UserConversationList initialThreads={legacyThreads} /></section> : null}
+        {!session.userId ? <div className="mt-12 flex gap-3 rounded-2xl border border-border bg-surface/70 p-5 text-sm text-text-secondary"><LockKeyhole className="mt-0.5 h-4 w-4 shrink-0 text-muted-accent" aria-hidden="true" /><p>For account questions and request history, sign in to continue through the private website conversation.</p></div> : null}
       </section>
-      </main>
-    </>
-  );
+    </main>
+  </>;
 }

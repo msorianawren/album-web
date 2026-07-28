@@ -16,7 +16,7 @@ export async function AppFooter() {
     { href: "/albums", label: "Albums" },
     { href: "/games", label: "Games" },
     { href: "/about", label: "About" },
-    { href: "/contact", label: "Contact" },
+    { href: "/contact", label: "Contact her" },
   ];
 
   return (

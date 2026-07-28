@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { Bell, HelpCircle, Lock, MessageSquare, ShieldCheck, X } from "lucide-react";
+import { Bell, Copy, HelpCircle, Lock, MessageSquare, Send, ShieldCheck, X } from "lucide-react";
 import { AssistantPet } from "@/components/assistant/AssistantPet";
 import {
   ASSISTANT_PANEL_STORAGE_KEY,
@@ -23,6 +23,7 @@ import { AssistantSearchBox } from "@/components/assistant/AssistantSearchBox";
 import { HelpThreadConversation } from "@/components/help/HelpThreadConversation";
 import { cn } from "@/lib/utils";
 import type { PublicSession } from "@/lib/types";
+import type { PublicTelegramContact } from "@/lib/contact/telegram";
 
 interface AssistantPanelProps {
   open: boolean;
@@ -30,6 +31,7 @@ interface AssistantPanelProps {
   preferences: AssistantPreferences;
   session: PublicSession;
   currentPath: string;
+  telegram: PublicTelegramContact | null;
 }
 
 function makeId(prefix: string) {
@@ -65,14 +67,17 @@ export function AssistantPanel({
   preferences,
   session,
   currentPath,
+  telegram,
 }: AssistantPanelProps) {
   const [messages, setMessages] = useState<AssistantMessage[]>([]);
   const [notificationCount, setNotificationCount] = useState<number | null>(null);
   const [handoffMessage, setHandoffMessage] = useState<AssistantMessage | null>(null);
   const [helpThreadId, setHelpThreadId] = useState<string | null>(null);
   const [handoffError, setHandoffError] = useState("");
+  const [telegramFeedback, setTelegramFeedback] = useState("");
   const locale: AssistantLocale = readSelectedAssistantLocale();
   const panelRef = useRef<HTMLElement>(null);
+  const overlayRef = useRef<HTMLDivElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
   const copy = getAssistantUICopy(locale);
   const quickActions = currentPath === "/games" ? getPuzzleAssistantQuickActions(locale) : getAssistantQuickActions(locale);
@@ -84,16 +89,65 @@ export function AssistantPanel({
       document.activeElement instanceof HTMLElement ? document.activeElement : null;
     window.setTimeout(() => panelRef.current?.focus(), 0);
 
+    const previousOverflow = document.body.style.overflow;
+    const background = (Array.from(document.body.children) as HTMLElement[]).filter((node) => node !== overlayRef.current);
+    const previousInert = background.map((node) => ({ node, inert: node.inert, ariaHidden: node.getAttribute("aria-hidden") }));
+    document.body.style.overflow = "hidden";
+    background.forEach((node) => {
+      node.inert = true;
+      node.setAttribute("aria-hidden", "true");
+    });
+
     function onKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") onClose();
+      if (event.key === "Escape") {
+        event.preventDefault();
+        onClose();
+        return;
+      }
+      if (event.key !== "Tab") return;
+      const panel = panelRef.current;
+      if (!panel) return;
+      const focusable = Array.from(panel.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      )).filter((element) => !element.hidden && element.offsetParent !== null);
+      if (focusable.length === 0) {
+        event.preventDefault();
+        panel.focus();
+        return;
+      }
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
     }
 
     document.addEventListener("keydown", onKeyDown);
     return () => {
       document.removeEventListener("keydown", onKeyDown);
+      document.body.style.overflow = previousOverflow;
+      previousInert.forEach(({ node, inert, ariaHidden }) => {
+        node.inert = inert;
+        if (ariaHidden === null) node.removeAttribute("aria-hidden");
+        else node.setAttribute("aria-hidden", ariaHidden);
+      });
       previousFocusRef.current?.focus();
     };
   }, [onClose, open]);
+
+  async function copyTelegramUsername() {
+    if (!telegram) return;
+    try {
+      await navigator.clipboard.writeText(telegram.displayUsername);
+      setTelegramFeedback("Telegram username copied.");
+    } catch {
+      setTelegramFeedback(`Copy unavailable. Please copy ${telegram.displayUsername}.`);
+    }
+  }
 
   useEffect(() => {
     if (!open) return;
@@ -192,16 +246,17 @@ export function AssistantPanel({
 
   return createPortal(
     <div
+      ref={overlayRef}
       className="fixed inset-0 z-[100] flex items-end justify-center p-0 sm:items-center sm:justify-end sm:p-4"
       role="dialog"
       aria-modal="true"
-      aria-label={copy.title}
+      aria-labelledby="oriana-companion-title"
       data-testid="oriana-companion-overlay"
     >
       <button
         type="button"
         aria-label={copy.closeLabel}
-        className="absolute inset-0 bg-text-primary/45 backdrop-blur-md"
+        className="absolute inset-0 cursor-default bg-black/[0.08] dark:bg-black/20"
         onClick={onClose}
       />
       <section
@@ -230,7 +285,7 @@ export function AssistantPanel({
                   <p className="text-xs font-semibold uppercase tracking-[0.18em] text-text-secondary">
                     {copy.title}
                   </p>
-                  <h2 className="mt-1 truncate text-lg font-semibold text-text-primary">
+                  <h2 id="oriana-companion-title" className="mt-1 truncate text-lg font-semibold text-text-primary">
                     {copy.subtitle}
                   </h2>
                   <p className="mt-1 text-xs text-text-secondary">
@@ -290,6 +345,21 @@ export function AssistantPanel({
                 sendToContactLabel={copy.sendToContact}
               />
             )}
+
+            {telegram ? (
+              <aside className="rounded-[1.3rem] border border-border bg-surface/85 p-4 shadow-sm shadow-text-primary/5">
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-text-secondary">Talk to Oriana directly</p>
+                <div className="mt-3 flex items-center justify-between gap-3">
+                  <div className="min-w-0"><p className="text-sm font-semibold text-text-primary">Telegram</p><p className="truncate text-sm text-text-secondary">{telegram.displayUsername}</p></div>
+                  <Send className="h-5 w-5 shrink-0 text-muted-accent" aria-hidden="true" />
+                </div>
+                <div className="mt-4 grid gap-2 sm:grid-cols-2">
+                  <a href={telegram.href} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center justify-center rounded-xl bg-accent px-3 text-xs font-semibold uppercase tracking-[0.12em] text-accent-foreground transition duration-200 hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" aria-label={`Message Oriana on Telegram as ${telegram.displayUsername}`}>Message Oriana</a>
+                  <button type="button" onClick={copyTelegramUsername} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-border bg-background/60 px-3 text-xs font-semibold uppercase tracking-[0.12em] text-text-primary transition duration-200 hover:border-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" aria-label={`Copy Telegram username ${telegram.displayUsername}`}><Copy className="h-3.5 w-3.5" aria-hidden="true" />Copy username</button>
+                </div>
+                {telegramFeedback ? <p className="mt-3 text-xs text-text-secondary" role="status">{telegramFeedback}</p> : null}
+              </aside>
+            ) : null}
           </div>
 
           {handoffMessage ? (

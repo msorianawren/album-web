@@ -8,6 +8,8 @@ import "@/components/assistant/assistant-pet.css";
 
 import { getPublicSession } from "@/lib/auth";
 import { getSiteSettings } from "@/lib/site-settings";
+import { getLandingPage } from "@/lib/landing";
+import { resolvePublicTelegramContact } from "@/lib/contact/telegram";
 
 function stringSetting(value: unknown, fallback: string) {
   return typeof value === "string" && value.trim() ? value : fallback;
@@ -61,9 +63,10 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const [settings, session] = await Promise.all([
+  const [settings, session, landing] = await Promise.all([
     getSiteSettings(),
     getPublicSession(),
+    getLandingPage(),
   ]);
   return (
     <html lang="en" className="h-full antialiased" suppressHydrationWarning>
@@ -79,7 +82,10 @@ export default async function RootLayout({
           <OAuthHashHandler />
           <EnvironmentShell />
           {children}
-          <CompanionShell session={session} />
+          <CompanionShell
+            session={session}
+            telegram={resolvePublicTelegramContact(landing.social_links)}
+          />
         </ToastProvider>
       </body>
     </html>

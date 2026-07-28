@@ -37,7 +37,7 @@ export const defaultLandingPage: LandingPageContent = {
     { id: "2", platform: "Facebook", url: "", label: "", enabled: true, order: 2 },
     { id: "3", platform: "Threads", url: "", label: "", enabled: true, order: 3 },
     { id: "4", platform: "TikTok", url: "", label: "", enabled: true, order: 4 },
-    { id: "5", platform: "Telegram", url: "", label: "", enabled: true, order: 5 },
+    { id: "5", platform: "Telegram", url: "@orianawren", label: "", enabled: true, order: 5 },
   ],
   media_items: [
     { id: "m1", type: "image", url: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=800&q=80", enabled: true, order: 1, title: "", caption: "", alt: "", poster_url: "" },

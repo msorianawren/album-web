@@ -17,6 +17,8 @@ interface ContactFormProps {
   initialEmail?: string;
   initialName?: string;
   useUnifiedInbox?: boolean;
+  isAuthenticated?: boolean;
+  senderLabel?: string;
 }
 
 export function ContactForm({
@@ -29,6 +31,8 @@ export function ContactForm({
   initialEmail = "",
   initialName = "",
   useUnifiedInbox = false,
+  isAuthenticated = false,
+  senderLabel = "",
 }: ContactFormProps) {
   const [formData, setFormData] = useState({
     name: initialName,
@@ -183,7 +187,7 @@ export function ContactForm({
         />
       </div>
 
-      <div className="grid gap-5 sm:grid-cols-2">
+      {isAuthenticated ? <p className="rounded-xl border border-border bg-background/50 px-4 py-3 text-sm text-text-secondary">Sending as <span className="font-medium text-text-primary">{senderLabel}</span></p> : <div className="grid gap-5 sm:grid-cols-2">
         <div className="space-y-1">
           <label htmlFor="name" className="text-xs font-medium uppercase tracking-wider text-text-secondary">Your Name</label>
           <Input id="name" name="name" required maxLength={maxName} value={formData.name} onChange={(e) => setFormData(p => ({ ...p, name: e.target.value }))} placeholder="Jane Doe" className="bg-surface/50" />
@@ -193,7 +197,7 @@ export function ContactForm({
           <label htmlFor="email" className="text-xs font-medium uppercase tracking-wider text-text-secondary">Your Email</label>
           <Input id="email" name="email" type="email" required maxLength={100} value={formData.email} onChange={(e) => setFormData(p => ({ ...p, email: e.target.value }))} placeholder="jane@example.com" className="bg-surface/50" />
         </div>
-      </div>
+      </div>}
 
       <div className="grid gap-5 sm:grid-cols-2">
         <div className="space-y-1">

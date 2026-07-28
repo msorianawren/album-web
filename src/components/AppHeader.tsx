@@ -27,7 +27,7 @@ export async function AppHeader() {
     { href: "/albums", label: dict.nav.albums },
     { href: "/games", label: dict.nav.games || "Games" },
     { href: "/about", label: dict.nav.about },
-    { href: "/contact", label: dict.nav.contact || "Contact Us" },
+    { href: "/contact", label: dict.nav.contact || "Contact her" },
   ];
   const mobileItems = navItems.filter((item) => item.label !== dict.nav.explore);
 

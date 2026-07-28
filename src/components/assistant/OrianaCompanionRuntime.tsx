@@ -15,6 +15,7 @@ import {
 import { getAssistantUICopy } from "@/lib/assistant/ui-copy";
 import { cn } from "@/lib/utils";
 import type { PublicSession } from "@/lib/types";
+import type { PublicTelegramContact } from "@/lib/contact/telegram";
 import {
   getGameRuntimeSuspensionSnapshot,
   getServerGameRuntimeSuspensionSnapshot,
@@ -28,6 +29,7 @@ const AssistantPanel = dynamic(
 
 interface OrianaCompanionRuntimeProps {
   session: PublicSession;
+  telegram: PublicTelegramContact | null;
 }
 
 function getCurrentPath(pathname: string) {
@@ -44,7 +46,7 @@ function getMediaViewerSnapshot() {
   return typeof document !== "undefined" && document.body.dataset.orianaMediaViewerOpen === "true";
 }
 
-export function OrianaCompanionRuntime({ session }: OrianaCompanionRuntimeProps) {
+export function OrianaCompanionRuntime({ session, telegram }: OrianaCompanionRuntimeProps) {
   const preferences = useStoredAssistantPreferences();
   const copy = getAssistantUICopy(readSelectedAssistantLocale());
   const pathname = usePathname() ?? "/";
@@ -140,6 +142,7 @@ export function OrianaCompanionRuntime({ session }: OrianaCompanionRuntimeProps)
           onClose={() => setOpen(false)}
           preferences={preferences}
           session={session}
+          telegram={telegram}
           currentPath={currentPath}
         />
       ) : null}

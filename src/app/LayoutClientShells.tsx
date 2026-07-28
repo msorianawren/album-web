@@ -12,6 +12,7 @@ import dynamic from "next/dynamic";
 import { Suspense } from "react";
 import { usePathname } from "next/navigation";
 import type { PublicSession } from "@/lib/types";
+import type { PublicTelegramContact } from "@/lib/contact/telegram";
 
 const PublicDepthEnvironment = dynamic(
   () => import("@/components/environment/PublicDepthEnvironment").then((m) => m.PublicDepthEnvironment),
@@ -43,7 +44,7 @@ export function EnvironmentShell() {
   );
 }
 
-export function CompanionShell({ session }: { session: PublicSession }) {
+export function CompanionShell({ session, telegram }: { session: PublicSession; telegram: PublicTelegramContact | null }) {
   const pathname = usePathname() ?? "/";
   if (pathname.startsWith("/studio")) return null;
   if (pathname.startsWith("/login")) return null;
@@ -51,7 +52,7 @@ export function CompanionShell({ session }: { session: PublicSession }) {
 
   return (
     <Suspense fallback={null}>
-      <OrianaCompanionRuntime session={session} />
+      <OrianaCompanionRuntime session={session} telegram={telegram} />
     </Suspense>
   );
 }
