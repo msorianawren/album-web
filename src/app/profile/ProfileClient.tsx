@@ -66,7 +66,7 @@ export default function ProfileClient({
     <>
       <NatureAnimatedBackground config={config} />
       <main className="min-h-screen relative text-text-primary px-5 py-24 pb-32">
-        <div className="mx-auto max-w-3xl grid gap-16 relative z-10">
+        <div className="mx-auto grid max-w-5xl gap-16 relative z-10">
         
         {/* Header */}
         <section className="relative text-center">
