@@ -21,7 +21,7 @@ export async function listFacebookFeedItems(client: SupabaseClient, query?: { se
 }
 
 export const getLandingFacebookFeedItems = unstable_cache(async (selectedIds: string[]) => {
-  const ids = selectedIds.slice(0, 6);
+  const ids = selectedIds.slice(0, 12);
   if (!ids.length) return [] as FacebookFeedItem[];
   const { data, error } = await supabase.from("social_embed_items").select(publicColumns).eq("provider", "facebook").eq("is_available", true).in("id", ids);
   if (error) return [];

@@ -76,7 +76,7 @@ export const defaultLandingPage: LandingPageContent = {
     showCaption: true,
     showPublishedDate: true,
     showFacebookBranding: true,
-    maxItems: 4,
+    maxItems: 6,
     itemOverrides: {},
   },
 };
@@ -154,7 +154,7 @@ export function normalizeFacebookFeedSettings(value: unknown): LandingFacebookFe
     showCaption: saved.showCaption !== false,
     showPublishedDate: saved.showPublishedDate !== false,
     showFacebookBranding: saved.showFacebookBranding !== false,
-    maxItems: Math.min(6, Math.max(1, typeof saved.maxItems === "number" && Number.isInteger(saved.maxItems) ? saved.maxItems : defaults.maxItems)),
+    maxItems: Math.min(12, Math.max(1, typeof saved.maxItems === "number" && Number.isInteger(saved.maxItems) ? saved.maxItems : defaults.maxItems)),
     itemOverrides,
   };
 }
