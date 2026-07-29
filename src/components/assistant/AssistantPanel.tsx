@@ -146,7 +146,13 @@ export function AssistantPanel({
         if (ariaHidden === null) node.removeAttribute("aria-hidden");
         else node.setAttribute("aria-hidden", ariaHidden);
       });
-      previousFocusRef.current?.focus();
+      const focusTarget = previousFocusRef.current;
+      const restoreFocus = () => {
+        if (focusTarget?.isConnected && !focusTarget.closest("[inert]")) {
+          focusTarget.focus({ preventScroll: true });
+        }
+      };
+      restoreFocus();
     };
   }, [onClose, open, returnFocusTarget]);
 

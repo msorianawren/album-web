@@ -14,7 +14,10 @@ test("public viewer deep-links media, navigates, and closes back to the album", 
         document.documentElement.dataset.chimeActivationCount = String(Number(document.documentElement.dataset.chimeActivationCount ?? "0") + 1);
       }, { once: true });
     });
-    await page.getByRole("button", { name: "Play the wind chime" }).first().click();
+    const chime = page.getByRole("button", { name: "Play the wind chime" }).first();
+    const chimeBox = await chime.boundingBox();
+    expect(chimeBox).not.toBeNull();
+    await page.mouse.click((chimeBox?.x ?? 0) + (chimeBox?.width ?? 0) / 2, (chimeBox?.y ?? 0) + (chimeBox?.height ?? 0) / 2);
     await expect.poll(() => page.locator("html").getAttribute("data-chime-activation-count")).toBe("1");
   }
 
@@ -34,9 +37,9 @@ test("public viewer deep-links media, navigates, and closes back to the album", 
   const stageAfterChromeHides = await stage.boundingBox();
   expect(stageAfterChromeHides?.height).toBe(stageBeforeChromeHides?.height);
 
-  await viewer.locator("[data-viewer-gesture-surface]").dblclick();
-  await expect(viewer.getByRole("button", { name: "Reset zoom" })).toBeVisible();
-  await viewer.getByRole("button", { name: "Reset zoom" }).click();
+    await viewer.locator("[data-viewer-gesture-surface]").dblclick();
+    await expect(viewer.getByRole("button", { name: "Reset zoom" })).toBeVisible();
+    await viewer.getByRole("button", { name: "Reset zoom" }).press("Enter");
   await expect(viewer.getByRole("slider", { name: "Browse album timeline" })).toBeVisible();
 
   await page.keyboard.press("Escape");

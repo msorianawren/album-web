@@ -32,6 +32,7 @@ export function UserMenu({ session, dict }: UserMenuProps) {
   const assistantPreferences = useStoredAssistantPreferences();
   const { mode: depthEffects, setMode: setDepthEffects } = useDepthEffects();
   const menuRef = useRef<HTMLDivElement>(null);
+  const menuToggleRef = useRef<HTMLButtonElement>(null);
   const pathname = usePathname() ?? "";
   const searchParams = useSearchParams();
   const assistantBehavior = resolveCompanionRuntimeBehavior(assistantPreferences);
@@ -85,8 +86,9 @@ export function UserMenu({ session, dict }: UserMenuProps) {
   return (
     <div ref={menuRef} className="relative ml-auto md:ml-0">
       <button
+        ref={menuToggleRef}
         type="button"
-        className="group flex items-center gap-2 rounded-full border border-border bg-surface/80 p-1 pr-2 shadow-lg shadow-text-primary/5 backdrop-blur transition-all duration-300 hover:-translate-y-0.5 hover:bg-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        className="group flex items-center gap-2 rounded-full border border-border bg-surface/80 p-1 pr-2 shadow-lg shadow-text-primary/5 backdrop-blur transition-colors duration-200 hover:bg-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         onClick={() => setOpen((current) => !current)}
         aria-expanded={open}
         aria-label="Open user menu"
@@ -101,10 +103,10 @@ export function UserMenu({ session, dict }: UserMenuProps) {
 
       <div
         data-oriana-menu-open={open ? "true" : "false"}
-        className={`fixed left-4 right-4 top-[5.25rem] z-50 max-h-[calc(100vh-6.5rem)] origin-top rounded-[1.4rem] border border-border bg-surface/95 p-3 shadow-2xl shadow-text-primary/20 backdrop-blur-xl transition duration-200 overflow-y-auto sm:absolute sm:left-auto sm:right-0 sm:top-14 sm:w-[min(20rem,calc(100vw-2rem))] sm:max-h-[calc(100vh-5rem)] sm:origin-top-right ${
+        className={`fixed left-4 right-4 top-[5.25rem] z-50 max-h-[calc(100vh-6.5rem)] rounded-[1.4rem] border border-border bg-surface/95 p-3 shadow-2xl shadow-text-primary/20 backdrop-blur-xl transition-opacity duration-200 overflow-y-auto sm:absolute sm:left-auto sm:right-0 sm:top-14 sm:w-[min(20rem,calc(100vw-2rem))] sm:max-h-[calc(100vh-5rem)] ${
           open
-            ? "translate-y-0 scale-100 opacity-100"
-            : "pointer-events-none -translate-y-2 scale-[0.98] opacity-0"
+            ? "opacity-100"
+            : "pointer-events-none opacity-0"
         }`}
       >
         <div className="flex items-center gap-3 rounded-[1rem] bg-background/75 p-3 mb-2">
@@ -184,8 +186,11 @@ export function UserMenu({ session, dict }: UserMenuProps) {
               type="button"
               className="flex w-full items-center gap-3 rounded-[1rem] px-3 py-3 text-left text-sm font-medium text-text-primary transition hover:bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               onClick={(event) => {
-                window.dispatchEvent(new CustomEvent(ORIANA_COMPANION_OPEN_EVENT, { detail: { opener: event.currentTarget } }));
                 setOpen(false);
+                const opener = menuToggleRef.current ?? event.currentTarget;
+                window.requestAnimationFrame(() => {
+                  window.dispatchEvent(new CustomEvent(ORIANA_COMPANION_OPEN_EVENT, { detail: { opener } }));
+                });
               }}
             >
               <Sparkles className="h-4 w-4 text-muted-accent" aria-hidden="true" />

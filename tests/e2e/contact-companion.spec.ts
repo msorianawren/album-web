@@ -43,10 +43,15 @@ test("Companion keeps the page sharp, blocks the background, and restores focus"
   await backdrop.click();
   await expect(panel).toBeHidden();
   await expect(page.locator("body")).not.toHaveAttribute("data-contact-background-click", "true");
-  const reopenedTrigger = await openCompanion(page);
+  const menuToggle = page.getByRole("button", { name: "Open user menu" });
+  await expect(menuToggle).toBeFocused();
+  await menuToggle.press("Enter");
+  const reopenedTrigger = page.getByRole("button", { name: "Ask Oriana Companion" });
+  await reopenedTrigger.press("Enter");
+  await expect(panel).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(panel).toBeHidden();
-  await expect(reopenedTrigger).toBeFocused();
+  await expect(menuToggle).toBeFocused();
 });
 
 test("Contact her presents Telegram and one primary inbox", async ({ page }) => {
@@ -85,7 +90,7 @@ test("Hidden is persisted for guests and removes every runtime entry except sett
   await expect(page.getByRole("button", { name: "Ask Oriana Companion" })).toHaveCount(0);
   await expect(page.getByTestId("oriana-companion-dock")).toHaveCount(0);
   await page.reload();
-  await page.getByRole("button", { name: "Open user menu" }).click();
+  await page.getByRole("button", { name: "Open user menu" }).press("Enter");
   await expect(page.getByRole("button", { name: "Ask Oriana Companion" })).toHaveCount(0);
 });
 

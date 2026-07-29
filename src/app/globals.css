@@ -298,9 +298,11 @@ canvas {
 }
 
 .public-chime-control {
-  pointer-events: auto;
+  /* Pointer activation is delegated at window level so transparent app
+     surfaces cannot cover the chimes, while actual controls keep priority. */
+  pointer-events: none;
   position: absolute;
-  /* Keep decorative chime hit targets below application controls. */
+  /* Keep the keyboard-accessible target below application controls. */
   z-index: 2;
   border: 0;
   border-radius: 0.9rem;
