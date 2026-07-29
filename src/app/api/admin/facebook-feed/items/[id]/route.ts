@@ -7,10 +7,12 @@ import { logAuditEvent } from "@/lib/audit";
 import { enforceRateLimit } from "@/lib/security-rate-limit";
 import { facebookFeedColumns } from "@/lib/facebook-feed/data";
 import { canonicalizeFacebookUrl, inferFacebookEmbedKind, validateFacebookPosterUrl } from "@/lib/facebook-feed/url";
+import { nativeVideoKeyFromUrl, validateNativeVideoMetadata, validateNativeVideoUrl } from "@/lib/facebook-feed/native-video";
+import { headR2Object } from "@/lib/r2";
 import type { PublicSession } from "@/lib/types";
 
 const patchInput = z.object({
-  sourceUrl: z.string().trim().min(1).max(2_000).optional(), embedKind: z.enum(["auto", "post", "video", "reel"]).optional(),
+  sourceUrl: z.string().trim().min(1).max(2_000).optional(), embedKind: z.enum(["auto", "post", "video", "reel"]).optional(), playbackMode: z.enum(["native", "facebook_embed"]).optional(), videoUrl: z.string().url().max(2_000).nullable().optional(), durationSeconds: z.number().positive().max(86_400).nullable().optional(),
   posterUrl: z.string().url().max(2_000).optional(), posterAlt: z.string().trim().max(240).nullable().optional(),
   title: z.string().trim().max(180).nullable().optional(), caption: z.string().trim().max(1_500).nullable().optional(),
   publishedAt: z.string().trim().max(80).nullable().optional(), width: z.number().int().positive().max(10_000).nullable().optional(), height: z.number().int().positive().max(10_000).nullable().optional(),
@@ -27,17 +29,30 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   try {
     const parsed = patchInput.safeParse(await request.json()); if (!parsed.success) return apiError("INVALID_INPUT", "Check the Facebook feed fields.", 400);
     const { id } = await params;
-    const { data: existing, error: readError } = await database.client.from("social_embed_items").select("source_url,canonical_url,embed_kind").eq("id", id).eq("provider", "facebook").maybeSingle();
+    const { data: existing, error: readError } = await database.client.from("social_embed_items").select("source_url,canonical_url,embed_kind,playback_mode,video_url").eq("id", id).eq("provider", "facebook").maybeSingle();
     if (readError) throw readError; if (!existing) return apiError("NOT_FOUND", "Facebook feed item not found.", 404);
     const input = parsed.data; const sourceUrl = input.sourceUrl ?? existing.source_url; const canonicalUrl = canonicalizeFacebookUrl(sourceUrl);
+    const playbackMode = input.playbackMode ?? existing.playback_mode;
+    const requestedVideoUrl = input.videoUrl === undefined ? existing.video_url : input.videoUrl;
+    let nativeUpdate = {};
+    if (playbackMode === "native") {
+      if (!requestedVideoUrl) throw new Error("Native playback requires an MP4 video uploaded through Studio.");
+      const key = nativeVideoKeyFromUrl(requestedVideoUrl, process.env.R2_PUBLIC_URL);
+      const object = await headR2Object(key);
+      validateNativeVideoMetadata(object.contentType, object.contentLength);
+      nativeUpdate = { video_url: validateNativeVideoUrl(requestedVideoUrl, process.env.R2_PUBLIC_URL), video_mime_type: object.contentType, video_size_bytes: object.contentLength, duration_seconds: input.durationSeconds ?? null };
+    } else if (input.playbackMode === "facebook_embed") {
+      nativeUpdate = { video_url: null, video_mime_type: null, video_size_bytes: null, duration_seconds: null };
+    }
     const update = {
       ...(input.sourceUrl !== undefined || input.embedKind !== undefined ? { source_url: sourceUrl, canonical_url: canonicalUrl, embed_kind: inferFacebookEmbedKind(canonicalUrl, input.embedKind ?? existing.embed_kind) } : {}),
+      ...(input.playbackMode !== undefined ? { playback_mode: playbackMode } : {}), ...nativeUpdate,
       ...(input.posterUrl !== undefined ? { poster_url: validateFacebookPosterUrl(input.posterUrl, process.env.R2_PUBLIC_URL) } : {}), ...(input.posterAlt !== undefined ? { poster_alt: nullText(input.posterAlt) } : {}), ...(input.title !== undefined ? { title: nullText(input.title) } : {}), ...(input.caption !== undefined ? { caption: nullText(input.caption) } : {}), ...(input.publishedAt !== undefined ? { published_at: published(input.publishedAt) } : {}), ...(input.width !== undefined ? { width: input.width } : {}), ...(input.height !== undefined ? { height: input.height } : {}), ...(input.aspectRatio !== undefined ? { aspect_ratio: input.aspectRatio === "auto" ? null : input.aspectRatio } : {}), ...(input.isAvailable !== undefined ? { is_available: input.isAvailable } : {}), ...(input.availabilityNote !== undefined ? { availability_note: nullText(input.availabilityNote) } : {}),
     };
     const { data, error } = await database.client.from("social_embed_items").update(update).eq("id", id).eq("provider", "facebook").select(facebookFeedColumns).single();
     if (error?.code === "23505") return apiError("CONFLICT", "This Facebook permalink is already in the library.", 409); if (error) throw error;
     await logAuditEvent({ request, session: database.session, action: "facebook_feed_item_updated", targetType: "social_embed_item", targetId: id }); invalidate(); return apiSuccess({ item: data });
-  } catch (error) { return error instanceof Error && (error.message.startsWith("Use ") || error.message.startsWith("Enter ") || error.message.startsWith("Project ")) ? apiError("INVALID_INPUT", error.message, 400) : toServerError(error, request, "facebook-feed.update"); }
+  } catch (error) { return error instanceof Error && (error.message.startsWith("Use ") || error.message.startsWith("Enter ") || error.message.startsWith("Project ") || error.message.startsWith("Native ")) ? apiError("INVALID_INPUT", error.message, 400) : toServerError(error, request, "facebook-feed.update"); }
 }
 
 export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {

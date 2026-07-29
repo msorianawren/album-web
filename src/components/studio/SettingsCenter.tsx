@@ -351,6 +351,47 @@ export function SettingsCenter({
     }
   }
 
+  async function uploadFacebookNativeVideo(file: File, onProgress: (percent: number) => void) {
+    if (file.type !== "video/mp4") throw new Error("Upload an MP4 video (H.264/AAC recommended).");
+    if (file.size > 500 * 1024 * 1024) throw new Error("Native videos are limited to 500 MB.");
+    setLandingMessage("Requesting a direct R2 upload URL...");
+    const presign = await fetch("/api/admin/facebook-feed/videos/presign", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ filename: file.name, mimeType: file.type, size: file.size }) });
+    const presignPayload = await presign.json();
+    if (!presignPayload.success) throw new Error(presignPayload.message ?? "Could not prepare the native video upload.");
+    const { uploadUrl, r2Key } = presignPayload.data;
+    setLandingMessage("Uploading original MP4 directly to project media storage...");
+    await new Promise<void>((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open("PUT", uploadUrl);
+      xhr.setRequestHeader("Content-Type", "video/mp4");
+      xhr.upload.onprogress = (event) => { if (event.lengthComputable) onProgress(Math.round(event.loaded / event.total * 100)); };
+      xhr.onload = () => xhr.status >= 200 && xhr.status < 300 ? resolve() : reject(new Error(`Project media storage returned status ${xhr.status}.`));
+      xhr.onerror = () => reject(new Error("Direct R2 upload failed."));
+      xhr.send(file);
+    });
+    setLandingMessage("Validating video metadata in project media storage...");
+    const complete = await fetch("/api/admin/facebook-feed/videos/complete", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ r2Key }) });
+    const completePayload = await complete.json();
+    if (!completePayload.success) throw new Error(completePayload.message ?? "Could not validate the uploaded MP4.");
+    const mediaUrl = new URL(completePayload.data.videoUrl as string);
+    if (mediaUrl.origin === window.location.origin || mediaUrl.hostname.endsWith(".r2.dev")) {
+      throw new Error("Native playback requires the configured custom project media domain.");
+    }
+    setLandingMessage("Verifying direct custom-media playback, CORS, and byte-range seeking...");
+    const head = await fetch(mediaUrl, { method: "HEAD", mode: "cors", credentials: "omit" });
+    if (!head.ok || head.headers.get("content-type") !== "video/mp4") {
+      throw new Error("The custom project media domain did not return video/mp4 for the upload.");
+    }
+    const range = await fetch(mediaUrl, { headers: { Range: "bytes=0-1" }, mode: "cors", credentials: "omit" });
+    if (range.status !== 206 || !range.headers.get("content-range")) {
+      throw new Error("The custom project media domain did not confirm byte-range seeking.");
+    }
+    await range.body?.cancel();
+    const durationSeconds = await new Promise<number | null>((resolve) => { const video = document.createElement("video"); const objectUrl = URL.createObjectURL(file); video.preload = "metadata"; video.onloadedmetadata = () => { URL.revokeObjectURL(objectUrl); resolve(Number.isFinite(video.duration) ? video.duration : null); }; video.onerror = () => { URL.revokeObjectURL(objectUrl); resolve(null); }; video.src = objectUrl; });
+    setLandingMessage("Original video uploaded directly to project media storage.");
+    return { url: completePayload.data.videoUrl as string, mimeType: completePayload.data.videoMimeType as string, sizeBytes: completePayload.data.videoSizeBytes as number, durationSeconds };
+  }
+
   async function checkR2() {
     setR2Result("Checking R2...");
     const response = await fetch("/api/studio/r2-health-check", { method: "POST" });
@@ -784,7 +825,7 @@ export function SettingsCenter({
                   translations[activeLandingLocale] = { ...translations[activeLandingLocale], facebook_feed_eyebrow: copy.eyebrow, facebook_feed_heading: copy.heading, facebook_feed_description: copy.description };
                   updateLanding("translations", translations);
                 }
-              }} uploadPoster={async (file) => uploadLandingAsset("media", file)} /> : null}
+              }} uploadPoster={async (file) => uploadLandingAsset("media", file)} uploadNativeVideo={uploadFacebookNativeVideo} /> : null}
             </div>
             <LandingPreview landing={landing} activeLandingLocale={activeLandingLocale} />
           </div>

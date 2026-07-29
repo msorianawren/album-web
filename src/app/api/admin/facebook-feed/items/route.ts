@@ -7,10 +7,15 @@ import { logAuditEvent } from "@/lib/audit";
 import { enforceRateLimit } from "@/lib/security-rate-limit";
 import { facebookFeedColumns, listFacebookFeedItems } from "@/lib/facebook-feed/data";
 import { canonicalizeFacebookUrl, inferFacebookEmbedKind, validateFacebookPosterUrl } from "@/lib/facebook-feed/url";
+import { nativeVideoKeyFromUrl, validateNativeVideoMetadata, validateNativeVideoUrl } from "@/lib/facebook-feed/native-video";
+import { headR2Object } from "@/lib/r2";
 
 const itemInput = z.object({
   sourceUrl: z.string().trim().min(1).max(2_000),
   embedKind: z.enum(["auto", "post", "video", "reel"]).default("auto"),
+  playbackMode: z.enum(["native", "facebook_embed"]).default("facebook_embed"),
+  videoUrl: z.string().url().max(2_000).optional().nullable(),
+  durationSeconds: z.number().positive().max(86_400).optional().nullable(),
   posterUrl: z.string().url().max(2_000),
   posterAlt: z.string().trim().max(240).optional().nullable(),
   title: z.string().trim().max(180).optional().nullable(),
@@ -30,13 +35,23 @@ function toPublishedAt(value: string | null | undefined) {
   if (Number.isNaN(date.getTime())) throw new Error("Published date is invalid.");
   return date.toISOString();
 }
-function toRow(input: z.infer<typeof itemInput>) {
+async function toRow(input: z.infer<typeof itemInput>) {
   const canonicalUrl = canonicalizeFacebookUrl(input.sourceUrl);
+  let native = { video_url: null as string | null, video_mime_type: null as string | null, video_size_bytes: null as number | null, duration_seconds: null as number | null };
+  if (input.playbackMode === "native") {
+    if (!input.videoUrl) throw new Error("Native playback requires an MP4 video uploaded through Studio.");
+    const key = nativeVideoKeyFromUrl(input.videoUrl, process.env.R2_PUBLIC_URL);
+    const object = await headR2Object(key);
+    validateNativeVideoMetadata(object.contentType, object.contentLength);
+    native = { video_url: validateNativeVideoUrl(input.videoUrl, process.env.R2_PUBLIC_URL), video_mime_type: object.contentType, video_size_bytes: object.contentLength, duration_seconds: input.durationSeconds ?? null };
+  }
   return {
     provider: "facebook" as const,
     source_url: input.sourceUrl.trim(),
     canonical_url: canonicalUrl,
     embed_kind: inferFacebookEmbedKind(canonicalUrl, input.embedKind),
+    playback_mode: input.playbackMode,
+    ...native,
     poster_url: validateFacebookPosterUrl(input.posterUrl, process.env.R2_PUBLIC_URL),
     poster_alt: cleanText(input.posterAlt), title: cleanText(input.title), caption: cleanText(input.caption),
     published_at: toPublishedAt(input.publishedAt), width: input.width ?? null, height: input.height ?? null,
@@ -66,11 +81,11 @@ export async function POST(request: NextRequest) {
   try {
     const parsed = itemInput.safeParse(await request.json());
     if (!parsed.success) return apiError("INVALID_INPUT", "Check the Facebook permalink and required poster.", 400);
-    const { data, error } = await database.client.from("social_embed_items").insert({ ...toRow(parsed.data), created_by: database.session.userId }).select(facebookFeedColumns).single();
+    const { data, error } = await database.client.from("social_embed_items").insert({ ...(await toRow(parsed.data)), created_by: database.session.userId }).select(facebookFeedColumns).single();
     if (error?.code === "23505") return apiError("CONFLICT", "This Facebook permalink is already in the library.", 409);
     if (error) throw error;
     await logAuditEvent({ request, session: database.session, action: "facebook_feed_item_created", targetType: "social_embed_item", targetId: data.id });
     revalidateTag("facebook-curated-feed", "max"); revalidateTag("landing-page", "max"); revalidatePath("/");
     return apiSuccess({ item: data }, { status: 201 });
-  } catch (error) { return error instanceof Error && (error.message.startsWith("Use ") || error.message.startsWith("Enter ") || error.message.startsWith("Project ")) ? apiError("INVALID_INPUT", error.message, 400) : toServerError(error, request, "facebook-feed.create"); }
+  } catch (error) { return error instanceof Error && (error.message.startsWith("Use ") || error.message.startsWith("Enter ") || error.message.startsWith("Project ") || error.message.startsWith("Native ")) ? apiError("INVALID_INPUT", error.message, 400) : toServerError(error, request, "facebook-feed.create"); }
 }

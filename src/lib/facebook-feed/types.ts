@@ -1,5 +1,6 @@
 export type FacebookEmbedKind = "post" | "video" | "reel";
 export type FacebookEmbedKindInput = FacebookEmbedKind | "auto";
+export type SocialPlaybackMode = "native" | "facebook_embed";
 
 export interface FacebookFeedItem {
   id: string;
@@ -7,6 +8,11 @@ export interface FacebookFeedItem {
   source_url: string;
   canonical_url: string;
   embed_kind: FacebookEmbedKind;
+  playback_mode: SocialPlaybackMode;
+  video_url: string | null;
+  video_mime_type: string | null;
+  video_size_bytes: number | null;
+  duration_seconds: number | null;
   title: string | null;
   caption: string | null;
   poster_url: string;

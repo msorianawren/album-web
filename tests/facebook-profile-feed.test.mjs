@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { readFile } from "node:fs/promises";
 import { buildFacebookEmbedUrl, canonicalizeFacebookUrl, getFacebookEmbedAspectRatio, inferFacebookEmbedKind, validateFacebookPosterUrl } from "../src/lib/facebook-feed/url.ts";
+import { nativeVideoKeyFromUrl, validateNativeVideoMetadata, validateNativeVideoUrl } from "../src/lib/facebook-feed/native-video.ts";
 import { normalizeFacebookFeedSelection } from "../src/lib/facebook-feed/settings.ts";
 
 test("canonicalizes exact public Facebook hosts and removes tracking", () => {
@@ -39,6 +40,18 @@ test("accepts only project-hosted HTTPS posters and preserves content ratios", (
   assert.equal(getFacebookEmbedAspectRatio({ width: null, height: null, aspect_ratio: null }), 16 / 9);
 });
 
+test("accepts native video only from the configured custom media domain", () => {
+  const origin = "https://media.orianawren.example";
+  const url = "https://media.orianawren.example/landing/facebook-feed/videos/123/asset.mp4";
+  assert.equal(nativeVideoKeyFromUrl(url, origin), "landing/facebook-feed/videos/123/asset.mp4");
+  assert.equal(validateNativeVideoUrl(url, origin), url);
+  assert.throws(() => nativeVideoKeyFromUrl("https://evil.example/landing/facebook-feed/videos/123/asset.mp4", origin));
+  assert.throws(() => nativeVideoKeyFromUrl("https://bucket.r2.dev/landing/facebook-feed/videos/123/asset.mp4", "https://bucket.r2.dev"));
+  assert.throws(() => nativeVideoKeyFromUrl("https://media.orianawren.example/landing/facebook-feed/videos/123/asset.mp4?token=bad", origin));
+  assert.doesNotThrow(() => validateNativeVideoMetadata("video/mp4", 1));
+  assert.throws(() => validateNativeVideoMetadata("video/webm", 100));
+});
+
 test("landing feed selection is normalized to six unique UUIDs", () => {
   const first = "11111111-1111-4111-8111-111111111111"; const second = "22222222-2222-4222-8222-222222222222";
   assert.deepEqual(normalizeFacebookFeedSelection([first, first, "bad", second]), [first, second]);
@@ -51,10 +64,14 @@ test("removed Page API implementation is absent from active source and configura
 });
 
 test("migration, rollback, and modal keep the curated feed secure and usable", async () => {
-  const [migration, rollback, player, createRoute, deleteRoute] = await Promise.all([
+  const [migration, nativeMigration, rollback, player, editor, settings, nativeVideo, createRoute, deleteRoute] = await Promise.all([
     readFile("supabase/migrations/202607291000_social_embed_items.sql", "utf8"),
+    readFile("supabase/migrations/202607291100_social_embed_native_playback.sql", "utf8"),
     readFile("supabase/rollbacks/202607291000_social_embed_items_rollback.sql", "utf8"),
     readFile("src/components/landing/FacebookVideoPlayer.tsx", "utf8"),
+    readFile("src/components/studio/FacebookFeedLandingEditor.tsx", "utf8"),
+    readFile("src/components/studio/SettingsCenter.tsx", "utf8"),
+    readFile("src/lib/facebook-feed/native-video.ts", "utf8"),
     readFile("src/app/api/admin/facebook-feed/items/route.ts", "utf8"),
     readFile("src/app/api/admin/facebook-feed/items/[id]/route.ts", "utf8"),
   ]);
@@ -65,12 +82,28 @@ test("migration, rollback, and modal keep the curated feed secure and usable", a
   assert.match(rollback, /drop function if exists public\.delete_social_embed_item_and_cleanup\(uuid\)/i);
   assert.match(rollback, /drop table if exists public\.social_embed_items/i);
   assert.match(rollback, /drop column if exists facebook_feed_settings/i);
+  assert.match(nativeMigration, /add column if not exists playback_mode/i);
+  assert.match(nativeMigration, /video_url text/i);
+  assert.match(nativeMigration, /video_mime_type text/i);
+  assert.match(nativeMigration, /video_size_bytes bigint/i);
+  assert.match(nativeMigration, /duration_seconds numeric/i);
+  assert.match(nativeMigration, /video_mime_type = 'video\/mp4'/i);
   assert.match(player, /data-testid="facebook-video-dialog"/);
+  assert.match(player, /data-testid="native-video-player"/);
+  assert.match(player, /controls playsInline preload="metadata"/);
+  assert.match(player, /object-contain/);
+  assert.doesNotMatch(player, /window\.open/);
   assert.match(player, /event\.key !== "Tab"/);
   assert.match(player, /window\.setTimeout\(\(\) => setTimedOut\(true\), playerTimeoutMs\)/);
-  assert.match(player, /View on Facebook/);
+  assert.match(player, /View original on Facebook/);
   assert.match(player, /getFacebookEmbedAspectRatio/);
+  assert.match(editor, /playbackMode: "native"/);
+  assert.match(settings, /xhr\.send\(file\)/);
+  assert.match(settings, /Range: "bytes=0-1"/);
+  assert.match(settings, /hostname\.endsWith\("\.r2\.dev"\)/);
+  assert.match(nativeVideo, /hostname\.endsWith\("\.r2\.dev"\)/);
   assert.match(createRoute, /getTrustedFounderDatabase/);
+  assert.match(createRoute, /headR2Object/);
   assert.match(createRoute, /validateFacebookPosterUrl/);
   assert.match(deleteRoute, /delete_social_embed_item_and_cleanup/);
 });

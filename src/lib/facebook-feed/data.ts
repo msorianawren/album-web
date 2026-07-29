@@ -4,8 +4,8 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
 import type { FacebookFeedItem } from "@/lib/facebook-feed/types";
 
-export const facebookFeedColumns = "id,provider,source_url,canonical_url,embed_kind,title,caption,poster_url,poster_alt,published_at,width,height,aspect_ratio,is_available,availability_note,created_at,updated_at";
-const publicColumns = "id,provider,canonical_url,embed_kind,title,caption,poster_url,poster_alt,published_at,width,height,aspect_ratio";
+export const facebookFeedColumns = "id,provider,source_url,canonical_url,embed_kind,playback_mode,video_url,video_mime_type,video_size_bytes,duration_seconds,title,caption,poster_url,poster_alt,published_at,width,height,aspect_ratio,is_available,availability_note,created_at,updated_at";
+const publicColumns = "id,provider,canonical_url,embed_kind,playback_mode,video_url,video_mime_type,video_size_bytes,duration_seconds,title,caption,poster_url,poster_alt,published_at,width,height,aspect_ratio";
 
 export async function listFacebookFeedItems(client: SupabaseClient, query?: { search?: string; page?: number; limit?: number }) {
   const page = Math.max(1, query?.page ?? 1);
