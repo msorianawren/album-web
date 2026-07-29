@@ -35,6 +35,20 @@ function getUserProvider(user: User) {
   return typeof provider === "string" && provider.trim() ? provider : "google";
 }
 
+/**
+ * Supabase preserves the original provider in `app_metadata.provider` when a
+ * password account is later linked to Google. OAuth sign-in remains valid in
+ * that case, so check the authoritative linked-provider list as well.
+ */
+export function hasGoogleIdentity(user: User) {
+  if (user.app_metadata?.provider === "google") return true;
+
+  const providers = user.app_metadata?.providers;
+  if (Array.isArray(providers) && providers.includes("google")) return true;
+
+  return user.identities?.some((identity) => identity.provider === "google") ?? false;
+}
+
 export async function getCurrentUser(request?: NextRequest): Promise<User | null> {
   const token = await getAccessTokenFromRuntime(request);
   if (!token) return null;

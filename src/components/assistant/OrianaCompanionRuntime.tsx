@@ -26,6 +26,7 @@ import {
   ORIANA_COMPANION_OPEN_EVENT,
   ORIANA_MEDIA_VIEWER_STATE_EVENT,
   type CompanionContextEventDetail,
+  type CompanionOpenEventDetail,
 } from "@/lib/assistant/runtime-events";
 import { getAssistantUICopy } from "@/lib/assistant/ui-copy";
 import { playCompanionChime } from "@/lib/assistant/sound";
@@ -91,6 +92,7 @@ export function OrianaCompanionRuntime({ session, telegram }: OrianaCompanionRun
   const [hasOpened, setHasOpened] = useState(false);
   const [dismissedKey, setDismissedKey] = useState<string | null>(null);
   const [state, setState] = useState<CompanionStateSnapshot>({ state: "idle", since: 0 });
+  const [panelOpener, setPanelOpener] = useState<HTMLElement | null>(null);
   const reducedMotion = usePrefersReducedMotion();
   const mediaViewerOpen = useSyncExternalStore(
     subscribeMediaViewerState,
@@ -124,15 +126,18 @@ export function OrianaCompanionRuntime({ session, telegram }: OrianaCompanionRun
     };
   }, []);
 
-  const openPanel = useCallback(() => {
+  const openPanel = useCallback((opener?: HTMLElement | null) => {
     if (!canUseRuntime || !behavior.manualTriggerEnabled) return;
+    setPanelOpener(opener
+      ?? (document.activeElement instanceof HTMLElement ? document.activeElement : null));
     setHasOpened(true);
     setOpen(true);
   }, [behavior.manualTriggerEnabled, canUseRuntime]);
 
   useEffect(() => {
-    function handleOpen() {
-      openPanel();
+    function handleOpen(event: Event) {
+      const opener = (event as CustomEvent<CompanionOpenEventDetail>).detail?.opener;
+      openPanel(opener);
     }
     window.addEventListener(ORIANA_COMPANION_OPEN_EVENT, handleOpen);
     return () => window.removeEventListener(ORIANA_COMPANION_OPEN_EVENT, handleOpen);
@@ -215,6 +220,7 @@ export function OrianaCompanionRuntime({ session, telegram }: OrianaCompanionRun
         <AssistantPanel
           open={open && canUseRuntime}
           onClose={() => setOpen(false)}
+          returnFocusTarget={panelOpener}
           preferences={preferences}
           session={session}
           telegram={telegram}

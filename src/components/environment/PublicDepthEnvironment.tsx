@@ -241,11 +241,20 @@ function PublicDepthEnvironmentContent({ pathname }: { pathname: string }) {
         ticking = true;
       }
     };
+    const onPointerDown = (event: PointerEvent) => {
+      if (event.button !== 0 || isOverlayInteractionActive()) return;
+      if (!isChimeControlTarget(event.target) && isProtectedInteractiveTarget(event.target)) return;
+      const point = toDocumentPoint(event);
+      const chime = hitChime(activeRectsRef.current, point.x, point.y);
+      if (chime) playChime(chime);
+    };
     window.addEventListener("pointermove", onPointerMove, { passive: true });
+    window.addEventListener("pointerdown", onPointerDown, true);
     return () => {
       window.removeEventListener("pointermove", onPointerMove);
+      window.removeEventListener("pointerdown", onPointerDown, true);
     };
-  }, [interactiveChimesEnabled, reducedMotion]);
+  }, [interactiveChimesEnabled, playChime, reducedMotion]);
 
   return (
     <>

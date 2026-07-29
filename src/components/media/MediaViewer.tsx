@@ -108,7 +108,8 @@ export function MediaViewer({
   const resetZoom = useCallback(() => {
     setScale(1);
     setTranslate({ x: 0, y: 0 });
-  }, [setScale, setTranslate]);
+    setControlsVisible(true);
+  }, [setControlsVisible, setScale, setTranslate]);
 
   const toggleFullscreen = useCallback(() => {
     setControlsVisible(true);

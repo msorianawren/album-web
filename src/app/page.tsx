@@ -11,12 +11,14 @@ import { HomeMediaGallery } from "@/components/landing/HomeMediaGallery";
 import { HomeCollaborators } from "@/components/landing/HomeCollaborators";
 import { HomePersonalLetterWrapper } from "@/components/landing/HomePersonalLetterWrapper";
 import { HomeAlbumWorldsWrapper } from "@/components/landing/HomeAlbumWorldsWrapper";
+import { HomeFacebookFeed } from "@/components/landing/HomeFacebookFeed";
 import { Suspense } from "react";
 
 import { getLandingPage } from "@/lib/landing";
 import { getFeaturedAlbums } from "@/lib/albums";
 import { getAboutProfile } from "@/lib/about";
 import { getSiteSettings } from "@/lib/site-settings";
+import { getLandingFacebookFeedItems } from "@/lib/facebook-feed/data";
 
 import { cookies } from "next/headers";
 import { AppLocale } from "@/lib/i18n";
@@ -33,6 +35,16 @@ export default async function Home() {
   const cookieStore = await cookies();
   const locale = (cookieStore.get("NEXT_LOCALE")?.value || "en") as AppLocale;
   const dict = await getDictionary(locale);
+  const facebookFeedSettings = landing.facebook_feed_settings;
+  const localizedFacebookFeedSettings = facebookFeedSettings && locale !== "en" ? {
+    ...facebookFeedSettings,
+    eyebrow: landing.translations?.[locale]?.facebook_feed_eyebrow ?? facebookFeedSettings.eyebrow,
+    heading: landing.translations?.[locale]?.facebook_feed_heading ?? facebookFeedSettings.heading,
+    description: landing.translations?.[locale]?.facebook_feed_description ?? facebookFeedSettings.description,
+  } : facebookFeedSettings;
+  const facebookFeedItems = facebookFeedSettings?.enabled
+    ? await getLandingFacebookFeedItems(facebookFeedSettings.selectedItemIds)
+    : [];
 
   return (
     <>
@@ -40,6 +52,7 @@ export default async function Home() {
       <main className="relative z-10 min-h-screen bg-transparent">
         <AppHeader />
       <HomeHero landing={landing} settings={settings} locale={locale} dict={dict} />
+      {localizedFacebookFeedSettings ? <HomeFacebookFeed settings={localizedFacebookFeedSettings} items={facebookFeedItems} /> : null}
       
       {landing.section_toggles?.editorial_intro !== false && <HomeEditorialIntro landing={landing} settings={settings} />}
       {landing.section_toggles?.album_worlds !== false && (

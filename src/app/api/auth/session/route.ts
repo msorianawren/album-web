@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { upsertUserProfile } from "@/lib/auth";
+import { hasGoogleIdentity, upsertUserProfile } from "@/lib/auth";
 import { clearAuthFlowCookies } from "@/lib/auth-flow";
 import { apiError, apiSuccess, toServerError } from "@/lib/errors";
 import { setSessionCookies } from "@/lib/session-cookies";
@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
       return apiError("UNAUTHENTICATED", "Invalid Google session.", 401);
     }
 
-    if (data.user.app_metadata?.provider !== "google") {
+    if (!hasGoogleIdentity(data.user)) {
       return apiError("FORBIDDEN", "Google login is required.", 403);
     }
 
