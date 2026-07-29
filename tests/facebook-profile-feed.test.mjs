@@ -98,6 +98,8 @@ test("migration, rollback, and modal keep the curated feed secure and usable", a
   assert.match(player, /View original on Facebook/);
   assert.match(player, /getFacebookEmbedAspectRatio/);
   assert.match(editor, /playbackMode: "native"/);
+  assert.match(editor, /aria-label="Native video URL" value={form\.videoUrl} onChange/);
+  assert.doesNotMatch(editor, /readOnly aria-label="Native video URL"/);
   assert.match(settings, /xhr\.send\(file\)/);
   assert.match(settings, /Range: "bytes=0-1"/);
   assert.match(settings, /hostname\.endsWith\("\.r2\.dev"\)/);
