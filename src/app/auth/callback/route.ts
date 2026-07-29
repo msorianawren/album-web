@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { upsertUserProfile } from "@/lib/auth";
+import { hasGoogleIdentity, upsertUserProfile } from "@/lib/auth";
 import { clearAuthFlowCookies, getAuthFlow } from "@/lib/auth-flow";
 import { createAnonSupabase } from "@/lib/supabase";
 import { setSessionCookies } from "@/lib/session-cookies";
@@ -88,8 +88,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(new URL("/login?error=google_login_failed", request.url));
   }
 
-  const provider = data.user.app_metadata?.provider;
-  if (provider !== "google") {
+  if (!hasGoogleIdentity(data.user)) {
     return NextResponse.redirect(new URL("/login?error=google_required", request.url));
   }
 
