@@ -300,7 +300,8 @@ canvas {
 .public-chime-control {
   pointer-events: auto;
   position: absolute;
-  z-index: 12;
+  /* Keep decorative chime hit targets below application controls. */
+  z-index: 2;
   border: 0;
   border-radius: 0.9rem;
   background: transparent;

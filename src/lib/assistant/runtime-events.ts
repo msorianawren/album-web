@@ -10,6 +10,10 @@ export type CompanionContextEventDetail = {
   kind: "form_invalid" | "operation_pending" | "operation_succeeded" | "operation_failed" | "access_unavailable";
 };
 
+export type CompanionOpenEventDetail = {
+  opener?: HTMLElement | null;
+};
+
 export function dispatchCompanionContextEvent(detail: CompanionContextEventDetail) {
   if (typeof window === "undefined") return;
   window.dispatchEvent(new CustomEvent<CompanionContextEventDetail>(ORIANA_COMPANION_CONTEXT_EVENT, { detail }));

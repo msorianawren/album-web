@@ -57,10 +57,10 @@ test("Contact her presents Telegram and one primary inbox", async ({ page }) => 
   await expect(page.getByRole("heading", { name: "My conversations" })).toHaveCount(0);
 });
 
-test("Companion remains within a mobile viewport", async ({ browser }) => {
-  const context = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true });
-  const page = await context.newPage();
-  try {
+test.describe("Companion mobile viewport", () => {
+  test.use({ viewport: { width: 390, height: 844 }, hasTouch: true });
+
+  test("Companion remains within a mobile viewport", async ({ page }) => {
     await page.goto("/contact");
     await openCompanion(page);
     const panel = page.getByTestId("oriana-companion-panel");
@@ -71,9 +71,7 @@ test("Companion remains within a mobile viewport", async ({ browser }) => {
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
     await panel.getByRole("button", { name: "Close assistant" }).click();
     await expect(panel).toBeHidden();
-  } finally {
-    await context.close();
-  }
+  });
 });
 
 test("Hidden is persisted for guests and removes every runtime entry except settings", async ({ page }) => {

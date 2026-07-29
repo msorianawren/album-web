@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import { Bell, Copy, HelpCircle, Lock, MessageSquare, Send, ShieldCheck, X } from "lucide-react";
 import { AssistantPet } from "@/components/assistant/AssistantPet";
@@ -31,6 +31,7 @@ import type { PublicTelegramContact } from "@/lib/contact/telegram";
 interface AssistantPanelProps {
   open: boolean;
   onClose: () => void;
+  returnFocusTarget?: HTMLElement | null;
   preferences: AssistantPreferences;
   session: PublicSession;
   currentPath: string;
@@ -68,6 +69,7 @@ function writePanelMemory(recentQuickActionId?: string) {
 export function AssistantPanel({
   open,
   onClose,
+  returnFocusTarget,
   preferences,
   session,
   currentPath,
@@ -91,13 +93,11 @@ export function AssistantPanel({
   const copy = getAssistantUICopy(locale);
   const quickActions = currentPath === "/games" ? getPuzzleAssistantQuickActions(locale) : getAssistantQuickActions(locale);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!open) return;
 
-    previousFocusRef.current =
-      document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    window.setTimeout(() => panelRef.current?.focus(), 0);
-
+    previousFocusRef.current = returnFocusTarget
+      ?? (document.activeElement instanceof HTMLElement ? document.activeElement : null);
     const previousOverflow = document.body.style.overflow;
     const background = (Array.from(document.body.children) as HTMLElement[]).filter((node) => node !== overlayRef.current);
     const previousInert = background.map((node) => ({ node, inert: node.inert, ariaHidden: node.getAttribute("aria-hidden") }));
@@ -106,10 +106,12 @@ export function AssistantPanel({
       node.inert = true;
       node.setAttribute("aria-hidden", "true");
     });
+    panelRef.current?.focus();
 
     function onKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") {
         event.preventDefault();
+        event.stopPropagation();
         onClose();
         return;
       }
@@ -135,9 +137,9 @@ export function AssistantPanel({
       }
     }
 
-    document.addEventListener("keydown", onKeyDown);
+    window.addEventListener("keydown", onKeyDown, true);
     return () => {
-      document.removeEventListener("keydown", onKeyDown);
+      window.removeEventListener("keydown", onKeyDown, true);
       document.body.style.overflow = previousOverflow;
       previousInert.forEach(({ node, inert, ariaHidden }) => {
         node.inert = inert;
@@ -146,7 +148,7 @@ export function AssistantPanel({
       });
       previousFocusRef.current?.focus();
     };
-  }, [onClose, open]);
+  }, [onClose, open, returnFocusTarget]);
 
   async function copyTelegramUsername() {
     if (!telegram) return;

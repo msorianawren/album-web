@@ -53,6 +53,7 @@ test("public canvas and decorative layers cannot intercept normal website intera
   assert.match(css, /\.public-chime-canvas,[\s\S]*\.public-chime-canvas canvas\s*\{\s*pointer-events:\s*none !important/s);
   assert.match(css, /\.public-depth-environment\s*\{[\s\S]*pointer-events:\s*none/s);
   assert.doesNotMatch(css, /\.public-chime-control\s*\{[^}]*\binset:\s*0/s);
+  assert.match(css, /\.public-chime-control\s*\{[\s\S]*z-index:\s*2/s);
   assert.match(interaction, /a[\s\S]*button[\s\S]*input[\s\S]*\[role='dialog'\]/);
   assert.match(environment, /isProtectedInteractiveTarget/);
   assert.doesNotMatch(environment, /preventDefault|stopPropagation|stopImmediatePropagation|setPointerCapture/);

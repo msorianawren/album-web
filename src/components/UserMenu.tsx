@@ -183,8 +183,8 @@ export function UserMenu({ session, dict }: UserMenuProps) {
             <button
               type="button"
               className="flex w-full items-center gap-3 rounded-[1rem] px-3 py-3 text-left text-sm font-medium text-text-primary transition hover:bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              onClick={() => {
-                window.dispatchEvent(new Event(ORIANA_COMPANION_OPEN_EVENT));
+              onClick={(event) => {
+                window.dispatchEvent(new CustomEvent(ORIANA_COMPANION_OPEN_EVENT, { detail: { opener: event.currentTarget } }));
                 setOpen(false);
               }}
             >
