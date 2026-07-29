@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
 import type { AlbumStatus, LandingBackgroundSettings, LandingPageContent, SiteSettings, AboutProfile, TranslationMap } from "@/lib/types";
 import { AboutSettingsTab } from "@/components/studio/settings/AboutSettingsTab";
+import { FacebookFeedLandingEditor } from "@/components/studio/FacebookFeedLandingEditor";
 import dynamic from "next/dynamic";
 const PerformanceSettingsTab = dynamic(() => import("@/components/studio/settings/PerformanceSettingsTab"));
 import { LOCALES } from "@/lib/i18n";
@@ -123,6 +124,12 @@ export function SettingsCenter({
       trans[activeLandingLocale][String(key)] = value;
       updateLanding("translations", trans);
     }
+  }
+
+  function getFacebookFeedLocalized(key: "eyebrow" | "heading" | "description") {
+    const fallback = landing.facebook_feed_settings?.[key] ?? "";
+    if (activeLandingLocale === "en") return fallback;
+    return landing.translations?.[activeLandingLocale]?.[`facebook_feed_${key}`] ?? fallback;
   }
 
   async function save() {
@@ -766,13 +773,24 @@ export function SettingsCenter({
                   <Toggle label="Creative Services" checked={landing.section_toggles?.creative_services !== false} onChange={(v) => updateLanding("section_toggles", { ...landing.section_toggles, creative_services: v })} />
                   <Toggle label="Collaborators" checked={landing.section_toggles?.collaborators !== false} onChange={(v) => updateLanding("section_toggles", { ...landing.section_toggles, collaborators: v })} />
                   <Toggle label="Personal Letter" checked={landing.section_toggles?.personal_letter !== false} onChange={(v) => updateLanding("section_toggles", { ...landing.section_toggles, personal_letter: v })} />
+                  <Toggle label="Facebook Profile Feed" checked={landing.facebook_feed_settings?.enabled === true} onChange={(v) => updateLanding("facebook_feed_settings", { ...(landing.facebook_feed_settings!), enabled: v })} />
                 </div>
               </div>
+              {landing.facebook_feed_settings ? <FacebookFeedLandingEditor value={landing.facebook_feed_settings} onChange={(value) => updateLanding("facebook_feed_settings", value)} copy={{ eyebrow: getFacebookFeedLocalized("eyebrow"), heading: getFacebookFeedLocalized("heading"), description: getFacebookFeedLocalized("description") }} onCopyChange={(copy) => {
+                if (activeLandingLocale === "en") {
+                  updateLanding("facebook_feed_settings", { ...landing.facebook_feed_settings!, ...copy });
+                } else {
+                  const translations: TranslationMap = { ...(landing.translations || {}) };
+                  translations[activeLandingLocale] = { ...translations[activeLandingLocale], facebook_feed_eyebrow: copy.eyebrow, facebook_feed_heading: copy.heading, facebook_feed_description: copy.description };
+                  updateLanding("translations", translations);
+                }
+              }} uploadPoster={async (file) => uploadLandingAsset("media", file)} /> : null}
             </div>
             <LandingPreview landing={landing} activeLandingLocale={activeLandingLocale} />
           </div>
         </Panel>
       ) : null}
+
 
       {activeTab === "about" ? (
         <AboutSettingsTab

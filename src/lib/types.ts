@@ -264,6 +264,27 @@ export interface LandingBackgroundSettings {
   accumulation_delay_seconds?: number;
 }
 
+export interface LandingFacebookFeedItemOverride {
+  title?: string;
+  caption?: string;
+  enabled?: boolean;
+}
+
+export interface LandingFacebookFeedSettings {
+  enabled: boolean;
+  eyebrow: string;
+  heading: string;
+  description: string;
+  selectedItemIds: string[];
+  featuredItemId: string | null;
+  layout: "editorial" | "filmstrip" | "carousel";
+  showCaption: boolean;
+  showPublishedDate: boolean;
+  showFacebookBranding: boolean;
+  maxItems: number;
+  itemOverrides?: Record<string, LandingFacebookFeedItemOverride>;
+}
+
 export interface PublicSession {
   userId: string | null;
   email: string | null;
@@ -304,6 +325,7 @@ export interface LandingPageContent {
   background_settings: LandingBackgroundSettings;
   translations?: TranslationMap;
   section_toggles?: Record<string, boolean>;
+  facebook_feed_settings?: LandingFacebookFeedSettings;
   updated_at?: string;
 }
 
