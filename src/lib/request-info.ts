@@ -11,6 +11,18 @@ export function getRequestIp(request?: NextRequest | null) {
   );
 }
 
+export function getRequestIpWhois(request?: NextRequest | null) {
+  if (!request) return null;
+  return {
+    ip: getRequestIp(request),
+    country: request.headers.get("x-vercel-ip-country"),
+    region: request.headers.get("x-vercel-ip-region"),
+    city: request.headers.get("x-vercel-ip-city"),
+    latitude: request.headers.get("x-vercel-ip-latitude"),
+    longitude: request.headers.get("x-vercel-ip-longitude"),
+  };
+}
+
 export function hashIpAddress(ip: string) {
   return createHash("sha256")
     .update(`${process.env.IP_HASH_SALT ?? "album-web"}:${ip}`)

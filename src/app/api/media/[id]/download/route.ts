@@ -136,6 +136,7 @@ export async function GET(request: NextRequest, { params }: MediaDownloadProps) 
       metadata: {
         albumId: album.id,
         variant: useOriginal ? "source" : "public-processed",
+        album_name: album.title,
       },
     });
 

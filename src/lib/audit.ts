@@ -1,5 +1,5 @@
 import type { NextRequest } from "next/server";
-import { getRequestIp } from "@/lib/request-info";
+import { getRequestIp, getRequestIpWhois } from "@/lib/request-info";
 import { supabase } from "@/lib/supabase";
 import type { PublicSession } from "@/lib/types";
 
@@ -18,6 +18,11 @@ export async function logAuditEvent({
   targetId?: string;
   metadata?: Record<string, unknown>;
 }) {
+  // Ignore actions by the admin founder
+  if (session.isFounder) return;
+
+  const ipInfo = getRequestIpWhois(request);
+
   const { error } = await supabase.from("audit_logs").insert({
     actor_user_id: session.userId,
     actor_email: session.email,
@@ -26,7 +31,8 @@ export async function logAuditEvent({
     target_id: targetId,
     path: request?.nextUrl.pathname,
     method: request?.method,
-    ip_address: request ? getRequestIp(request) : null,
+    ip_address: ipInfo?.ip ?? null,
+    ip_info: ipInfo,
     user_agent: request?.headers.get("user-agent"),
     metadata,
   });

@@ -207,6 +207,7 @@ export async function GET(request: NextRequest, { params }: AlbumDownloadProps) 
       metadata: {
         added,
         originalDownloadsAllowed: settings.allow_original_downloads,
+        album_name: album.title,
       },
     });
 
