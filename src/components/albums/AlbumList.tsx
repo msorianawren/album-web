@@ -141,12 +141,20 @@ export function AlbumList({ sections, query, dict, locale = "en" }: AlbumListPro
               </div>
 
               <div 
-                className={`grid gap-6 ${query.cols === 1 ? "grid-cols-1" : "grid-cols-2"} sm:grid-cols-3 lg:grid-cols-${query.cols}`}
-                style={
+                className={`grid gap-4 sm:gap-6 ${
                   {
-                    gridTemplateColumns: `repeat(auto-fill, minmax(max(200px, 100% / ${query.cols}), 1fr))`
-                  } as React.CSSProperties
-                }
+                    1: "grid-cols-1",
+                    2: "grid-cols-2",
+                    3: "grid-cols-2 sm:grid-cols-3",
+                    4: "grid-cols-2 sm:grid-cols-3 lg:grid-cols-4",
+                    5: "grid-cols-2 sm:grid-cols-3 lg:grid-cols-5",
+                    6: "grid-cols-2 sm:grid-cols-3 lg:grid-cols-6",
+                    7: "grid-cols-2 sm:grid-cols-3 lg:grid-cols-7",
+                    8: "grid-cols-2 sm:grid-cols-3 lg:grid-cols-8",
+                    9: "grid-cols-2 sm:grid-cols-3 lg:grid-cols-9",
+                    10: "grid-cols-2 sm:grid-cols-3 lg:grid-cols-10",
+                  }[query.cols] || "grid-cols-2 sm:grid-cols-3 lg:grid-cols-5"
+                }`}
               >
                 {page.albums.map((album, index) => {
                   const isSelectable = isPrivate && !accessResolvedStatuses.has(album.access_request_status ?? "");
