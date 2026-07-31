@@ -31,47 +31,50 @@ export async function GET(req: NextRequest) {
       return new NextResponse(`Failed to fetch upstream image: ${fetchResponse.status}`, { status: fetchResponse.status });
     }
 
-    const contentType = fetchResponse.headers.get("content-type");
-    if (!contentType?.startsWith("image/")) {
-      return new NextResponse("Upstream URL is not an image", { status: 400 });
-    }
-
     const buffer = await fetchResponse.arrayBuffer();
 
-    let sharpInstance = sharp(Buffer.from(buffer));
+    try {
+      let sharpInstance = sharp(Buffer.from(buffer));
 
-    if (width) {
-      sharpInstance = sharpInstance.resize({
-        width,
-        withoutEnlargement: true,
+      if (width) {
+        sharpInstance = sharpInstance.resize({
+          width,
+          withoutEnlargement: true,
+        });
+      }
+
+      // Try to serve webp
+      const accept = req.headers.get("accept") || "";
+      let format: "webp" | "jpeg" | "png" | "avif" = "jpeg";
+      
+      if (accept.includes("image/avif")) {
+        format = "avif";
+        sharpInstance = sharpInstance.avif({ quality });
+      } else if (accept.includes("image/webp")) {
+        format = "webp";
+        sharpInstance = sharpInstance.webp({ quality });
+      } else {
+        sharpInstance = sharpInstance.jpeg({ quality, progressive: true });
+      }
+
+      const optimizedBuffer = await sharpInstance.toBuffer();
+
+      return new NextResponse(new Uint8Array(optimizedBuffer), {
+        headers: {
+          "Content-Type": `image/${format}`,
+          "Cache-Control": "public, max-age=31536000, immutable", // Cache heavily on CDN
+        },
+      });
+    } catch (sharpError) {
+      console.warn("Sharp optimization failed, falling back to original image:", sharpError);
+      const contentType = fetchResponse.headers.get("content-type") || "application/octet-stream";
+      return new NextResponse(new Uint8Array(buffer), {
+        headers: {
+          "Content-Type": contentType,
+          "Cache-Control": "public, max-age=31536000, immutable",
+        },
       });
     }
-
-    // Try to serve webp
-    const accept = req.headers.get("accept") || "";
-    let format: "webp" | "jpeg" | "png" | "avif" = "jpeg";
-    
-    if (accept.includes("image/avif")) {
-      format = "avif";
-      sharpInstance = sharpInstance.avif({ quality });
-    } else if (accept.includes("image/webp")) {
-      format = "webp";
-      sharpInstance = sharpInstance.webp({ quality });
-    } else if (contentType === "image/png") {
-      format = "png";
-      sharpInstance = sharpInstance.png({ quality });
-    } else {
-      sharpInstance = sharpInstance.jpeg({ quality, progressive: true });
-    }
-
-    const optimizedBuffer = await sharpInstance.toBuffer();
-
-    return new NextResponse(new Uint8Array(optimizedBuffer), {
-      headers: {
-        "Content-Type": `image/${format}`,
-        "Cache-Control": "public, max-age=31536000, immutable", // Cache heavily on CDN
-      },
-    });
   } catch (error) {
     console.error("Internal image optimization error:", error);
     return new NextResponse("Internal Server Error", { status: 500 });
