@@ -8,6 +8,7 @@ import {
   syncSessionRequestCookies,
   type SessionCookiePayload,
 } from "@/lib/session-cookies";
+import { getRequestIpWhois } from "@/lib/request-info";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://placeholder.supabase.co";
 const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "placeholder-key";
@@ -150,6 +151,7 @@ async function logRequest(request: NextRequest, user: User) {
   const isDownload = path.includes("/download");
 
   if (!isPageView && !isMutatingApi && !isDownload) return;
+  if (user.id === adminId) return; // Ignore actions by the admin founder
 
   const admin = createClient(supabaseUrl, serviceRoleKey, {
     auth: { persistSession: false, autoRefreshToken: false },
@@ -163,6 +165,7 @@ async function logRequest(request: NextRequest, user: User) {
     path,
     method,
     ip_address: getClientIp(request),
+    ip_info: getRequestIpWhois(request),
     user_agent: request.headers.get("user-agent"),
     metadata: {
       search: request.nextUrl.search,
@@ -183,6 +186,7 @@ async function logProxyBlock(request: NextRequest, action: string) {
     path: request.nextUrl.pathname,
     method: request.method,
     ip_address: getClientIp(request),
+    ip_info: getRequestIpWhois(request),
     user_agent: request.headers.get("user-agent"),
     metadata: {
       search: request.nextUrl.search,

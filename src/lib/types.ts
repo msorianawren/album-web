@@ -206,6 +206,7 @@ export interface AuditLog {
   path: string | null;
   method: string | null;
   ip_address: string | null;
+  ip_info?: Record<string, string> | null;
   user_agent: string | null;
   metadata: Record<string, unknown>;
   created_at: string;

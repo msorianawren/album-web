@@ -473,12 +473,25 @@ export function SecurityConsole({
                         {metadataText(log, "result") && (
                            <p className="mt-1 text-xs font-medium">Result: {metadataText(log, "result")}</p>
                         )}
-                         {metadataText(log, "failure_reason") && (
+                        {metadataText(log, "album_name") && (
+                           <p className="mt-1 text-xs font-medium text-emerald-400">Album: {metadataText(log, "album_name")}</p>
+                        )}
+                        {metadataText(log, "failure_reason") && (
                            <p className="mt-1 text-xs text-red-500">Error: {metadataText(log, "failure_reason")}</p>
                         )}
                       </td>
                       <td className="py-3 pr-4 text-text-secondary font-mono text-[0.7rem]">
-                        {log.ip_address ?? "-"}
+                        {log.ip_info?.city || log.ip_info?.country ? (
+                          <>
+                            <span className="block font-semibold text-text-primary">
+                              {log.ip_info.city ? `${log.ip_info.city}, ` : ""}
+                              {log.ip_info.country || ""}
+                            </span>
+                            <span className="text-xs">{log.ip_address}</span>
+                          </>
+                        ) : (
+                          log.ip_address ?? "-"
+                        )}
                       </td>
                     </tr>
                   )
