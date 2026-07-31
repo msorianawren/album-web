@@ -7,7 +7,7 @@ import type { ImageLoaderProps } from "next/image";
 import type { MediaDeliveryTarget } from "@/lib/media/delivery";
 
 const internalImageLoader = ({ src, width, quality }: ImageLoaderProps) => {
-  return `/api/_image?url=${encodeURIComponent(src)}&w=${width}&q=${quality || 75}`;
+  return `/api/optimize-image?url=${encodeURIComponent(src)}&w=${width}&q=${quality || 75}`;
 };
 
 interface ReliableMediaImageProps {
