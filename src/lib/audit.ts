@@ -32,9 +32,11 @@ export async function logAuditEvent({
     path: request?.nextUrl.pathname,
     method: request?.method,
     ip_address: ipInfo?.ip ?? null,
-    ip_info: ipInfo,
     user_agent: request?.headers.get("user-agent"),
-    metadata,
+    metadata: {
+      ...metadata,
+      ip_info: ipInfo,
+    },
   });
 
   if (error) {

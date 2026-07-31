@@ -3,6 +3,7 @@ import { getPublicSession } from "@/lib/auth";
 import { getAlbum } from "@/lib/albums";
 import { createAuthenticatedUserClient } from "@/lib/db/user";
 import { recordUserAlbumActivity } from "@/lib/user-activity";
+import { logAuditEvent } from "@/lib/audit";
 import { enforceRateLimit } from "@/lib/security-rate-limit";
 import { apiError, toServerError } from "@/lib/errors";
 
@@ -68,6 +69,18 @@ export async function POST(request: NextRequest, { params }: ViewEventParams) {
       eventType: "album_viewed",
       albumStatus: album.status,
       source,
+    });
+
+    await logAuditEvent({
+      request,
+      session,
+      action: "view_album",
+      targetType: "album",
+      targetId: id,
+      metadata: {
+        album_name: album.title,
+        source,
+      },
     });
 
     return NextResponse.json({ success: true });

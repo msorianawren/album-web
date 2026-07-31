@@ -165,11 +165,11 @@ async function logRequest(request: NextRequest, user: User) {
     path,
     method,
     ip_address: getClientIp(request),
-    ip_info: getRequestIpWhois(request),
     user_agent: request.headers.get("user-agent"),
     metadata: {
       search: request.nextUrl.search,
       is_admin: user.id === adminId,
+      ip_info: getRequestIpWhois(request),
     },
   });
 }
@@ -186,10 +186,10 @@ async function logProxyBlock(request: NextRequest, action: string) {
     path: request.nextUrl.pathname,
     method: request.method,
     ip_address: getClientIp(request),
-    ip_info: getRequestIpWhois(request),
     user_agent: request.headers.get("user-agent"),
     metadata: {
       search: request.nextUrl.search,
+      ip_info: getRequestIpWhois(request),
     },
   });
 }

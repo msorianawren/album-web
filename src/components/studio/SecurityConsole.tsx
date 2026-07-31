@@ -481,11 +481,11 @@ export function SecurityConsole({
                         )}
                       </td>
                       <td className="py-3 pr-4 text-text-secondary font-mono text-[0.7rem]">
-                        {log.ip_info?.city || log.ip_info?.country ? (
+                        {(log.metadata?.ip_info as Record<string, string> | undefined)?.city || (log.metadata?.ip_info as Record<string, string> | undefined)?.country ? (
                           <>
                             <span className="block font-semibold text-text-primary">
-                              {log.ip_info.city ? `${log.ip_info.city}, ` : ""}
-                              {log.ip_info.country || ""}
+                              {(log.metadata?.ip_info as Record<string, string> | undefined)?.city ? `${(log.metadata?.ip_info as Record<string, string> | undefined)?.city}, ` : ""}
+                              {(log.metadata?.ip_info as Record<string, string> | undefined)?.country || ""}
                             </span>
                             <span className="text-xs">{log.ip_address}</span>
                           </>
