@@ -10,6 +10,7 @@ function media(partial: Partial<Media> & Pick<Media, "id" | "album_id" | "media_
     description: null,
     r2_key: "",
     thumbnail_url: null,
+    card_url: null,
     medium_url: null,
     poster_url: null,
     width: partial.media_type === "image" ? 1200 : null,

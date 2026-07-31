@@ -8,6 +8,7 @@ export interface AlbumPreviewItem {
   media_type: MediaType;
   url: string;
   thumbnail_url: string | null;
+  card_url: string | null;
   medium_url: string | null;
   poster_url: string | null;
   title: string | null;
@@ -81,6 +82,7 @@ export interface Media {
   r2_key: string;
   url: string;
   thumbnail_url: string | null;
+  card_url: string | null;
   medium_url: string | null;
   poster_url: string | null;
   width: number | null;
@@ -117,6 +119,8 @@ export interface Media {
   content_hash?: string | null;
   duplicate_of_media_id?: string | null;
   blurhash?: string | null;
+  card_r2_key?: string | null;
+  avif_card_r2_key?: string | null;
   large_r2_key?: string | null;
   large_url?: string | null;
   processing_version?: number;

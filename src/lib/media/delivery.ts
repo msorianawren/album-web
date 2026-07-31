@@ -2,6 +2,7 @@ import type { AlbumStatus, MediaType } from "@/lib/types";
 
 export type MediaDeliveryVariant =
   | "thumbnail"
+  | "card"
   | "medium"
   | "large"
   | "display"
@@ -58,6 +59,7 @@ export interface DeliveryMedia {
   original_filename?: string | null;
   url?: string | null;
   thumbnail_url?: string | null;
+  card_url?: string | null;
   medium_url?: string | null;
   large_url?: string | null;
   poster_url?: string | null;
@@ -220,6 +222,7 @@ export function getMediaDeliveryDescriptor(
   const expected = mediaType === "video" ? "video" : "image";
   const poster = candidate(media.poster_url, "poster", "image");
   const thumbnail = candidate(media.thumbnail_url, "thumbnail", "image");
+  const card = candidate(media.card_url, "card", "image");
   const medium = candidate(media.medium_url, "medium", "image");
   const large = candidate(media.large_url, "large", "image");
   const display = candidate(media.url, "display", expected);
@@ -232,10 +235,10 @@ export function getMediaDeliveryDescriptor(
   const isReady = state === "ready";
 
   const publicCard = !isPrivate && isReady
-    ? target(medium, thumbnail, poster, display)
+    ? target(card, medium, thumbnail, poster, display)
     : target();
   const authorizedPrivateCard = isPrivate && isAuthorized && isReady
-    ? target(medium, thumbnail, poster, display)
+    ? target(card, medium, thumbnail, poster, display)
     : target();
   const selectedCard = isPrivate
     ? isAuthorized

@@ -33,7 +33,7 @@ function variantKey(
     : `albums/${albumId}/images/${mediaId}/v${PROCESSING_VERSION}/${variant}.${extension}`;
 }
 
-function clientUrl(bucketRole: R2BucketRole, mediaId: string, variant: "thumbnail" | "medium" | "display", key: string) {
+function clientUrl(bucketRole: R2BucketRole, mediaId: string, variant: "thumbnail" | "card" | "medium" | "display", key: string) {
   return bucketRole === "private"
     ? `/api/media/${encodeURIComponent(mediaId)}/content?variant=${variant}`
     : getPublicUrl(key);
@@ -42,10 +42,11 @@ function clientUrl(bucketRole: R2BucketRole, mediaId: string, variant: "thumbnai
 async function recordPrivateManifest(
   client: SupabaseClient,
   job: ProcessingJobRow,
-  keys: Record<"thumbnail" | "medium" | "large", string>,
+  keys: Record<"thumbnail" | "card" | "medium" | "large", string>,
 ) {
   const rows = [
     { variant: "thumbnail", key: keys.thumbnail },
+    { variant: "card", key: keys.card },
     { variant: "medium", key: keys.medium },
     { variant: "display", key: keys.large },
   ].map(({ variant, key }) => ({
@@ -95,8 +96,8 @@ export async function processImageJob(
       item.name,
       variantKey(bucketRole, job.album_id, job.media_id, item.name, "webp"),
     ]),
-  ) as Record<"thumbnail" | "medium" | "large", string>;
-  const avifKeys: Partial<Record<"thumbnail" | "medium" | "large", string>> = {};
+  ) as Record<"thumbnail" | "card" | "medium" | "large", string>;
+  const avifKeys: Partial<Record<"thumbnail" | "card" | "medium" | "large", string>> = {};
   await Promise.all(processed.variants.flatMap((variant) => {
     const cacheControl = bucketRole === "private" ? "private, no-store" : "public, max-age=31536000, immutable";
     const writes = [putR2Object({
@@ -125,13 +126,16 @@ export async function processImageJob(
   return {
     display_r2_key: webpKeys.large,
     thumbnail_r2_key: webpKeys.thumbnail,
+    card_r2_key: webpKeys.card,
     medium_r2_key: webpKeys.medium,
     large_r2_key: webpKeys.large,
     display_url: clientUrl(bucketRole, job.media_id, "display", webpKeys.large),
     thumbnail_url: clientUrl(bucketRole, job.media_id, "thumbnail", webpKeys.thumbnail),
+    card_url: clientUrl(bucketRole, job.media_id, "card", webpKeys.card),
     medium_url: clientUrl(bucketRole, job.media_id, "medium", webpKeys.medium),
     large_url: clientUrl(bucketRole, job.media_id, "display", webpKeys.large),
     avif_thumbnail_r2_key: avifKeys.thumbnail ?? "",
+    avif_card_r2_key: avifKeys.card ?? "",
     avif_medium_r2_key: avifKeys.medium ?? "",
     avif_large_r2_key: avifKeys.large ?? "",
     width: processed.width,

@@ -55,7 +55,7 @@ export const PRIVATE_MEDIA_SAFE_SELECT = [
   "updated_at",
 ].join(",");
 
-export type PrivateMediaVariant = "thumbnail" | "medium" | "poster" | "display" | "original";
+export type PrivateMediaVariant = "thumbnail" | "card" | "medium" | "poster" | "display" | "original";
 
 export interface AuthorizedPrivateMediaAsset {
   mediaId: string;
@@ -83,6 +83,7 @@ export function projectPrivateMediaForClient(media: Media): Media {
     original_private_r2_key: null,
     url: displayUrl,
     thumbnail_url: privateMediaUrl(media.id, "thumbnail"),
+    card_url: privateMediaUrl(media.id, "card"),
     medium_url: privateMediaUrl(media.id, "medium"),
     poster_url: media.media_type === "video" ? privateMediaUrl(media.id, "poster") : null,
   };
@@ -103,6 +104,7 @@ export function projectPrivatePreviewForClient({
     title,
     url: privateMediaUrl(id, "display"),
     thumbnail_url: privateMediaUrl(id, "thumbnail"),
+    card_url: privateMediaUrl(id, "card"),
     medium_url: privateMediaUrl(id, "medium"),
     poster_url: mediaType === "video" ? privateMediaUrl(id, "poster") : null,
   };
@@ -110,9 +112,10 @@ export function projectPrivatePreviewForClient({
 
 function variantFallbacks(variant: PrivateMediaVariant, mediaType: "image" | "video") {
   if (variant === "original") return ["original"];
-  if (variant === "thumbnail") return ["thumbnail", "medium", "display"];
+  if (variant === "thumbnail") return ["thumbnail", "card", "medium", "display"];
+  if (variant === "card") return ["card", "medium", "display", "thumbnail"];
   if (variant === "poster") return ["poster", "thumbnail", "display"];
-  if (variant === "medium") return ["medium", "display", "thumbnail"];
+  if (variant === "medium") return ["medium", "display", "card", "thumbnail"];
   return mediaType === "video"
     ? ["video", "display"]
     : ["display", "large", "medium", "thumbnail"];
@@ -150,6 +153,16 @@ function legacyAssetForVariant(
       row.public_r2_key,
       keyFromPublicUrl(row.thumbnail_url),
       keyFromPublicUrl(row.medium_url),
+      row.r2_key,
+    ],
+    card: [
+      row.card_r2_key,
+      row.medium_r2_key,
+      row.thumbnail_r2_key,
+      row.public_r2_key,
+      keyFromPublicUrl(row.card_url),
+      keyFromPublicUrl(row.medium_url),
+      keyFromPublicUrl(row.thumbnail_url),
       row.r2_key,
     ],
     medium: [

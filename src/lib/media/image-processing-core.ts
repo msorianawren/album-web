@@ -6,6 +6,7 @@ import type { SiteSettings } from "@/lib/types";
 
 export const WEBP_VARIANTS = {
   thumbnail: { width: 480, quality: 82 },
+  card: { width: 800, quality: 85 },
   medium: { width: 1440, quality: 88 },
   large: { width: 2560, quality: 92 },
 } as const;

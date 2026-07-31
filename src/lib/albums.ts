@@ -224,6 +224,7 @@ function previewItemFromMedia(row: UnknownRow): AlbumPreviewItem {
     title: typeof row.title === "string" ? row.title : null,
     url: resolveAssetUrl(row.url) ?? "",
     thumbnail_url: resolveAssetUrl(row.thumbnail_url),
+    card_url: resolveAssetUrl(row.card_url),
     medium_url: resolveAssetUrl(row.medium_url),
     poster_url: resolveAssetUrl(row.poster_url),
   };
@@ -242,6 +243,7 @@ export function normalizeMedia(row: UnknownRow): Media {
     r2_key: String(row.r2_key ?? row.original_key ?? ""),
     url,
     thumbnail_url: resolveAssetUrl(row.thumbnail_url ?? row.thumb_key),
+    card_url: resolveAssetUrl(row.card_url),
     medium_url: resolveAssetUrl(row.medium_url),
     poster_url: resolveAssetUrl(row.poster_url),
     width: toNullableNumber(row.width),
@@ -717,6 +719,7 @@ export async function getAlbum(
         title: item.title,
         url: item.url,
         thumbnail_url: item.thumbnail_url,
+        card_url: item.card_url,
         medium_url: item.medium_url,
         poster_url: item.poster_url,
       })),
