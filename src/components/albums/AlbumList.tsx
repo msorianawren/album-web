@@ -9,6 +9,7 @@ import {
   PrivateAlbumSelectionProvider,
   PrivateAlbumCheckbox,
   PrivateAlbumSelectionBar,
+} from "@/components/albums/PrivateAlbumSelection";
 import { AlbumPagination } from "@/components/albums/AlbumPagination";
 import { AlbumPageSizeSelect } from "@/components/albums/AlbumPageSizeSelect";
 import { AlbumColsSelect } from "@/components/albums/AlbumColsSelect";
@@ -20,6 +21,7 @@ interface AlbumListProps {
     status?: AlbumStatus;
     limit: number;
     cols: number;
+    page: number;
   };
   dict?: AppDictionary;
   locale?: string;
@@ -165,8 +167,8 @@ export function AlbumList({ sections, query, dict, locale = "en" }: AlbumListPro
                 status={status}
                 limit={query.limit}
                 q={query.q}
-                initialHasMore={page.hasMore}
-                initialNextCursor={page.nextCursor}
+                currentPage={query.page}
+                totalCount={page.totalCount}
               />
             </div>
           );

@@ -11,6 +11,7 @@ interface AlbumsPageProps {
     status?: "public" | "updating" | "private";
     limit?: string;
     cols?: string;
+    page?: string;
   }>;
 }
 
@@ -40,12 +41,13 @@ export default async function AlbumsPage({ searchParams }: AlbumsPageProps) {
   const parsedFilters = albumPageQuerySchema.safeParse(filters);
   const browseQuery = parsedFilters.success
     ? parsedFilters.data
-    : { q: "", status: undefined, limit: 24, cols: 5 };
+    : { q: "", status: undefined, limit: 24, cols: 5, page: 1 };
   const [sections, landing] = await Promise.all([
     getAlbumSections({
       q: browseQuery.q,
       status: browseQuery.status,
       limit: browseQuery.limit,
+      page: browseQuery.page,
       session,
       userClient,
     }),
@@ -71,9 +73,9 @@ export default async function AlbumsPage({ searchParams }: AlbumsPageProps) {
         </div>
       </section>
       <AlbumList
-        key={`${browseQuery.q}|${browseQuery.status ?? "all"}|${browseQuery.limit}|${browseQuery.cols}`}
+        key={`${browseQuery.q}|${browseQuery.status ?? "all"}|${browseQuery.limit}|${browseQuery.cols}|${browseQuery.page}`}
         sections={sections}
-        query={{ q: browseQuery.q, status: browseQuery.status, limit: browseQuery.limit, cols: browseQuery.cols }}
+        query={{ q: browseQuery.q, status: browseQuery.status, limit: browseQuery.limit, cols: browseQuery.cols, page: browseQuery.page }}
         dict={dict}
         locale={locale}
       />

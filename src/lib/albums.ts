@@ -114,6 +114,7 @@ export interface AlbumPage extends AlbumQuery {
   albums: Album[];
   nextCursor: string | null;
   hasMore: boolean;
+  totalCount: number;
 }
 
 export type AlbumSections = Partial<Record<AlbumStatus, AlbumPage>>;
@@ -122,10 +123,12 @@ export interface AlbumPageQuery extends AlbumQuery {
   status: AlbumStatus;
   cursor?: string;
   limit?: number;
+  page?: number;
 }
 
 export interface AlbumSectionsQuery extends AlbumQuery {
   limit?: number;
+  page?: number;
   cursors?: Partial<Record<AlbumStatus, string | undefined>>;
 }
 
@@ -410,19 +413,26 @@ export async function getAlbumPage(query: AlbumPageQuery): Promise<AlbumPage> {
   );
   const client = userClient ?? createPublicServerClient();
   const limit = normalizePageLimit(query.limit);
-  const cursor = decodeAlbumCursor(query.cursor);
+  const page = Math.max(1, query.page ?? 1);
+  const offset = (page - 1) * limit;
 
-  const { data, error } = await client.rpc("list_album_summaries", {
+  let totalCount = 0;
+  let countQuery = client.from("albums").select("*", { count: "exact", head: true }).eq("status", query.status).is("deleted_at", null);
+  if (query.q) {
+    countQuery = countQuery.or(`title.ilike.%${query.q}%,description.ilike.%${query.q}%`);
+  }
+  const countResult = await countQuery;
+  totalCount = countResult.count ?? 0;
+
+  const { data, error } = await client.rpc("list_album_page", {
     p_status: query.status,
     p_query: query.q?.trim() || null,
     p_limit: limit,
-    p_cursor_sort: cursor?.sort ?? null,
-    p_cursor_created_at: cursor?.createdAt ?? null,
-    p_cursor_id: cursor?.id ?? null,
+    p_offset: offset,
   });
   const rows = resolveQueryRows(data, error, "albums.list_page") as UnknownRow[];
-  const hasMore = rows.length > limit;
-  const pageRows = hasMore ? rows.slice(0, limit) : rows;
+  const pageRows = rows;
+  const hasMore = offset + pageRows.length < totalCount;
   const lastRow = pageRows.at(-1);
   const albums = pageRows.map(normalizeAlbum).map((album) => (
     album.status === "private" && album.access_request_status === "approved"
@@ -444,6 +454,7 @@ export async function getAlbumPage(query: AlbumPageQuery): Promise<AlbumPage> {
     albums,
     nextCursor: hasMore && lastRow ? encodeAlbumCursor(lastRow) : null,
     hasMore,
+    totalCount,
   };
 }
 
@@ -457,6 +468,7 @@ export async function getAlbumSections(
       await getAlbumPage({
         ...query,
         status,
+        page: query.page,
         cursor: query.cursors?.[status],
       }),
     ] as const),
