@@ -25,7 +25,7 @@ export function ViewerInfoSheet({ item, delivery, currentIndex, total, onClose }
 
   return (
     <aside
-      className="absolute inset-x-3 bottom-3 z-30 rounded-[1.25rem] border border-white/10 bg-black/75 p-5 text-sm text-white/75 shadow-2xl backdrop-blur-xl sm:inset-x-auto sm:bottom-auto sm:right-6 sm:top-24 sm:w-[min(23rem,calc(100vw-3rem))]"
+      className="absolute inset-x-3 top-24 z-30 max-h-[calc(100dvh-14rem)] overflow-y-auto rounded-[1.25rem] border border-white/10 bg-black/75 p-5 text-sm text-white/75 shadow-2xl backdrop-blur-xl sm:inset-x-auto sm:right-6 sm:top-24 sm:w-[min(23rem,calc(100vw-3rem))]"
       aria-label="Media information"
     >
       <div className="flex items-start justify-between gap-4">
