@@ -110,6 +110,8 @@ export async function PATCH(request: NextRequest, { params }: AlbumRouteProps) {
       metadata: { changedFields: Object.keys(parsed.data) },
     });
     revalidateTag("albums:public", "max");
+    revalidateTag("albums:updating", "max");
+    revalidateTag("albums:private", "max");
     revalidateTag(`album:${id}:media`, "max");
     revalidatePath(`/albums/${albumRecord.slug}`);
     return apiSuccess({ album: data });

@@ -58,17 +58,17 @@ export function AlbumsManager({
     });
     const payload = await response.json();
     if (!payload.success) {
-      setMessage(payload.message ?? "Update failed.");
+      setMessage(payload.message ?? "Status update failed.");
       return;
     }
     startTransition(() => {
       setAlbums((current) =>
         current.map((album) =>
-          album.id === albumId ? { ...album, status: nextStatus, updated_at: new Date().toISOString() } : album,
+          album.id === albumId ? { ...album, ...payload.data.album, updated_at: new Date().toISOString() } : album,
         ),
       );
     });
-    setMessage("Album status updated.");
+    setMessage("Status updated.");
   }
 
   async function deleteAlbum(album: Album) {

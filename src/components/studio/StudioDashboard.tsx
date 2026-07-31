@@ -72,7 +72,7 @@ export function StudioDashboard({ initialAlbums, initialLanding }: StudioDashboa
     if (payload.success) {
       setAlbums((current) =>
         current.map((album) =>
-          album.id === albumId ? { ...album, status } : album,
+          album.id === albumId ? { ...album, ...payload.data.album } : album,
         ),
       );
       setMessage("Status updated.");
