@@ -10,6 +10,7 @@ interface AlbumsPageProps {
     q?: string;
     status?: "public" | "updating" | "private";
     limit?: string;
+    cols?: string;
   }>;
 }
 
@@ -39,7 +40,7 @@ export default async function AlbumsPage({ searchParams }: AlbumsPageProps) {
   const parsedFilters = albumPageQuerySchema.safeParse(filters);
   const browseQuery = parsedFilters.success
     ? parsedFilters.data
-    : { q: "", status: undefined, limit: 24 };
+    : { q: "", status: undefined, limit: 24, cols: 5 };
   const [sections, landing] = await Promise.all([
     getAlbumSections({
       q: browseQuery.q,
@@ -70,9 +71,9 @@ export default async function AlbumsPage({ searchParams }: AlbumsPageProps) {
         </div>
       </section>
       <AlbumList
-        key={`${browseQuery.q}|${browseQuery.status ?? "all"}|${browseQuery.limit}`}
+        key={`${browseQuery.q}|${browseQuery.status ?? "all"}|${browseQuery.limit}|${browseQuery.cols}`}
         sections={sections}
-        query={{ q: browseQuery.q, status: browseQuery.status, limit: browseQuery.limit }}
+        query={{ q: browseQuery.q, status: browseQuery.status, limit: browseQuery.limit, cols: browseQuery.cols }}
         dict={dict}
         locale={locale}
       />

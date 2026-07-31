@@ -81,6 +81,57 @@ export const likeCreateSchema = z
     message: "albumId or mediaId is required.",
   });
 
+});
+
+export const albumUpdateSchema = albumCreateSchema
+  .partial()
+  .extend({
+    cover_media_id: z.string().uuid().optional().nullable(),
+    default_media_sort: z.enum(mediaSortModes).optional().nullable(),
+  })
+  .refine((value) => Object.keys(value).length > 0, {
+    message: "At least one field is required.",
+  });
+
+export const mediaUpdateSchema = z
+  .object({
+    album_id: z.string().uuid().optional(),
+    title: z.string().trim().max(160).optional().nullable(),
+    description: z.string().trim().max(1000).optional().nullable(),
+    sort_order: z.number().int().min(0).optional(),
+    featured_rank: z.number().int().min(0).max(100000).optional(),
+    is_cover: z.boolean().optional(),
+    download_allowed: z.boolean().optional(),
+    original_download_allowed: z.boolean().optional(),
+    security_status: z.enum(["processed", "needs_review", "rejected"]).optional(),
+    security_notes: z.string().trim().max(1000).optional().nullable(),
+  })
+  .refine((value) => Object.keys(value).length > 0, {
+    message: "At least one field is required.",
+  });
+
+export const commentCreateSchema = z.object({
+  albumId: z.string().uuid(),
+  mediaId: z.string().uuid().optional().nullable(),
+  author_name: z
+    .string()
+    .trim()
+    .max(commentLimits.authorName)
+    .optional()
+    .nullable(),
+  body: z.string().trim().min(1).max(commentLimits.body),
+});
+
+export const likeCreateSchema = z
+  .object({
+    albumId: z.string().uuid().optional().nullable(),
+    mediaId: z.string().uuid().optional().nullable(),
+    clientId: z.string().trim().min(6).max(200).optional().nullable(),
+  })
+  .refine((value) => value.albumId || value.mediaId, {
+    message: "albumId or mediaId is required.",
+  });
+
 export const searchParamsSchema = z.object({
   q: z.string().trim().max(120).optional().default(""),
   status: z.enum(albumStatuses).optional(),
@@ -89,6 +140,7 @@ export const searchParamsSchema = z.object({
 export const albumPageQuerySchema = searchParamsSchema.extend({
   cursor: z.string().trim().min(1).max(512).optional(),
   limit: z.coerce.number().int().min(1).max(96).optional().default(24),
+  cols: z.coerce.number().int().min(1).max(10).optional().default(5),
 });
 
 const puzzleTargetsSchema = z.record(z.enum(["3", "4", "5"]), z.object({

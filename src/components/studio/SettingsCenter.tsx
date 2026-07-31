@@ -860,9 +860,9 @@ export function SettingsCenter({
             <NumberField label="Default Wren Feather price" value={settings.private_album_default_feather_price} min={1} max={100000} onChange={(value) => update("private_album_default_feather_price", value)} />
           </div>
           <p className="text-sm leading-6 text-text-secondary">Private albums inherit this price when no album-specific price is set. Feathers are earned in puzzles and are never sold or transferable.</p>
-          <Toggle label="Default comments enabled" checked={settings.allow_public_comments} onChange={(value) => update("allow_public_comments", value)} />
-          <Toggle label="Default likes enabled" checked={settings.allow_public_likes} onChange={(value) => update("allow_public_likes", value)} />
-          <Toggle label="Default downloads enabled" checked={settings.allow_public_downloads} onChange={(value) => update("allow_public_downloads", value)} />
+          <Toggle label="Allow anonymous comments (Public)" checked={settings.allow_public_comments} onChange={(value) => update("allow_public_comments", value)} />
+          <Toggle label="Allow anonymous likes (Public)" checked={settings.allow_public_likes} onChange={(value) => update("allow_public_likes", value)} />
+          <Toggle label="Allow anonymous downloads (Public)" checked={settings.allow_public_downloads} onChange={(value) => update("allow_public_downloads", value)} />
         </Panel>
       ) : null}
 

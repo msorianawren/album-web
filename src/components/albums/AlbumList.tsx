@@ -9,9 +9,9 @@ import {
   PrivateAlbumSelectionProvider,
   PrivateAlbumCheckbox,
   PrivateAlbumSelectionBar,
-} from "@/components/albums/PrivateAlbumSelection";
 import { AlbumPagination } from "@/components/albums/AlbumPagination";
 import { AlbumPageSizeSelect } from "@/components/albums/AlbumPageSizeSelect";
+import { AlbumColsSelect } from "@/components/albums/AlbumColsSelect";
 
 interface AlbumListProps {
   sections: AlbumSections;
@@ -19,6 +19,7 @@ interface AlbumListProps {
     q: string;
     status?: AlbumStatus;
     limit: number;
+    cols: number;
   };
   dict?: AppDictionary;
   locale?: string;
@@ -132,11 +133,19 @@ export function AlbumList({ sections, query, dict, locale = "en" }: AlbumListPro
                 </div>
                 <div className="flex flex-wrap items-center gap-3 text-sm text-text-secondary">
                   <span>{page.albums.length} loaded</span>
+                  <AlbumColsSelect defaultValue={query.cols} />
                   <AlbumPageSizeSelect defaultValue={query.limit} />
                 </div>
               </div>
 
-              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              <div 
+                className={`grid gap-6 ${query.cols === 1 ? "grid-cols-1" : "grid-cols-2"} sm:grid-cols-3 lg:grid-cols-${query.cols}`}
+                style={
+                  {
+                    gridTemplateColumns: `repeat(auto-fill, minmax(max(200px, 100% / ${query.cols}), 1fr))`
+                  } as React.CSSProperties
+                }
+              >
                 {page.albums.map((album, index) => {
                   const isSelectable = isPrivate && !accessResolvedStatuses.has(album.access_request_status ?? "");
                   const isLcpCandidate = index === 0 && status === visibleStatuses[0];
