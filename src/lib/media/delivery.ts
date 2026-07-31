@@ -232,10 +232,10 @@ export function getMediaDeliveryDescriptor(
   const isReady = state === "ready";
 
   const publicCard = !isPrivate && isReady
-    ? target(thumbnail, poster, medium, display)
+    ? target(medium, thumbnail, poster, display)
     : target();
   const authorizedPrivateCard = isPrivate && isAuthorized && isReady
-    ? target(thumbnail, poster, medium, display)
+    ? target(medium, thumbnail, poster, display)
     : target();
   const selectedCard = isPrivate
     ? isAuthorized

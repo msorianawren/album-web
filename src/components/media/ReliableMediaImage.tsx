@@ -3,7 +3,12 @@
 import Image from "next/image";
 import { ImageOff } from "lucide-react";
 import { memo, useEffect, useRef, useState, type ReactNode } from "react";
+import type { ImageLoaderProps } from "next/image";
 import type { MediaDeliveryTarget } from "@/lib/media/delivery";
+
+const internalImageLoader = ({ src, width, quality }: ImageLoaderProps) => {
+  return `/api/_image?url=${encodeURIComponent(src)}&w=${width}&q=${quality || 75}`;
+};
 
 interface ReliableMediaImageProps {
   target: MediaDeliveryTarget;
@@ -80,7 +85,8 @@ function ReliableMediaImageAttempt({
         height={fill ? undefined : height}
         sizes={sizes}
         className={`${className} ${loaded ? "opacity-100" : "opacity-0"}`}
-        unoptimized={current.bypassOptimization}
+        unoptimized={false}
+        loader={current.bypassOptimization ? internalImageLoader : undefined}
         priority={priority}
         loading={priority ? undefined : loading}
         draggable={draggable}
