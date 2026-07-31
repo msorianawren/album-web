@@ -63,29 +63,6 @@ export function useUploadQueue(settings: SiteSettings) {
       return `Image is larger than ${settings.max_image_size_mb} MB.`;
     }
     if (isVideo && file.size > settings.max_video_size_mb * 1024 * 1024) {
-  const isUploadingRef = useRef(false);
-
-  const syncQueue = useCallback(() => {
-    setQueue([...queueRef.current]);
-  }, []);
-
-  const updateItem = useCallback((id: string, patch: Partial<QueueItem>) => {
-    queueRef.current = queueRef.current.map((item) =>
-      item.id === id ? { ...item, ...patch } : item
-    );
-    syncQueue();
-  }, [syncQueue]);
-
-  const validateFile = useCallback((file: File) => {
-    const isImage = imageTypes.includes(file.type);
-    const isVideo = videoTypes.includes(file.type);
-    if (!isImage && !isVideo) return "Unsupported file type.";
-    if (isImage && !settings.enable_image_uploads) return "Image uploads are disabled.";
-    if (isVideo && !settings.enable_video_uploads) return "Video uploads are disabled.";
-    if (isImage && file.size > settings.max_image_size_mb * 1024 * 1024) {
-      return `Image is larger than ${settings.max_image_size_mb} MB.`;
-    }
-    if (isVideo && file.size > settings.max_video_size_mb * 1024 * 1024) {
       return `Video is larger than ${settings.max_video_size_mb} MB.`;
     }
     return null;
@@ -97,6 +74,7 @@ export function useUploadQueue(settings: SiteSettings) {
       const error = validateFile(file);
       return {
         id: generateQueueId(),
+        file,
         status: error ? "failed" : "queued",
         progress: error ? 100 : 0,
         message: error ?? "Ready",
