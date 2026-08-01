@@ -27,9 +27,9 @@ export async function POST(request: NextRequest) {
 
     const cleanSlot = String(slot).replace(/[^a-z0-9-]/gi, "-");
 
-    // Validate type (images only)
-    if (!mimeType.startsWith("image/")) {
-      return apiError("UNSUPPORTED_MEDIA_TYPE", "Only images are supported for landing assets.", 415);
+    // Validate type (images and videos only)
+    if (!mimeType.startsWith("image/") && !mimeType.startsWith("video/")) {
+      return apiError("UNSUPPORTED_MEDIA_TYPE", "Only images and videos are supported for landing assets.", 415);
     }
 
     // Limit landing assets to 30MB

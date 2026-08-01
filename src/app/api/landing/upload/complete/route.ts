@@ -25,6 +25,33 @@ export async function POST(request: NextRequest) {
 
     // 1. Fetch original file from R2
     const source = await getR2Object(r2Key);
+    
+    const ext = r2Key.split('.').pop()?.toLowerCase();
+    const isVideo = ext === 'mp4' || ext === 'webm' || ext === 'mov';
+
+    if (isVideo) {
+      const assetKey = `landing/${cleanSlot}/${randomUUID()}/asset.${ext}`;
+      const url = await putR2Object({
+        key: assetKey,
+        body: source,
+        contentType: `video/${ext === "mov" ? "quicktime" : ext}`,
+        cacheControl: "public, max-age=31536000, immutable",
+      });
+      await deleteR2Objects([r2Key]);
+      
+      return apiSuccess(
+        {
+          asset: {
+            url,
+            previewUrl: url,
+            width: null,
+            height: null,
+            metadataStripped: false,
+          },
+        },
+        { status: 201 },
+      );
+    }
 
     // 2. Process with Sharp
     const image = sharp(source, { failOn: "none" }).rotate();
