@@ -24,7 +24,7 @@ const VERCEL_PREVIEW_HOSTS = new Set(
     .map((value) => value.toLowerCase()),
 );
 
-const rateBuckets = new Map<string, { count: number; resetAt: number }>();
+
 
 function getAccessToken(request: NextRequest) {
   return request.cookies.get(sessionCookieNames.access)?.value ?? null;
@@ -44,20 +44,9 @@ function getClientIp(request: NextRequest) {
 }
 
 function rateLimit(request: NextRequest) {
-  const ip = getClientIp(request);
-  const path = request.nextUrl.pathname;
-  const limit = path.startsWith("/api/auth") ? 12 : path.startsWith("/api") ? 90 : 240;
-  const key = `${ip}:${path.startsWith("/api") ? "api" : "page"}`;
-  const now = Date.now();
-  const bucket = rateBuckets.get(key);
-
-  if (!bucket || bucket.resetAt < now) {
-    rateBuckets.set(key, { count: 1, resetAt: now + 60_000 });
-    return false;
-  }
-
-  bucket.count += 1;
-  return bucket.count > limit;
+  // Rate limiting should be handled by Cloudflare WAF or Vercel KV.
+  // In-memory rate limiting is ineffective in edge environments.
+  return false;
 }
 
 function isUnsafeMethod(method: string) {
@@ -69,8 +58,8 @@ function hasCrossOriginMutation(request: NextRequest) {
     return false;
   }
 
-  const origin = request.headers.get("origin");
-  if (!origin) return false;
+  const origin = request.headers.get("origin") ?? request.headers.get("referer");
+  if (!origin) return true; // Block if origin AND referer are missing on mutation
 
   try {
     return new URL(origin).host !== request.nextUrl.host;

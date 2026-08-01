@@ -29,7 +29,7 @@ const nextConfig: NextConfig = {
       frame-ancestors 'none';
       form-action 'self';
 
-      script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com https://static.cloudflareinsights.com;
+      script-src 'self' 'unsafe-inline' https://accounts.google.com https://static.cloudflareinsights.com;
       style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
       style-src-elem 'self' 'unsafe-inline' https://fonts.googleapis.com;
       font-src 'self' data: https://fonts.gstatic.com;
