@@ -39,7 +39,8 @@ test("public depth code excludes Studio and keeps the WebGL import lazy", async 
   ]);
   assert.match(environment, /function isEnvironmentRoute/);
   assert.doesNotMatch(environment, /pathname === "\/studio"/);
-  assert.match(environment, /dynamic\(/);
+  assert.match(environment, /const PublicEnvironmentCanvas = lazy\(/);
+  assert.match(environment, /<Suspense fallback=\{null\}>/);
   assert.doesNotMatch(studioLayout, /PublicDepthEnvironment|three|WindChime/);
   assert.match(audioProvider, /data-audio-ux-ignore/);
 });

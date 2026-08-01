@@ -2,52 +2,113 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
+import { gsap } from "gsap";
 import type { PublicAdminStory } from "@/lib/types";
 
-export function StoryPlayer({ items, initialIndex, onClose }: { items: PublicAdminStory[]; initialIndex: number; onClose: () => void }) {
+export function StoryPlayer({
+  items,
+  initialIndex,
+  onClose,
+  onIndexChange,
+  getReturnTarget,
+}: {
+  items: PublicAdminStory[];
+  initialIndex: number;
+  onClose: (index: number) => void;
+  onIndexChange: (index: number) => void;
+  getReturnTarget: (index: number) => HTMLElement | null;
+}) {
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const roomRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
-  const returnFocusRef = useRef<HTMLElement | null>(null);
+  const closeTimelineRef = useRef<gsap.core.Timeline | null>(null);
+  const closingRef = useRef(false);
   const current = items[currentIndex];
 
   const previous = useCallback(() => {
+    if (closingRef.current) return;
     videoRef.current?.pause();
     setCurrentIndex((index) => Math.max(0, index - 1));
   }, []);
 
   const next = useCallback(() => {
+    if (closingRef.current) return;
     videoRef.current?.pause();
     setCurrentIndex((index) => Math.min(items.length - 1, index + 1));
   }, [items.length]);
 
-  const close = useCallback(() => {
-    videoRef.current?.pause();
+  const finishClose = useCallback(() => {
     const dialog = dialogRef.current;
     if (dialog?.open) dialog.close();
-    onClose();
-  }, [onClose]);
+    onClose(currentIndex);
+  }, [currentIndex, onClose]);
+
+  const close = useCallback(() => {
+    if (closingRef.current) return;
+    closingRef.current = true;
+    videoRef.current?.pause();
+
+    const dialog = dialogRef.current;
+    const room = roomRef.current;
+    const target = getReturnTarget(currentIndex);
+
+    if (!dialog || !room || !target || window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      finishClose();
+      return;
+    }
+
+    const roomRect = room.getBoundingClientRect();
+    const targetRect = target.getBoundingClientRect();
+    if (roomRect.width <= 0 || roomRect.height <= 0 || targetRect.width <= 0 || targetRect.height <= 0) {
+      finishClose();
+      return;
+    }
+
+    const x = targetRect.left + targetRect.width / 2 - (roomRect.left + roomRect.width / 2);
+    const y = targetRect.top + targetRect.height / 2 - (roomRect.top + roomRect.height / 2);
+
+    closeTimelineRef.current?.kill();
+    gsap.set(room, { transformOrigin: "center center", willChange: "transform, opacity" });
+    closeTimelineRef.current = gsap.timeline({
+      onComplete: () => {
+        gsap.set(room, { clearProps: "transform,opacity,visibility,willChange" });
+        finishClose();
+      },
+    }).to(room, {
+      x,
+      y,
+      scaleX: targetRect.width / roomRect.width,
+      scaleY: targetRect.height / roomRect.height,
+      autoAlpha: 0.08,
+      duration: 0.42,
+      ease: "power2.in",
+      overwrite: "auto",
+    });
+  }, [currentIndex, finishClose, getReturnTarget]);
 
   useEffect(() => {
     const dialog = dialogRef.current;
     if (!dialog) return;
     const video = videoRef.current;
-    returnFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     dialog.showModal();
     return () => {
+      closeTimelineRef.current?.kill();
       video?.pause();
       if (dialog.open) dialog.close();
-      returnFocusRef.current?.focus();
     };
   }, []);
 
   useEffect(() => {
+    onIndexChange(currentIndex);
     const video = videoRef.current;
     if (!video) return;
+    video.muted = false;
+    video.volume = 1;
     void video.play().catch(() => {
       // Native controls remain available when browser playback policy intervenes.
     });
-  }, [current.id]);
+  }, [current.id, currentIndex, onIndexChange]);
 
   return (
     <dialog
@@ -61,7 +122,7 @@ export function StoryPlayer({ items, initialIndex, onClose }: { items: PublicAdm
         if (event.key === "ArrowRight") next();
       }}
     >
-      <div className="lcb-story-dialog__room">
+      <div ref={roomRef} className="lcb-story-dialog__room">
         <header className="lcb-story-dialog__topline">
           <div aria-live="polite">
             <p className="lcb-story-dialog__counter">Film {currentIndex + 1} of {items.length}</p>
@@ -90,7 +151,6 @@ export function StoryPlayer({ items, initialIndex, onClose }: { items: PublicAdm
             playsInline
             preload="metadata"
             autoPlay
-            muted
             onEnded={() => { if (currentIndex < items.length - 1) next(); }}
           />
           <button

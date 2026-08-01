@@ -21,9 +21,12 @@ test("the opening spread has one priority image and keeps the editorial body out
 
 test("the transparent landing keeps the animated environment visible", () => {
   const css = read("src/components/landing/landing-home.css");
+  const environmentFallbackCss = read("src/components/environment/EnvironmentStaticFallback.css");
   assert.match(css, /environment-custom-background\s*\{[^}]*0\.34/s);
+  assert.doesNotMatch(environmentFallbackCss, /sakura-fallback/);
   assert.match(css, /\.lcb-hero\s*\{[^}]*background:\s*transparent/s);
-  assert.match(css, /\.lcb-social::before\s*\{[^}]*28%[^}]*transparent/s);
+  assert.match(css, /\.lcb-social::before\s*\{[^}]*display:\s*none/s);
+  assert.match(css, /\.lcb-intro,[\s\S]*backdrop-filter:\s*blur\(14px\)/s);
 });
 
 test("featured collections prefer a display-sized derivative over thumbnails", () => {
@@ -49,7 +52,13 @@ test("the story viewer uses a contained native dialog and loads only its current
   assert.equal(player.includes("fixed inset-0"), false);
   assert.equal(player.includes("bg-black/95"), false);
   assert.match(player, /autoPlay/);
-  assert.match(player, /muted/);
+  assert.match(player, /video\.muted = false/);
+  assert.match(player, /video\.volume = 1/);
+  assert.match(player, /scaleX: targetRect\.width \/ roomRect\.width/);
+  assert.match(player, /scaleY: targetRect\.height \/ roomRect\.height/);
+  assert.match(player, /duration: 0\.42/);
+  assert.match(player, /onClose\(currentIndex\)/);
+  assert.doesNotMatch(player, /\n\s+muted(?:\s|=)/);
   assert.match(player, /onEnded=/);
 });
 

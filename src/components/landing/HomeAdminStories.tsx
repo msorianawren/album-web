@@ -14,6 +14,7 @@ function formatDuration(value: number | null) {
 
 export function HomeAdminStories({ settings, items }: { settings: LandingAdminStoriesSettings; items: PublicAdminStory[] }) {
   const railRef = useRef<HTMLDivElement>(null);
+  const storyButtonRefs = useRef(new Map<string, HTMLButtonElement>());
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [scrollState, setScrollState] = useState({ previous: false, next: false });
 
@@ -30,12 +31,31 @@ export function HomeAdminStories({ settings, items }: { settings: LandingAdminSt
     return () => observer.disconnect();
   }, [items.length, measure]);
 
-  if (items.length === 0) return null;
-
   const scroll = (direction: -1 | 1) => {
     const rail = railRef.current;
     rail?.scrollBy({ left: direction * Math.max(240, rail.clientWidth * 0.72), behavior: "smooth" });
   };
+
+  const keepCurrentStoryInView = useCallback((index: number) => {
+    const rail = railRef.current;
+    const item = items[index];
+    const button = item ? storyButtonRefs.current.get(item.id) : null;
+    if (!rail || !button) return;
+    const left = button.offsetLeft - (rail.clientWidth - button.offsetWidth) / 2;
+    rail.scrollTo({ left: Math.max(0, left), behavior: "smooth" });
+  }, [items]);
+
+  const getStoryButton = useCallback((index: number) => {
+    const item = items[index];
+    return item ? storyButtonRefs.current.get(item.id) ?? null : null;
+  }, [items]);
+
+  const closeStory = useCallback((index: number) => {
+    setSelectedIndex(null);
+    window.requestAnimationFrame(() => getStoryButton(index)?.focus({ preventScroll: true }));
+  }, [getStoryButton]);
+
+  if (items.length === 0) return null;
 
   return (
     <section className="lcb-stories" aria-labelledby="founder-stories-heading">
@@ -55,7 +75,16 @@ export function HomeAdminStories({ settings, items }: { settings: LandingAdminSt
           const duration = formatDuration(item.duration_seconds);
           return (
             <article key={item.id} className="lcb-story">
-              <button type="button" onClick={() => setSelectedIndex(index)} aria-label={`Play story${item.caption ? `: ${item.caption}` : ""}`}>
+              <button
+                ref={(node) => {
+                  if (node) storyButtonRefs.current.set(item.id, node);
+                  else storyButtonRefs.current.delete(item.id);
+                }}
+                type="button"
+                data-story-id={item.id}
+                onClick={() => setSelectedIndex(index)}
+                aria-label={`Play story${item.caption ? `: ${item.caption}` : ""}`}
+              >
                 <Image src={item.poster_url} alt="" fill sizes="(max-width: 639px) 158px, 204px" unoptimized className="object-cover" />
                 <span className="lcb-story__play"><Play aria-hidden="true" fill="currentColor" /></span>
               </button>
@@ -68,7 +97,15 @@ export function HomeAdminStories({ settings, items }: { settings: LandingAdminSt
         })}
       </div>
 
-      {selectedIndex !== null ? <StoryPlayer items={items} initialIndex={selectedIndex} onClose={() => setSelectedIndex(null)} /> : null}
+      {selectedIndex !== null ? (
+        <StoryPlayer
+          items={items}
+          initialIndex={selectedIndex}
+          onClose={closeStory}
+          onIndexChange={keepCurrentStoryInView}
+          getReturnTarget={getStoryButton}
+        />
+      ) : null}
     </section>
   );
 }

@@ -1,5 +1,5 @@
 class ArtistStore extends EventTarget {
-  private preset: string = "mist";
+  private preset: string = "sakura";
   private enabled: boolean = true;
 
   getSnapshot = () => {
@@ -7,7 +7,7 @@ class ArtistStore extends EventTarget {
   };
 
   getServerSnapshot = () => {
-    return "mist:true";
+    return "sakura:true";
   };
 
   subscribe = (callback: () => void) => {

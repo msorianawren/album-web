@@ -11,12 +11,8 @@
 import dynamic from "next/dynamic";
 import { Suspense } from "react";
 import { usePathname } from "next/navigation";
+import { PublicDepthEnvironment } from "@/components/environment/PublicDepthEnvironment";
 import type { PublicSession } from "@/lib/types";
-
-const PublicDepthEnvironment = dynamic(
-  () => import("@/components/environment/PublicDepthEnvironment").then((m) => m.PublicDepthEnvironment),
-  { ssr: false },
-);
 
 const OrianaCompanionRuntime = dynamic(
   () => import("@/components/assistant/OrianaCompanionRuntime").then((m) => m.OrianaCompanionRuntime),
@@ -36,11 +32,7 @@ export function EnvironmentShell() {
 
   if (!isEnvironmentRoute) return null;
 
-  return (
-    <Suspense fallback={null}>
-      <PublicDepthEnvironment />
-    </Suspense>
-  );
+  return <PublicDepthEnvironment />;
 }
 
 export function CompanionShell({ session }: { session: PublicSession }) {

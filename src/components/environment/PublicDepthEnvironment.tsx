@@ -1,8 +1,7 @@
 "use client";
 
-import dynamic from "next/dynamic";
 import { usePathname } from "next/navigation";
-import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { useDepthEffects } from "@/hooks/useDepthEffects";
 import { useEnvironmentPreferences, useResolvedEnvironmentPhase } from "@/hooks/useEnvironmentPreferences";
 import { audioUX } from "@/lib/audio-ux";
@@ -23,15 +22,14 @@ import { EnvironmentStaticFallback } from "./EnvironmentStaticFallback";
 import { useChimeAnchorRects } from "./useChimeAnchorRects";
 import { useScrollBusy } from "@/lib/timeline/scroll-busy";
 
+const PublicEnvironmentCanvas = lazy(
+  () => import("./PublicEnvironmentCanvas").then((module) => ({ default: module.PublicEnvironmentCanvas })),
+);
+
 type IdleCallbackWindow = Window & {
   requestIdleCallback?: (callback: IdleRequestCallback, options?: IdleRequestOptions) => number;
   cancelIdleCallback?: (handle: number) => void;
 };
-
-const PublicEnvironmentCanvas = dynamic(
-  () => import("./PublicEnvironmentCanvas").then((module) => module.PublicEnvironmentCanvas),
-  { ssr: false },
-);
 
 function subscribeMediaViewer(callback: () => void) {
   window.addEventListener(ORIANA_MEDIA_VIEWER_STATE_EVENT, callback);
@@ -122,7 +120,7 @@ function PublicDepthEnvironmentContent({ pathname }: { pathname: string }) {
   );
   const locale = useSyncExternalStore(subscribeLocale, getStoredLocale, () => "en");
   const [webglUnavailable, setWebglUnavailable] = useState(false);
-  const [isIdle, setIsIdle] = useState(false);
+  const [isIdle, setIsIdle] = useState(true);
   const handleWebglUnavailable = useCallback(() => setWebglUnavailable(true), []);
   const [viewportWidth, reducedMotion, saveData, documentVisible] = capabilitySnapshot.split(":");
   const artistEnabled = artistSnapshot.endsWith(":true");
@@ -287,16 +285,18 @@ function PublicDepthEnvironmentContent({ pathname }: { pathname: string }) {
         );
       })}
       {canvasActive && !webglUnavailable && isIdle ? (
-        <PublicEnvironmentCanvas
-          rects={environmentRects}
-          reducedMotion={reducedMotion === "true"}
-          state={environmentState}
-          preferences={preferences}
-          quality={quality}
-          active={canvasActive}
-          chimeOnly={albumChimeOnly}
-          onUnavailable={handleWebglUnavailable}
-        />
+        <Suspense fallback={null}>
+          <PublicEnvironmentCanvas
+            rects={environmentRects}
+            reducedMotion={reducedMotion === "true"}
+            state={environmentState}
+            preferences={preferences}
+            quality={quality}
+            active={canvasActive}
+            chimeOnly={albumChimeOnly}
+            onUnavailable={handleWebglUnavailable}
+          />
+        </Suspense>
       ) : null}
     </>
   );

@@ -1,25 +1,23 @@
 "use client";
 
 import { useFrame } from "@react-three/fiber";
-import { useEffect, useRef } from "react";
+import { lazy, useEffect, useRef } from "react";
 import type { ChimeAnchorRect } from "@/lib/wind-chime-anchors";
 import type { EnvironmentState } from "@/lib/environment/presets";
 import type { EnvironmentPreferences } from "@/lib/environment/preferences";
 import type { EnvironmentQuality } from "@/lib/environment/quality";
 import { advanceWindRuntime, applyWindInteractionImpulse, createWindRuntime } from "@/lib/environment/wind";
 
-import dynamic from "next/dynamic";
-
-const EnvironmentLightingRig = dynamic(() => import("./EnvironmentLightingRig").then(m => m.EnvironmentLightingRig), { ssr: false });
-const VegetationScene = dynamic(() => import("./vegetation/VegetationScene").then(m => m.VegetationScene), { ssr: false });
-const CanopyShadowOverlay = dynamic(() => import("./vegetation/CanopyShadowOverlay").then(m => m.CanopyShadowOverlay), { ssr: false });
-const WeatherSystem = dynamic(() => import("./weather/WeatherSystem").then(m => m.WeatherSystem), { ssr: false });
-const WindChimeScene = dynamic(() => import("./WindChimeScene").then(m => m.WindChimeScene), { ssr: false });
-const EnvironmentParticles = dynamic(() => import("./EnvironmentParticles").then(m => m.EnvironmentParticles), { ssr: false });
-const EnvironmentAtmosphere = dynamic(() => import("./EnvironmentParticles").then(m => m.EnvironmentAtmosphere), { ssr: false });
-const EnvironmentBirds = dynamic(() => import("./EnvironmentBirds").then(m => m.EnvironmentBirds), { ssr: false });
-const EnvironmentBranches = dynamic(() => import("./EnvironmentBranches").then(m => m.EnvironmentBranches), { ssr: false });
-const SharedBotanicalScene = dynamic(() => import("./shared/SharedBotanicalScene").then(m => m.SharedBotanicalScene), { ssr: false });
+const EnvironmentLightingRig = lazy(() => import("./EnvironmentLightingRig").then((module) => ({ default: module.EnvironmentLightingRig })));
+const VegetationScene = lazy(() => import("./vegetation/VegetationScene").then((module) => ({ default: module.VegetationScene })));
+const CanopyShadowOverlay = lazy(() => import("./vegetation/CanopyShadowOverlay").then((module) => ({ default: module.CanopyShadowOverlay })));
+const WeatherSystem = lazy(() => import("./weather/WeatherSystem").then((module) => ({ default: module.WeatherSystem })));
+const WindChimeScene = lazy(() => import("./WindChimeScene").then((module) => ({ default: module.WindChimeScene })));
+const EnvironmentParticles = lazy(() => import("./EnvironmentParticles").then((module) => ({ default: module.EnvironmentParticles })));
+const EnvironmentAtmosphere = lazy(() => import("./EnvironmentParticles").then((module) => ({ default: module.EnvironmentAtmosphere })));
+const EnvironmentBirds = lazy(() => import("./EnvironmentBirds").then((module) => ({ default: module.EnvironmentBirds })));
+const EnvironmentBranches = lazy(() => import("./EnvironmentBranches").then((module) => ({ default: module.EnvironmentBranches })));
+const SharedBotanicalScene = lazy(() => import("./shared/SharedBotanicalScene").then((module) => ({ default: module.SharedBotanicalScene })));
 
 import { botanicalProfiles } from "@/lib/environment/botanical-profiles";
 import { getEnvironmentDevLabState } from "@/lib/environment/dev-lab";

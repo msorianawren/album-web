@@ -59,7 +59,13 @@ test("homepage stays poster-only until the player is opened", async () => {
   assert.equal(player.includes("playsInline"), true);
   assert.equal(player.includes('preload="metadata"'), true);
   assert.equal(player.includes("autoPlay"), true);
-  assert.equal(player.includes("muted"), true);
+  assert.equal(player.includes("video.muted = false"), true);
+  assert.equal(player.includes("video.volume = 1"), true);
+  assert.equal(player.includes("getReturnTarget(currentIndex)"), true);
+  assert.equal(player.includes("scaleX: targetRect.width / roomRect.width"), true);
+  assert.equal(player.includes("scaleY: targetRect.height / roomRect.height"), true);
+  assert.equal(player.includes("onClose(currentIndex)"), true);
+  assert.doesNotMatch(player, /\n\s+muted(?:\s|=)/);
   assert.equal(player.includes("<dialog"), true);
   assert.equal(player.includes("showModal()"), true);
   assert.equal(player.includes("fixed inset-0"), false);

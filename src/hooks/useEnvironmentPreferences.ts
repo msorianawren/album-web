@@ -28,10 +28,10 @@ export function useEnvironmentPreferences({
 } = {}) {
   const [preferences, setPreferencesState] = useState<EnvironmentPreferences>(() => {
     if (initialPreferences !== undefined) return normalizeEnvironmentPreferences(initialPreferences);
-    return readEnvironmentPreferences();
+    return artistEnvironmentDefaults;
   });
   const preferencesRef = useRef<EnvironmentPreferences>(preferences);
-  const [hydrated, setHydrated] = useState(typeof window !== "undefined");
+  const [hydrated, setHydrated] = useState(false);
   const [syncState, setSyncState] = useState<SyncState>(userId ? "saved" : "local");
   const skipNextSync = useRef(true);
 
@@ -45,6 +45,11 @@ export function useEnvironmentPreferences({
       writeEnvironmentPreferences(initial);
     }
     preferencesRef.current = initial;
+    queueMicrotask(() => {
+      if (!active) return;
+      setPreferencesState(initial);
+      setHydrated(true);
+    });
     skipNextSync.current = true;
     if (userId && initialPreferences === undefined && !hasLocal) {
       void fetch("/api/profile/environment-preferences", { headers: { Accept: "application/json" } })

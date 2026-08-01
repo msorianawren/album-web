@@ -1,7 +1,7 @@
 .landing-home {
-  --lcb-shell: min(90rem, calc(100vw - 3rem));
-  --lcb-line: color-mix(in srgb, var(--text-primary) 16%, transparent);
-  isolation: isolate;
+  --lcb-shell: min(82rem, calc(100vw - 3rem));
+  --lcb-line: color-mix(in srgb, var(--text-primary) 14%, transparent);
+  isolation: auto;
 }
 
 .landing-home :where(a, button, dialog, video):focus-visible,
@@ -18,27 +18,35 @@ body:has(.landing-home) .environment-custom-background {
   opacity: min(var(--environment-artist-opacity, 0.45), 0.34);
 }
 
+body:has(.landing-home) .public-chime-canvas {
+  opacity: 1;
+  filter: saturate(1.16) contrast(1.06);
+}
+
 .lcb-hero {
-  min-height: calc(100svh - 5rem);
-  padding: clamp(1.5rem, 3vw, 3.5rem) 0 clamp(4.5rem, 8vw, 8rem);
+  min-height: calc(100svh - 4.75rem);
+  display: grid;
+  align-items: center;
+  padding: clamp(2rem, 4vw, 4.5rem) 0 clamp(3.5rem, 7vw, 6rem);
   background: transparent;
 }
 
 .lcb-hero__grid {
   width: var(--lcb-shell);
-  min-height: calc(100svh - 10rem);
+  min-height: min(46rem, calc(100svh - 8rem));
   margin-inline: auto;
   display: grid;
   grid-template-columns: repeat(12, minmax(0, 1fr));
-  grid-template-rows: auto 1fr auto;
-  column-gap: clamp(1.25rem, 2.2vw, 2.5rem);
-  row-gap: 1.5rem;
+  grid-template-rows: auto 1fr;
+  gap: clamp(1.5rem, 3vw, 3rem);
+  align-items: center;
 }
 
 .lcb-hero__eyebrow {
-  grid-column: 9 / 13;
+  grid-column: 1 / 6;
+  grid-row: 1;
   align-self: end;
-  margin: 0;
+  margin: 0 0 -0.35rem;
   color: var(--text-secondary);
   font-size: 0.68rem;
   font-weight: 650;
@@ -48,14 +56,17 @@ body:has(.landing-home) .environment-custom-background {
 
 .lcb-hero__dominant {
   position: relative;
-  grid-column: 1 / 9;
-  grid-row: 1 / 4;
+  grid-column: 6 / 13;
+  grid-row: 1 / 3;
   min-height: 0;
-  aspect-ratio: 3 / 2;
-  align-self: center;
+  aspect-ratio: 4 / 3;
   margin: 0;
   overflow: hidden;
-  background: color-mix(in srgb, var(--surface-secondary) 28%, transparent);
+  border: 1px solid var(--lcb-line);
+  border-radius: clamp(1.25rem, 2vw, 2rem);
+  background: color-mix(in srgb, var(--surface) 52%, transparent);
+  box-shadow: 0 1.5rem 4rem rgb(38 29 23 / 0.1);
+  backdrop-filter: blur(14px);
 }
 
 .lcb-hero__dominant img {
@@ -64,28 +75,34 @@ body:has(.landing-home) .environment-custom-background {
 }
 
 .lcb-hero__copy {
-  grid-column: 9 / 13;
-  align-self: center;
-  padding-block: 1rem;
+  grid-column: 1 / 6;
+  grid-row: 2;
+  align-self: start;
+  padding: clamp(1.75rem, 3vw, 3rem);
+  border: 1px solid var(--lcb-line);
+  border-radius: clamp(1.25rem, 2vw, 1.75rem);
+  background: color-mix(in srgb, var(--surface) 64%, transparent);
+  box-shadow: 0 1rem 3rem rgb(38 29 23 / 0.07);
+  backdrop-filter: blur(18px);
 }
 
 .lcb-hero__copy h1 {
-  max-width: 9ch;
+  max-width: 11ch;
   margin: 0;
   font-family: var(--font-serif);
-  font-size: clamp(3.5rem, 5.3vw, 6.4rem);
+  font-size: clamp(3.2rem, 4.4vw, 5.25rem);
   font-weight: 400;
-  line-height: 0.91;
-  letter-spacing: -0.045em;
+  line-height: 0.96;
+  letter-spacing: -0.038em;
   text-wrap: balance;
 }
 
 .lcb-hero__copy > p {
-  max-width: 35rem;
-  margin: 1.8rem 0 0;
+  max-width: 31rem;
+  margin: 1.4rem 0 0;
   color: var(--text-secondary);
-  font-size: clamp(1rem, 1.3vw, 1.16rem);
-  line-height: 1.7;
+  font-size: clamp(0.95rem, 1.1vw, 1.08rem);
+  line-height: 1.65;
   text-wrap: pretty;
 }
 
@@ -93,7 +110,7 @@ body:has(.landing-home) .environment-custom-background {
   display: flex;
   flex-wrap: wrap;
   gap: 1.75rem;
-  margin-top: 2.1rem;
+  margin-top: 1.65rem;
 }
 
 .lcb-hero__actions a,
@@ -131,15 +148,7 @@ body:has(.landing-home) .environment-custom-background {
 }
 
 .lcb-hero__support {
-  position: relative;
-  grid-column: 9 / 13;
-  align-self: end;
-  width: clamp(8rem, 11vw, 11rem);
-  aspect-ratio: 2 / 3;
-  justify-self: end;
-  margin: 0;
-  overflow: hidden;
-  background: color-mix(in srgb, var(--surface-secondary) 24%, transparent);
+  display: none;
 }
 
 .lcb-hero__support img {
@@ -772,22 +781,55 @@ body:has(.landing-home) .environment-custom-background {
 .lcb-tree-card small { overflow: hidden; color: var(--text-secondary); font-size: 0.72rem; text-overflow: ellipsis; white-space: nowrap; }
 .lcb-tree-card > svg { width: 0.9rem; color: var(--text-secondary); }
 
+/* Keep the sakura environment present while giving every chapter a calm,
+   readable glass surface. The page remains transparent instead of becoming a
+   stack of opaque paper sections. */
+.lcb-intro,
+.lcb-collections,
+.lcb-threshold,
+.lcb-stories,
+.lcb-gallery,
+.lcb-services,
+.lcb-collaborators,
+.lcb-social,
+.lcb-letter {
+  margin-block: clamp(1.25rem, 3vw, 2.5rem);
+  padding-inline: clamp(1rem, 3vw, 3rem);
+  border: 1px solid var(--lcb-line);
+  border-radius: clamp(1.25rem, 2.4vw, 2rem);
+  background: color-mix(in srgb, var(--surface) 48%, transparent);
+  box-shadow: 0 1.25rem 3.5rem rgb(38 29 23 / 0.045);
+  backdrop-filter: blur(14px);
+}
+
+.lcb-intro {
+  width: min(65rem, calc(100vw - 3rem));
+  padding-inline: clamp(1.5rem, 4vw, 4rem);
+}
+
+.lcb-social::before { display: none; }
+
+.lcb-footer {
+  background: color-mix(in srgb, var(--surface) 64%, transparent);
+  backdrop-filter: blur(16px);
+}
+
 @media (max-width: 899px) {
   .landing-home { --lcb-shell: min(100% - 2rem, 42rem); }
-  .lcb-hero { min-height: auto; padding: 1.5rem 0 5rem; }
-  .lcb-hero__grid { width: 100%; min-height: 0; display: flex; flex-direction: column; gap: 0; }
-  .lcb-hero__eyebrow { order: 1; width: var(--lcb-shell); margin: 0 auto 1.25rem; }
-  .lcb-hero__dominant { order: 2; width: 100%; min-height: 0; aspect-ratio: 3 / 2; }
+  .lcb-hero { min-height: auto; padding: 1.5rem 0 3.5rem; }
+  .lcb-hero__grid { width: var(--lcb-shell); min-height: 0; display: flex; flex-direction: column; gap: 1rem; }
+  .lcb-hero__eyebrow { order: 1; width: 100%; margin: 0 0 0.25rem; }
+  .lcb-hero__copy { order: 2; width: 100%; margin: 0; padding: 1.5rem; }
+  .lcb-hero__dominant { order: 3; width: 100%; min-height: 0; aspect-ratio: 3 / 2; }
   .lcb-hero__dominant img { object-position: center !important; }
-  .lcb-hero__copy { order: 3; width: var(--lcb-shell); margin-inline: auto; padding: 2.25rem 0 0; }
-  .lcb-hero__copy h1 { max-width: 10ch; font-size: clamp(3rem, 14vw, 4.8rem); }
+  .lcb-hero__copy h1 { max-width: 11ch; font-size: clamp(2.7rem, 12vw, 4rem); }
   .lcb-hero__copy > p { margin-top: 1.35rem; font-size: 1rem; }
   .lcb-hero__actions { gap: 1.5rem; margin-top: 1.5rem; }
-  .lcb-hero__support { order: 4; width: min(48%, 12rem); aspect-ratio: 2 / 3; margin: 2.75rem 1rem 0 auto; }
+  .lcb-hero__support { display: none; }
 
   .lcb-section-heading { display: block; margin-bottom: 2.75rem; }
   .lcb-section-heading h2 { margin-top: 0.8rem; font-size: clamp(2.7rem, 13vw, 4rem); }
-  .lcb-collections { padding-block: 5rem; }
+  .lcb-collections { padding-block: 3.5rem; }
   .lcb-collections__desktop { display: none; }
   .lcb-collections__mobile { display: grid; gap: 3.5rem; }
   .lcb-collections__mobile a { display: block; color: var(--text-primary); text-decoration: none; }
@@ -798,7 +840,7 @@ body:has(.landing-home) .environment-custom-background {
   .lcb-collections__mobile p { margin: 0.8rem 0 0; color: var(--text-secondary); font-size: 0.7rem; letter-spacing: 0.08em; text-transform: uppercase; }
   .lcb-collections > .lcb-text-link { margin-top: 2.5rem; }
 
-  .lcb-intro { width: var(--lcb-shell); display: block; padding-block: 5rem; }
+  .lcb-intro { width: var(--lcb-shell); display: block; padding: 3.5rem 1.5rem; }
   .lcb-intro__mark { margin-bottom: 1.5rem; }
   .lcb-intro > p { font-size: clamp(1.55rem, 7.8vw, 2rem); line-height: 1.45; }
 
@@ -808,7 +850,7 @@ body:has(.landing-home) .environment-custom-background {
   .lcb-threshold__prints img { width: 66%; height: 84%; }
   .lcb-threshold__private { padding-bottom: 0.5rem; }
 
-  .lcb-stories { padding-block: 5rem; }
+  .lcb-stories { padding-block: 3.5rem; }
   .lcb-stories__heading { align-items: end; margin-bottom: 2rem; }
   .lcb-stories__controls button { width: 2.5rem; height: 2.5rem; }
   .lcb-stories__rail { width: calc(100% + 1rem); gap: 0.9rem; padding-right: 2rem; }
@@ -850,7 +892,7 @@ body:has(.landing-home) .environment-custom-background {
   .lcb-footer__legal { display: block; margin-top: 3rem; }
   .lcb-footer__legal p + p { margin-top: 0.6rem; }
 
-  .lcb-social { width: var(--lcb-shell); padding-block: 5rem; }
+  .lcb-social { width: var(--lcb-shell); padding-block: 3.5rem; }
   .lcb-social > header { text-align: left; }
   .lcb-social > header > p:last-child { margin-left: 0; }
   .lcb-tree__desktop { display: none; }
