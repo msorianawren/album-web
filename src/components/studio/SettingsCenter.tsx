@@ -784,7 +784,7 @@ export function SettingsCenter({
                   translations[activeLandingLocale] = { ...translations[activeLandingLocale], admin_stories_eyebrow: copy.eyebrow, admin_stories_heading: copy.heading };
                   updateLanding("translations", translations);
                 }
-              }} /> : null}
+              }} uploadPoster={async (file) => uploadLandingAsset("media", file)} uploadVideo={async (file) => uploadLandingAsset("media", file)} /> : null}
             </div>
             <LandingPreview landing={landing} activeLandingLocale={activeLandingLocale} />
           </div>
