@@ -29,14 +29,14 @@ test("trusted service-role constructor has only explicit admin and worker import
   assert.deepEqual(new Set(importers), allowed);
 });
 
-test("album repository uses the card-safe pagination RPC and JWT/RLS private reads", () => {
+test("album repository uses the bounded page RPC and JWT/RLS private reads", () => {
   const source = read("src/lib/albums.ts");
-  assert.match(source, /client\.rpc\("list_album_summaries"/);
+  assert.match(source, /client\.rpc\("list_album_page"/);
   assert.match(source, /const client = userClient \?\? createPublicServerClient\(\)/);
   assert.match(source, /function readAlbumRow[\s\S]*?\.from\("albums"\)[\s\S]*?\.select\(ALBUM_DETAIL_SELECT\)/);
   assert.match(source, /export async function getAlbumMetadata/);
   assert.match(source, /export async function getAlbumMediaPage/);
-  assert.match(source, /album\.status === "private" \? userClient! : publicClient/);
+  assert.match(source, /const mediaClient = album\.status === "private" \? userClient! : publicClient/);
   assert.match(source, /userClient!\.rpc\(\s*"can_access_private_album"/);
   assert.match(source, /projectPrivatePreviewForClient/);
   assert.doesNotMatch(source, /getPreviewRows/);

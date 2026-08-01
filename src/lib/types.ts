@@ -272,7 +272,6 @@ export interface LandingAdminStoriesSettings {
   enabled: boolean;
   eyebrow: string;
   heading: string;
-  selectedItemIds: string[];
 }
 
 export interface PublicSession {
@@ -538,9 +537,23 @@ export interface AboutProfile {
 export interface AdminStory {
   id: string;
   video_url: string;
-  thumbnail_url: string | null;
+  video_r2_key: string | null;
+  poster_url: string;
+  poster_r2_key: string | null;
   caption: string | null;
-  status: 'draft' | 'published' | 'archived';
+  mime_type: "video/mp4" | "video/webm" | null;
+  file_size: number | null;
+  width: number | null;
+  height: number | null;
+  duration_seconds: number | null;
+  is_published: boolean;
   sort_order: number;
+  created_by: string | null;
   created_at: string;
+  updated_at: string;
 }
+
+export type PublicAdminStory = Pick<
+  AdminStory,
+  "id" | "video_url" | "poster_url" | "caption" | "mime_type" | "width" | "height" | "duration_seconds" | "sort_order"
+>;

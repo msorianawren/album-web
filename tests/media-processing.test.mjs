@@ -25,8 +25,8 @@ test("image processor validates bytes and produces deterministic clean derivativ
   assert.equal(result.width, 80);
   assert.equal(result.height, 120);
   assert.equal(result.orientation, "portrait");
-  assert.equal(result.variants.length, 3);
-  assert.deepEqual(result.variants.map((item) => item.name), ["thumbnail", "medium", "large"]);
+  assert.equal(result.variants.length, 4);
+  assert.deepEqual(result.variants.map((item) => item.name), ["thumbnail", "card", "medium", "large"]);
   assert.ok(result.variants.every((item) => item.webp.length > 0 && item.avif === null));
   assert.match(result.contentHash, /^[a-f0-9]{64}$/);
   assert.ok(result.blurhash.length > 10);

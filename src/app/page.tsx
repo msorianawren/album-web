@@ -3,7 +3,6 @@ import { AppFooter } from "@/components/AppFooter";
 import { HomeHero } from "@/components/HomeHero";
 import { NatureAnimatedBackground } from "@/components/landing/NatureAnimatedBackground";
 import { HomeEditorialIntro } from "@/components/landing/HomeEditorialIntro";
-import { HomeAlbumWorlds } from "@/components/landing/HomeAlbumWorlds";
 import { SocialLinksTree } from "@/components/landing/SocialLinksTree";
 import { HomePrivateExperience } from "@/components/landing/HomePrivateExperience";
 import { HomeCreativeServices } from "@/components/landing/HomeCreativeServices";
@@ -18,8 +17,6 @@ import { HomeAdminStories } from "@/components/landing/HomeAdminStories";
 import { getLandingAdminStories } from "@/lib/admin-stories/data";
 
 import { getLandingPage } from "@/lib/landing";
-import { getFeaturedAlbums } from "@/lib/albums";
-import { getAboutProfile } from "@/lib/about";
 import { getSiteSettings } from "@/lib/site-settings";
 
 import { cookies } from "next/headers";
@@ -44,7 +41,7 @@ export default async function Home() {
     heading: landing.translations?.[locale]?.admin_stories_heading ?? adminStoriesSettings.heading,
   } : adminStoriesSettings;
   const adminStories = adminStoriesSettings?.enabled
-    ? await getLandingAdminStories(adminStoriesSettings.selectedItemIds)
+    ? await getLandingAdminStories()
     : [];
 
   return (
