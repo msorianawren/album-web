@@ -775,19 +775,18 @@ export function SettingsCenter({
                   <Toggle label="Personal Letter" checked={landing.section_toggles?.personal_letter !== false} onChange={(v) => updateLanding("section_toggles", { ...landing.section_toggles, personal_letter: v })} />
                   <Toggle label="Founder Stories" checked={landing.admin_stories_settings?.enabled === true} onChange={(v) => updateLanding("admin_stories_settings", { ...(landing.admin_stories_settings!), enabled: v })} />
                 </div>
-              </div>
-              {landing.admin_stories_settings ? <AdminStoryEditor value={landing.admin_stories_settings} onChange={(value) => updateLanding("admin_stories_settings", value)} copy={{ eyebrow: getAdminStoryLocalized("eyebrow"), heading: getAdminStoryLocalized("heading") }} onCopyChange={(copy) => {
-                if (activeLandingLocale === "en") {
-                  updateLanding("admin_stories_settings", { ...landing.admin_stories_settings!, ...copy });
-                } else {
-                  const translations: TranslationMap = { ...(landing.translations || {}) };
-                  translations[activeLandingLocale] = { ...translations[activeLandingLocale], admin_stories_eyebrow: copy.eyebrow, admin_stories_heading: copy.heading };
-                  updateLanding("translations", translations);
-                }
-              }} uploadPoster={async (file) => uploadLandingAsset("media", file)} uploadVideo={async (file) => uploadLandingAsset("media", file)} /> : null}
             </div>
             <LandingPreview landing={landing} activeLandingLocale={activeLandingLocale} />
           </div>
+          {landing.admin_stories_settings ? <AdminStoryEditor value={landing.admin_stories_settings} onChange={(value) => updateLanding("admin_stories_settings", value)} copy={{ eyebrow: getAdminStoryLocalized("eyebrow"), heading: getAdminStoryLocalized("heading") }} onCopyChange={(copy) => {
+            if (activeLandingLocale === "en") {
+              updateLanding("admin_stories_settings", { ...landing.admin_stories_settings!, ...copy });
+            } else {
+              const translations: TranslationMap = { ...(landing.translations || {}) };
+              translations[activeLandingLocale] = { ...translations[activeLandingLocale], admin_stories_eyebrow: copy.eyebrow, admin_stories_heading: copy.heading };
+              updateLanding("translations", translations);
+            }
+          }} uploadPoster={async (file) => uploadLandingAsset("media", file)} uploadVideo={async (file) => uploadLandingAsset("media", file)} /> : null}
         </Panel>
       ) : null}
 
