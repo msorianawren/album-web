@@ -1,18 +1,20 @@
 -- Add expires_at to audit_logs
-ALTER TABLE public.audit_logs ADD COLUMN expires_at timestamptz;
+ALTER TABLE public.audit_logs ADD COLUMN IF NOT EXISTS expires_at timestamptz;
 UPDATE public.audit_logs SET expires_at = created_at + interval '6 days';
 ALTER TABLE public.audit_logs ALTER COLUMN expires_at SET NOT NULL;
 ALTER TABLE public.audit_logs ALTER COLUMN expires_at SET DEFAULT (now() + interval '6 days');
+ALTER TABLE public.audit_logs DROP CONSTRAINT IF EXISTS audit_logs_expires_at_limit;
 ALTER TABLE public.audit_logs ADD CONSTRAINT audit_logs_expires_at_limit CHECK (expires_at <= created_at + interval '6 days');
-CREATE INDEX idx_audit_logs_expires_at ON public.audit_logs (expires_at);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_expires_at ON public.audit_logs (expires_at);
 
 -- Add expires_at to user_album_activity
-ALTER TABLE public.user_album_activity ADD COLUMN expires_at timestamptz;
+ALTER TABLE public.user_album_activity ADD COLUMN IF NOT EXISTS expires_at timestamptz;
 UPDATE public.user_album_activity SET expires_at = created_at + interval '6 days';
 ALTER TABLE public.user_album_activity ALTER COLUMN expires_at SET NOT NULL;
 ALTER TABLE public.user_album_activity ALTER COLUMN expires_at SET DEFAULT (now() + interval '6 days');
+ALTER TABLE public.user_album_activity DROP CONSTRAINT IF EXISTS user_album_activity_expires_at_limit;
 ALTER TABLE public.user_album_activity ADD CONSTRAINT user_album_activity_expires_at_limit CHECK (expires_at <= created_at + interval '6 days');
-CREATE INDEX idx_user_album_activity_expires_at ON public.user_album_activity (expires_at);
+CREATE INDEX IF NOT EXISTS idx_user_album_activity_expires_at ON public.user_album_activity (expires_at);
 
 -- Delete expired data immediately
 DELETE FROM public.audit_logs WHERE expires_at <= now();

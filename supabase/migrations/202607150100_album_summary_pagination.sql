@@ -17,6 +17,8 @@ create index if not exists media_album_preview_cursor_idx
   on public.media (album_id, sort_order, created_at, id)
   where deleted_at is null and processing_status = 'ready';
 
+drop function if exists public.list_album_summaries(text, text);
+drop function if exists public.list_album_summaries(text, text, integer, integer, timestamptz, text);
 create or replace function public.list_album_summaries(
   p_status text,
   p_query text default null,

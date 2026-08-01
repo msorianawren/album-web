@@ -268,25 +268,11 @@ export interface LandingBackgroundSettings {
   accumulation_delay_seconds?: number;
 }
 
-export interface LandingFacebookFeedItemOverride {
-  title?: string;
-  caption?: string;
-  enabled?: boolean;
-}
-
-export interface LandingFacebookFeedSettings {
+export interface LandingAdminStoriesSettings {
   enabled: boolean;
   eyebrow: string;
   heading: string;
-  description: string;
   selectedItemIds: string[];
-  featuredItemId: string | null;
-  layout: "editorial" | "filmstrip" | "carousel";
-  showCaption: boolean;
-  showPublishedDate: boolean;
-  showFacebookBranding: boolean;
-  maxItems: number;
-  itemOverrides?: Record<string, LandingFacebookFeedItemOverride>;
 }
 
 export interface PublicSession {
@@ -329,7 +315,7 @@ export interface LandingPageContent {
   background_settings: LandingBackgroundSettings;
   translations?: TranslationMap;
   section_toggles?: Record<string, boolean>;
-  facebook_feed_settings?: LandingFacebookFeedSettings;
+  admin_stories_settings?: LandingAdminStoriesSettings;
   updated_at?: string;
 }
 
@@ -547,4 +533,14 @@ export interface AboutProfile {
   updated_at?: string;
   _is_demo?: boolean;
   _demo_sections?: string[];
+}
+
+export interface AdminStory {
+  id: string;
+  video_url: string;
+  thumbnail_url: string | null;
+  caption: string | null;
+  status: 'draft' | 'published' | 'archived';
+  sort_order: number;
+  created_at: string;
 }

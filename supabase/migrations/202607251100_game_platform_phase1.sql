@@ -1,5 +1,5 @@
 -- Generic game platform foundation. This migration does not cut over Puzzle Atelier.
-create table public.games (
+create table if not exists public.games (
   id uuid primary key default gen_random_uuid(),
   slug text not null unique check (slug ~ '^[a-z0-9]+(?:-[a-z0-9]+)*$'),
   title text not null check (char_length(title) between 1 and 160),
@@ -14,7 +14,7 @@ create table public.games (
   updated_at timestamptz not null default now()
 );
 
-create table public.game_versions (
+create table if not exists public.game_versions (
   id uuid primary key default gen_random_uuid(),
   game_id uuid not null references public.games(id) on delete restrict,
   version integer not null check (version > 0),
@@ -36,7 +36,7 @@ alter table public.games
   foreign key (published_version_id, id)
   references public.game_versions(id, game_id) on delete restrict;
 
-create table public.game_difficulties (
+create table if not exists public.game_difficulties (
   id uuid primary key default gen_random_uuid(),
   game_version_id uuid not null references public.game_versions(id) on delete restrict,
   key text not null check (key ~ '^[a-z0-9_]+$'),
@@ -48,7 +48,7 @@ create table public.game_difficulties (
   unique (id, game_version_id)
 );
 
-create table public.game_assets (
+create table if not exists public.game_assets (
   id uuid primary key default gen_random_uuid(),
   game_version_id uuid not null references public.game_versions(id) on delete restrict,
   asset_key text not null check (asset_key !~ '(^https?://|\\.\\.)'),
@@ -63,7 +63,7 @@ create table public.game_assets (
   unique (game_version_id, asset_key)
 );
 
-create table public.game_content_items (
+create table if not exists public.game_content_items (
   id uuid primary key default gen_random_uuid(),
   game_version_id uuid not null references public.game_versions(id) on delete restrict,
   difficulty_id uuid,
@@ -77,7 +77,7 @@ create table public.game_content_items (
     references public.game_difficulties(id, game_version_id) on delete restrict
 );
 
-create table public.game_tutorials (
+create table if not exists public.game_tutorials (
   id uuid primary key default gen_random_uuid(),
   game_version_id uuid not null references public.game_versions(id) on delete restrict,
   locale text not null default 'en',
@@ -86,7 +86,7 @@ create table public.game_tutorials (
   unique (game_version_id, locale)
 );
 
-create table public.game_mascot_profiles (
+create table if not exists public.game_mascot_profiles (
   id uuid primary key default gen_random_uuid(),
   game_version_id uuid not null references public.game_versions(id) on delete restrict,
   profile_key text not null,
@@ -95,7 +95,7 @@ create table public.game_mascot_profiles (
   unique (game_version_id, profile_key)
 );
 
-create table public.game_sessions (
+create table if not exists public.game_sessions (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users(id) on delete restrict,
   game_id uuid not null references public.games(id) on delete restrict,
@@ -117,7 +117,7 @@ create table public.game_sessions (
   check (expires_at > started_at)
 );
 
-create table public.game_reward_policies (
+create table if not exists public.game_reward_policies (
   id uuid primary key default gen_random_uuid(),
   game_version_id uuid not null references public.game_versions(id) on delete restrict,
   difficulty_id uuid not null,
@@ -135,7 +135,7 @@ create table public.game_reward_policies (
   check (active_until is null or active_until > active_from)
 );
 
-create table public.game_results (
+create table if not exists public.game_results (
   id uuid primary key default gen_random_uuid(),
   session_id uuid not null unique,
   user_id uuid not null references auth.users(id) on delete restrict,
@@ -154,7 +154,7 @@ create table public.game_results (
     references public.game_sessions(id, user_id) on delete restrict
 );
 
-create table public.game_user_stats (
+create table if not exists public.game_user_stats (
   user_id uuid not null references auth.users(id) on delete restrict,
   game_id uuid not null references public.games(id) on delete restrict,
   difficulty_id uuid not null references public.game_difficulties(id) on delete restrict,
@@ -166,7 +166,7 @@ create table public.game_user_stats (
   primary key (user_id, game_id, difficulty_id)
 );
 
-create table public.game_achievements (
+create table if not exists public.game_achievements (
   id uuid primary key default gen_random_uuid(),
   game_id uuid not null references public.games(id) on delete restrict,
   key text not null,
@@ -178,7 +178,7 @@ create table public.game_achievements (
   unique (game_id, key)
 );
 
-create table public.game_user_achievements (
+create table if not exists public.game_user_achievements (
   user_id uuid not null references auth.users(id) on delete restrict,
   achievement_id uuid not null references public.game_achievements(id) on delete restrict,
   result_id uuid references public.game_results(id) on delete restrict,
@@ -187,7 +187,7 @@ create table public.game_user_achievements (
   primary key (user_id, achievement_id)
 );
 
-create table public.game_daily_reward_usage (
+create table if not exists public.game_daily_reward_usage (
   user_id uuid not null references auth.users(id) on delete restrict,
   game_id uuid not null references public.games(id) on delete restrict,
   reward_date date not null,
@@ -196,7 +196,7 @@ create table public.game_daily_reward_usage (
   primary key (user_id, game_id, reward_date)
 );
 
-create table public.game_leaderboards (
+create table if not exists public.game_leaderboards (
   id uuid primary key default gen_random_uuid(),
   result_id uuid not null unique references public.game_results(id) on delete restrict,
   user_id uuid not null references auth.users(id) on delete restrict,
@@ -209,7 +209,7 @@ create table public.game_leaderboards (
   created_at timestamptz not null default now()
 );
 
-create table public.game_platform_settings (
+create table if not exists public.game_platform_settings (
   id boolean primary key default true check (id),
   public_config jsonb not null default '{}'::jsonb,
   private_config jsonb not null default '{}'::jsonb,
@@ -217,7 +217,7 @@ create table public.game_platform_settings (
   updated_at timestamptz not null default now()
 );
 
-create table public.game_runtime_events (
+create table if not exists public.game_runtime_events (
   id uuid primary key default gen_random_uuid(),
   session_id uuid not null references public.game_sessions(id) on delete restrict,
   user_id uuid not null references auth.users(id) on delete restrict,
@@ -227,7 +227,7 @@ create table public.game_runtime_events (
   created_at timestamptz not null default now()
 );
 
-create table public.game_migration_map (
+create table if not exists public.game_migration_map (
   id uuid primary key default gen_random_uuid(),
   source_table text not null,
   source_id text not null,
