@@ -797,9 +797,9 @@ body:has(.landing-home) .public-chime-canvas {
   padding-inline: clamp(1rem, 3vw, 3rem);
   border: 1px solid var(--lcb-line);
   border-radius: clamp(1.25rem, 2.4vw, 2rem);
-  background: color-mix(in srgb, var(--surface) 48%, transparent);
+  background: color-mix(in srgb, var(--surface) 28%, transparent);
   box-shadow: 0 1.25rem 3.5rem rgb(38 29 23 / 0.045);
-  backdrop-filter: blur(14px);
+  backdrop-filter: blur(9px);
 }
 
 .lcb-intro {
@@ -810,8 +810,8 @@ body:has(.landing-home) .public-chime-canvas {
 .lcb-social::before { display: none; }
 
 .lcb-footer {
-  background: color-mix(in srgb, var(--surface) 64%, transparent);
-  backdrop-filter: blur(16px);
+  background: color-mix(in srgb, var(--surface) 36%, transparent);
+  backdrop-filter: blur(10px);
 }
 
 @media (max-width: 899px) {

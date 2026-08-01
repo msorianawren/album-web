@@ -5,18 +5,17 @@ import test from "node:test";
 
 const read = (path) => readFileSync(join(process.cwd(), path), "utf8");
 
-test("the opening spread has one priority image and keeps the editorial body out of the hero", () => {
+test("the opening spread restores the original hero, portrait, and gallery image set", () => {
   const hero = read("src/components/HomeHero.tsx");
-  const intro = read("src/components/landing/HomeEditorialIntro.tsx");
-  const css = read("src/components/landing/landing-home.css");
-  assert.equal((hero.match(/priority/g) || []).length, 1);
-  assert.equal((hero.match(/fetchPriority="high"/g) || []).length, 1);
-  assert.equal(hero.includes("landing.body"), false);
-  assert.equal(intro.includes("landing.body"), true);
-  assert.match(css, /\.lcb-hero__dominant\s*\{[^}]*min-height/s);
-  assert.doesNotMatch(css, /\.lcb-hero__dominant[^}]*display:\s*none/s);
-  assert.match(css, /\.lcb-hero__dominant img\s*\{[^}]*object-fit:\s*contain/s);
-  assert.match(css, /\.lcb-hero__support img\s*\{[^}]*object-fit:\s*contain/s);
+  const page = read("src/app/page.tsx");
+  assert.match(hero, /landing\.hero_image_url/);
+  assert.match(hero, /landing\.portrait_image_url/);
+  assert.match(hero, /landing\.gallery_image_url/);
+  assert.match(hero, /homepage_hero_preset/);
+  assert.match(hero, /preset === "editorial"/);
+  assert.match(hero, /preset === "minimal"/);
+  assert.match(hero, /preset === "split"/);
+  assert.match(page, /<HomeHero landing=\{landing\} settings=\{settings\}/);
 });
 
 test("the transparent landing keeps the animated environment visible", () => {
@@ -26,7 +25,8 @@ test("the transparent landing keeps the animated environment visible", () => {
   assert.doesNotMatch(environmentFallbackCss, /sakura-fallback/);
   assert.match(css, /\.lcb-hero\s*\{[^}]*background:\s*transparent/s);
   assert.match(css, /\.lcb-social::before\s*\{[^}]*display:\s*none/s);
-  assert.match(css, /\.lcb-intro,[\s\S]*backdrop-filter:\s*blur\(14px\)/s);
+  assert.match(css, /\.lcb-intro,[\s\S]*var\(--surface\) 28%/s);
+  assert.match(css, /\.lcb-intro,[\s\S]*backdrop-filter:\s*blur\(9px\)/s);
 });
 
 test("featured collections prefer a display-sized derivative over thumbnails", () => {
@@ -62,15 +62,16 @@ test("the story viewer uses a contained native dialog and loads only its current
   assert.match(player, /onEnded=/);
 });
 
-test("the botanical tree uses one non-scrubbed timeline and deterministic branches", () => {
+test("the social tree restores scroll-linked vine drawing with reduced-motion fallback", () => {
   const tree = read("src/components/landing/SocialLinksTree.tsx");
-  assert.equal((tree.match(/gsap\.timeline/g) || []).length, 1);
-  assert.equal(tree.includes("scrub:"), false);
-  assert.match(tree, /once: true/);
-  assert.match(tree, /lcb-tree__stem/);
-  assert.match(tree, /lcb-tree__branch-path/);
-  assert.match(tree, /lcb-tree__leaves/);
-  assert.equal(tree.includes("lcb-tree__secondary"), false);
+  const page = read("src/app/page.tsx");
+  assert.match(tree, /strokeDashoffset:\s*0/);
+  assert.match(tree, /start:\s*"top 80%"/);
+  assert.match(tree, /end:\s*"bottom 90%"/);
+  assert.match(tree, /scrub:\s*0\.5/);
+  assert.match(tree, /prefers-reduced-motion: reduce/);
+  assert.match(tree, /social_tree_style/);
+  assert.match(page, /<SocialLinksTree links=\{landing\.social_links\} settings=\{settings\}/);
 });
 
 test("landing sections keep the requested narrative order without disabled placeholders", () => {

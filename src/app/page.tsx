@@ -18,6 +18,7 @@ import { getLandingAdminStories } from "@/lib/admin-stories/data";
 
 import { getLandingPage } from "@/lib/landing";
 import { getFeaturedAlbums } from "@/lib/albums";
+import { getSiteSettings } from "@/lib/site-settings";
 
 import { cookies } from "next/headers";
 import { AppLocale } from "@/lib/i18n";
@@ -27,9 +28,10 @@ import "@/components/landing/landing-home.css";
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
-  const [landing, featuredAlbums] = await Promise.all([
+  const [landing, featuredAlbums, settings] = await Promise.all([
     getLandingPage(),
     getFeaturedAlbums(4),
+    getSiteSettings(),
   ]);
 
   const cookieStore = await cookies();
@@ -50,7 +52,7 @@ export default async function Home() {
       <NatureAnimatedBackground config={landing.background_settings} />
       <main className="landing-home relative z-10 min-h-screen bg-transparent">
         <AppHeader />
-        <HomeHero landing={landing} locale={locale} dict={dict} />
+        <HomeHero landing={landing} settings={settings} locale={locale} dict={dict} />
         {landing.section_toggles?.editorial_intro !== false ? <HomeEditorialIntro landing={landing} /> : null}
         {landing.section_toggles?.album_worlds !== false ? <HomeAlbumWorlds albums={featuredAlbums} /> : null}
         {localizedAdminStoriesSettings?.enabled ? <HomeAdminStories settings={localizedAdminStoriesSettings} items={adminStories} /> : null}
@@ -58,7 +60,7 @@ export default async function Home() {
         {landing.section_toggles?.private_experience !== false ? <HomePrivateExperience albums={featuredAlbums} /> : null}
         {landing.section_toggles?.creative_services !== false ? <HomeCreativeServices /> : null}
         {landing.section_toggles?.collaborators !== false ? <HomeCollaborators collaborators={landing.collaborators} /> : null}
-        {landing.section_toggles?.social_tree !== false ? <SocialLinksTree links={landing.social_links} /> : null}
+        {landing.section_toggles?.social_tree !== false ? <SocialLinksTree links={landing.social_links} settings={settings} /> : null}
         {landing.section_toggles?.personal_letter !== false ? (
           <Suspense fallback={null}><HomePersonalLetterWrapper /></Suspense>
         ) : null}
