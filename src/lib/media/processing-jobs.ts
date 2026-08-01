@@ -3,7 +3,7 @@ import { createHash, randomUUID } from "node:crypto";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { safeFilename } from "@/lib/filenames";
 import { getSiteSettings } from "@/lib/site-settings";
-import { headR2Object, putR2Object } from "@/lib/r2";
+import { headR2Object, putR2Object, deleteR2Objects } from "@/lib/r2";
 import {
   createProcessingWorkerId,
   MediaQuarantineError,
@@ -166,6 +166,11 @@ export async function processQueuedImageJobs(
         .eq("bucket_role", "public")
         .eq("migration_state", "discovered");
       if (staleManifest.error) throw staleManifest.error;
+      
+      await deleteR2Objects([job.source_object_key], "private").catch((err) => {
+        console.error(`Failed to delete raw source ${job.source_object_key}`, err);
+      });
+      
       summary.ready += 1;
     } catch (error) {
       const quarantine = error instanceof MediaQuarantineError;

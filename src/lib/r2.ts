@@ -126,7 +126,10 @@ export async function putR2Object({
   return bucketRole === "public" ? getPublicUrl(key) : key;
 }
 
-export async function deleteR2Objects(keys: Array<string | null | undefined>) {
+export async function deleteR2Objects(
+  keys: Array<string | null | undefined>,
+  bucketRole: R2BucketRole = "public"
+) {
   const objects = keys
     .filter((key): key is string => Boolean(key))
     .map((Key) => ({ Key }));
@@ -134,9 +137,9 @@ export async function deleteR2Objects(keys: Array<string | null | undefined>) {
   if (!objects.length) return;
 
   await withStorageFailure("r2.delete_objects", () =>
-    getR2Client().send(
+    getR2ClientForRole(bucketRole).send(
       new DeleteObjectsCommand({
-        Bucket: getR2Bucket(),
+        Bucket: getR2BucketForRole(bucketRole),
         Delete: {
           Objects: objects,
           Quiet: true,
