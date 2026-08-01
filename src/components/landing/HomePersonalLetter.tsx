@@ -1,23 +1,18 @@
 import type { AboutProfile } from "@/lib/types";
-import { ScrollReveal } from "@/components/ui/ScrollReveal";
 
 export function HomePersonalLetter({ profile }: { profile: AboutProfile }) {
   const quote = profile.quote || "Art is not what you see, but what you make others see.";
 
   return (
-    <ScrollReveal className="mx-auto w-full px-6 py-32 md:py-48 text-center" delay={0.2} duration={1.2}>
-      <div className="max-w-[900px] mx-auto relative">
-        <span className="block font-serif text-5xl md:text-7xl text-text-secondary/10 mb-6" aria-hidden="true">&ldquo;</span>
-        <p className="relative z-10 font-serif text-[1.8rem] sm:text-4xl lg:text-[3rem] font-light italic leading-snug text-text-primary">
-          {quote}
-        </p>
-        <div className="mt-16 flex flex-col items-center gap-4">
-          <span className="h-px w-16 bg-text-primary/20" />
-          <span className="text-[0.65rem] font-semibold uppercase tracking-[0.25em] text-text-primary mt-2">
-            {profile.display_name || "Oriana Wren"}
-          </span>
-        </div>
-      </div>
-    </ScrollReveal>
+    <section className="lcb-letter" aria-label="A personal note from Oriana Wren">
+      <svg viewBox="0 0 180 90" aria-hidden="true">
+        <path d="M8 76 C44 68 47 23 87 31 C111 36 113 66 170 12" />
+        <path d="M54 53 C42 36 36 24 50 18 C62 24 62 39 54 53Z" />
+        <path d="M112 42 C125 27 139 22 145 35 C138 47 123 49 112 42Z" />
+      </svg>
+      <span aria-hidden="true">“</span>
+      <blockquote>{quote}</blockquote>
+      <p>{profile.display_name || "Oriana Wren"}</p>
+    </section>
   );
 }

@@ -33,7 +33,6 @@
     "public_albums_desc": "公開エディトリアル、更新中の撮影、特集作品を閲覧します。",
     "private_albums": "プライベートアルバム",
     "private_albums_desc": "これらのコレクションは制限されています。表示するには管理者の許可を要求する必要があります。",
-    "search_placeholder": "エディトリアル、スタジオ、キャンペーンを検索...",
     "all_statuses": "すべてのステータス",
     "status_public": "公開",
     "status_updating": "更新中",

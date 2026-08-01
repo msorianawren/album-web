@@ -84,8 +84,7 @@ function isPublicPath(pathname: string) {
     pathname.startsWith("/api/albums") ||
     pathname.startsWith("/api/media") ||
     pathname.startsWith("/api/comments") ||
-    pathname.startsWith("/api/likes") ||
-    pathname.startsWith("/api/search")
+    pathname.startsWith("/api/likes")
   );
 }
 

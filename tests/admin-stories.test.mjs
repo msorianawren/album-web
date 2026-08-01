@@ -58,8 +58,10 @@ test("homepage stays poster-only until the player is opened", async () => {
   assert.equal(home.includes("onMouseEnter"), false);
   assert.equal(player.includes("playsInline"), true);
   assert.equal(player.includes('preload="metadata"'), true);
-  assert.equal(player.includes("object-contain"), true);
-  assert.equal(player.includes('role="dialog"'), true);
+  assert.equal(player.includes("<dialog"), true);
+  assert.equal(player.includes("showModal()"), true);
+  assert.equal(player.includes("fixed inset-0"), false);
+  assert.equal(player.includes("::backdrop"), false);
 });
 
 test("Founder Story upload never sends a media body through a site API", async () => {

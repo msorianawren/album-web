@@ -2,18 +2,13 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import type { AlbumStatus } from "@/lib/types";
 
 export function AlbumPagination({
-  status,
   limit,
-  q,
   currentPage,
   totalCount,
 }: {
-  status: AlbumStatus;
   limit: number;
-  q: string;
   currentPage: number;
   totalCount: number;
 }) {
@@ -24,6 +19,7 @@ export function AlbumPagination({
 
   const createPageUrl = (page: number) => {
     const params = new URLSearchParams(searchParams.toString());
+    params.delete("q");
     params.set("page", String(page));
     params.delete("cursor");
     return `/albums?${params.toString()}#albums`;

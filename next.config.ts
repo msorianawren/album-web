@@ -19,6 +19,10 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: r2PublicHostname,
       },
+      {
+        protocol: "https",
+        hostname: "media.orianawren.com",
+      },
     ],
   },
   async headers() {

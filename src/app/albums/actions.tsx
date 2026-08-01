@@ -1,6 +1,6 @@
 "use server";
 
-import { getAlbumSections, type AlbumSections } from "@/lib/albums";
+import { getAlbumSections } from "@/lib/albums";
 import { getPublicSession } from "@/lib/auth";
 import { createAuthenticatedUserClient } from "@/lib/db/user";
 import { AlbumCard } from "@/components/albums/AlbumCard";
@@ -9,7 +9,7 @@ import { getDictionary } from "@/lib/getDictionary";
 import { cookies } from "next/headers";
 import type { AlbumStatus } from "@/lib/types";
 
-export async function loadMoreAlbumsAction(status: AlbumStatus, limit: number, cursor: string, q: string = "") {
+export async function loadMoreAlbumsAction(status: AlbumStatus, limit: number, cursor: string) {
   const session = await getPublicSession();
   const userClient = session.userId ? await createAuthenticatedUserClient() : null;
 
@@ -18,7 +18,6 @@ export async function loadMoreAlbumsAction(status: AlbumStatus, limit: number, c
   const dict = await getDictionary(locale);
 
   const sections = await getAlbumSections({
-    q,
     status,
     limit,
     cursors: { [status]: cursor },

@@ -103,7 +103,6 @@ const PUBLIC_MEDIA_SELECT = [
 ].join(",");
 
 export interface AlbumQuery {
-  q?: string;
   status?: AlbumStatus;
   session?: PublicSession | null;
   userClient?: SupabaseClient | null;
@@ -419,16 +418,13 @@ export async function getAlbumPage(query: AlbumPageQuery): Promise<AlbumPage> {
   const offset = (page - 1) * limit;
 
   let totalCount = 0;
-  let countQuery = client.from("albums").select("*", { count: "exact", head: true }).eq("status", query.status).is("deleted_at", null);
-  if (query.q) {
-    countQuery = countQuery.or(`title.ilike.%${query.q}%,description.ilike.%${query.q}%`);
-  }
+  const countQuery = client.from("albums").select("*", { count: "exact", head: true }).eq("status", query.status).is("deleted_at", null);
   const countResult = await countQuery;
   totalCount = countResult.count ?? 0;
 
   const { data, error } = await client.rpc("list_album_page", {
     p_status: query.status,
-    p_query: query.q?.trim() || null,
+    p_query: null,
     p_limit: limit,
     p_offset: offset,
   });

@@ -3,14 +3,9 @@ import { getSiteSettings } from "@/lib/site-settings";
 import { getLandingPage } from "@/lib/landing";
 
 export async function AppFooter() {
-  const [settings, landing] = await Promise.all([
-    getSiteSettings(),
-    getLandingPage(),
-  ]);
-
-  const socialLinks = (landing.social_links || []).filter(l => l.enabled && !!l.url);
+  const [settings, landing] = await Promise.all([getSiteSettings(), getLandingPage()]);
+  const socialLinks = (landing.social_links || []).filter((link) => link.enabled && link.url);
   const currentYear = new Date().getFullYear();
-
   const navLinks = [
     { href: "/", label: "Home" },
     { href: "/albums", label: "Albums" },
@@ -20,90 +15,42 @@ export async function AppFooter() {
   ];
 
   return (
-    <footer className="relative z-10 border-t border-[var(--glass-border)] bg-[var(--glass-bg)] backdrop-blur-xl px-5 py-12 sm:px-6 sm:py-24">
-      <div className="mx-auto grid max-w-[1200px] gap-12 lg:grid-cols-[1fr_2fr]">
-        <div className="flex flex-col gap-6">
-          <Link href="/" prefetch={false} className="inline-block">
+    <footer className="lcb-footer">
+      <div className="lcb-footer__grid">
+        <div className="lcb-footer__brand">
+          <Link href="/" prefetch={false}>
             {settings.site_logo_url ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={settings.site_logo_url} alt={settings.site_logo_alt ?? settings.site_name} className="h-8 w-auto object-contain" />
+              <img src={settings.site_logo_url} alt={settings.site_logo_alt ?? settings.site_name} />
             ) : (
               // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src="/brand/oriana-wren-seal.svg"
-                alt={settings.site_name || "Oriana Wren"}
-                className="h-16 w-16 object-contain opacity-90 transition hover:opacity-100"
-              />
+              <img src="/brand/oriana-wren-seal.svg" alt={settings.site_name || "Oriana Wren"} />
             )}
           </Link>
-          <p className="max-w-sm text-sm leading-relaxed text-text-secondary">
-            {settings.footer_description}
-          </p>
-          {settings.contact_email && (
-            <a href={`mailto:${settings.contact_email}`} className="text-sm font-medium text-text-primary hover:text-accent">
-              {settings.contact_email}
-            </a>
-          )}
+          <p>{settings.footer_description}</p>
+          {settings.contact_email ? <a href={`mailto:${settings.contact_email}`}>{settings.contact_email}</a> : null}
         </div>
 
-        <div className="grid gap-12 sm:grid-cols-3">
-          <div>
-            <h4 className="text-xs font-semibold uppercase tracking-[0.1em] text-text-primary">
-              Navigation
-            </h4>
-            <ul className="mt-6 flex flex-col gap-4">
-              {navLinks.map((link) => (
-                <li key={link.href}>
-                  <Link href={link.href} prefetch={false} className="text-sm text-text-secondary transition hover:text-text-primary">
-                    {link.label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
+        <nav aria-label="Footer navigation">
+          <h2>Navigation</h2>
+          {navLinks.map((link) => <Link key={link.href} href={link.href} prefetch={false}>{link.label}</Link>)}
+        </nav>
 
-          {(socialLinks.length > 0 || settings.contact_email) && (
-            <div>
-              <h4 className="text-xs font-semibold uppercase tracking-[0.1em] text-text-primary">
-                Connect
-              </h4>
-              <ul className="mt-6 flex flex-col gap-4">
-                {socialLinks.map((link) => (
-                  <li key={link.id}>
-                    <a href={link.url} target="_blank" rel="noreferrer" className="text-sm text-text-secondary transition hover:text-text-primary">
-                      {link.platform}
-                    </a>
-                  </li>
-                ))}
-                {settings.contact_email && socialLinks.length === 0 && (
-                  <li>
-                    <a href={`mailto:${settings.contact_email}`} className="text-sm text-text-secondary transition hover:text-text-primary">
-                      Email
-                    </a>
-                  </li>
-                )}
-              </ul>
-            </div>
-          )}
+        <div className="lcb-footer__connect">
+          <h2>Connect</h2>
+          {socialLinks.map((link) => <a key={link.id} href={link.url} target="_blank" rel="noreferrer">{link.platform}</a>)}
+          {settings.contact_email && socialLinks.length === 0 ? <a href={`mailto:${settings.contact_email}`}>Email</a> : null}
+        </div>
 
-          <div>
-            <h4 className="text-xs font-semibold uppercase tracking-[0.1em] text-text-primary">
-              Notice
-            </h4>
-            <p className="mt-6 text-sm leading-relaxed text-text-secondary">
-              {settings.footer_note}
-            </p>
-          </div>
+        <div className="lcb-footer__notice">
+          <h2>Notice</h2>
+          <p>{settings.footer_note}</p>
         </div>
       </div>
 
-      <div className="mx-auto mt-16 flex max-w-[1200px] flex-col items-center justify-between border-t border-border pt-8 sm:flex-row sm:mt-24">
-        <p className="text-xs text-text-secondary">
-          &copy; {currentYear} {settings.site_name}. All rights reserved.
-        </p>
-        <p className="mt-4 text-xs text-text-secondary sm:mt-0">
-          Built as a private visual archive.
-        </p>
+      <div className="lcb-footer__legal">
+        <p>&copy; {currentYear} {settings.site_name}. All rights reserved.</p>
+        <p>Built as a private visual archive.</p>
       </div>
     </footer>
   );

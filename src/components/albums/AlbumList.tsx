@@ -1,6 +1,5 @@
 import { Camera } from "lucide-react";
 import { AlbumCard } from "@/components/albums/AlbumCard";
-import { Button } from "@/components/ui/Button";
 import type { AlbumStatus } from "@/lib/types";
 import type { AlbumSections } from "@/lib/albums";
 import { ScrollReveal } from "@/components/ui/ScrollReveal";
@@ -17,7 +16,6 @@ import { AlbumColsSelect } from "@/components/albums/AlbumColsSelect";
 interface AlbumListProps {
   sections: AlbumSections;
   query: {
-    q: string;
     status?: AlbumStatus;
     limit: number;
     cols: number;
@@ -95,14 +93,8 @@ export function AlbumList({ sections, query, dict, locale = "en" }: AlbumListPro
             </p>
           </div>
 
-          <form id="album-list-search" name="albumListSearch" action="/albums" className="flex w-full max-w-[500px] items-center gap-3 md:w-auto">
+          <form action="/albums" className="flex items-center gap-3">
             <input type="hidden" name="limit" value={query.limit} />
-            <input
-              name="q"
-              defaultValue={query.q}
-              placeholder={dict?.albums?.search_placeholder || "Search archives..."}
-              className="h-11 w-full rounded-full border border-border/40 bg-surface/20 px-5 text-[0.8rem] text-text-primary outline-none transition placeholder:text-text-secondary/50 focus:border-text-primary/30"
-            />
             <select
               name="status"
               className="h-11 shrink-0 appearance-none rounded-full border border-border/40 bg-surface/20 px-4 text-[0.8rem] text-text-secondary outline-none transition focus:border-text-primary/30"
@@ -113,9 +105,9 @@ export function AlbumList({ sections, query, dict, locale = "en" }: AlbumListPro
               <option value="updating">{dict?.albums?.status_updating || "Updating"}</option>
               <option value="private">{dict?.albums?.status_private || "Private"}</option>
             </select>
-            <Button type="submit" variant="secondary" className="h-11 px-5 text-[0.7rem] uppercase tracking-widest">
-              {dict?.common?.search || "Find"}
-            </Button>
+            <button type="submit" className="h-11 border-b border-text-primary px-1 text-[0.7rem] font-semibold uppercase tracking-[0.14em] text-text-primary transition-colors hover:border-accent hover:text-accent">
+              Apply
+            </button>
           </form>
         </ScrollReveal>
 
@@ -172,9 +164,7 @@ export function AlbumList({ sections, query, dict, locale = "en" }: AlbumListPro
               </div>
 
               <AlbumPagination
-                status={status}
                 limit={query.limit}
-                q={query.q}
                 currentPage={query.page}
                 totalCount={page.totalCount}
               />

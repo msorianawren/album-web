@@ -1,8 +1,7 @@
 import { getFeaturedAlbums } from "@/lib/albums";
 import { HomeAlbumWorlds } from "@/components/landing/HomeAlbumWorlds";
-import type { SiteSettings } from "@/lib/types";
 
-export async function HomeAlbumWorldsWrapper({ settings }: { settings?: SiteSettings }) {
+export async function HomeAlbumWorldsWrapper() {
   const albums = await getFeaturedAlbums(4);
-  return <HomeAlbumWorlds albums={albums} settings={settings} />;
+  return <HomeAlbumWorlds albums={albums} />;
 }

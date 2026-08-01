@@ -1,7 +1,6 @@
 import Link from "next/link";
-import { Search, Shield } from "lucide-react";
+import { Shield } from "lucide-react";
 import { getPublicSession } from "@/lib/auth";
-import { Input } from "@/components/ui/Input";
 import { PublicMobileNav } from "@/components/PublicMobileNav";
 import { UserMenu } from "@/components/UserMenu";
 import { getSiteSettings } from "@/lib/site-settings";
@@ -74,20 +73,7 @@ export async function AppHeader() {
           ))}
         </nav>
 
-        <form id="app-header-search" name="appHeaderSearch" action="/albums" className="relative ml-auto hidden w-full max-w-sm shrink lg:block">
-          <Search
-            className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-text-secondary"
-            aria-hidden="true"
-          />
-          <Input
-            name="q"
-            aria-label="Search albums"
-            placeholder="Search portfolio"
-            className="pl-11 min-w-[140px]"
-          />
-        </form>
-
-        <div className="ml-auto lg:ml-4 flex items-center shrink-0 gap-2">
+        <div className="ml-auto flex items-center shrink-0 gap-2">
           {session.isAdmin ? (
             <Link
               href="/studio"

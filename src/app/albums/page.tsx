@@ -7,7 +7,6 @@ import { NatureAnimatedBackground } from "@/components/landing/NatureAnimatedBac
 
 interface AlbumsPageProps {
   searchParams: Promise<{
-    q?: string;
     status?: "public" | "updating" | "private";
     limit?: string;
     cols?: string;
@@ -41,10 +40,9 @@ export default async function AlbumsPage({ searchParams }: AlbumsPageProps) {
   const parsedFilters = albumPageQuerySchema.safeParse(filters);
   const browseQuery = parsedFilters.success
     ? parsedFilters.data
-    : { q: "", status: undefined, limit: 24, cols: 5, page: 1 };
+    : { status: undefined, limit: 24, cols: 5, page: 1 };
   const [sections, landing] = await Promise.all([
     getAlbumSections({
-      q: browseQuery.q,
       status: browseQuery.status,
       limit: browseQuery.limit,
       page: browseQuery.page,
@@ -73,9 +71,9 @@ export default async function AlbumsPage({ searchParams }: AlbumsPageProps) {
         </div>
       </section>
       <AlbumList
-        key={`${browseQuery.q}|${browseQuery.status ?? "all"}|${browseQuery.limit}|${browseQuery.cols}|${browseQuery.page}`}
+        key={`${browseQuery.status ?? "all"}|${browseQuery.limit}|${browseQuery.cols}|${browseQuery.page}`}
         sections={sections}
-        query={{ q: browseQuery.q, status: browseQuery.status, limit: browseQuery.limit, cols: browseQuery.cols, page: browseQuery.page }}
+        query={{ status: browseQuery.status, limit: browseQuery.limit, cols: browseQuery.cols, page: browseQuery.page }}
         dict={dict}
         locale={locale}
       />

@@ -1,108 +1,68 @@
+"use client";
+
 import Link from "next/link";
-import type { Album, SiteSettings } from "@/lib/types";
-import { DepthSurface } from "@/components/ui/DepthSurface";
+import { useState } from "react";
+import { ArrowUpRight } from "lucide-react";
+import type { Album } from "@/lib/types";
 
-export function HomeAlbumWorlds({ albums, settings }: { albums: Album[], settings?: SiteSettings }) {
-  const publicAlbums = albums.filter((a) => a.status === "public").slice(0, 4);
-  
-  const placeholders = [
-    { title: "Vietnamese Elegance", href: "/albums?q=vietnamese", image: null as string | null },
-    { title: "Cinematic Portraits", href: "/albums?q=portraits", image: null as string | null },
-    { title: "Travel Diary", href: "/albums?q=travel", image: null as string | null },
-  ];
+export function HomeAlbumWorlds({ albums }: { albums: Album[] }) {
+  const collections = albums.filter((album) => album.status === "public").slice(0, 4);
+  const [activeIndex, setActiveIndex] = useState(0);
 
-  const displayCards = publicAlbums.length > 0 
-    ? publicAlbums.map(a => ({ title: a.title, href: `/albums/${a.id}`, image: a.cover_url }))
-    : placeholders;
+  if (collections.length === 0) return null;
 
-  const mode = settings?.album_list_layout || "grid";
+  const active = collections[Math.min(activeIndex, collections.length - 1)];
 
-  if (mode === "editorial_list") {
-    return (
-      <section className="relative mx-auto w-full max-w-[1000px] px-6 py-24 sm:py-32">
-        <div className="mb-20 flex flex-col items-center justify-center text-center">
-          <span className="text-[0.65rem] uppercase tracking-[0.25em] text-text-secondary mb-4">Archives</span>
-          <h2 className="font-serif text-4xl font-normal text-text-primary sm:text-5xl lg:text-[4rem] leading-none">
-            Featured Collections
-          </h2>
-        </div>
+  return (
+    <section id="featured-collections" className="lcb-collections" aria-labelledby="featured-collections-heading">
+      <div className="lcb-section-heading">
+        <p>Public archive</p>
+        <h2 id="featured-collections-heading">Featured Collections</h2>
+      </div>
 
-        <div className="flex flex-col border-t border-border/40">
-          {displayCards.map((card, idx) => (
+      <div className="lcb-collections__desktop">
+        <Link href={`/albums/${active.slug || active.id}`} prefetch={false} className="lcb-collections__preview" aria-label={`Open ${active.title}`}>
+          {active.cover_url ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img key={active.id} src={active.cover_url} alt="" loading="lazy" />
+          ) : <span aria-hidden="true" />}
+        </Link>
+
+        <div className="lcb-collections__index" role="list">
+          {collections.map((album, index) => (
             <Link
-              key={idx}
-              href={card.href}
+              key={album.id}
+              href={`/albums/${album.slug || album.id}`}
               prefetch={false}
-              className="group flex flex-col md:flex-row items-center gap-10 py-10 md:py-16 border-b border-border/40"
+              role="listitem"
+              data-active={index === activeIndex}
+              onMouseEnter={() => setActiveIndex(index)}
+              onFocus={() => setActiveIndex(index)}
             >
-              <DepthSurface glare className="w-full md:w-[45%]">
-                <div className="relative aspect-[4/3] overflow-hidden bg-surface-secondary">
-                  {card.image && (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={card.image} alt={card.title} className="absolute inset-0 h-full w-full object-cover transition duration-[2s] ease-out group-hover:scale-105" loading="lazy" />
-                  )}
-                </div>
-              </DepthSurface>
-              <div className="w-full md:w-[55%] flex flex-col justify-center items-center text-center md:items-start md:text-left">
-                <span className="text-[0.68rem] uppercase tracking-[0.2em] text-text-secondary mb-3">No. 0{idx + 1}</span>
-                <h3 className="font-serif text-3xl md:text-4xl text-text-primary group-hover:text-accent transition-colors duration-300">
-                  {card.title}
-                </h3>
-              </div>
+              <span className="lcb-collections__title">{album.title}</span>
+              <span className="lcb-collections__meta">
+                {album.media_count} {album.media_count === 1 ? "frame" : "frames"} · {album.status}
+              </span>
+              <ArrowUpRight aria-hidden="true" />
             </Link>
           ))}
         </div>
-        
-        <div className="mt-20 text-center">
-          <Link href="/albums" className="inline-flex items-center justify-center border-b border-text-primary pb-1 text-[0.72rem] uppercase tracking-[0.18em] font-medium transition-colors hover:text-accent hover:border-accent">
-            Explore All Albums
-          </Link>
-        </div>
-      </section>
-    );
-  }
-
-  // Grid / Carousel (Treating both as a stylized grid for now, but limiting carousel style to horizontal scrolling if needed)
-  return (
-    <section className="relative mx-auto w-full max-w-[1200px] px-6 py-24 sm:py-32">
-      <div className="mb-16 flex flex-col items-center justify-center text-center">
-        <span className="text-[0.65rem] uppercase tracking-[0.25em] text-text-secondary mb-4">Archives</span>
-        <h2 className="font-serif text-4xl font-normal text-text-primary sm:text-5xl lg:text-[4rem] leading-none">
-          Featured Collections
-        </h2>
       </div>
 
-      <div className={`grid gap-6 sm:grid-cols-2 ${mode === "grid" ? "lg:grid-cols-2" : "lg:grid-cols-4 overflow-x-auto snap-x snap-mandatory pb-4"} `}>
-        {displayCards.slice(0, mode === "grid" ? 4 : 4).map((card, idx) => (
-          <Link
-            key={idx}
-            href={card.href}
-            prefetch={false}
-            className={`group relative block ${mode === "carousel" ? "min-w-[280px] snap-center" : ""}`}
-          >
-            <DepthSurface glare className="aspect-[4/5] w-full overflow-hidden rounded-[1rem] bg-surface-secondary shadow-lg transition-shadow duration-500 hover:shadow-xl">
-              <div className="relative h-full w-full overflow-hidden">
-                {card.image && (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={card.image} alt={card.title} className="absolute inset-0 h-full w-full object-cover opacity-90 transition duration-700 group-hover:scale-105 group-hover:opacity-100 grayscale-[15%] group-hover:grayscale-0" loading="lazy" />
-                )}
-                <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/20 to-transparent" />
-                <div className="absolute bottom-0 left-0 right-0 p-8">
-                  <h3 className="font-serif text-2xl font-normal text-white">
-                    {card.title}
-                  </h3>
-                </div>
-              </div>
-            </DepthSurface>
+      <div className="lcb-collections__mobile">
+        {collections.map((album) => (
+          <Link key={album.id} href={`/albums/${album.slug || album.id}`} prefetch={false}>
+            <h3>{album.title}</h3>
+            {album.cover_url ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={album.cover_url} alt="" loading="lazy" />
+            ) : <span className="lcb-collections__placeholder" aria-hidden="true" />}
+            <p>{album.media_count} {album.media_count === 1 ? "frame" : "frames"} · {album.status}</p>
           </Link>
         ))}
       </div>
-      
-      <div className="mt-16 text-center">
-        <Link href="/albums" className="inline-flex h-12 items-center justify-center rounded-full border border-border bg-transparent px-8 text-[0.72rem] font-semibold uppercase tracking-[0.14em] text-text-primary transition-all hover:bg-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-          Explore All Albums
-        </Link>
-      </div>
+
+      <Link href="/albums" prefetch={false} className="lcb-text-link">Explore All Albums</Link>
     </section>
   );
 }

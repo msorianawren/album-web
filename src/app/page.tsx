@@ -9,7 +9,7 @@ import { HomeCreativeServices } from "@/components/landing/HomeCreativeServices"
 import { HomeMediaGallery } from "@/components/landing/HomeMediaGallery";
 import { HomeCollaborators } from "@/components/landing/HomeCollaborators";
 import { HomePersonalLetterWrapper } from "@/components/landing/HomePersonalLetterWrapper";
-import { HomeAlbumWorldsWrapper } from "@/components/landing/HomeAlbumWorldsWrapper";
+import { HomeAlbumWorlds } from "@/components/landing/HomeAlbumWorlds";
 
 import { Suspense } from "react";
 
@@ -17,18 +17,19 @@ import { HomeAdminStories } from "@/components/landing/HomeAdminStories";
 import { getLandingAdminStories } from "@/lib/admin-stories/data";
 
 import { getLandingPage } from "@/lib/landing";
-import { getSiteSettings } from "@/lib/site-settings";
+import { getFeaturedAlbums } from "@/lib/albums";
 
 import { cookies } from "next/headers";
 import { AppLocale } from "@/lib/i18n";
 import { getDictionary } from "@/lib/getDictionary";
+import "@/components/landing/landing-home.css";
 
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
-  const [landing, settings] = await Promise.all([
+  const [landing, featuredAlbums] = await Promise.all([
     getLandingPage(),
-    getSiteSettings(),
+    getFeaturedAlbums(4),
   ]);
 
   const cookieStore = await cookies();
@@ -47,27 +48,20 @@ export default async function Home() {
   return (
     <>
       <NatureAnimatedBackground config={landing.background_settings} />
-      <main className="relative z-10 min-h-screen bg-transparent">
+      <main className="landing-home relative z-10 min-h-screen bg-transparent">
         <AppHeader />
-      <HomeHero landing={landing} settings={settings} locale={locale} dict={dict} />
-      {localizedAdminStoriesSettings?.enabled ? <HomeAdminStories settings={localizedAdminStoriesSettings} items={adminStories} /> : null}
-      
-      {landing.section_toggles?.editorial_intro !== false && <HomeEditorialIntro landing={landing} settings={settings} />}
-      {landing.section_toggles?.album_worlds !== false && (
-        <Suspense fallback={<div className="h-96" />}>
-          <HomeAlbumWorldsWrapper settings={settings} />
-        </Suspense>
-      )}
-      {landing.section_toggles?.media_gallery !== false && <HomeMediaGallery items={landing.media_items} settings={settings} />}
-      {landing.section_toggles?.social_tree !== false && <SocialLinksTree links={landing.social_links} settings={settings} />}
-      {landing.section_toggles?.private_experience !== false && <HomePrivateExperience />}
-      {landing.section_toggles?.creative_services !== false && <HomeCreativeServices />}
-      {landing.section_toggles?.collaborators !== false && <HomeCollaborators collaborators={landing.collaborators} settings={settings} />}
-      {landing.section_toggles?.personal_letter !== false && (
-        <Suspense fallback={<div className="h-96" />}>
-          <HomePersonalLetterWrapper />
-        </Suspense>
-      )}
+        <HomeHero landing={landing} locale={locale} dict={dict} />
+        {landing.section_toggles?.editorial_intro !== false ? <HomeEditorialIntro landing={landing} /> : null}
+        {landing.section_toggles?.album_worlds !== false ? <HomeAlbumWorlds albums={featuredAlbums} /> : null}
+        {localizedAdminStoriesSettings?.enabled ? <HomeAdminStories settings={localizedAdminStoriesSettings} items={adminStories} /> : null}
+        {landing.section_toggles?.media_gallery !== false ? <HomeMediaGallery items={landing.media_items} /> : null}
+        {landing.section_toggles?.private_experience !== false ? <HomePrivateExperience albums={featuredAlbums} /> : null}
+        {landing.section_toggles?.creative_services !== false ? <HomeCreativeServices /> : null}
+        {landing.section_toggles?.collaborators !== false ? <HomeCollaborators collaborators={landing.collaborators} /> : null}
+        {landing.section_toggles?.social_tree !== false ? <SocialLinksTree links={landing.social_links} /> : null}
+        {landing.section_toggles?.personal_letter !== false ? (
+          <Suspense fallback={null}><HomePersonalLetterWrapper /></Suspense>
+        ) : null}
       
         <AppFooter />
       </main>

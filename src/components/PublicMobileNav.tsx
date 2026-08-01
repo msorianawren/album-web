@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
-import { LogIn, Menu, Search, Shield, X } from "lucide-react";
+import { LogIn, Menu, Shield, X } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { buildLoginHref } from "@/lib/auth-redirect";
 import type { PublicSession } from "@/lib/types";
@@ -63,16 +63,7 @@ export function PublicMobileNav({ session, navItems }: PublicMobileNavProps) {
             </button>
           </div>
 
-          <form id="mobile-nav-search" name="mobileNavSearch" action="/albums" className="relative mt-5">
-            <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-text-secondary" aria-hidden="true" />
-            <input
-              name="q"
-              placeholder="Search albums"
-              className="h-12 w-full rounded-full border border-border bg-background/75 pl-11 pr-4 text-sm text-text-primary outline-none transition placeholder:text-text-secondary focus:ring-2 focus:ring-ring"
-            />
-          </form>
-
-          <nav className="mt-5 grid gap-1" aria-label="Mobile primary navigation">
+          <nav className="mt-8 grid gap-1" aria-label="Mobile primary navigation">
             {navItems.map((item) => (
               <Link
                 key={`${item.href}-${item.label}`}

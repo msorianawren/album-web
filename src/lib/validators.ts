@@ -82,12 +82,11 @@ export const likeCreateSchema = z
   });
 
 
-export const searchParamsSchema = z.object({
-  q: z.string().trim().max(120).optional().default(""),
+export const albumFiltersSchema = z.object({
   status: z.enum(albumStatuses).optional(),
 });
 
-export const albumPageQuerySchema = searchParamsSchema.extend({
+export const albumPageQuerySchema = albumFiltersSchema.extend({
   cursor: z.string().trim().min(1).max(512).optional(),
   limit: z.coerce.number().int().min(1).max(96).optional().default(24),
   cols: z.coerce.number().int().min(1).max(10).optional().default(5),
