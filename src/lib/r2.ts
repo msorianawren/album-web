@@ -204,6 +204,7 @@ export async function headR2Object(
     contentLength: response.ContentLength ?? null,
     contentType: response.ContentType ?? null,
     etag: response.ETag ?? null,
+    lastModified: response.LastModified?.toISOString() ?? null,
   };
 }
 

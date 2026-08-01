@@ -779,7 +779,7 @@ export function SettingsCenter({
             </div>
             <LandingPreview landing={landing} activeLandingLocale={activeLandingLocale} />
           </div>
-          {landing.admin_stories_settings ? <AdminStoryEditor value={landing.admin_stories_settings} onChange={(value) => updateLanding("admin_stories_settings", value)} copy={{ eyebrow: getAdminStoryLocalized("eyebrow"), heading: getAdminStoryLocalized("heading") }} onCopyChange={(copy) => {
+          {landing.admin_stories_settings ? <AdminStoryEditor copy={{ eyebrow: getAdminStoryLocalized("eyebrow"), heading: getAdminStoryLocalized("heading") }} onCopyChange={(copy) => {
             if (activeLandingLocale === "en") {
               updateLanding("admin_stories_settings", { ...landing.admin_stories_settings!, ...copy });
             } else {
@@ -787,7 +787,7 @@ export function SettingsCenter({
               translations[activeLandingLocale] = { ...translations[activeLandingLocale], admin_stories_eyebrow: copy.eyebrow, admin_stories_heading: copy.heading };
               updateLanding("translations", translations);
             }
-          }} uploadPoster={async (file) => uploadLandingAsset("media", file)} uploadVideo={async (file) => uploadLandingAsset("media", file)} /> : null}
+          }} /> : null}
         </Panel>
       ) : null}
 

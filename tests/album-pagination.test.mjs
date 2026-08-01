@@ -9,17 +9,17 @@ const albumsApi = read("src/app/api/albums/route.ts");
 const migration = read("supabase/migrations/202607150100_album_summary_pagination.sql");
 const rollback = read("supabase/rollbacks/202607150100_album_summary_pagination_rollback.sql");
 
-test("album browsing uses an opaque cursor RPC instead of loading every album into the client", () => {
+test("album browsing uses the bounded offset RPC instead of loading every album into the client", () => {
   const paginationLayer = repository.slice(
     repository.indexOf("function decodeAlbumCursor"),
     repository.indexOf("export async function getAlbum("),
   );
 
-  assert.match(paginationLayer, /Buffer\.from\(cursor, "base64url"\)/);
-  assert.match(paginationLayer, /\.rpc\("list_album_summaries"/);
-  assert.match(paginationLayer, /rows\.length > limit/);
+  assert.match(paginationLayer, /\.rpc\("list_album_page"/);
+  assert.match(paginationLayer, /p_offset: offset/);
+  assert.match(paginationLayer, /offset \+ pageRows\.length < totalCount/);
   assert.match(paginationLayer, /getAlbumSections/);
-  assert.doesNotMatch(paginationLayer, /\.from\("albums"\)\.select\("\*"\)/);
+  assert.match(paginationLayer, /select\("\*", \{ count: "exact", head: true \}\)/);
 });
 
 test("summary migration keeps manual ordering stable and bounds previews in SQL", () => {
@@ -47,9 +47,10 @@ test("private summary payloads return safe previews or gateway IDs, never privat
   assert.match(migration, /grant execute.*anon, authenticated, service_role/is);
 });
 
-test("browser pagination requires a single status and is never publicly cached", () => {
+test("browser pagination requires one status and only caches anonymous public results", () => {
   assert.match(albumsApi, /A single album status is required for cursor pagination/);
-  assert.match(albumsApi, /Cache-Control": "private, no-store/);
+  assert.match(albumsApi, /\? "private, no-store"/);
+  assert.match(albumsApi, /public, s-maxage=3600, stale-while-revalidate=86400/);
 });
 
 test("pagination rollback removes only the additive query layer", () => {

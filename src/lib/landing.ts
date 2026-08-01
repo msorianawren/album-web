@@ -3,6 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { createPublicServerClient } from "@/lib/db/public";
 import type { LandingPageContent, LandingBackgroundSettings, LandingAdminStoriesSettings, LandingSocialLink, TranslationMap } from "@/lib/types";
 import { albumDemoFixturesEnabled } from "@/lib/demo-fixtures";
+import { normalizeAdminStoriesSettingsValue } from "@/lib/admin-stories/settings";
 
 
 const landingId = "home";
@@ -69,11 +70,10 @@ export const defaultLandingPage: LandingPageContent = {
     enabled: false,
     eyebrow: "Behind the scenes",
     heading: "Founder Stories",
-    selectedItemIds: [],
   },
 };
 
-const landingColumns = Object.keys(defaultLandingPage).filter((k) => k !== "admin_stories_settings").join(",");
+const landingColumns = Object.keys(defaultLandingPage).join(",");
 
 function cleanText(value: unknown, fallback: string, maxLength = 240) {
   if (typeof value !== "string") return fallback;
@@ -119,15 +119,7 @@ function normalizeTranslations(value: unknown): TranslationMap {
 }
 
 export function normalizeAdminStoriesSettings(value: unknown): LandingAdminStoriesSettings {
-  const saved = typeof value === "object" && value !== null ? value as Partial<LandingAdminStoriesSettings> : {};
-  const defaults = defaultLandingPage.admin_stories_settings!;
-  return {
-    ...defaults,
-    enabled: Boolean(saved.enabled),
-    eyebrow: cleanText(saved.eyebrow, defaults.eyebrow, 80),
-    heading: cleanText(saved.heading, defaults.heading, 140),
-    selectedItemIds: Array.isArray(saved.selectedItemIds) ? saved.selectedItemIds.map(String).slice(0, 10) : [],
-  };
+  return normalizeAdminStoriesSettingsValue(value, defaultLandingPage.admin_stories_settings!);
 }
 
 export function normalizeLandingPage(value: Partial<LandingPageContent> | null | undefined) {
@@ -164,7 +156,8 @@ const getCachedLandingPage = unstable_cache(async () => {
     .eq("id", landingId)
     .maybeSingle();
 
-  if (error || !data) return defaultLandingPage;
+  if (error) throw error;
+  if (!data) return defaultLandingPage;
   return normalizeLandingPage(data as Partial<LandingPageContent>);
 }, ["landing-page"], { tags: ["landing-page"], revalidate: 3600 });
 
@@ -215,15 +208,10 @@ export function landingPayloadFromInput(input: Record<string, unknown>) {
 
 export async function saveLandingPage(client: SupabaseClient, input: Record<string, unknown>) {
   const payload = landingPayloadFromInput(input);
-  
-  // Temporarily omit unmigrated columns from DB payload to prevent crashes
-  const dbPayload = { ...payload };
-  // @ts-expect-error Safe deletion
-  delete dbPayload.admin_stories_settings;
 
   const { data, error } = await client
     .from("landing_page_settings")
-    .upsert(dbPayload, { onConflict: "id" })
+    .upsert(payload, { onConflict: "id" })
     .select(landingColumns)
     .single();
 

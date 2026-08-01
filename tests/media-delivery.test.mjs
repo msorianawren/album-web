@@ -31,13 +31,13 @@ test("delivery descriptor applies one intentional public fallback order", () => 
   const delivery = getMediaDeliveryDescriptor(baseMedia, { albumStatus: "public" });
   assert.deepEqual(
     delivery.publicCard.candidates.map((candidate) => candidate.variant),
-    ["thumbnail", "medium", "display"],
+    ["medium", "thumbnail", "display"],
   );
   assert.deepEqual(
     delivery.viewer.candidates.map((candidate) => candidate.variant),
     ["medium", "display", "thumbnail"],
   );
-  assert.equal(delivery.card.src, "https://cdn.example.com/thumb%20ready.webp");
+  assert.equal(delivery.card.src, "https://cdn.example.com/medium%20(1).webp");
   assert.equal(delivery.width, 2400);
   assert.equal(delivery.height, 3000);
   assert.equal(delivery.aspectRatio, 0.8);
