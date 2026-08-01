@@ -624,10 +624,7 @@ export async function getAlbumMediaPage({
   if (error) throw error;
   const rows = data ?? [];
   return {
-    media: await attachMediaEngagementCounts(
-      rows.slice(0, pageSize).map((row) => normalizeMedia(row as unknown as UnknownRow)),
-      client,
-    ),
+    media: rows.slice(0, pageSize).map((row) => normalizeMedia(row as unknown as UnknownRow)),
     hasMore: rows.length > pageSize,
   };
 }
@@ -736,36 +733,4 @@ export async function getAlbum(
   }
 }
 
-async function attachMediaEngagementCounts(
-  media: Media[],
-  client: SupabaseClient = createPublicServerClient(),
-) {
-  const ids = media.map((item) => item.id);
-  if (!ids.length) return media;
 
-  const [likesResult, commentsResult] = await Promise.all([
-    client.from("likes").select("media_id").in("media_id", ids),
-    client
-      .from("comments")
-      .select("media_id")
-      .in("media_id", ids)
-      .eq("is_hidden", false)
-      .is("deleted_at", null),
-  ]);
-
-  const likeCounts = new Map<string, number>();
-  for (const row of likesResult.data ?? []) {
-    if (row.media_id) likeCounts.set(row.media_id, (likeCounts.get(row.media_id) ?? 0) + 1);
-  }
-
-  const commentCounts = new Map<string, number>();
-  for (const row of commentsResult.data ?? []) {
-    if (row.media_id) commentCounts.set(row.media_id, (commentCounts.get(row.media_id) ?? 0) + 1);
-  }
-
-  return media.map((item) => ({
-    ...item,
-    like_count: likeCounts.get(item.id) ?? item.like_count ?? 0,
-    comment_count: commentCounts.get(item.id) ?? item.comment_count ?? 0,
-  }));
-}
