@@ -18,12 +18,12 @@ export async function PATCH(request: NextRequest) {
 
   try {
     const body = await request.json().catch(() => ({}));
-    if (Object.hasOwn(body, "facebook_feed_settings") && !database.session.isFounder) {
-      return apiError("FORBIDDEN", "Only the Founder can curate the Facebook profile feed.", 403);
+    if (Object.hasOwn(body, "admin_stories_settings") && !database.session.isFounder) {
+      return apiError("FORBIDDEN", "Only the Founder can curate the Founder Stories.", 403);
     }
     const landing = await saveLandingPage(database.client, body);
-    if (Object.hasOwn(body, "facebook_feed_settings")) {
-      await logAuditEvent({ request, session: database.session, action: "facebook_feed_selection_updated", targetType: "landing_page", targetId: "home" });
+    if (Object.hasOwn(body, "admin_stories_settings")) {
+      await logAuditEvent({ request, session: database.session, action: "admin_stories_updated", targetType: "landing_page", targetId: "home" });
     }
     revalidateTag("landing-page", "max");
     revalidatePath("/", "layout");
