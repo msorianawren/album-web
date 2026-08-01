@@ -32,6 +32,7 @@ export function HomeAlbumWorlds({ albums, settings }: { albums: Album[], setting
             <Link
               key={idx}
               href={card.href}
+              prefetch={false}
               className="group flex flex-col md:flex-row items-center gap-10 py-10 md:py-16 border-b border-border/40"
             >
               <DepthSurface glare className="w-full md:w-[45%]">
@@ -76,6 +77,7 @@ export function HomeAlbumWorlds({ albums, settings }: { albums: Album[], setting
           <Link
             key={idx}
             href={card.href}
+            prefetch={false}
             className={`group relative block ${mode === "carousel" ? "min-w-[280px] snap-center" : ""}`}
           >
             <DepthSurface glare className="aspect-[4/5] w-full overflow-hidden rounded-[1rem] bg-surface-secondary shadow-lg transition-shadow duration-500 hover:shadow-xl">

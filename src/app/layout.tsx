@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import Script from "next/script";
 import { OAuthHashHandler } from "@/components/auth/OAuthHashHandler";
 import { AudioUXProvider } from "@/components/ui/AudioUXProvider";
 import { ToastProvider } from "@/components/ui/ToastProvider";
@@ -71,6 +72,13 @@ export default async function RootLayout({
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
       </head>
       <body className={`${playfair.variable} font-sans flex min-h-full flex-col`} suppressHydrationWarning>
+        {process.env.NEXT_PUBLIC_CF_ANALYTICS_TOKEN && (
+          <Script
+            src="https://static.cloudflareinsights.com/beacon.min.js"
+            data-cf-beacon={`{"token": "${process.env.NEXT_PUBLIC_CF_ANALYTICS_TOKEN}"}`}
+            strategy="afterInteractive"
+          />
+        )}
         <AudioUXProvider 
           defaultAmbient={stringSetting(settings.advanced_settings?.default_ambient_sound, "drone")}
           defaultClick={stringSetting(settings.advanced_settings?.default_click_sound, "water")}

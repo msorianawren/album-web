@@ -125,11 +125,10 @@ async function logRequest(request: NextRequest, user: User) {
 
   const path = request.nextUrl.pathname;
   const method = request.method;
-  const isPageView = method === "GET" && !path.startsWith("/api");
   const isMutatingApi = path.startsWith("/api") && method !== "GET";
   const isDownload = path.includes("/download");
 
-  if (!isPageView && !isMutatingApi && !isDownload) return;
+  if (!isMutatingApi && !isDownload) return;
   if (user.id === adminId) return; // Ignore actions by the admin founder
 
   const admin = createClient(supabaseUrl, serviceRoleKey, {
@@ -139,7 +138,7 @@ async function logRequest(request: NextRequest, user: User) {
   await admin.from("audit_logs").insert({
     actor_user_id: user.id,
     actor_email: user.email?.toLowerCase() ?? null,
-    action: isPageView ? "page_view" : isDownload ? "download" : "api_action",
+    action: isDownload ? "download" : "api_action",
     target_type: path.startsWith("/api") ? "api" : "page",
     path,
     method,

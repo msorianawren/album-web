@@ -61,6 +61,7 @@ export function AlbumCard({ album, dict, locale = "en", priority = false }: Albu
     <ScrollReveal>
       <Link
         href={`/albums/${album.slug}`}
+        prefetch={false}
         className="group block min-w-0 rounded-[1.5rem] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
         <div data-nature-surface="album-card" className="relative overflow-hidden rounded-[1.5rem] border border-border/40 bg-surface/30 p-2 shadow-sm transition duration-500 ease-out group-hover:border-border/80 group-hover:bg-surface/60 group-hover:shadow-md">
