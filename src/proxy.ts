@@ -9,10 +9,12 @@ import {
   type SessionCookiePayload,
 } from "@/lib/session-cookies";
 import { getRequestIpWhois } from "@/lib/request-info";
+import { jwtVerify } from "jose";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://placeholder.supabase.co";
 const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "placeholder-key";
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "placeholder-key";
+const supabaseJwtSecret = process.env.SUPABASE_JWT_SECRET || "";
 const adminId = process.env.DEFAULT_OWNER_ID ?? "";
 
 const ALLOWED_HOSTS = new Set(["orianawren.com", "www.orianawren.com"]);
@@ -116,30 +118,7 @@ function apiError(code: string, message: string, status: number) {
   return NextResponse.json({ success: false, code, message }, { status });
 }
 
-function getUserMetadata(user: User) {
-  const displayName =
-    typeof user.user_metadata?.full_name === "string"
-      ? user.user_metadata.full_name
-      : typeof user.user_metadata?.name === "string"
-        ? user.user_metadata.name
-        : null;
-  const avatarUrl =
-    typeof user.user_metadata?.avatar_url === "string"
-      ? user.user_metadata.avatar_url
-      : typeof user.user_metadata?.picture === "string"
-        ? user.user_metadata.picture
-        : null;
 
-  return {
-    email: user.email?.toLowerCase() ?? "",
-    displayName,
-    avatarUrl,
-    provider:
-      typeof user.app_metadata?.provider === "string"
-        ? user.app_metadata.provider
-        : "google",
-  };
-}
 
 async function logRequest(request: NextRequest, user: User) {
   if (!serviceRoleKey || !supabaseUrl) return;
@@ -221,13 +200,35 @@ async function resolveAuthenticatedUser(request: NextRequest): Promise<AuthResol
 
   const auth = createAuthClient();
   const token = getAccessToken(request);
+  const refreshToken = getRefreshToken(request);
 
   if (token) {
-    const { data, error } = await auth.auth.getUser(token);
-    if (!error && data.user) return { user: data.user };
+    if (supabaseJwtSecret) {
+      try {
+        const secret = new TextEncoder().encode(supabaseJwtSecret);
+        const { payload } = await jwtVerify(token, secret);
+        
+        if (payload.exp && payload.exp * 1000 > Date.now()) {
+          const user = {
+            id: payload.sub as string,
+            email: payload.email as string,
+            user_metadata: payload.user_metadata as Record<string, unknown>,
+            app_metadata: payload.app_metadata as { provider?: string; [key: string]: unknown },
+            aud: payload.aud as string,
+            created_at: "",
+            role: payload.role as string,
+          } as User;
+          return { user };
+        }
+      } catch {
+        // Fallthrough to refresh if verification fails
+      }
+    } else {
+      const { data, error } = await auth.auth.getUser(token);
+      if (!error && data.user) return { user: data.user };
+    }
   }
 
-  const refreshToken = getRefreshToken(request);
   if (!refreshToken) {
     return token ? { shouldClearCookies: true } : null;
   }
@@ -337,22 +338,11 @@ export async function proxy(request: NextRequest, event: NextFetchEvent) {
   }
 
   const admin = createAdminClient();
-  const metadata = getUserMetadata(authResolution.user);
   const { data: profile } = await admin
     .from("user_profiles")
-    .upsert(
-      {
-        user_id: authResolution.user.id,
-        email: metadata.email,
-        display_name: metadata.displayName,
-        avatar_url: metadata.avatarUrl,
-        provider: metadata.provider,
-        last_seen_at: new Date().toISOString(),
-      },
-      { onConflict: "user_id" },
-    )
     .select("is_blocked")
-    .single();
+    .eq("user_id", authResolution.user.id)
+    .maybeSingle();
 
   if (pathname === "/login") {
     return profile?.is_blocked
