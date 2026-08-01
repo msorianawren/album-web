@@ -27,9 +27,14 @@ export async function GET(request: NextRequest, { params }: AlbumRouteProps) {
     });
 
     if (!album) return apiError("NOT_FOUND", "Album not found.", 404);
+    
+    const cacheHeader = album.status === "private" || session?.userId
+      ? "private, no-store"
+      : "public, s-maxage=3600, stale-while-revalidate=86400";
+
     return apiSuccess(
       { album },
-      { headers: { "Cache-Control": album.status === "private" ? "private, no-store" : "public, s-maxage=60, stale-while-revalidate=300" } },
+      { headers: { "Cache-Control": cacheHeader } },
     );
   } catch (error) {
     return toServerError(error, request, "api.albums.detail");

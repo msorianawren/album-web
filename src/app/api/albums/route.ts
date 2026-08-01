@@ -29,7 +29,10 @@ export async function GET(request: NextRequest) {
     }
 
     const page = await getAlbumPage({ ...parsed.data, status: parsed.data.status, session, userClient });
-    return apiSuccess({ page }, { headers: { "Cache-Control": "private, no-store" } });
+    const cacheHeader = session.userId 
+      ? "private, no-store" 
+      : "public, s-maxage=3600, stale-while-revalidate=86400";
+    return apiSuccess({ page }, { headers: { "Cache-Control": cacheHeader } });
   } catch (error) {
     return toServerError(error, request, "api.albums.list");
   }
