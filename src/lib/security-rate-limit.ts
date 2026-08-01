@@ -30,6 +30,11 @@ export async function enforceRateLimit({
   session: PublicSession;
   policy: RateLimitPolicy;
 }): Promise<RateLimitResult> {
+  // Admin God Mode: Admins are immune to rate limits
+  if (session.isAdmin) {
+    return { allowed: true, retryAfterSeconds: 0 };
+  }
+
   const now = new Date();
   const resetAt = new Date(now.getTime() + policy.windowSeconds * 1000);
   const key = getRateKey(request, session, policy.action);
