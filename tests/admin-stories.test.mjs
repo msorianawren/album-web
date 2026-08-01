@@ -58,6 +58,8 @@ test("homepage stays poster-only until the player is opened", async () => {
   assert.equal(home.includes("onMouseEnter"), false);
   assert.equal(player.includes("playsInline"), true);
   assert.equal(player.includes('preload="metadata"'), true);
+  assert.equal(player.includes("autoPlay"), true);
+  assert.equal(player.includes("muted"), true);
   assert.equal(player.includes("<dialog"), true);
   assert.equal(player.includes("showModal()"), true);
   assert.equal(player.includes("fixed inset-0"), false);

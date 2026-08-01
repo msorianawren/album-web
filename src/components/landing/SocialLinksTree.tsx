@@ -82,7 +82,6 @@ export function SocialLinksTree({ links }: { links: LandingSocialLink[] }) {
       <div className="lcb-tree" style={{ height: `${treeHeight}px` }}>
         <svg className="lcb-tree__desktop" viewBox={`0 0 1000 ${treeHeight}`} preserveAspectRatio="none" aria-hidden="true">
           <path className="lcb-tree__stem" d={trunkPath} />
-          {displayLinks.length > 2 ? <path className="lcb-tree__stem lcb-tree__secondary" d={`M 520 320 C 452 390, 463 500, 404 ${treeHeight - 96}`} /> : null}
           {displayLinks.map((link, index) => {
             const y = 118 + index * 180;
             const isLeft = index % 2 === 0;

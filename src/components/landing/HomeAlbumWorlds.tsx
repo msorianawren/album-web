@@ -5,6 +5,18 @@ import { useState } from "react";
 import { ArrowUpRight } from "lucide-react";
 import type { Album } from "@/lib/types";
 
+function collectionCover(album: Album) {
+  const preferred = album.preview_items?.find((item) => item.id === album.cover_media_id)
+    ?? album.preview_items?.find((item) => item.media_type === "image")
+    ?? album.preview_items?.[0];
+
+  return preferred?.medium_url
+    ?? preferred?.card_url
+    ?? preferred?.thumbnail_url
+    ?? preferred?.url
+    ?? album.cover_url;
+}
+
 export function HomeAlbumWorlds({ albums }: { albums: Album[] }) {
   const collections = albums.filter((album) => album.status === "public").slice(0, 4);
   const [activeIndex, setActiveIndex] = useState(0);
@@ -12,6 +24,7 @@ export function HomeAlbumWorlds({ albums }: { albums: Album[] }) {
   if (collections.length === 0) return null;
 
   const active = collections[Math.min(activeIndex, collections.length - 1)];
+  const activeCover = collectionCover(active);
 
   return (
     <section id="featured-collections" className="lcb-collections" aria-labelledby="featured-collections-heading">
@@ -22,9 +35,9 @@ export function HomeAlbumWorlds({ albums }: { albums: Album[] }) {
 
       <div className="lcb-collections__desktop">
         <Link href={`/albums/${active.slug || active.id}`} prefetch={false} className="lcb-collections__preview" aria-label={`Open ${active.title}`}>
-          {active.cover_url ? (
+          {activeCover ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img key={active.id} src={active.cover_url} alt="" loading="lazy" />
+            <img key={active.id} src={activeCover} alt="" loading="lazy" />
           ) : <span aria-hidden="true" />}
         </Link>
 
@@ -53,9 +66,9 @@ export function HomeAlbumWorlds({ albums }: { albums: Album[] }) {
         {collections.map((album) => (
           <Link key={album.id} href={`/albums/${album.slug || album.id}`} prefetch={false}>
             <h3>{album.title}</h3>
-            {album.cover_url ? (
+            {collectionCover(album) ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={album.cover_url} alt="" loading="lazy" />
+              <img src={collectionCover(album)!} alt="" loading="lazy" />
             ) : <span className="lcb-collections__placeholder" aria-hidden="true" />}
             <p>{album.media_count} {album.media_count === 1 ? "frame" : "frames"} · {album.status}</p>
           </Link>

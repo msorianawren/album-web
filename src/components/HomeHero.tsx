@@ -32,8 +32,6 @@ export function HomeHero({ landing, locale = "en" }: HomeHeroProps) {
             priority
             fetchPriority="high"
             sizes="(max-width: 767px) 100vw, 66vw"
-            className="object-cover"
-            style={{ objectPosition: "64% center" }}
           />
         </figure>
 
@@ -52,8 +50,6 @@ export function HomeHero({ landing, locale = "en" }: HomeHeroProps) {
             alt="Editorial portrait of Oriana Wren"
             fill
             sizes="(max-width: 767px) 78vw, 28vw"
-            className="object-cover"
-            style={{ objectPosition: "50% 27%" }}
           />
         </figure>
       </div>

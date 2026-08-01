@@ -15,6 +15,22 @@ test("the opening spread has one priority image and keeps the editorial body out
   assert.equal(intro.includes("landing.body"), true);
   assert.match(css, /\.lcb-hero__dominant\s*\{[^}]*min-height/s);
   assert.doesNotMatch(css, /\.lcb-hero__dominant[^}]*display:\s*none/s);
+  assert.match(css, /\.lcb-hero__dominant img\s*\{[^}]*object-fit:\s*contain/s);
+  assert.match(css, /\.lcb-hero__support img\s*\{[^}]*object-fit:\s*contain/s);
+});
+
+test("the transparent landing keeps the animated environment visible", () => {
+  const css = read("src/components/landing/landing-home.css");
+  assert.match(css, /environment-custom-background\s*\{[^}]*0\.34/s);
+  assert.match(css, /\.lcb-hero\s*\{[^}]*background:\s*transparent/s);
+  assert.match(css, /\.lcb-social::before\s*\{[^}]*28%[^}]*transparent/s);
+});
+
+test("featured collections prefer a display-sized derivative over thumbnails", () => {
+  const collections = read("src/components/landing/HomeAlbumWorlds.tsx");
+  assert.match(collections, /preferred\?\.medium_url/);
+  assert.match(collections, /preferred\?\.card_url/);
+  assert.ok(collections.indexOf("preferred?.medium_url") < collections.indexOf("preferred?.thumbnail_url"));
 });
 
 test("gallery video is interaction-gated and never autoplays", () => {
@@ -32,6 +48,9 @@ test("the story viewer uses a contained native dialog and loads only its current
   assert.match(player, /key=\{current\.id\}/);
   assert.equal(player.includes("fixed inset-0"), false);
   assert.equal(player.includes("bg-black/95"), false);
+  assert.match(player, /autoPlay/);
+  assert.match(player, /muted/);
+  assert.match(player, /onEnded=/);
 });
 
 test("the botanical tree uses one non-scrubbed timeline and deterministic branches", () => {
@@ -42,6 +61,7 @@ test("the botanical tree uses one non-scrubbed timeline and deterministic branch
   assert.match(tree, /lcb-tree__stem/);
   assert.match(tree, /lcb-tree__branch-path/);
   assert.match(tree, /lcb-tree__leaves/);
+  assert.equal(tree.includes("lcb-tree__secondary"), false);
 });
 
 test("landing sections keep the requested narrative order without disabled placeholders", () => {

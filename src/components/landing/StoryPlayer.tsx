@@ -41,6 +41,14 @@ export function StoryPlayer({ items, initialIndex, onClose }: { items: PublicAdm
     };
   }, []);
 
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    void video.play().catch(() => {
+      // Native controls remain available when browser playback policy intervenes.
+    });
+  }, [current.id]);
+
   return (
     <dialog
       ref={dialogRef}
@@ -54,7 +62,25 @@ export function StoryPlayer({ items, initialIndex, onClose }: { items: PublicAdm
       }}
     >
       <div className="lcb-story-dialog__room">
+        <header className="lcb-story-dialog__topline">
+          <div aria-live="polite">
+            <p className="lcb-story-dialog__counter">Film {currentIndex + 1} of {items.length}</p>
+            <h2 id="story-dialog-title">{current.caption || "Moving portrait"}</h2>
+          </div>
+          <button type="button" onClick={close} aria-label="Close story player"><X aria-hidden="true" /></button>
+        </header>
+
         <div className="lcb-story-dialog__screen">
+          <button
+            type="button"
+            className="lcb-story-dialog__step"
+            data-direction="previous"
+            onClick={previous}
+            disabled={currentIndex === 0}
+            aria-label="Previous story"
+          >
+            <ChevronLeft aria-hidden="true" />
+          </button>
           <video
             key={current.id}
             ref={videoRef}
@@ -63,23 +89,21 @@ export function StoryPlayer({ items, initialIndex, onClose }: { items: PublicAdm
             controls
             playsInline
             preload="metadata"
+            autoPlay
+            muted
+            onEnded={() => { if (currentIndex < items.length - 1) next(); }}
           />
+          <button
+            type="button"
+            className="lcb-story-dialog__step"
+            data-direction="next"
+            onClick={next}
+            disabled={currentIndex === items.length - 1}
+            aria-label="Next story"
+          >
+            <ChevronRight aria-hidden="true" />
+          </button>
         </div>
-
-        <aside className="lcb-story-dialog__notes">
-          <div className="lcb-story-dialog__topline">
-            <p>Founder Stories</p>
-            <button type="button" onClick={close} aria-label="Close story player"><X aria-hidden="true" /></button>
-          </div>
-          <div>
-            <p className="lcb-story-dialog__counter">Film {currentIndex + 1} of {items.length}</p>
-            <h2 id="story-dialog-title">{current.caption || "Moving portrait"}</h2>
-          </div>
-          <div className="lcb-story-dialog__navigation">
-            <button type="button" onClick={previous} disabled={currentIndex === 0}><ChevronLeft aria-hidden="true" /> Previous</button>
-            <button type="button" onClick={next} disabled={currentIndex === items.length - 1}>Next <ChevronRight aria-hidden="true" /></button>
-          </div>
-        </aside>
       </div>
     </dialog>
   );
