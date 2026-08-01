@@ -775,6 +775,7 @@ export function SettingsCenter({
                   <Toggle label="Personal Letter" checked={landing.section_toggles?.personal_letter !== false} onChange={(v) => updateLanding("section_toggles", { ...landing.section_toggles, personal_letter: v })} />
                   <Toggle label="Founder Stories" checked={landing.admin_stories_settings?.enabled === true} onChange={(v) => updateLanding("admin_stories_settings", { ...(landing.admin_stories_settings!), enabled: v })} />
                 </div>
+              </div>
             </div>
             <LandingPreview landing={landing} activeLandingLocale={activeLandingLocale} />
           </div>
