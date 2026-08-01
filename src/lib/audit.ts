@@ -18,9 +18,6 @@ export async function logAuditEvent({
   targetId?: string;
   metadata?: Record<string, unknown>;
 }) {
-  // Ignore actions by the admin founder
-  if (session.isFounder) return;
-
   const ipInfo = getRequestIpWhois(request);
 
   const { error } = await supabase.from("audit_logs").insert({

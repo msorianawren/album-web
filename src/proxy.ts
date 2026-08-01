@@ -118,7 +118,6 @@ async function logRequest(request: NextRequest, user: User) {
   const isDownload = path.includes("/download");
 
   if (!isMutatingApi && !isDownload) return;
-  if (user.id === adminId) return; // Ignore actions by the admin founder
 
   const admin = createClient(supabaseUrl, serviceRoleKey, {
     auth: { persistSession: false, autoRefreshToken: false },
