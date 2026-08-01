@@ -73,7 +73,7 @@ export const defaultLandingPage: LandingPageContent = {
   },
 };
 
-const landingColumns = Object.keys(defaultLandingPage).join(",");
+const landingColumns = Object.keys(defaultLandingPage).filter((k) => k !== "admin_stories_settings").join(",");
 
 function cleanText(value: unknown, fallback: string, maxLength = 240) {
   if (typeof value !== "string") return fallback;
@@ -215,9 +215,15 @@ export function landingPayloadFromInput(input: Record<string, unknown>) {
 
 export async function saveLandingPage(client: SupabaseClient, input: Record<string, unknown>) {
   const payload = landingPayloadFromInput(input);
+  
+  // Temporarily omit unmigrated columns from DB payload to prevent crashes
+  const dbPayload = { ...payload };
+  // @ts-expect-error Safe deletion
+  delete dbPayload.admin_stories_settings;
+
   const { data, error } = await client
     .from("landing_page_settings")
-    .upsert(payload, { onConflict: "id" })
+    .upsert(dbPayload, { onConflict: "id" })
     .select(landingColumns)
     .single();
 
