@@ -437,7 +437,7 @@ export default function WrenFlightGame({
       )}
       {completion && completion.rewardGranted === 0 && (
         <div className="mt-2 rounded-xl bg-surface/50 p-4 text-center text-sm text-text-secondary">
-          Target of {WREN_REWARD_TARGET} vines not reached. No feathers awarded.
+          Today&apos;s Flight reward limit has been reached. Come back tomorrow for more Wren Feathers.
         </div>
       )}
       {didNotQualify && (
