@@ -5,6 +5,7 @@ import { getMediaTypeFromMime } from "@/lib/config";
 import { putR2Object, getPublicUrl } from "@/lib/r2";
 import type { Media, SiteSettings } from "@/lib/types";
 import { normalizeMedia } from "@/lib/albums";
+import { faststart } from "@/lib/faststart";
 
 function extensionFromMime(mimeType: string) {
   return (mimeType.split("/").at(1) ?? "bin").replace("jpeg", "jpg").replace("quicktime", "mov");
@@ -53,9 +54,17 @@ async function uploadVideoMedia({
   const extension = extensionFromMime(mimeType);
   const uploadedAt = new Date().toISOString();
   const originalKey = `albums/${albumId}/videos/${mediaId}/original.${extension}`;
+  let finalBuffer = buffer;
+  if (mimeType === "video/mp4") {
+    try {
+      finalBuffer = faststart(buffer);
+    } catch {
+      finalBuffer = buffer;
+    }
+  }
   const url = await putR2Object({
     key: originalKey,
-    body: buffer,
+    body: finalBuffer,
     contentType: mimeType,
     cacheControl: "public, max-age=86400",
   });

@@ -3,9 +3,10 @@ import { revalidatePath, revalidateTag } from "next/cache";
 import { logAuditEvent } from "@/lib/audit";
 import { getTrustedFounderDatabase } from "@/lib/db/admin";
 import { apiError, apiSuccess, toServerError } from "@/lib/errors";
-import { deleteR2Objects, getPublicUrl, headR2Object } from "@/lib/r2";
+import { deleteR2Objects, getPublicUrl, getR2Object, headR2Object, putR2Object } from "@/lib/r2";
 import { getSiteSettings } from "@/lib/site-settings";
 import { ADMIN_STORY_COLUMNS, isProjectMediaUrl, keysBelongToStory, storyFinalizeSchema, validateStoryLimits } from "@/lib/admin-stories/contract";
+import { faststart } from "@/lib/faststart";
 
 export const runtime = "nodejs";
 
@@ -40,6 +41,20 @@ export async function POST(request: NextRequest) {
     if (!isProjectMediaUrl(videoUrl, mediaOrigin) || !isProjectMediaUrl(posterUrl, mediaOrigin)) {
       await deleteR2Objects(cleanupKeys); cleanupKeys = [];
       return apiError("INVALID_INPUT", "Story media must use the configured project media domain.", 400);
+    }
+    if (input.video.mimeType === "video/mp4") {
+      try {
+        const rawVideo = await getR2Object(input.video.r2Key);
+        const optimized = faststart(rawVideo);
+        await putR2Object({
+          key: input.video.r2Key,
+          body: optimized,
+          contentType: "video/mp4",
+          cacheControl: "public, max-age=31536000, immutable",
+        });
+      } catch (err) {
+        console.warn("Faststart optimization skipped for story video:", err);
+      }
     }
     const order = await database.client.from("admin_stories").select("sort_order").order("sort_order", { ascending: false }).limit(1).maybeSingle();
     if (order.error) throw order.error;
