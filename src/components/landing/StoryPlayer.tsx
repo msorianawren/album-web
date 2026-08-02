@@ -90,11 +90,13 @@ export function StoryPlayer({
   useEffect(() => {
     const dialog = dialogRef.current;
     if (!dialog) return;
-    const video = videoRef.current;
+    // showModal() must run before video can be fetched by Safari iOS.
+    // requestAnimationFrame ensures the dialog is visible and painted before
+    // React mounts the video element on the next render cycle.
     dialog.showModal();
     return () => {
       closeTimelineRef.current?.kill();
-      video?.pause();
+      videoRef.current?.pause();
       if (dialog.open) dialog.close();
     };
   }, []);
@@ -105,15 +107,17 @@ export function StoryPlayer({
     if (!video) return;
     video.muted = false;
     video.volume = 1;
-    // iOS Safari requires a user gesture for unmuted autoplay.
-    // If the browser rejects the play promise, retry with muted=true
-    // so the video always starts; the native controls let the user unmute.
-    void video.play().catch(() => {
-      video.muted = true;
+    // Defer play() by one task so the dialog is fully painted and Safari
+    // does not immediately suspend the media element.
+    const id = window.setTimeout(() => {
       void video.play().catch(() => {
-        // Controls remain available – user can press play manually.
+        // Unmuted autoplay blocked (iOS Safari policy) → retry muted.
+        // Native controls remain so the user can unmute manually.
+        video.muted = true;
+        void video.play().catch(() => {});
       });
-    });
+    }, 0);
+    return () => window.clearTimeout(id);
   }, [current.id, currentIndex, onIndexChange]);
 
   return (
@@ -155,7 +159,9 @@ export function StoryPlayer({
             poster={current.poster_url}
             controls
             playsInline
-            preload="metadata"
+            // webkit-playsinline is required for inline playback in iOS Safari WebViews
+            {...({ "webkit-playsinline": "true" } as Record<string, string>)}
+            preload="auto"
             autoPlay
             onEnded={() => { if (currentIndex < items.length - 1) next(); }}
           />
