@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import type { GameDifficulty, GamePublishedVersion, GameReplayTrace, GameVerificationResult } from "../../core/types";
-import { createEchoChimesState, stepEchoChimes, pressChime } from "./model";
+import { createEchoChimesState, stepEchoChimes, pressChime, ECHO_REWARD_TARGET } from "./model";
 
 export function verifyEchoChimes(
   version: GamePublishedVersion,
@@ -38,7 +38,7 @@ export function verifyEchoChimes(
     valid: true,
     versionId: version.id,
     replayDigest,
-    score: state.score < 8 ? 0 : state.score,
+    score: state.score < ECHO_REWARD_TARGET ? 0 : state.score,
     durationTicks: tick,
   };
 }

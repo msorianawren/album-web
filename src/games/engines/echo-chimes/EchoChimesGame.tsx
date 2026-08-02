@@ -11,6 +11,7 @@ import {
   stepEchoChimes,
   pressChime,
   ECHO_CHIME_COUNT,
+  ECHO_REWARD_TARGET,
   type EchoChimesState,
 } from "./model";
 
@@ -394,7 +395,7 @@ export default function EchoChimesGame({
       title="Echo Chimes"
       status={status}
       score={String(score)}
-      detail="Listen to eight wind chimes and repeat their delicate melody. Keyboard players can use keys 1 through 8."
+      detail={`Listen to ${ECHO_REWARD_TARGET} wind chimes and repeat their delicate melody. Keyboard players can use keys 1 through 8.`}
       onStart={start}
       onPause={pause}
       onRestart={restart}
@@ -412,7 +413,7 @@ export default function EchoChimesGame({
       )}
       {completion && completion.rewardGranted === 0 && (
         <div className="mt-2 rounded-xl bg-surface/50 p-4 text-center text-sm text-text-secondary">
-          Target of 8 sequence length not reached. No feathers awarded.
+          Target of {ECHO_REWARD_TARGET} sequence length not reached. No feathers awarded.
         </div>
       )}
       {!completion && status === "complete" && !signedIn && (
