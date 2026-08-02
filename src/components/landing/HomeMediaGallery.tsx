@@ -22,7 +22,14 @@ export function HomeMediaGallery({ items }: { items: LandingMediaItem[] }) {
           <figure key={item.id} className="lcb-gallery__frame" data-slot={(index % 6) + 1}>
             {item.type === "video" ? (
               activeVideoId === item.id ? (
-                <video src={item.url} poster={item.poster_url || undefined} controls playsInline preload="metadata" />
+                <video
+                  src={item.url}
+                  poster={item.poster_url || undefined}
+                  controls
+                  playsInline
+                  {...{ "webkit-playsinline": "true", "x5-playsinline": "true" }}
+                  preload="metadata"
+                />
               ) : (
                 <button type="button" onClick={() => setActiveVideoId(item.id)} aria-label={`Load video${item.title ? `: ${item.title}` : ""}`}>
                   {item.poster_url ? (
