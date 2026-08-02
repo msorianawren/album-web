@@ -11,6 +11,7 @@ import {
   stepWrenFlight,
   flapWren,
   getWrenGapSize,
+  WREN_REWARD_TARGET,
   type WrenFlightState,
 } from "./model";
 
@@ -90,7 +91,7 @@ function drawWrenFlight(
     context.fill();
   }
 
-  // Draw Wren
+  // Draw the wren with a velocity-led glide and an impulse-driven wingbeat.
   const prevY = prevState?.wrenY ?? state.wrenY;
   const wrenY = prevY + (state.wrenY - prevY) * t;
   
@@ -99,34 +100,54 @@ function drawWrenFlight(
   const rX = (WREN_RADIUS / 100) * width;
   const rY = (WREN_RADIUS / 100) * height;
 
-  context.fillStyle = "#f4a261"; // Orange/Amber bird
+  const flapAge = Math.max(0, state.tickCounter - state.lastFlapTick);
+  const flapImpulse = Math.exp(-flapAge / 11);
+  const glideTilt = Math.max(-0.28, Math.min(0.38, state.wrenVy * 0.11));
+  const wingBeat = Math.sin(state.tickCounter * 0.42) * 0.18 + flapImpulse * 0.78;
+  const bob = Math.sin(state.tickCounter * 0.14) * rY * 0.08;
+
+  context.save();
+  context.translate(x, y + bob);
+  context.rotate(glideTilt);
+
+  // Twin layered wings make every tap feel like a controlled flap, not a jump.
+  context.fillStyle = "#9a5538";
   context.beginPath();
-  context.ellipse(x, y, rX, rY, 0, 0, Math.PI * 2);
+  context.moveTo(-rX * 0.15, -rY * 0.05);
+  context.quadraticCurveTo(-rX * 1.2, -rY * (1.15 + wingBeat), -rX * 1.7, -rY * (0.2 + wingBeat * 0.35));
+  context.quadraticCurveTo(-rX * 0.72, rY * 0.5, rX * 0.15, rY * 0.28);
+  context.closePath();
   context.fill();
-  context.fillStyle = "#f7d27a";
+
+  context.fillStyle = "#d98955";
   context.beginPath();
-  context.ellipse(x - rX * 0.1, y + Math.sin(state.tickCounter * 0.65) * rY * 0.4, rX * 0.72, rY * 0.32, -0.45, 0, Math.PI * 2);
+  context.ellipse(0, 0, rX, rY * 0.82, 0, 0, Math.PI * 2);
   context.fill();
-  
-  // Eye
-  context.fillStyle = "#264653";
+  context.fillStyle = "#f6d4a0";
   context.beginPath();
-  context.ellipse(x + rX * 0.4, y - rY * 0.2, rX * 0.2, rY * 0.2, 0, 0, Math.PI * 2);
+  context.ellipse(rX * 0.28, rY * 0.26, rX * 0.55, rY * 0.36, -0.28, 0, Math.PI * 2);
   context.fill();
-  
-  // Ribbon tail
-  context.strokeStyle = "#e9c46a";
-  context.lineWidth = rY * 0.5;
+
+  context.fillStyle = "#6f3729";
+  context.beginPath();
+  context.moveTo(rX * 0.95, -rY * 0.1);
+  context.lineTo(rX * 1.48, rY * 0.12);
+  context.lineTo(rX * 0.98, rY * 0.3);
+  context.closePath();
+  context.fill();
+  context.fillStyle = "#1d2d44";
+  context.beginPath();
+  context.arc(rX * 0.48, -rY * 0.22, Math.max(1.4, rX * 0.13), 0, Math.PI * 2);
+  context.fill();
+
+  context.strokeStyle = "#f4bd65";
+  context.lineWidth = Math.max(2, rY * 0.32);
   context.lineCap = "round";
   context.beginPath();
-  context.moveTo(x - rX * 0.8, y);
-  
-  // Tail flap logic based on velocity and time
-  const tailWave = Math.sin(state.tickCounter * 0.5) * rY * 0.5;
-  const vOffset = (state.wrenVy * rY * 0.3);
-  
-  context.quadraticCurveTo(x - rX * 2, y + vOffset, x - rX * 3, y + tailWave - vOffset);
+  context.moveTo(-rX * 0.72, rY * 0.08);
+  context.quadraticCurveTo(-rX * 1.75, rY * (0.45 + state.wrenVy * 0.14), -rX * 2.65, rY * (0.25 + Math.sin(state.tickCounter * 0.35) * 0.32));
   context.stroke();
+  context.restore();
 }
 
 function generatePracticeSeed() {
@@ -152,6 +173,9 @@ export default function WrenFlightGame({
   const [status, setStatus] = useState<"ready" | "running" | "paused" | "complete">("ready");
   const [score, setScore] = useState(0);
   const [completion, setCompletion] = useState<FinalizeGameSessionResponse | null>(null);
+  const [rewardReady, setRewardReady] = useState(false);
+  const [didNotQualify, setDidNotQualify] = useState(false);
+  const [completionError, setCompletionError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   
   const { playImpact, playSfx, start: startAudio } = useGameAudio();
@@ -223,11 +247,13 @@ export default function WrenFlightGame({
         
         if (stateRef.current.score > prevScore) {
           setScore(stateRef.current.score);
+          if (stateRef.current.score >= WREN_REWARD_TARGET) setRewardReady(true);
           playSfx("snake-food");
         }
 
         if (stateRef.current.complete) {
           runtime.pause();
+          setDidNotQualify(stateRef.current.score < WREN_REWARD_TARGET);
           setStatus("complete");
           onEngineStatusChange?.("paused");
           playImpact(0.7);
@@ -274,6 +300,9 @@ export default function WrenFlightGame({
     
     if (status === "complete" || status === "ready") {
       setCompletion(null);
+      setRewardReady(false);
+      setDidNotQualify(false);
+      setCompletionError(null);
       setScore(0);
       actionRef.current = [];
       traceRef.current = [];
@@ -326,6 +355,9 @@ export default function WrenFlightGame({
     setScore(0);
     setStatus("ready");
     setCompletion(null);
+    setRewardReady(false);
+    setDidNotQualify(false);
+    setCompletionError(null);
     onEngineStatusChange?.("ready");
     const canvas = canvasRef.current;
     if (canvas) drawWrenFlight(canvas, stateRef.current, quality);
@@ -333,6 +365,10 @@ export default function WrenFlightGame({
 
   useEffect(() => {
     if (status === "complete" && sessionRef.current && !completion && !submitting) {
+      if (stateRef.current.score < WREN_REWARD_TARGET) {
+        sessionRef.current = null;
+        return;
+      }
       setSubmitting(true);
       const session = sessionRef.current;
       const trace: GameReplayTrace = {
@@ -348,14 +384,21 @@ export default function WrenFlightGame({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ nonce: session.nonce, replay: trace }),
       })
-        .then((res) => (res.ok ? res.json() : null))
-        .then((json) => {
-          if (json?.data) {
-            setCompletion(json.data);
-            window.dispatchEvent(new CustomEvent("wren-feathers-update", {
-              detail: { rewardGranted: json.data.rewardGranted, balanceAfter: json.data.balanceAfter }
-            }));
+        .then(async (res) => {
+          const json = await res.json().catch(() => null);
+          if (!res.ok || !json?.data) {
+            throw new Error(json?.error?.message ?? "Unable to award Wren Feathers for this session.");
           }
+          return json;
+        })
+        .then((json) => {
+          setCompletion(json.data);
+          window.dispatchEvent(new CustomEvent("wren-feathers-update", {
+            detail: { rewardGranted: json.data.rewardGranted, balanceAfter: json.data.balanceAfter }
+          }));
+        })
+        .catch((error: unknown) => {
+          setCompletionError(error instanceof Error ? error.message : "Unable to award Wren Feathers for this session.");
         })
         .finally(() => {
           setSubmitting(false);
@@ -370,11 +413,16 @@ export default function WrenFlightGame({
       title="Wren Flight"
       status={status}
       score={String(score)}
-      detail="Guide the ribbon-tailed wren safely through the hanging vines. Tap, Click, or press Space to flap."
+      detail={`Reach ${WREN_REWARD_TARGET} vines to earn Wren Feathers. Tap, click, or press Space to give the wren a gentle wingbeat.`}
       onStart={start}
       onPause={pause}
       onRestart={restart}
     >
+      {rewardReady && !completion && status !== "complete" && (
+        <div className="mt-2 rounded-xl bg-[color-mix(in_srgb,var(--preset-accent)_16%,transparent)] px-4 py-3 text-center text-sm font-medium text-text-primary">
+          Reward secured — finish the flight to collect your Wren Feathers.
+        </div>
+      )}
       {completion && completion.rewardGranted > 0 && (
         <div className="mt-2 rounded-xl bg-[color-mix(in_srgb,var(--preset-accent)_20%,transparent)] p-4 text-center">
           <Check className="mx-auto mb-2 h-6 w-6 text-accent" />
@@ -388,7 +436,17 @@ export default function WrenFlightGame({
       )}
       {completion && completion.rewardGranted === 0 && (
         <div className="mt-2 rounded-xl bg-surface/50 p-4 text-center text-sm text-text-secondary">
-          Target of 15 obstacles not reached. No feathers awarded.
+          Target of {WREN_REWARD_TARGET} vines not reached. No feathers awarded.
+        </div>
+      )}
+      {didNotQualify && (
+        <div className="mt-2 rounded-xl bg-surface/50 p-4 text-center text-sm text-text-secondary">
+          Reach {WREN_REWARD_TARGET} vines in one flight to earn Wren Feathers.
+        </div>
+      )}
+      {completionError && (
+        <div className="mt-2 rounded-xl bg-rose-500/10 p-4 text-center text-sm text-rose-700 dark:text-rose-300">
+          {completionError}
         </div>
       )}
       {!completion && status === "complete" && !signedIn && (

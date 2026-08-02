@@ -93,11 +93,6 @@ export function pressChime(state: EchoChimesState, chimeIndex: number): boolean 
       // Completed the sequence successfully
       state.score = state.sequence.length;
       state.playerProgress = 0;
-      if (state.score >= ECHO_REWARD_TARGET) {
-        state.complete = true;
-        state.activeChime = null;
-        return true;
-      }
       appendSequence(state);
       state.phase = "success_pause";
       state.tickCounter = 0;

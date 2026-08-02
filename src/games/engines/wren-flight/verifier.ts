@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import type { GameDifficulty, GamePublishedVersion, GameReplayTrace, GameVerificationResult } from "../../core/types";
-import { createWrenFlightState, stepWrenFlight, flapWren } from "./model";
+import { createWrenFlightState, stepWrenFlight, flapWren, WREN_REWARD_TARGET } from "./model.ts";
 
 export function verifyWrenFlight(
   version: GamePublishedVersion,
@@ -38,7 +38,7 @@ export function verifyWrenFlight(
     valid: true,
     versionId: version.id,
     replayDigest,
-    score: state.score < 15 ? 0 : state.score,
+    score: state.score < WREN_REWARD_TARGET ? 0 : state.score,
     durationTicks: tick,
   };
 }

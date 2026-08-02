@@ -1,4 +1,4 @@
-import { createSeededRng } from "@/games/core/rng";
+import { createSeededRng } from "../../core/rng.ts";
 
 export type WrenFlightState = {
   seed: string;
@@ -11,15 +11,17 @@ export type WrenFlightState = {
   }>;
   score: number;
   tickCounter: number;
+  lastFlapTick: number;
   complete: boolean;
 };
 
-const GRAVITY = 0.15;
-const FLAP_VELOCITY = -2.5;
-const OBSTACLE_SPEED = 1.5;
-const OBSTACLE_SPAWN_INTERVAL = 120; // ticks
+const GRAVITY = 0.11;
+const FLAP_VELOCITY = -2.2;
+const OBSTACLE_SPEED = 1.2;
+const OBSTACLE_SPAWN_INTERVAL = 150;
+export const WREN_REWARD_TARGET = 8;
 export function getWrenGapSize(score: number) {
-  return Math.max(24, 35 - Math.floor(score / 3) * 2);
+  return Math.max(34, 44 - Math.floor(score / 4));
 }
 const WREN_X = 30; // Wren is fixed at 30% width
 const WREN_RADIUS = 3; // roughly 3% width/height
@@ -33,13 +35,15 @@ export function createWrenFlightState(seed: string): WrenFlightState {
     obstacles: [],
     score: 0,
     tickCounter: 0,
+    lastFlapTick: -100,
     complete: false,
   };
 }
 
 export function flapWren(state: WrenFlightState) {
   if (state.complete) return;
-  state.wrenVy = FLAP_VELOCITY;
+  state.wrenVy = Math.min(state.wrenVy, FLAP_VELOCITY);
+  state.lastFlapTick = state.tickCounter;
 }
 
 export function stepWrenFlight(state: WrenFlightState) {

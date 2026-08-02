@@ -29,8 +29,10 @@ function createRewardTrace(seed: string): GameReplayTrace {
   for (let tick = 0; !state.complete && tick < 18000; tick += 1) {
     if (state.phase === "waiting_for_input") {
       const note = state.sequence[state.playerProgress];
-      actions.push({ tick, type: "press", payload: note });
-      pressChime(state, note);
+      const shouldEndRun = state.score >= 3 && state.playerProgress === 0;
+      const pressedNote = shouldEndRun ? (note + 1) % 8 : note;
+      actions.push({ tick, type: "press", payload: pressedNote });
+      pressChime(state, pressedNote);
     }
     stepEchoChimes(state);
   }
@@ -41,7 +43,7 @@ function createRewardTrace(seed: string): GameReplayTrace {
 }
 
 describe("Echo Chimes verifier", () => {
-  it("awards a verified score after the third completed chime sequence", () => {
+  it("keeps playing after the third completed melody and preserves its reward score", () => {
     const result = verifyEchoChimes(version, difficulty, createRewardTrace("echo-reward-seed"));
 
     assert.equal(result.valid, true);
