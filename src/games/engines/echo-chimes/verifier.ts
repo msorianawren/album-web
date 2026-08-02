@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import type { GameDifficulty, GamePublishedVersion, GameReplayTrace, GameVerificationResult } from "../../core/types";
-import { createEchoChimesState, stepEchoChimes, pressChime, ECHO_REWARD_TARGET } from "./model";
+import { createEchoChimesState, stepEchoChimes, pressChime, ECHO_REWARD_TARGET } from "./model.ts";
 
 export function verifyEchoChimes(
   version: GamePublishedVersion,

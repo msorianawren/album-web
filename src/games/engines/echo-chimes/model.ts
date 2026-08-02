@@ -1,4 +1,4 @@
-import { createSeededRng } from "@/games/core/rng";
+import { createSeededRng } from "../../core/rng.ts";
 
 export type EchoChimesState = {
   seed: string;
