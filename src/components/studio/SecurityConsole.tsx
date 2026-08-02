@@ -1,7 +1,24 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
-import { Ban, CheckCircle2, Crown, Search, ShieldCheck, UserCog, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, FileText, Users, Globe, Smartphone, UserCheck } from "lucide-react";
+import { useMemo, useState, useEffect, useCallback } from "react";
+import {
+  Ban,
+  CheckCircle2,
+  Crown,
+  Search,
+  ShieldCheck,
+  UserCog,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
+  FileText,
+  Users,
+  Globe,
+  Smartphone,
+  UserCheck,
+  RefreshCw,
+} from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
@@ -16,6 +33,8 @@ interface SecurityConsoleProps {
   initialLogs: AuditLog[];
   initialTotalLogs: number;
   initialRoleLogs: AuditLog[];
+  initialVisitors?: GuestVisitor[];
+  initialTotalVisitors?: number;
   session: PublicSession;
 }
 
@@ -61,15 +80,55 @@ function metadataText(log: AuditLog, key: string) {
   return typeof value === "string" && value.trim() ? value : null;
 }
 
-function Pagination({ page, totalPages, onPageChange, isLoading }: { page: number, totalPages: number, onPageChange: (p: number) => void, isLoading: boolean }) {
+function Pagination({
+  page,
+  totalPages,
+  onPageChange,
+  isLoading,
+}: {
+  page: number;
+  totalPages: number;
+  onPageChange: (p: number) => void;
+  isLoading: boolean;
+}) {
   const maxPage = Math.max(1, totalPages);
   return (
     <div className="flex items-center gap-2">
-      <Button variant="secondary" onClick={() => onPageChange(1)} disabled={page <= 1 || isLoading} className="w-10 h-10 p-0"><ChevronsLeft className="h-4 w-4" /></Button>
-      <Button variant="secondary" onClick={() => onPageChange(page - 1)} disabled={page <= 1 || isLoading} className="w-10 h-10 p-0"><ChevronLeft className="h-4 w-4" /></Button>
-      <span className="text-sm font-medium px-4 text-text-secondary">Page {page} of {maxPage}</span>
-      <Button variant="secondary" onClick={() => onPageChange(page + 1)} disabled={page >= maxPage || isLoading} className="w-10 h-10 p-0"><ChevronRight className="h-4 w-4" /></Button>
-      <Button variant="secondary" onClick={() => onPageChange(maxPage)} disabled={page >= maxPage || isLoading} className="w-10 h-10 p-0"><ChevronsRight className="h-4 w-4" /></Button>
+      <Button
+        variant="secondary"
+        onClick={() => onPageChange(1)}
+        disabled={page <= 1 || isLoading}
+        className="w-9 h-9 p-0"
+      >
+        <ChevronsLeft className="h-4 w-4" />
+      </Button>
+      <Button
+        variant="secondary"
+        onClick={() => onPageChange(page - 1)}
+        disabled={page <= 1 || isLoading}
+        className="w-9 h-9 p-0"
+      >
+        <ChevronLeft className="h-4 w-4" />
+      </Button>
+      <span className="text-xs font-medium px-3 text-text-secondary">
+        Page {page} of {maxPage}
+      </span>
+      <Button
+        variant="secondary"
+        onClick={() => onPageChange(page + 1)}
+        disabled={page >= maxPage || isLoading}
+        className="w-9 h-9 p-0"
+      >
+        <ChevronRight className="h-4 w-4" />
+      </Button>
+      <Button
+        variant="secondary"
+        onClick={() => onPageChange(maxPage)}
+        disabled={page >= maxPage || isLoading}
+        className="w-9 h-9 p-0"
+      >
+        <ChevronsRight className="h-4 w-4" />
+      </Button>
     </div>
   );
 }
@@ -79,31 +138,35 @@ export function SecurityConsole({
   initialTotalUsers,
   initialLogs,
   initialTotalLogs,
+  initialVisitors = [],
+  initialTotalVisitors = 0,
   session,
 }: SecurityConsoleProps) {
   const USERS_LIMIT = 30;
   const LOGS_LIMIT = 50;
+  const VISITORS_LIMIT = 30;
 
-  const [activeTab, setActiveTab] = useState<"users" | "logs" | "visitors">("users");
+  // Default active tab is now "logs" (Audit Logs first!)
+  const [activeTab, setActiveTab] = useState<"logs" | "users" | "visitors">("logs");
 
-  // Users State
-  const [users, setUsers] = useState(initialUsers);
-  const [totalUsers, setTotalUsers] = useState(initialTotalUsers);
-  const [userPage, setUserPage] = useState(1);
-  const [userFilter, setUserFilter] = useState<"all" | "admins" | "blocked">("all");
-  const [search, setSearch] = useState("");
-  const [isUsersLoading, setIsUsersLoading] = useState(false);
-  
   // Logs State
-  const [logs, setLogs] = useState(initialLogs);
+  const [logs, setLogs] = useState<AuditLog[]>(initialLogs);
   const [totalLogs, setTotalLogs] = useState(initialTotalLogs);
   const [logPage, setLogPage] = useState(1);
   const [logFilter, setLogFilter] = useState<"all" | "roles">("all");
   const [isLogsLoading, setIsLogsLoading] = useState(false);
 
+  // Users State
+  const [users, setUsers] = useState<UserProfile[]>(initialUsers);
+  const [totalUsers, setTotalUsers] = useState(initialTotalUsers);
+  const [userPage, setUserPage] = useState(1);
+  const [userFilter, setUserFilter] = useState<"all" | "admins" | "blocked">("all");
+  const [search, setSearch] = useState("");
+  const [isUsersLoading, setIsUsersLoading] = useState(false);
+
   // Visitors State
-  const [visitors, setVisitors] = useState<GuestVisitor[]>([]);
-  const [totalVisitors, setTotalVisitors] = useState(0);
+  const [visitors, setVisitors] = useState<GuestVisitor[]>(initialVisitors);
+  const [totalVisitors, setTotalVisitors] = useState(initialTotalVisitors);
   const [visitorPage, setVisitorPage] = useState(1);
   const [visitorFilter, setVisitorFilter] = useState<"all" | "active" | "linked">("all");
   const [visitorSearch, setVisitorSearch] = useState("");
@@ -124,62 +187,20 @@ export function SecurityConsole({
     }, {});
   }, [users]);
 
-  // Fetch Users Effect
-  useEffect(() => {
-    async function fetchUsers() {
-      if (!session.isFounder) return;
-      setIsUsersLoading(true);
-      try {
-        const response = await fetch(`/api/admin/users?q=${encodeURIComponent(search)}&page=${userPage}&limit=${USERS_LIMIT}&filter=${userFilter}`);
-        const payload = await response.json();
-        if (payload.success) {
-          setUsers(payload.data.users);
-          setTotalUsers(payload.data.count);
-        } else {
-          setMessage(payload.message ?? "Failed to fetch users.");
-        }
-      } catch {
-        setMessage("Network error fetching users.");
-      }
-      setIsUsersLoading(false);
-    }
-    // Only fetch if we are not on the initial render state for page 1 without search/filter
-    if (userPage !== 1 || search !== "" || userFilter !== "all") {
-      fetchUsers();
-    }
-  }, [userPage, userFilter, session.isFounder]); // We intentionally do not trigger on 'search' until they press Enter
-
-  // Trigger user search manually on button/enter
-  async function triggerUserSearch() {
-    setUserPage(1);
-    if (userPage === 1) {
-      if (!session.isFounder) return;
-      setIsUsersLoading(true);
-      setMessage("Searching users...");
-      const response = await fetch(`/api/admin/users?q=${encodeURIComponent(search)}&page=1&limit=${USERS_LIMIT}&filter=${userFilter}`);
-      const payload = await response.json();
-      setIsUsersLoading(false);
-      if (payload.success) {
-        setUsers(payload.data.users);
-        setTotalUsers(payload.data.count);
-        setMessage(payload.data.users.length ? "User list updated." : "No matching users.");
-      } else {
-        setMessage(payload.message ?? "Search failed.");
-      }
-    }
-  }
-
-  // Fetch Logs Effect
-  useEffect(() => {
-    async function fetchLogs() {
+  // ─── Fetch Audit Logs ──────────────────────────────────────────────────────────
+  const fetchLogs = useCallback(
+    async (pageToFetch = logPage, filterToFetch = logFilter) => {
       if (!session.isFounder) return;
       setIsLogsLoading(true);
       try {
-        const response = await fetch(`/api/admin/audit-logs?page=${logPage}&limit=${LOGS_LIMIT}&filter=${logFilter}`);
+        const response = await fetch(
+          `/api/admin/audit-logs?page=${pageToFetch}&limit=${LOGS_LIMIT}&filter=${filterToFetch}`
+        );
         const payload = await response.json();
         if (payload.success) {
           setLogs(payload.data.logs);
           setTotalLogs(payload.data.count);
+          setMessage("Audit logs updated.");
         } else {
           setMessage(payload.message ?? "Failed to fetch logs.");
         }
@@ -187,16 +208,88 @@ export function SecurityConsole({
         setMessage("Network error fetching logs.");
       }
       setIsLogsLoading(false);
+    },
+    [logPage, logFilter, session.isFounder]
+  );
+
+  useEffect(() => {
+    if (activeTab === "logs") {
+      // Trigger when filter or page changes
+      fetchLogs(logPage, logFilter);
     }
-    // If not initial logs state
-    if (logPage !== 1 || logFilter !== "all") {
-      fetchLogs();
+  }, [logPage, logFilter, activeTab, fetchLogs]);
+
+  // ─── Fetch Users ─────────────────────────────────────────────────────────────
+  const fetchUsers = useCallback(
+    async (pageToFetch = userPage, filterToFetch = userFilter, searchToFetch = search) => {
+      if (!session.isFounder) return;
+      setIsUsersLoading(true);
+      try {
+        const response = await fetch(
+          `/api/admin/users?q=${encodeURIComponent(searchToFetch)}&page=${pageToFetch}&limit=${USERS_LIMIT}&filter=${filterToFetch}`
+        );
+        const payload = await response.json();
+        if (payload.success) {
+          setUsers(payload.data.users);
+          setTotalUsers(payload.data.count);
+          setMessage("Users list updated.");
+        } else {
+          setMessage(payload.message ?? "Failed to fetch users.");
+        }
+      } catch {
+        setMessage("Network error fetching users.");
+      }
+      setIsUsersLoading(false);
+    },
+    [userPage, userFilter, search, session.isFounder]
+  );
+
+  useEffect(() => {
+    if (activeTab === "users") {
+      fetchUsers(userPage, userFilter, search);
     }
-  }, [logPage, logFilter, session.isFounder]);
+  }, [userPage, userFilter, activeTab, fetchUsers, search]);
+
+  // ─── Fetch Visitors ──────────────────────────────────────────────────────────
+  const fetchVisitors = useCallback(
+    async (
+      pageToFetch = visitorPage,
+      filterToFetch = visitorFilter,
+      searchToFetch = visitorSearch
+    ) => {
+      if (!session.isFounder) return;
+      setIsVisitorsLoading(true);
+      try {
+        const response = await fetch(
+          `/api/admin/guest-visitors?page=${pageToFetch}&limit=${VISITORS_LIMIT}&filter=${filterToFetch}&search=${encodeURIComponent(
+            searchToFetch
+          )}`
+        );
+        const payload = await response.json();
+        if (payload.success) {
+          setVisitors(payload.data.visitors ?? []);
+          setTotalVisitors(payload.data.count ?? 0);
+          setMessage("Visitors list updated.");
+        } else {
+          setMessage(payload.message ?? "Failed to fetch visitors.");
+        }
+      } catch {
+        setMessage("Network error fetching visitors.");
+      }
+      setIsVisitorsLoading(false);
+    },
+    [visitorPage, visitorFilter, visitorSearch, session.isFounder]
+  );
+
+  useEffect(() => {
+    if (activeTab === "visitors") {
+      fetchVisitors(visitorPage, visitorFilter, visitorSearch);
+    }
+  }, [activeTab, visitorPage, visitorFilter, fetchVisitors, visitorSearch]);
 
   function mergeUser(updated: UserProfile) {
     setUsers((current) =>
-      current.map((user) => (user.user_id === updated.user_id ? { ...user, ...updated } : user)),
+      current.map((user) => (user.user_id === updated.user_id ? { ...user, ...updated } : user))
     );
   }
 
@@ -252,39 +345,38 @@ export function SecurityConsole({
 
   return (
     <div className="grid gap-5">
+      {/* Console Header Bar with Tabs Order: Audit Logs -> Users -> Visitors */}
       <section className="rounded-[1.4rem] border border-border bg-surface/82 p-5 shadow-xl shadow-text-primary/5 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <p className="text-sm font-medium uppercase tracking-[0.2em] text-text-secondary">
             Security Console
           </p>
-          <h1 className="mt-2 text-3xl font-semibold text-text-primary">
-            Access & Logs
-          </h1>
+          <h1 className="mt-2 text-3xl font-semibold text-text-primary">Access & Governance</h1>
           <p className="mt-1 text-sm text-text-secondary" aria-live="polite">
-            {message || "Review Google accounts and inspect system activity."}
+            {message || "Review real-time audit logs, manage Google users, and inspect guest activity."}
           </p>
         </div>
         <div className="flex bg-background/50 p-1 rounded-full border border-border self-start">
           <Button
+            variant={activeTab === "logs" ? "primary" : "ghost"}
+            onClick={() => setActiveTab("logs")}
+            className="rounded-full px-5 text-xs sm:text-sm"
+          >
+            <FileText className="h-4 w-4 mr-2" /> Audit Logs
+          </Button>
+          <Button
             variant={activeTab === "users" ? "primary" : "ghost"}
             onClick={() => setActiveTab("users")}
-            className="rounded-full px-6"
+            className="rounded-full px-5 text-xs sm:text-sm"
           >
             <Users className="h-4 w-4 mr-2" /> Users
           </Button>
           <Button
             variant={activeTab === "visitors" ? "primary" : "ghost"}
             onClick={() => setActiveTab("visitors")}
-            className="rounded-full px-6"
+            className="rounded-full px-5 text-xs sm:text-sm"
           >
             <Globe className="h-4 w-4 mr-2" /> Visitors
-          </Button>
-          <Button
-            variant={activeTab === "logs" ? "primary" : "ghost"}
-            onClick={() => setActiveTab("logs")}
-            className="rounded-full px-6"
-          >
-            <FileText className="h-4 w-4 mr-2" /> Audit Logs
           </Button>
         </div>
       </section>
@@ -292,26 +384,182 @@ export function SecurityConsole({
       {!session.isFounder ? (
         <div className="rounded-2xl border border-dashed border-border bg-background/65 p-5 text-sm leading-6 text-text-secondary">
           <p className="font-semibold text-text-primary">Permission denied</p>
-          This account can use normal admin tools, but it cannot view security tables or grant admin rights.
+          This account can use normal admin tools, but it cannot view security audit tables or grant admin rights.
         </div>
+      ) : activeTab === "logs" ? (
+        /* ─── TAB 1: AUDIT LOGS ─────────────────────────────────────────────────── */
+        <section className="rounded-[1.4rem] border border-border bg-surface/82 p-5 shadow-xl shadow-text-primary/5 min-h-[500px]">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6">
+            <div className="flex items-center gap-2 border-b border-border">
+              {(["all", "roles"] as const).map((filter) => (
+                <button
+                  key={filter}
+                  onClick={() => {
+                    setLogFilter(filter);
+                    setLogPage(1);
+                  }}
+                  className={cn(
+                    "px-4 py-2 text-sm font-semibold capitalize border-b-2 transition-colors",
+                    logFilter === filter
+                      ? "border-text-primary text-text-primary"
+                      : "border-transparent text-text-secondary hover:text-text-primary"
+                  )}
+                >
+                  {filter === "all" ? "All Activity" : "Role Changes"}
+                </button>
+              ))}
+            </div>
+
+            {/* Refresh Button */}
+            <div className="flex items-center gap-2">
+              <Button
+                variant="secondary"
+                onClick={() => fetchLogs(logPage, logFilter)}
+                disabled={isLogsLoading}
+                className="h-9 px-3.5 text-xs font-medium"
+              >
+                <RefreshCw className={cn("h-3.5 w-3.5 mr-1.5", isLogsLoading && "animate-spin")} />
+                {isLogsLoading ? "Refreshing..." : "Refresh"}
+              </Button>
+            </div>
+          </div>
+
+          <div className="overflow-x-auto min-h-[400px]">
+            <table className="w-full min-w-[920px] border-collapse text-left text-sm">
+              <thead className="text-xs uppercase tracking-[0.16em] text-text-secondary">
+                <tr className="border-b border-border">
+                  <th className="py-3 pr-4">Time</th>
+                  <th className="py-3 pr-4">Actor</th>
+                  <th className="py-3 pr-4">Target / Action</th>
+                  <th className="py-3 pr-4">Details</th>
+                  <th className="py-3 pr-4">IP & Location</th>
+                </tr>
+              </thead>
+              <tbody className={cn("transition-opacity", isLogsLoading && "opacity-50")}>
+                {logs.map((log) => {
+                  const targetId = log.target_id ?? metadataText(log, "target_user_id");
+                  return (
+                    <tr key={log.id} className="border-b border-border/70 align-top">
+                      <td className="py-3 pr-4 text-text-secondary whitespace-nowrap text-xs">
+                        {formatDate(log.created_at)}
+                      </td>
+                      <td className="py-3 pr-4 text-text-primary">
+                        {log.actor_email ? (
+                          <span className="font-medium text-text-primary">{log.actor_email}</span>
+                        ) : (
+                          <div className="flex flex-col gap-1 items-start">
+                            <span className="inline-flex items-center gap-1 rounded-md bg-amber-500/10 px-2 py-0.5 text-xs text-amber-500 border border-amber-500/20 font-mono font-medium">
+                              Guest ({log.guest_visitor_name || (log.metadata?.guest_name as string) || "Visitor"})
+                            </span>
+                            {log.guest_visitor_id && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setSelectedVisitorId(log.guest_visitor_id!);
+                                  setActiveTab("visitors");
+                                }}
+                                className="text-[11px] text-accent-primary hover:underline font-normal cursor-pointer"
+                              >
+                                View activity →
+                              </button>
+                            )}
+                          </div>
+                        )}
+                      </td>
+                      <td className="py-3 pr-4">
+                        <p className="font-semibold text-text-primary">{actionLabel(log.action)}</p>
+                        {targetId && (
+                          <p className="mt-1 text-xs text-text-secondary">
+                            Target: {usersById[targetId]?.email ?? targetId}
+                          </p>
+                        )}
+                      </td>
+                      <td className="py-3 pr-4 text-text-secondary">
+                        <p className="truncate max-w-[200px]">
+                          {log.method ? `${log.method} ` : ""}
+                          {log.path ?? "-"}
+                        </p>
+                        {metadataText(log, "result") && (
+                          <p className="mt-1 text-xs font-medium">Result: {metadataText(log, "result")}</p>
+                        )}
+                        {metadataText(log, "album_name") && (
+                          <p className="mt-1 text-xs font-medium text-emerald-400">
+                            Album: {metadataText(log, "album_name")}
+                          </p>
+                        )}
+                        {metadataText(log, "failure_reason") && (
+                          <p className="mt-1 text-xs text-red-500">
+                            Error: {metadataText(log, "failure_reason")}
+                          </p>
+                        )}
+                      </td>
+                      <td className="py-3 pr-4 text-text-secondary font-mono text-[0.7rem]">
+                        {(log.metadata?.ip_info as Record<string, string> | undefined)?.city ||
+                        (log.metadata?.ip_info as Record<string, string> | undefined)?.country ? (
+                          <>
+                            <span className="block font-semibold text-text-primary">
+                              {(log.metadata?.ip_info as Record<string, string> | undefined)?.city
+                                ? `${decodeURIComponent(
+                                    (log.metadata?.ip_info as Record<string, string> | undefined)?.city ?? ""
+                                  )}, `
+                                : ""}
+                              {(log.metadata?.ip_info as Record<string, string> | undefined)?.country || ""}
+                            </span>
+                            <span className="text-xs">{log.ip_address}</span>
+                          </>
+                        ) : (
+                          log.ip_address ?? "-"
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+            {!logs.length && !isLogsLoading && (
+              <p className="rounded-2xl border border-dashed border-border bg-background/60 p-6 mt-4 text-sm text-text-secondary text-center">
+                No logs match the current filter.
+              </p>
+            )}
+          </div>
+
+          <div className="mt-6 flex justify-between items-center border-t border-border pt-4">
+            <p className="text-sm text-text-secondary">
+              Showing {(logPage - 1) * LOGS_LIMIT + 1} - {Math.min(logPage * LOGS_LIMIT, totalLogs)} of{" "}
+              {totalLogs} logs
+            </p>
+            <Pagination
+              page={logPage}
+              totalPages={Math.ceil(totalLogs / LOGS_LIMIT)}
+              onPageChange={setLogPage}
+              isLoading={isLogsLoading}
+            />
+          </div>
+        </section>
       ) : activeTab === "users" ? (
+        /* ─── TAB 2: USERS ──────────────────────────────────────────────────────── */
         <section className="rounded-[1.4rem] border border-border bg-surface/82 p-5 shadow-xl shadow-text-primary/5 min-h-[500px]">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between mb-6">
             <div className="flex items-center gap-2 border-b border-border">
-              {(["all", "admins", "blocked"] as const).map(filter => (
+              {(["all", "admins", "blocked"] as const).map((filter) => (
                 <button
                   key={filter}
-                  onClick={() => { setUserFilter(filter); setUserPage(1); }}
+                  onClick={() => {
+                    setUserFilter(filter);
+                    setUserPage(1);
+                  }}
                   className={cn(
                     "px-4 py-2 text-sm font-semibold capitalize border-b-2 transition-colors",
-                    userFilter === filter ? "border-text-primary text-text-primary" : "border-transparent text-text-secondary hover:text-text-primary"
+                    userFilter === filter
+                      ? "border-text-primary text-text-primary"
+                      : "border-transparent text-text-secondary hover:text-text-primary"
                   )}
                 >
                   {filter} Users
                 </button>
               ))}
             </div>
-            
+
             <div className="flex items-center gap-3 w-full lg:w-auto">
               <div className="relative min-w-0 flex-1 lg:w-64">
                 <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-secondary" />
@@ -319,14 +567,34 @@ export function SecurityConsole({
                   value={search}
                   onChange={(event) => setSearch(event.target.value)}
                   onKeyDown={(event) => {
-                    if (event.key === "Enter") void triggerUserSearch();
+                    if (event.key === "Enter") {
+                      setUserPage(1);
+                      fetchUsers(1, userFilter, search);
+                    }
                   }}
                   placeholder="Search users..."
-                  className="pl-9 h-10"
+                  className="pl-9 h-9 text-xs"
                 />
               </div>
-              <Button variant="secondary" onClick={triggerUserSearch} disabled={isUsersLoading}>
-                {isUsersLoading ? "Searching..." : "Search"}
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  setUserPage(1);
+                  fetchUsers(1, userFilter, search);
+                }}
+                disabled={isUsersLoading}
+                className="h-9 px-3 text-xs"
+              >
+                Search
+              </Button>
+              <Button
+                variant="secondary"
+                onClick={() => fetchUsers(userPage, userFilter, search)}
+                disabled={isUsersLoading}
+                className="h-9 px-3 text-xs"
+              >
+                <RefreshCw className={cn("h-3.5 w-3.5 mr-1.5", isUsersLoading && "animate-spin")} />
+                Refresh
               </Button>
             </div>
           </div>
@@ -338,7 +606,7 @@ export function SecurityConsole({
                   <th className="py-3 pr-4">User</th>
                   <th className="py-3 pr-4">Role</th>
                   <th className="py-3 pr-4">Status</th>
-                  <th className="py-3 pr-4">Nguồn</th>
+                  <th className="py-3 pr-4">Source</th>
                   <th className="py-3 pr-4">Last seen</th>
                   <th className="py-3 pr-4 text-right">Action</th>
                 </tr>
@@ -349,7 +617,7 @@ export function SecurityConsole({
                   return (
                     <tr key={user.user_id} className="border-b border-border/70 align-top">
                       <td className="py-3 pr-4">
-                        <button 
+                        <button
                           onClick={() => setSelectedUserId(user.user_id)}
                           className="font-semibold text-text-primary hover:text-accent text-left transition-colors cursor-pointer"
                         >
@@ -359,7 +627,12 @@ export function SecurityConsole({
                         <p className="mt-1 font-mono text-[0.68rem] text-text-secondary">{user.user_id}</p>
                       </td>
                       <td className="py-3 pr-4">
-                        <span className={cn("inline-flex rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em]", roleBadgeClass(role))}>
+                        <span
+                          className={cn(
+                            "inline-flex rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em]",
+                            roleBadgeClass(role)
+                          )}
+                        >
                           {roleLabel(role)}
                         </span>
                       </td>
@@ -374,12 +647,17 @@ export function SecurityConsole({
                           </span>
                         )}
                         {user.blocked_reason && (
-                          <p className="mt-1 max-w-[12rem] truncate text-[0.7rem] text-text-secondary" title={user.blocked_reason}>
+                          <p
+                            className="mt-1 max-w-[12rem] truncate text-[0.7rem] text-text-secondary"
+                            title={user.blocked_reason}
+                          >
                             {user.blocked_reason}
                           </p>
                         )}
                       </td>
-                      <td className="py-3 pr-4 text-text-secondary capitalize">{user.registration_source || "-"}</td>
+                      <td className="py-3 pr-4 text-text-secondary capitalize">
+                        {user.registration_source || "-"}
+                      </td>
                       <td className="py-3 pr-4 text-text-secondary">{formatDate(user.last_seen_at)}</td>
                       <td className="py-3 pr-4">
                         <div className="flex justify-end gap-2">
@@ -396,21 +674,38 @@ export function SecurityConsole({
                             className="w-32 h-8 text-xs"
                           />
                           {user.is_blocked ? (
-                            <Button variant="secondary" onClick={() => updateUser(user.user_id, false)} className="h-8 px-3 text-xs">
+                            <Button
+                              variant="secondary"
+                              onClick={() => updateUser(user.user_id, false)}
+                              className="h-8 px-3 text-xs"
+                            >
                               Unblock
                             </Button>
                           ) : (
-                            <Button variant="secondary" onClick={() => updateUser(user.user_id, true)} disabled={user.user_id === session.userId || role === "founder"} className="h-8 px-3 text-xs">
+                            <Button
+                              variant="secondary"
+                              onClick={() => updateUser(user.user_id, true)}
+                              disabled={user.user_id === session.userId || role === "founder"}
+                              className="h-8 px-3 text-xs"
+                            >
                               Block
                             </Button>
                           )}
-                          
+
                           {role === "user" || role === "guest" ? (
-                            <Button variant="secondary" onClick={() => setRoleAction({ type: "grant", user })} className="h-8 px-3 text-xs">
+                            <Button
+                              variant="secondary"
+                              onClick={() => setRoleAction({ type: "grant", user })}
+                              className="h-8 px-3 text-xs"
+                            >
                               <ShieldCheck className="h-3 w-3 mr-1.5" /> Grant
                             </Button>
                           ) : role === "admin" ? (
-                            <Button variant="secondary" onClick={() => setRoleAction({ type: "revoke", user })} className="h-8 px-3 text-xs">
+                            <Button
+                              variant="secondary"
+                              onClick={() => setRoleAction({ type: "revoke", user })}
+                              className="h-8 px-3 text-xs"
+                            >
                               <UserCog className="h-3 w-3 mr-1.5" /> Revoke
                             </Button>
                           ) : (
@@ -431,136 +726,44 @@ export function SecurityConsole({
               </p>
             )}
           </div>
-          
-          <div className="mt-6 flex justify-between items-center border-t border-border pt-4">
-            <p className="text-sm text-text-secondary">Showing {(userPage - 1) * USERS_LIMIT + 1} - {Math.min(userPage * USERS_LIMIT, totalUsers)} of {totalUsers} users</p>
-            <Pagination page={userPage} totalPages={Math.ceil(totalUsers / USERS_LIMIT)} onPageChange={setUserPage} isLoading={isUsersLoading} />
-          </div>
-        </section>
-      ) : activeTab === "logs" ? (
-        <section className="rounded-[1.4rem] border border-border bg-surface/82 p-5 shadow-xl shadow-text-primary/5 min-h-[500px]">
-           <div className="flex items-center gap-2 border-b border-border mb-6">
-            {(["all", "roles"] as const).map(filter => (
-              <button
-                key={filter}
-                onClick={() => { setLogFilter(filter); setLogPage(1); }}
-                className={cn(
-                  "px-4 py-2 text-sm font-semibold capitalize border-b-2 transition-colors",
-                  logFilter === filter ? "border-text-primary text-text-primary" : "border-transparent text-text-secondary hover:text-text-primary"
-                )}
-              >
-                {filter === "all" ? "All Activity" : "Role Changes"}
-              </button>
-            ))}
-          </div>
 
-          <div className="overflow-x-auto min-h-[400px]">
-            <table className="w-full min-w-[920px] border-collapse text-left text-sm">
-              <thead className="text-xs uppercase tracking-[0.16em] text-text-secondary">
-                <tr className="border-b border-border">
-                  <th className="py-3 pr-4">Time</th>
-                  <th className="py-3 pr-4">Actor</th>
-                  <th className="py-3 pr-4">Target / Action</th>
-                  <th className="py-3 pr-4">Details</th>
-                  <th className="py-3 pr-4">IP</th>
-                </tr>
-              </thead>
-              <tbody className={cn("transition-opacity", isLogsLoading && "opacity-50")}>
-                {logs.map((log) => {
-                  const targetId = log.target_id ?? metadataText(log, "target_user_id");
-                  return (
-                    <tr key={log.id} className="border-b border-border/70 align-top">
-                      <td className="py-3 pr-4 text-text-secondary whitespace-nowrap">
-                        {formatDate(log.created_at)}
-                      </td>
-                      <td className="py-3 pr-4 text-text-primary">
-                        {log.actor_email ? (
-                          <span className="font-medium text-text-primary">{log.actor_email}</span>
-                        ) : (
-                          <div className="flex flex-col gap-1 items-start">
-                            <span className="inline-flex items-center gap-1 rounded-md bg-amber-500/10 px-2 py-0.5 text-xs text-amber-500 border border-amber-500/20 font-mono font-medium">
-                              Guest ({log.guest_visitor_name || (log.metadata?.guest_name as string) || "Visitor"})
-                            </span>
-                            {log.guest_visitor_id && (
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setSelectedVisitorId(log.guest_visitor_id!);
-                                  setActiveTab("visitors");
-                                }}
-                                className="text-[11px] text-accent-primary hover:underline font-normal"
-                              >
-                                View activity →
-                              </button>
-                            )}
-                          </div>
-                        )}
-                      </td>
-                      <td className="py-3 pr-4">
-                        <p className="font-semibold text-text-primary">{actionLabel(log.action)}</p>
-                        {targetId && (
-                           <p className="mt-1 text-xs text-text-secondary">Target: {usersById[targetId]?.email ?? targetId}</p>
-                        )}
-                      </td>
-                      <td className="py-3 pr-4 text-text-secondary">
-                        <p className="truncate max-w-[200px]">
-                          {log.method ? `${log.method} ` : ""}
-                          {log.path ?? "-"}
-                        </p>
-                        {metadataText(log, "result") && (
-                           <p className="mt-1 text-xs font-medium">Result: {metadataText(log, "result")}</p>
-                        )}
-                        {metadataText(log, "album_name") && (
-                           <p className="mt-1 text-xs font-medium text-emerald-400">Album: {metadataText(log, "album_name")}</p>
-                        )}
-                        {metadataText(log, "failure_reason") && (
-                           <p className="mt-1 text-xs text-red-500">Error: {metadataText(log, "failure_reason")}</p>
-                        )}
-                      </td>
-                      <td className="py-3 pr-4 text-text-secondary font-mono text-[0.7rem]">
-                        {(log.metadata?.ip_info as Record<string, string> | undefined)?.city || (log.metadata?.ip_info as Record<string, string> | undefined)?.country ? (
-                          <>
-                            <span className="block font-semibold text-text-primary">
-                              {(log.metadata?.ip_info as Record<string, string> | undefined)?.city ? `${decodeURIComponent((log.metadata?.ip_info as Record<string, string> | undefined)?.city ?? "")}, ` : ""}
-                              {(log.metadata?.ip_info as Record<string, string> | undefined)?.country || ""}
-                            </span>
-                            <span className="text-xs">{log.ip_address}</span>
-                          </>
-                        ) : (
-                          log.ip_address ?? "-"
-                        )}
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-             {!logs.length && !isLogsLoading && (
-              <p className="rounded-2xl border border-dashed border-border bg-background/60 p-6 mt-4 text-sm text-text-secondary text-center">
-                No logs match the current filter.
-              </p>
-            )}
-          </div>
-          
-           <div className="mt-6 flex justify-between items-center border-t border-border pt-4">
-            <p className="text-sm text-text-secondary">Showing {(logPage - 1) * LOGS_LIMIT + 1} - {Math.min(logPage * LOGS_LIMIT, totalLogs)} of {totalLogs} logs</p>
-            <Pagination page={logPage} totalPages={Math.ceil(totalLogs / LOGS_LIMIT)} onPageChange={setLogPage} isLoading={isLogsLoading} />
+          <div className="mt-6 flex justify-between items-center border-t border-border pt-4">
+            <p className="text-sm text-text-secondary">
+              Showing {(userPage - 1) * USERS_LIMIT + 1} - {Math.min(userPage * USERS_LIMIT, totalUsers)} of{" "}
+              {totalUsers} users
+            </p>
+            <Pagination
+              page={userPage}
+              totalPages={Math.ceil(totalUsers / USERS_LIMIT)}
+              onPageChange={setUserPage}
+              isLoading={isUsersLoading}
+            />
           </div>
         </section>
       ) : activeTab === "visitors" ? (
+        /* ─── TAB 3: VISITORS ───────────────────────────────────────────────────── */
         <section className="rounded-[1.4rem] border border-border bg-surface/82 p-5 shadow-xl shadow-text-primary/5 min-h-[500px]">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between mb-6">
             <div className="flex items-center gap-2 border-b border-border">
-              {(["all", "active", "linked"] as const).map(filter => (
+              {(["all", "active", "linked"] as const).map((filter) => (
                 <button
                   key={filter}
-                  onClick={() => { setVisitorFilter(filter); setVisitorPage(1); }}
+                  onClick={() => {
+                    setVisitorFilter(filter);
+                    setVisitorPage(1);
+                  }}
                   className={cn(
                     "px-4 py-2 text-sm font-semibold capitalize border-b-2 transition-colors",
-                    visitorFilter === filter ? "border-text-primary text-text-primary" : "border-transparent text-text-secondary hover:text-text-primary"
+                    visitorFilter === filter
+                      ? "border-text-primary text-text-primary"
+                      : "border-transparent text-text-secondary hover:text-text-primary"
                   )}
                 >
-                  {filter === "active" ? "Active (7d)" : filter === "linked" ? "Linked to Account" : "All Visitors"}
+                  {filter === "active"
+                    ? "Active (7d)"
+                    : filter === "linked"
+                    ? "Linked to Account"
+                    : "All Visitors"}
                 </button>
               ))}
             </div>
@@ -572,20 +775,42 @@ export function SecurityConsole({
                   value={visitorSearch}
                   onChange={(e) => setVisitorSearch(e.target.value)}
                   placeholder="Search visitor ID, city..."
-                  className="pl-9 text-xs"
+                  className="pl-9 h-9 text-xs"
                   onKeyDown={(e) => {
-                    if (e.key === "Enter") setVisitorPage(1);
+                    if (e.key === "Enter") {
+                      setVisitorPage(1);
+                      fetchVisitors(1, visitorFilter, visitorSearch);
+                    }
                   }}
                 />
               </div>
-              <Button variant="secondary" className="h-8 px-3 text-xs" onClick={() => setVisitorPage(1)} disabled={isVisitorsLoading}>
+              <Button
+                variant="secondary"
+                className="h-9 px-3 text-xs"
+                onClick={() => {
+                  setVisitorPage(1);
+                  fetchVisitors(1, visitorFilter, visitorSearch);
+                }}
+                disabled={isVisitorsLoading}
+              >
                 Search
+              </Button>
+              <Button
+                variant="secondary"
+                className="h-9 px-3 text-xs"
+                onClick={() => fetchVisitors(visitorPage, visitorFilter, visitorSearch)}
+                disabled={isVisitorsLoading}
+              >
+                <RefreshCw
+                  className={cn("h-3.5 w-3.5 mr-1.5", isVisitorsLoading && "animate-spin")}
+                />
+                Refresh
               </Button>
             </div>
           </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs border-collapse">
+          <div className="overflow-x-auto min-h-[400px]">
+            <table className="w-full text-left text-xs border-collapse min-w-[850px]">
               <thead>
                 <tr className="border-b border-border text-text-secondary">
                   <th className="py-3 pl-4">Visitor ID</th>
@@ -596,13 +821,20 @@ export function SecurityConsole({
                   <th className="py-3 pr-4">Account Status</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-border/50">
+              <tbody
+                className={cn(
+                  "divide-y divide-border/50 transition-opacity",
+                  isVisitorsLoading && "opacity-50"
+                )}
+              >
                 {visitors.map((visitor) => {
                   const meta = visitor.metadata ?? {};
                   const device = typeof meta.device === "string" ? meta.device : null;
                   const browser = typeof meta.browser === "string" ? meta.browser : null;
                   const deviceStr = [device, browser].filter(Boolean).join(" • ") || "Unknown Device";
-                  const locationStr = [visitor.city, visitor.country_code].filter(Boolean).join(", ") || "Unknown Location";
+                  const locationStr =
+                    [visitor.city, visitor.country_code].filter(Boolean).join(", ") ||
+                    "Unknown Location";
 
                   return (
                     <tr
@@ -621,7 +853,9 @@ export function SecurityConsole({
                           {deviceStr}
                         </span>
                         {Boolean(meta.in_app) && (
-                          <span className="text-[11px] text-text-muted block">In-App: {String(meta.in_app)}</span>
+                          <span className="text-[11px] text-text-muted block">
+                            In-App: {String(meta.in_app)}
+                          </span>
                         )}
                       </td>
                       <td className="py-3 text-text-secondary">
@@ -629,7 +863,9 @@ export function SecurityConsole({
                           <Globe className="w-3.5 h-3.5 text-text-muted" />
                           {locationStr}
                         </span>
-                        <span className="font-mono text-[11px] text-text-muted block">{visitor.ip_masked || "No IP"}</span>
+                        <span className="font-mono text-[11px] text-text-muted block">
+                          {visitor.ip_masked || "No IP"}
+                        </span>
                       </td>
                       <td className="py-3 text-text-secondary">
                         <div className="flex items-center gap-2">
@@ -651,7 +887,9 @@ export function SecurityConsole({
                             {visitor.linked_user_email}
                           </span>
                         ) : (
-                          <span className="text-[11px] text-text-muted">Guest</span>
+                          <span className="inline-flex items-center text-[11px] px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 font-mono font-medium">
+                            Guest
+                          </span>
                         )}
                       </td>
                     </tr>
@@ -668,9 +906,15 @@ export function SecurityConsole({
 
           <div className="mt-6 flex justify-between items-center border-t border-border pt-4">
             <p className="text-sm text-text-secondary">
-              Showing {visitors.length > 0 ? (visitorPage - 1) * 30 + 1 : 0} - {Math.min(visitorPage * 30, totalVisitors)} of {totalVisitors} visitors
+              Showing {visitors.length > 0 ? (visitorPage - 1) * VISITORS_LIMIT + 1 : 0} -{" "}
+              {Math.min(visitorPage * VISITORS_LIMIT, totalVisitors)} of {totalVisitors} visitors
             </p>
-            <Pagination page={visitorPage} totalPages={Math.ceil(totalVisitors / 30) || 1} onPageChange={setVisitorPage} isLoading={isVisitorsLoading} />
+            <Pagination
+              page={visitorPage}
+              totalPages={Math.ceil(totalVisitors / VISITORS_LIMIT) || 1}
+              onPageChange={setVisitorPage}
+              isLoading={isVisitorsLoading}
+            />
           </div>
         </section>
       ) : null}
@@ -708,10 +952,7 @@ export function SecurityConsole({
       </Modal>
 
       {selectedUserId && (
-        <UserActivityPanel 
-          userId={selectedUserId} 
-          onClose={() => setSelectedUserId(null)} 
-        />
+        <UserActivityPanel userId={selectedUserId} onClose={() => setSelectedUserId(null)} />
       )}
 
       {selectedVisitorId && (

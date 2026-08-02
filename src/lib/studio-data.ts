@@ -6,6 +6,7 @@ import { supabase } from "@/lib/supabase";
 import type {
   Album,
   AuditLog,
+  GuestVisitor,
   PublicSession,
   StudioCommentItem,
   StudioMediaItem,
@@ -94,24 +95,118 @@ export async function getStudioComments(limit = 200): Promise<StudioCommentItem[
   return (data ?? []).map((row) => commentWithAlbum(row));
 }
 
+export async function getStudioVisitors(limit = 30) {
+  const { data: rawVisitors, count } = await supabase
+    .from("guest_visitors")
+    .select("*", { count: "exact" })
+    .order("last_seen_at", { ascending: false })
+    .limit(limit);
+
+  const visitors = (rawVisitors ?? []) as GuestVisitor[];
+  if (visitors.length === 0) return { visitors: [], count: 0 };
+
+  const visitorIds = visitors.map((v) => v.id);
+  const linkedUserIds = visitors
+    .map((v) => v.linked_user_id)
+    .filter((id): id is string => Boolean(id));
+
+  const emailMap = new Map<string, string>();
+  if (linkedUserIds.length > 0) {
+    const { data: userProfiles } = await supabase
+      .from("user_profiles")
+      .select("user_id, email")
+      .in("user_id", linkedUserIds);
+
+    userProfiles?.forEach((u) => {
+      if (u.user_id && u.email) emailMap.set(u.user_id, u.email);
+    });
+  }
+
+  const statsMap = new Map<
+    string,
+    { viewCount: number; downloadCount: number; albumIds: Set<string> }
+  >();
+
+  const { data: activities } = await supabase
+    .from("guest_album_activity")
+    .select("guest_visitor_id, event_type, album_id")
+    .in("guest_visitor_id", visitorIds);
+
+  activities?.forEach((act) => {
+    let stats = statsMap.get(act.guest_visitor_id);
+    if (!stats) {
+      stats = { viewCount: 0, downloadCount: 0, albumIds: new Set() };
+      statsMap.set(act.guest_visitor_id, stats);
+    }
+    if (act.event_type === "album_viewed") {
+      stats.viewCount++;
+    } else if (act.event_type.includes("download")) {
+      stats.downloadCount++;
+    }
+    if (act.album_id) {
+      stats.albumIds.add(act.album_id);
+    }
+  });
+
+  const enrichedVisitors = visitors.map((v) => {
+    const stats = statsMap.get(v.id) ?? { viewCount: 0, downloadCount: 0, albumIds: new Set() };
+    return {
+      ...v,
+      linked_user_email: v.linked_user_id ? (emailMap.get(v.linked_user_id) ?? null) : null,
+      view_count: stats.viewCount,
+      download_count: stats.downloadCount,
+      album_count: stats.albumIds.size,
+    };
+  });
+
+  return { visitors: enrichedVisitors, count: count ?? 0 };
+}
+
 export async function getStudioUsersAndLogs() {
   noStore();
-  const [{ users, count }, { data: logs, count: countLogs }, roleLogs] = await Promise.all([
+  const [{ users, count }, { data: logs, count: countLogs }, roleLogs, { visitors, count: countVisitors }] = await Promise.all([
     listAdminUsers(supabase, "", 1, 30, "all"),
     supabase
       .from("audit_logs")
       .select("*", { count: "exact" })
       .order("created_at", { ascending: false })
-      .limit(30),
+      .limit(50),
     getRoleAuditLogs(supabase, 30),
+    getStudioVisitors(30),
   ]);
+
+  const guestIds = Array.from(
+    new Set((logs ?? []).map((l: { guest_visitor_id?: string | null }) => l.guest_visitor_id).filter(Boolean))
+  ) as string[];
+  let guestMap: Record<string, string> = {};
+  if (guestIds.length > 0) {
+    const { data: guests } = await supabase
+      .from("guest_visitors")
+      .select("id, visitor_name")
+      .in("id", guestIds);
+    if (guests) {
+      guestMap = guests.reduce((acc, g) => {
+        acc[g.id] = g.visitor_name;
+        return acc;
+      }, {} as Record<string, string>);
+    }
+  }
+
+  const enrichedLogs = (logs ?? []).map((log: Record<string, any>) => ({
+    ...log,
+    guest_visitor_name: log.guest_visitor_id
+      ? guestMap[log.guest_visitor_id] ?? (log.metadata?.guest_name as string | undefined) ?? null
+      : (log.metadata?.guest_name as string | undefined) ?? null,
+  })) as AuditLog[];
 
   return {
     users,
     totalUsers: count,
-    logs: (logs ?? []) as AuditLog[],
+    logs: enrichedLogs,
     totalLogs: countLogs ?? 0,
     roleLogs,
+    visitors,
+    totalVisitors: countVisitors,
   };
 }
 
