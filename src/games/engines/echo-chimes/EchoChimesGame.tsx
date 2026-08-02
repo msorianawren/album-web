@@ -151,6 +151,7 @@ export default function EchoChimesGame({
   const [status, setStatus] = useState<"ready" | "running" | "paused" | "complete">("ready");
   const [score, setScore] = useState(0);
   const [completion, setCompletion] = useState<FinalizeGameSessionResponse | null>(null);
+  const [didNotQualify, setDidNotQualify] = useState(false);
   const [completionError, setCompletionError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   
@@ -241,6 +242,7 @@ export default function EchoChimesGame({
 
         if (stateRef.current.complete) {
           runtime.pause();
+          setDidNotQualify(stateRef.current.score < ECHO_REWARD_TARGET);
           setStatus("complete");
           onEngineStatusChange?.("paused");
         }
@@ -300,6 +302,7 @@ export default function EchoChimesGame({
     
     if (status === "complete" || status === "ready") {
       setCompletion(null);
+      setDidNotQualify(false);
       setCompletionError(null);
       setScore(0);
       actionRef.current = [];
@@ -360,6 +363,10 @@ export default function EchoChimesGame({
 
   useEffect(() => {
     if (status === "complete" && sessionRef.current && !completion && !submitting) {
+      if (stateRef.current.score < ECHO_REWARD_TARGET) {
+        sessionRef.current = null;
+        return;
+      }
       setSubmitting(true);
       const session = sessionRef.current;
       const trace: GameReplayTrace = {
@@ -404,7 +411,7 @@ export default function EchoChimesGame({
       title="Echo Chimes"
       status={status}
       score={String(score)}
-      detail={`Listen to ${ECHO_REWARD_TARGET} wind chimes and repeat their delicate melody. Keyboard players can use keys 1 through 8.`}
+      detail={`Complete a ${ECHO_REWARD_TARGET}-note melody to earn Wren Feathers. Keyboard players can use keys 1 through 8.`}
       onStart={start}
       onPause={pause}
       onRestart={restart}
@@ -423,6 +430,11 @@ export default function EchoChimesGame({
       {completion && completion.rewardGranted === 0 && (
         <div className="mt-2 rounded-xl bg-surface/50 p-4 text-center text-sm text-text-secondary">
           Target of {ECHO_REWARD_TARGET} sequence length not reached. No feathers awarded.
+        </div>
+      )}
+      {didNotQualify && (
+        <div className="mt-2 rounded-xl bg-surface/50 p-4 text-center text-sm text-text-secondary">
+          Complete a {ECHO_REWARD_TARGET}-note melody to earn Wren Feathers.
         </div>
       )}
       {completionError && (

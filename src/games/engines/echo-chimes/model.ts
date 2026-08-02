@@ -12,7 +12,7 @@ export type EchoChimesState = {
 };
 
 export const ECHO_CHIME_COUNT = 8;
-export const ECHO_REWARD_TARGET = 8;
+export const ECHO_REWARD_TARGET = 3;
 
 export function createEchoChimesState(seed: string): EchoChimesState {
   const state: EchoChimesState = {

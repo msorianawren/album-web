@@ -19,7 +19,7 @@ const difficulty: GameDifficulty = {
   key: "standard",
   label: "Standard",
   ordinal: 0,
-  config: { targetSequenceLength: 8 },
+  config: { targetSequenceLength: 3 },
 };
 
 function createRewardTrace(seed: string): GameReplayTrace {
@@ -35,16 +35,16 @@ function createRewardTrace(seed: string): GameReplayTrace {
     stepEchoChimes(state);
   }
 
-  assert.equal(state.score, 8);
+  assert.equal(state.score, 3);
   assert.equal(state.complete, true);
   return { formatVersion: 1, engineVersion: "echo-chimes-v1", seed, fixedStepMs: 1000 / 60, actions };
 }
 
 describe("Echo Chimes verifier", () => {
-  it("awards a verified score after the eighth completed chime sequence", () => {
+  it("awards a verified score after the third completed chime sequence", () => {
     const result = verifyEchoChimes(version, difficulty, createRewardTrace("echo-reward-seed"));
 
     assert.equal(result.valid, true);
-    assert.equal(result.score, 8);
+    assert.equal(result.score, 3);
   });
 });
