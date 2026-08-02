@@ -224,6 +224,7 @@ export default function WrenFlightGame({
       stepMs,
       targetRenderFps,
       onTick(tick) {
+        if (stateRef.current.complete) return;
         // deep clone state for interpolation
         prevStateRef.current = {
           ...stateRef.current,
@@ -387,7 +388,7 @@ export default function WrenFlightGame({
         .then(async (res) => {
           const json = await res.json().catch(() => null);
           if (!res.ok || !json?.data) {
-            throw new Error(json?.error?.message ?? "Unable to award Wren Feathers for this session.");
+            throw new Error(json?.message ?? "Unable to award Wren Feathers for this session.");
           }
           return json;
         })

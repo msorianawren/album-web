@@ -72,7 +72,10 @@ export function createFixedStepRuntime(options: FixedStepRuntimeOptions) {
     if (previousTimestamp === null) previousTimestamp = timestamp;
     const advance = clock.advance(timestamp - previousTimestamp);
     previousTimestamp = timestamp;
-    advance.ticks.forEach(options.onTick);
+    for (const tick of advance.ticks) {
+      if (!running) break;
+      options.onTick(tick);
+    }
     if (
       previousRenderTimestamp === null
       || timestamp - previousRenderTimestamp >= renderIntervalMs - 0.5
