@@ -163,12 +163,11 @@ export function StoryPlayer({
           <video
             key={current.id}
             ref={videoRef}
-            src={current.video_url}
+            src={current.video_url.includes("?") ? current.video_url : `${current.video_url}?v=2`}
             poster={current.poster_url}
             controls
             playsInline
             {...({ "webkit-playsinline": "true" } as Record<string, string>)}
-            crossOrigin="anonymous"
             preload="auto"
             autoPlay
             onEnded={() => { if (currentIndex < items.length - 1) next(); }}
