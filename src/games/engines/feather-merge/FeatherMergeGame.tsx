@@ -373,7 +373,7 @@ export default function FeatherMergeGame({
         </div>
 
         {/* 4x4 Grid Board */}
-        <div className="relative aspect-square w-full max-w-[400px] sm:max-w-[420px] overflow-hidden rounded-[1.75rem] bg-gradient-to-br from-[#1d2d44] to-[#0d1321] shadow-2xl border border-white/10 select-none touch-none">
+        <div className="relative isolate z-0 aspect-square w-full max-w-[400px] sm:max-w-[420px] overflow-hidden rounded-[1.75rem] bg-gradient-to-br from-[#1d2d44] to-[#0d1321] shadow-2xl border border-white/10 select-none touch-none">
           <div className="absolute inset-[8%] rounded-[4.5%] bg-[rgba(255,255,255,.05)] shadow-inner">
             {/* Background grid */}
             {Array.from({ length: 16 }).map((_, index) => {
@@ -422,7 +422,7 @@ export default function FeatherMergeGame({
                     color: [8, 16, 512, 1024].includes(cell.value) ? "#f8f9fa" : "#1d2d44",
                     fontSize:
                       cell.value >= 1000 ? "1.4rem" : cell.value >= 100 ? "1.75rem" : "2.15rem",
-                    zIndex: cell.value,
+                    zIndex: Math.min(15, Math.floor(Math.log2(cell.value || 2))),
                     boxShadow:
                       cell.value >= 128
                         ? `0 0 15px ${palette[cell.value]}80, inset 0 0 10px rgba(255,255,255,0.5)`
@@ -459,7 +459,7 @@ export default function FeatherMergeGame({
 
         {/* State Overlay Modal (Ready / Paused / Complete) */}
         {status !== "running" && (
-          <div className="absolute inset-0 z-30 flex items-center justify-center bg-background/75 backdrop-blur-[6px] p-6">
+          <div className="absolute inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-md p-6">
             <div className="w-full max-w-sm rounded-2xl border border-[var(--glass-border)] bg-surface/90 p-6 text-center shadow-2xl backdrop-blur-md animate-in fade-in zoom-in-95 duration-200">
               <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-accent/15 text-accent">
                 {status === "complete" ? (
