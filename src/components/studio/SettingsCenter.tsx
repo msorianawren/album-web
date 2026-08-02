@@ -1000,6 +1000,14 @@ export function SettingsCenter({
           </div>
 
           <div className="mt-4 grid gap-4 border-t border-border pt-4">
+            <h3 className="font-serif text-xl text-text-primary">Guest Visitors & Access Gate</h3>
+            <div className="grid gap-4 md:grid-cols-2">
+              <Toggle label="Require login to browse albums" description="Khách vãng lai bắt buộc đăng nhập để xem bất kỳ album nào." checked={Boolean(settings.advanced_settings?.require_login_to_browse)} onChange={(value) => updateAdvanced("require_login_to_browse", value)} />
+              <Toggle label="Track guest visitor sessions" description="Gán Visitor ID và ghi nhận lịch sử cho khách vãng lai." checked={settings.advanced_settings?.track_guest_sessions !== false} onChange={(value) => updateAdvanced("track_guest_sessions", value)} />
+            </div>
+          </div>
+
+          <div className="mt-4 grid gap-4 border-t border-border pt-4">
             <h3 className="font-serif text-xl text-text-primary">User Activity Tracking</h3>
             <div className="grid gap-4 md:grid-cols-2">
               <Toggle label="Track authenticated album views" checked={settings.advanced_settings?.track_album_views ?? true} onChange={(value) => updateAdvanced("track_album_views", value)} />
@@ -1410,10 +1418,13 @@ function NumberField({ label, value, min, max, onChange }: { label: string; valu
   );
 }
 
-function Toggle({ label, checked, onChange }: { label: string; checked: boolean; onChange: (value: boolean) => void }) {
+function Toggle({ label, description, checked, onChange }: { label: string; description?: string; checked: boolean; onChange: (value: boolean) => void }) {
   return (
     <label className="flex items-center justify-between gap-4 rounded-[1.1rem] border border-border bg-background/55 p-4">
-      <span className="text-sm font-medium text-text-primary">{label}</span>
+      <div>
+        <span className="text-sm font-medium text-text-primary block">{label}</span>
+        {description && <span className="text-xs text-text-secondary mt-0.5 block">{description}</span>}
+      </div>
       <input type="checkbox" checked={checked} onChange={(event) => onChange(event.target.checked)} className="h-5 w-5 accent-[var(--accent)]" />
     </label>
   );

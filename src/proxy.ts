@@ -304,7 +304,10 @@ export async function proxy(request: NextRequest, event: NextFetchEvent) {
     return apiError("FORBIDDEN", "Cross-origin mutation requests are not allowed.", 403);
   }
 
-  if (isPublicPath(pathname)) return NextResponse.next();
+  const isLoginGateActive = request.cookies.get("_cfg_login_gate")?.value === "1";
+  const isAlbumRoute = pathname.startsWith("/albums") || pathname.startsWith("/api/albums");
+
+  if (isPublicPath(pathname) && (!isLoginGateActive || !isAlbumRoute)) return NextResponse.next();
 
   const authResolution = await resolveAuthenticatedUser(request);
 

@@ -10,6 +10,7 @@ export async function logAuditEvent({
   targetType,
   targetId,
   metadata = {},
+  guestVisitorId,
 }: {
   request?: NextRequest;
   session: PublicSession;
@@ -17,6 +18,7 @@ export async function logAuditEvent({
   targetType?: string;
   targetId?: string;
   metadata?: Record<string, unknown>;
+  guestVisitorId?: string | null;
 }) {
   const ipInfo = getRequestIpWhois(request);
 
@@ -30,6 +32,7 @@ export async function logAuditEvent({
     method: request?.method,
     ip_address: ipInfo?.ip ?? null,
     user_agent: request?.headers.get("user-agent"),
+    guest_visitor_id: guestVisitorId ?? null,
     metadata: {
       ...metadata,
       ip_info: ipInfo,

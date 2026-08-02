@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { getPublicSession } from "@/lib/auth";
 import { logAuditEvent } from "@/lib/audit";
-import { recordUserAlbumActivity } from "@/lib/user-activity";
+import { recordUserAlbumActivity, recordGuestAlbumActivity } from "@/lib/user-activity";
 import { apiError, toServerError } from "@/lib/errors";
 import { extensionFromUrlOrMime, safeFilename } from "@/lib/filenames";
 import { enforceRateLimit } from "@/lib/security-rate-limit";
@@ -14,6 +14,8 @@ import {
   isExpectedMediaContentType,
   type MediaDeliveryTarget,
 } from "@/lib/media/delivery";
+import { getOrCreateGuestVisitor, isGuestTrackingEnabled } from "@/lib/guest-visitor";
+
 
 export const runtime = "nodejs";
 
@@ -127,28 +129,42 @@ export async function GET(request: NextRequest, { params }: MediaDownloadProps) 
       media.title ?? media.original_filename ?? media.id,
     )}.${extension}`;
 
-    await logAuditEvent({
-      request,
-      session,
-      action: "download_media",
-      targetType: "media",
-      targetId: media.id,
-      metadata: {
-        albumId: album.id,
-        variant: useOriginal ? "source" : "public-processed",
-        album_name: album.title,
-      },
-    });
+    const advanced = settings.advanced_settings as Record<string, unknown> | undefined;
 
-    await recordUserAlbumActivity({
-      request,
-      session,
-      albumId: album.id,
-      mediaId: media.id,
-      eventType: "album_downloaded_media",
-      albumStatus: album.status,
-      metadata: { variant: useOriginal ? "source" : "public-processed" },
-    });
+    if (session.userId) {
+      // — Authenticated user tracking —
+      await Promise.all([
+        logAuditEvent({
+          request, session, action: "download_media",
+          targetType: "media", targetId: media.id,
+          metadata: { albumId: album.id, variant: useOriginal ? "source" : "public-processed", album_name: album.title },
+        }),
+        recordUserAlbumActivity({
+          request, session, albumId: album.id, mediaId: media.id,
+          eventType: "album_downloaded_media", albumStatus: album.status,
+          metadata: { variant: useOriginal ? "source" : "public-processed" },
+        }),
+      ]);
+    } else if (isGuestTrackingEnabled(advanced)) {
+      // — Guest tracking (fire-and-forget) —
+      const guest = await getOrCreateGuestVisitor(request);
+      if (guest) {
+        void Promise.all([
+          logAuditEvent({
+            request, session, action: "download_media",
+            targetType: "media", targetId: media.id,
+            guestVisitorId: guest.id,
+            metadata: { albumId: album.id, album_name: album.title, guest_name: guest.visitor_name },
+          }),
+          recordGuestAlbumActivity({
+            guestVisitorId: guest.id, albumId: album.id, mediaId: media.id,
+            eventType: "album_downloaded_media", albumStatus: album.status,
+            metadata: { variant: useOriginal ? "source" : "public-processed" },
+            advancedSettings: advanced,
+          }),
+        ]);
+      }
+    }
 
     const headers = new Headers({
         "Content-Type": contentType,
@@ -158,9 +174,7 @@ export async function GET(request: NextRequest, { params }: MediaDownloadProps) 
       });
     if (contentLength !== undefined) headers.set("Content-Length", String(contentLength));
 
-    return new Response(body, {
-      headers,
-    });
+    return new Response(body, { headers });
   } catch (error) {
     return toServerError(error);
   }

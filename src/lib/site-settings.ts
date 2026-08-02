@@ -110,6 +110,8 @@ export const defaultSiteSettings: SiteSettings = {
     view_event_dedupe_hours: 24,
     user_activity_retention_days: 365,
     show_user_activity_in_security: true,
+    track_guest_sessions: true,
+    require_login_to_browse: false,
     access_requests: {
       auto_approve_enabled: true,
       auto_approve_delay_days: 7,

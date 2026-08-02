@@ -3,6 +3,8 @@ import { hasGoogleIdentity, upsertUserProfile } from "@/lib/auth";
 import { clearAuthFlowCookies, getAuthFlow } from "@/lib/auth-flow";
 import { createAnonSupabase } from "@/lib/supabase";
 import { setSessionCookies } from "@/lib/session-cookies";
+import { linkGuestToUser } from "@/lib/guest-visitor";
+
 
 function implicitCallbackPage(next: string, mode: string) {
   return new NextResponse(
@@ -97,5 +99,14 @@ export async function GET(request: NextRequest) {
   const response = NextResponse.redirect(new URL(target, request.url));
   setSessionCookies(response, data.session);
   clearAuthFlowCookies(response);
+
+  // Link guest history to newly authenticated user (fire-and-forget)
+  const guestId = request.cookies.get("gid")?.value;
+  if (guestId) {
+    void linkGuestToUser(guestId, data.user.id);
+    // Clear the gid cookie now that the user is logged in
+    response.cookies.set("gid", "", { maxAge: 0, path: "/" });
+  }
+
   return response;
 }

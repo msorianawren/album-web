@@ -62,10 +62,6 @@ export async function recordUserAlbumActivity({
     if (recentView) return; // Already viewed recently
   }
 
-  // Insert using the service role or normal client if RLS is bypassed.
-  // Actually, we should use a service role client to insert since RLS denies inserts.
-  // Wait, `supabase` in `@/lib/supabase` is the service role client by default in server context if SUPABASE_SERVICE_ROLE_KEY is set.
-  // We'll just use it directly.
   const { error } = await supabase.from("user_album_activity").insert({
     user_id: session.userId,
     album_id: albumId,
@@ -86,3 +82,70 @@ export async function recordUserAlbumActivity({
     );
   }
 }
+
+interface RecordGuestActivityProps {
+  guestVisitorId: string;
+  albumId: string;
+  mediaId?: string | null;
+  eventType: AlbumEventType;
+  albumStatus?: string | null;
+  source?: string | null;
+  metadata?: Record<string, unknown>;
+  advancedSettings?: Record<string, unknown>;
+}
+
+/**
+ * Records album activity for an unauthenticated guest visitor.
+ * Mirrors recordUserAlbumActivity but writes to guest_album_activity.
+ * Deduplicates view events with the same window setting.
+ * Never throws — failure is logged silently.
+ */
+export async function recordGuestAlbumActivity({
+  guestVisitorId,
+  albumId,
+  mediaId,
+  eventType,
+  albumStatus,
+  source,
+  metadata = {},
+  advancedSettings,
+}: RecordGuestActivityProps): Promise<void> {
+  try {
+    // Check tracking toggles (reuse same settings as user tracking)
+    if (eventType === "album_viewed" && advancedSettings?.track_album_views === false) return;
+    if (eventType.includes("download") && advancedSettings?.track_album_downloads === false) return;
+
+    // Deduplication for view events (same window as user tracking)
+    if (eventType === "album_viewed") {
+      const dedupeHours =
+        typeof advancedSettings?.view_event_dedupe_hours === "number"
+          ? advancedSettings.view_event_dedupe_hours
+          : 24;
+      const windowStart = new Date(Date.now() - dedupeHours * 60 * 60 * 1000).toISOString();
+
+      const { data: recentView } = await supabase
+        .from("guest_album_activity")
+        .select("id")
+        .eq("guest_visitor_id", guestVisitorId)
+        .eq("album_id", albumId)
+        .eq("event_type", "album_viewed")
+        .gte("created_at", windowStart)
+        .maybeSingle();
+
+      if (recentView) return;
+    }
+
+    await supabase.from("guest_album_activity").insert({
+      guest_visitor_id: guestVisitorId,
+      album_id: albumId,
+      media_id: mediaId ?? null,
+      event_type: eventType,
+      album_status_at_event: albumStatus ?? null,
+      source: source ?? null,
+      metadata,
+    });
+  } catch {
+    // Non-critical — never break the user request
+  }
+}
+

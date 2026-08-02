@@ -1,13 +1,14 @@
 "use client";
 
 import { useMemo, useState, useEffect } from "react";
-import { Ban, CheckCircle2, Crown, Search, ShieldCheck, UserCog, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, FileText, Users } from "lucide-react";
+import { Ban, CheckCircle2, Crown, Search, ShieldCheck, UserCog, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, FileText, Users, Globe, Smartphone, UserCheck } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
 import { UserActivityPanel } from "./UserActivityPanel";
+import { GuestActivityPanel } from "./GuestActivityPanel";
 import { cn } from "@/lib/utils";
-import type { AuditLog, PublicSession, UserProfile, UserRole } from "@/lib/types";
+import type { AuditLog, GuestVisitor, PublicSession, UserProfile, UserRole } from "@/lib/types";
 
 interface SecurityConsoleProps {
   initialUsers: UserProfile[];
@@ -83,7 +84,7 @@ export function SecurityConsole({
   const USERS_LIMIT = 30;
   const LOGS_LIMIT = 50;
 
-  const [activeTab, setActiveTab] = useState<"users" | "logs">("users");
+  const [activeTab, setActiveTab] = useState<"users" | "logs" | "visitors">("users");
 
   // Users State
   const [users, setUsers] = useState(initialUsers);
@@ -99,6 +100,15 @@ export function SecurityConsole({
   const [logPage, setLogPage] = useState(1);
   const [logFilter, setLogFilter] = useState<"all" | "roles">("all");
   const [isLogsLoading, setIsLogsLoading] = useState(false);
+
+  // Visitors State
+  const [visitors, setVisitors] = useState<GuestVisitor[]>([]);
+  const [totalVisitors, setTotalVisitors] = useState(0);
+  const [visitorPage, setVisitorPage] = useState(1);
+  const [visitorFilter, setVisitorFilter] = useState<"all" | "active" | "linked">("all");
+  const [visitorSearch, setVisitorSearch] = useState("");
+  const [isVisitorsLoading, setIsVisitorsLoading] = useState(false);
+  const [selectedVisitorId, setSelectedVisitorId] = useState<string | null>(null);
 
   // Common UI State
   const [message, setMessage] = useState("");
@@ -263,6 +273,13 @@ export function SecurityConsole({
             <Users className="h-4 w-4 mr-2" /> Users
           </Button>
           <Button
+            variant={activeTab === "visitors" ? "primary" : "ghost"}
+            onClick={() => setActiveTab("visitors")}
+            className="rounded-full px-6"
+          >
+            <Globe className="h-4 w-4 mr-2" /> Visitors
+          </Button>
+          <Button
             variant={activeTab === "logs" ? "primary" : "ghost"}
             onClick={() => setActiveTab("logs")}
             className="rounded-full px-6"
@@ -420,7 +437,7 @@ export function SecurityConsole({
             <Pagination page={userPage} totalPages={Math.ceil(totalUsers / USERS_LIMIT)} onPageChange={setUserPage} isLoading={isUsersLoading} />
           </div>
         </section>
-      ) : (
+      ) : activeTab === "logs" ? (
         <section className="rounded-[1.4rem] border border-border bg-surface/82 p-5 shadow-xl shadow-text-primary/5 min-h-[500px]">
            <div className="flex items-center gap-2 border-b border-border mb-6">
             {(["all", "roles"] as const).map(filter => (
@@ -516,7 +533,133 @@ export function SecurityConsole({
             <Pagination page={logPage} totalPages={Math.ceil(totalLogs / LOGS_LIMIT)} onPageChange={setLogPage} isLoading={isLogsLoading} />
           </div>
         </section>
-      )}
+      ) : activeTab === "visitors" ? (
+        <section className="rounded-[1.4rem] border border-border bg-surface/82 p-5 shadow-xl shadow-text-primary/5 min-h-[500px]">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between mb-6">
+            <div className="flex items-center gap-2 border-b border-border">
+              {(["all", "active", "linked"] as const).map(filter => (
+                <button
+                  key={filter}
+                  onClick={() => { setVisitorFilter(filter); setVisitorPage(1); }}
+                  className={cn(
+                    "px-4 py-2 text-sm font-semibold capitalize border-b-2 transition-colors",
+                    visitorFilter === filter ? "border-text-primary text-text-primary" : "border-transparent text-text-secondary hover:text-text-primary"
+                  )}
+                >
+                  {filter === "active" ? "Active (7d)" : filter === "linked" ? "Linked to Account" : "All Visitors"}
+                </button>
+              ))}
+            </div>
+
+            <div className="flex items-center gap-3 w-full lg:w-auto">
+              <div className="relative min-w-0 flex-1 lg:w-64">
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-secondary" />
+                <Input
+                  value={visitorSearch}
+                  onChange={(e) => setVisitorSearch(e.target.value)}
+                  placeholder="Search visitor ID, city..."
+                  className="pl-9 text-xs"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") setVisitorPage(1);
+                  }}
+                />
+              </div>
+              <Button variant="secondary" className="h-8 px-3 text-xs" onClick={() => setVisitorPage(1)} disabled={isVisitorsLoading}>
+                Search
+              </Button>
+            </div>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs border-collapse">
+              <thead>
+                <tr className="border-b border-border text-text-secondary">
+                  <th className="py-3 pl-4">Visitor ID</th>
+                  <th className="py-3">Device & Source</th>
+                  <th className="py-3">Location & Masked IP</th>
+                  <th className="py-3">Activity Stats</th>
+                  <th className="py-3">Last Active</th>
+                  <th className="py-3 pr-4">Account Status</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border/50">
+                {visitors.map((visitor) => {
+                  const meta = visitor.metadata ?? {};
+                  const device = typeof meta.device === "string" ? meta.device : null;
+                  const browser = typeof meta.browser === "string" ? meta.browser : null;
+                  const deviceStr = [device, browser].filter(Boolean).join(" • ") || "Unknown Device";
+                  const locationStr = [visitor.city, visitor.country_code].filter(Boolean).join(", ") || "Unknown Location";
+
+                  return (
+                    <tr
+                      key={visitor.id}
+                      onClick={() => setSelectedVisitorId(visitor.id)}
+                      className="hover:bg-background/40 transition-colors cursor-pointer"
+                    >
+                      <td className="py-3 pl-4">
+                        <span className="font-mono font-bold text-accent-primary hover:underline">
+                          {visitor.visitor_name}
+                        </span>
+                      </td>
+                      <td className="py-3 text-text-secondary">
+                        <span className="flex items-center gap-1.5 text-text-primary font-medium">
+                          <Smartphone className="w-3.5 h-3.5 text-text-muted" />
+                          {deviceStr}
+                        </span>
+                        {Boolean(meta.in_app) && (
+                          <span className="text-[11px] text-text-muted block">In-App: {String(meta.in_app)}</span>
+                        )}
+                      </td>
+                      <td className="py-3 text-text-secondary">
+                        <span className="flex items-center gap-1.5 text-text-primary font-medium">
+                          <Globe className="w-3.5 h-3.5 text-text-muted" />
+                          {locationStr}
+                        </span>
+                        <span className="font-mono text-[11px] text-text-muted block">{visitor.ip_masked || "No IP"}</span>
+                      </td>
+                      <td className="py-3 text-text-secondary">
+                        <div className="flex items-center gap-2">
+                          <span className="px-2 py-0.5 rounded bg-accent-primary/10 text-accent-primary font-medium text-[11px]">
+                            {visitor.view_count ?? 0} views
+                          </span>
+                          <span className="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 font-medium text-[11px]">
+                            {visitor.download_count ?? 0} downloads
+                          </span>
+                        </div>
+                      </td>
+                      <td className="py-3 text-text-secondary whitespace-nowrap">
+                        {formatDate(visitor.last_seen_at)}
+                      </td>
+                      <td className="py-3 pr-4">
+                        {visitor.linked_user_email ? (
+                          <span className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 font-medium">
+                            <UserCheck className="w-3 h-3" />
+                            {visitor.linked_user_email}
+                          </span>
+                        ) : (
+                          <span className="text-[11px] text-text-muted">Guest</span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+            {!visitors.length && !isVisitorsLoading && (
+              <p className="rounded-2xl border border-dashed border-border bg-background/60 p-6 mt-4 text-sm text-text-secondary text-center">
+                No guest visitors found matching criteria.
+              </p>
+            )}
+          </div>
+
+          <div className="mt-6 flex justify-between items-center border-t border-border pt-4">
+            <p className="text-sm text-text-secondary">
+              Showing {visitors.length > 0 ? (visitorPage - 1) * 30 + 1 : 0} - {Math.min(visitorPage * 30, totalVisitors)} of {totalVisitors} visitors
+            </p>
+            <Pagination page={visitorPage} totalPages={Math.ceil(totalVisitors / 30) || 1} onPageChange={setVisitorPage} isLoading={isVisitorsLoading} />
+          </div>
+        </section>
+      ) : null}
 
       <Modal
         open={Boolean(roleAction)}
@@ -554,6 +697,13 @@ export function SecurityConsole({
         <UserActivityPanel 
           userId={selectedUserId} 
           onClose={() => setSelectedUserId(null)} 
+        />
+      )}
+
+      {selectedVisitorId && (
+        <GuestActivityPanel
+          visitorId={selectedVisitorId}
+          onClose={() => setSelectedVisitorId(null)}
         />
       )}
     </div>

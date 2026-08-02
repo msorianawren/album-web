@@ -5,7 +5,7 @@ import { getAlbum } from "@/lib/albums";
 import { getPublicSession } from "@/lib/auth";
 import { createAuthenticatedUserClient } from "@/lib/db/user";
 import { logAuditEvent } from "@/lib/audit";
-import { recordUserAlbumActivity } from "@/lib/user-activity";
+import { recordUserAlbumActivity, recordGuestAlbumActivity } from "@/lib/user-activity";
 import { apiError, toServerError } from "@/lib/errors";
 import { extensionFromUrlOrMime, safeFilename, sanitizeZipPathSegment } from "@/lib/filenames";
 import { enforceRateLimit } from "@/lib/security-rate-limit";
@@ -15,6 +15,8 @@ import {
   getMediaDeliveryDescriptor,
   isExpectedMediaContentType,
 } from "@/lib/media/delivery";
+import { getOrCreateGuestVisitor, isGuestTrackingEnabled, setGuestCookie } from "@/lib/guest-visitor";
+
 
 export const runtime = "nodejs";
 const maxZipImages = 100;
@@ -198,27 +200,63 @@ export async function GET(request: NextRequest, { params }: AlbumDownloadProps) 
     });
 
     const filename = `${safeFilename(album.title, "album")}.zip`;
-    await logAuditEvent({
-      request,
-      session,
-      action: "download_album_zip",
-      targetType: "album",
-      targetId: album.id,
-      metadata: {
-        added,
-        originalDownloadsAllowed: settings.allow_original_downloads,
-        album_name: album.title,
-      },
-    });
 
-    await recordUserAlbumActivity({
-      request,
-      session,
-      albumId: album.id,
-      eventType: "album_downloaded_zip",
-      albumStatus: album.status,
-      metadata: { added },
-    });
+    // — Authenticated user tracking —
+    if (session.userId) {
+      await Promise.all([
+        logAuditEvent({
+          request, session,
+          action: "download_album_zip",
+          targetType: "album", targetId: album.id,
+          metadata: { added, originalDownloadsAllowed: settings.allow_original_downloads, album_name: album.title },
+        }),
+        recordUserAlbumActivity({
+          request, session, albumId: album.id,
+          eventType: "album_downloaded_zip", albumStatus: album.status,
+          metadata: { added },
+        }),
+      ]);
+    } else {
+      // — Guest tracking —
+      const advanced = settings.advanced_settings as Record<string, unknown> | undefined;
+      if (isGuestTrackingEnabled(advanced)) {
+        const guest = await getOrCreateGuestVisitor(request);
+        if (guest) {
+          void Promise.all([
+            logAuditEvent({
+              request, session,
+              action: "download_album_zip",
+              targetType: "album", targetId: album.id,
+              guestVisitorId: guest.id,
+              metadata: { added, album_name: album.title, guest_name: guest.visitor_name },
+            }),
+            recordGuestAlbumActivity({
+              guestVisitorId: guest.id, albumId: album.id,
+              eventType: "album_downloaded_zip", albumStatus: album.status,
+              metadata: { added }, advancedSettings: advanced,
+            }),
+          ]);
+
+          // Build response with cookie if needed
+          const hasGidCookie = request.cookies.get("gid");
+          const response = new Response(stream, {
+            headers: {
+              "Content-Type": "application/zip",
+              "Content-Disposition": `attachment; filename="${filename}"`,
+              "Cache-Control": "private, no-store",
+            },
+          });
+          if (!hasGidCookie) {
+            // Manually set cookie header (Response doesn't have .cookies API)
+            response.headers.append(
+              "Set-Cookie",
+              `gid=${guest.id}; HttpOnly; SameSite=Lax; Max-Age=${365 * 24 * 60 * 60}; Path=/${process.env.NODE_ENV === "production" ? "; Secure" : ""}`
+            );
+          }
+          return response;
+        }
+      }
+    }
 
     return new Response(stream, {
       headers: {

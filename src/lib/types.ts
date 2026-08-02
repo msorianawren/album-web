@@ -198,6 +198,7 @@ export interface UserProfile {
   updated_at?: string;
   registration_source?: string | null;
   metadata?: Record<string, unknown> | null;
+  former_guest_visitor_id?: string | null;
 }
 
 export interface AuditLog {
@@ -213,6 +214,27 @@ export interface AuditLog {
   user_agent: string | null;
   metadata: Record<string, unknown>;
   created_at: string;
+  guest_visitor_id?: string | null;
+  guest_visitor_name?: string | null;  // Joined from guest_visitors
+}
+
+export interface GuestVisitor {
+  id: string;
+  visitor_name: string;
+  city: string | null;
+  country_code: string | null;
+  ip_masked: string | null;
+  first_seen_at: string;
+  last_seen_at: string;
+  user_agent: string | null;
+  linked_user_id: string | null;
+  linked_user_email?: string | null;  // Joined from user_profiles
+  metadata: Record<string, unknown>;  // device, browser, os, in_app
+  expires_at: string;
+  // Aggregates (populated by API)
+  view_count?: number;
+  download_count?: number;
+  album_count?: number;
 }
 
 export interface UploadResult {
@@ -272,6 +294,7 @@ export interface LandingAdminStoriesSettings {
   enabled: boolean;
   eyebrow: string;
   heading: string;
+  selectedItemIds?: string[];
 }
 
 export interface PublicSession {
@@ -539,6 +562,7 @@ export interface AdminStory {
   video_url: string;
   video_r2_key: string | null;
   poster_url: string;
+  thumbnail_url?: string | null;
   poster_r2_key: string | null;
   caption: string | null;
   mime_type: "video/mp4" | "video/webm" | null;

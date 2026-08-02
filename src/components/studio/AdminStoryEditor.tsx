@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import type { LandingAdminStoriesSettings, AdminStory } from "@/lib/types";
-import { createAdminStory, deleteAdminStory, fetchAdminStories } from "./adminStoriesActions";
+import { createAdminStory, deleteAdminStory, fetchAdminStories } from "@/components/studio/adminStoriesActions";
 import { Trash2, Loader2, Upload, Video, Image as ImageIcon, Play, CheckCircle2 } from "lucide-react";
 import clsx from "clsx";
 
@@ -110,13 +110,14 @@ export function AdminStoryEditor({
       if (!posterUrl) throw new Error("Poster upload failed");
       
       setUploadState("finalizing");
-      const newStory = await createAdminStory(videoUrl, posterUrl);
-      setStories(prev => [newStory, ...prev]);
-      
-      onChange({
-        ...value,
-        selectedItemIds: [...value.selectedItemIds, newStory.id]
-      });
+      const newStory = await createAdminStory({ video_url: videoUrl, poster_url: posterUrl });
+      if (newStory) {
+        setStories(prev => [newStory, ...prev]);
+        onChange({
+          ...value,
+          selectedItemIds: [...(value.selectedItemIds ?? []), newStory.id]
+        });
+      }
       
       setVideoFile(null);
       setPosterFile(null);
@@ -247,7 +248,7 @@ export function AdminStoryEditor({
         ) : (
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {stories.map(story => {
-              const isSelected = value.selectedItemIds.includes(story.id);
+              const isSelected = (value.selectedItemIds ?? []).includes(story.id);
               return (
                 <div key={story.id} className={clsx("group relative overflow-hidden rounded-2xl border-2 transition-all hover:shadow-md", isSelected ? 'border-text-primary shadow-sm' : 'border-border/60 hover:border-text-primary/40')}>
                   <div className="aspect-[9/16] relative bg-black">
@@ -263,11 +264,12 @@ export function AdminStoryEditor({
                         variant={isSelected ? "primary" : "secondary"}
                         className="w-full text-xs font-semibold uppercase tracking-wider backdrop-blur-md"
                         onClick={() => {
+                          const currentIds = value.selectedItemIds ?? [];
                           onChange({
                             ...value,
                             selectedItemIds: isSelected 
-                              ? value.selectedItemIds.filter(id => id !== story.id)
-                              : [...value.selectedItemIds, story.id]
+                              ? currentIds.filter((id: string) => id !== story.id)
+                              : [...currentIds, story.id]
                           });
                         }}
                       >
@@ -281,9 +283,10 @@ export function AdminStoryEditor({
                             await deleteAdminStory(story.id);
                             setStories(s => s.filter(x => x.id !== story.id));
                             if (isSelected) {
+                              const currentIds = value.selectedItemIds ?? [];
                               onChange({
                                 ...value,
-                                selectedItemIds: value.selectedItemIds.filter(id => id !== story.id)
+                                selectedItemIds: currentIds.filter((id: string) => id !== story.id)
                               });
                             }
                           }

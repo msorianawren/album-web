@@ -22,7 +22,19 @@ export async function PATCH(request: NextRequest) {
     const settings = await saveSiteSettings(database.client, body);
     revalidateTag("site-settings", "max");
     revalidatePath("/", "layout");
-    return apiSuccess({ settings });
+
+    const response = apiSuccess({ settings });
+    const requireLogin = Boolean(
+      (settings.advanced_settings as Record<string, unknown> | undefined)?.require_login_to_browse
+    );
+    response.cookies.set("_cfg_login_gate", requireLogin ? "1" : "0", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 365 * 24 * 60 * 60,
+      path: "/",
+    });
+    return response;
   } catch (error) {
     if (error instanceof ZodError) {
       return apiError("INVALID_INPUT", "Invalid settings payload.", 400, error.flatten());
