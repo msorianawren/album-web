@@ -72,11 +72,15 @@ export function PrivateAlbumCheckbox({ album }: { album: { id: string; slug: str
   return (
     <button
       type="button"
-      onClick={() => context.toggleSelected(album)}
-      className="absolute right-4 top-4 z-20 inline-flex h-11 w-11 items-center justify-center rounded-full border border-border bg-background/90 text-text-primary shadow-sm backdrop-blur transition hover:scale-105"
+      onClick={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        context.toggleSelected(album);
+      }}
+      className="absolute right-2.5 top-2.5 sm:right-3 sm:top-3 z-20 inline-flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-full border border-border/60 bg-background/90 text-text-primary shadow-md backdrop-blur transition-all duration-200 hover:scale-110"
       aria-label={isSelected ? "Remove album from request" : "Select album for private access request"}
     >
-      {isSelected ? <CheckSquare className="h-5 w-5" /> : <Square className="h-5 w-5" />}
+      {isSelected ? <CheckSquare className="h-4 w-4 text-accent" /> : <Square className="h-4 w-4 text-text-secondary" />}
     </button>
   );
 }

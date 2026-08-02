@@ -15,7 +15,7 @@ body:has(.landing-home)::before {
 }
 
 body:has(.landing-home) .environment-custom-background {
-  opacity: min(var(--environment-artist-opacity, 0.45), 0.34);
+  opacity: var(--environment-artist-opacity, 1);
 }
 
 body:has(.landing-home) .public-chime-canvas {
@@ -64,9 +64,9 @@ body:has(.landing-home) .public-chime-canvas {
   overflow: hidden;
   border: 1px solid var(--lcb-line);
   border-radius: clamp(1.25rem, 2vw, 2rem);
-  background: color-mix(in srgb, var(--surface) 52%, transparent);
-  box-shadow: 0 1.5rem 4rem rgb(38 29 23 / 0.1);
-  backdrop-filter: blur(14px);
+  background: color-mix(in srgb, var(--surface) 18%, transparent);
+  box-shadow: 0 0.8rem 2.5rem rgb(0 0 0 / 0.05);
+  backdrop-filter: none;
 }
 
 .lcb-hero__dominant img {
@@ -75,15 +75,16 @@ body:has(.landing-home) .public-chime-canvas {
 }
 
 .lcb-hero__copy {
+  position: relative;
   grid-column: 1 / 6;
   grid-row: 2;
   align-self: start;
   padding: clamp(1.75rem, 3vw, 3rem);
   border: 1px solid var(--lcb-line);
   border-radius: clamp(1.25rem, 2vw, 1.75rem);
-  background: color-mix(in srgb, var(--surface) 64%, transparent);
-  box-shadow: 0 1rem 3rem rgb(38 29 23 / 0.07);
-  backdrop-filter: blur(18px);
+  background: color-mix(in srgb, var(--surface) 20%, transparent);
+  box-shadow: 0 0.8rem 2.5rem rgb(0 0 0 / 0.05);
+  backdrop-filter: none;
 }
 
 .lcb-hero__copy h1 {
@@ -237,7 +238,8 @@ body:has(.landing-home) .public-chime-canvas {
   display: block;
   height: min(68svh, 42rem);
   overflow: hidden;
-  background: color-mix(in srgb, var(--surface-secondary) 22%, transparent);
+  background: color-mix(in srgb, var(--surface-secondary) 14%, transparent);
+  backdrop-filter: none;
 }
 
 .lcb-collections__preview img {
@@ -346,7 +348,7 @@ body:has(.landing-home) .public-chime-canvas {
   width: 58%;
   height: 88%;
   object-fit: contain;
-  background: color-mix(in srgb, var(--surface-secondary) 20%, transparent);
+  background: color-mix(in srgb, var(--surface-secondary) 14%, transparent);
 }
 
 .lcb-threshold__prints img[data-print="1"] { left: 0; top: 0; transform: rotate(-1.2deg); }
@@ -659,7 +661,7 @@ body:has(.landing-home) .public-chime-canvas {
 .lcb-collaborators[data-count="2"] .lcb-collaborators__sheet > article { grid-column: span 5; }
 .lcb-collaborators__sheet > article[data-position="2"] { margin-top: 4rem; }
 .lcb-collaborators__sheet > article[data-position="3"] { margin-top: 1.5rem; }
-.lcb-collaborators__sheet img { display: block; width: 100%; aspect-ratio: 2 / 3; object-fit: contain; background: color-mix(in srgb, var(--surface-secondary) 18%, transparent); }
+.lcb-collaborators__sheet img { display: block; width: 100%; aspect-ratio: 2 / 3; object-fit: contain; background: color-mix(in srgb, var(--surface-secondary) 14%, transparent); }
 .lcb-collaborators__credit { display: flex; align-items: start; justify-content: space-between; gap: 1rem; padding-top: 1rem; border-top: 1px solid var(--lcb-line); }
 .lcb-collaborators__credit h3 { margin: 0; font-family: var(--font-serif); font-size: 1.65rem; font-weight: 400; }
 .lcb-collaborators__credit p { margin: 0.3rem 0 0; color: var(--text-secondary); font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; }
@@ -687,7 +689,7 @@ body:has(.landing-home) .public-chime-canvas {
   z-index: 10;
   padding: clamp(3.5rem, 6vw, 6rem) 0 2rem;
   border-top: 1px solid var(--lcb-line);
-  background: color-mix(in srgb, var(--surface) 54%, transparent);
+  background: color-mix(in srgb, var(--surface) 18%, transparent);
 }
 
 .lcb-footer__grid,
@@ -759,10 +761,10 @@ body:has(.landing-home) .public-chime-canvas {
   padding: 1.1rem 1.2rem;
   border: 1px solid var(--lcb-line);
   border-radius: 0.6rem;
-  background: color-mix(in srgb, var(--surface) 62%, transparent);
-  backdrop-filter: blur(8px);
+  background: color-mix(in srgb, var(--surface) 20%, transparent);
+  backdrop-filter: none;
   color: var(--text-primary);
-  box-shadow: 0 0.4rem 1.2rem rgb(35 28 23 / 0.035);
+  box-shadow: 0 0.4rem 1.2rem rgb(0 0 0 / 0.03);
   text-decoration: none;
   transition: border-color 180ms ease, transform 180ms ease;
 }
@@ -771,7 +773,7 @@ body:has(.landing-home) .public-chime-canvas {
 .lcb-tree-card[data-side="right"] { grid-column: 3; justify-self: start; margin-left: 1rem; }
 .lcb-tree-card:hover,
 .lcb-tree-card:focus-visible { border-color: color-mix(in srgb, var(--muted-accent) 65%, var(--text-primary)); transform: translateY(-2px); }
-.lcb-tree-card::after { position: absolute; top: 50%; width: 0.55rem; height: 0.55rem; border: 1px solid var(--lcb-line); background: color-mix(in srgb, var(--surface) 62%, transparent); content: ""; transform: translateY(-50%) rotate(45deg); }
+.lcb-tree-card::after { position: absolute; top: 50%; width: 0.55rem; height: 0.55rem; border: 1px solid var(--lcb-line); background: color-mix(in srgb, var(--surface) 20%, transparent); content: ""; transform: translateY(-50%) rotate(45deg); }
 .lcb-tree-card[data-side="left"]::after { right: -0.34rem; border-bottom: 0; border-left: 0; }
 .lcb-tree-card[data-side="right"]::after { left: -0.34rem; border-top: 0; border-right: 0; }
 .lcb-tree-card__icon { display: grid; width: 1.55rem; place-items: center; color: var(--text-secondary); }
@@ -793,13 +795,15 @@ body:has(.landing-home) .public-chime-canvas {
 .lcb-collaborators,
 .lcb-social,
 .lcb-letter {
+  position: relative;
   margin-block: clamp(1.25rem, 3vw, 2.5rem);
   padding-inline: clamp(1rem, 3vw, 3rem);
-  border: 1px solid var(--lcb-line);
+  border: 1px solid color-mix(in srgb, var(--text-primary) 14%, transparent);
   border-radius: clamp(1.25rem, 2.4vw, 2rem);
-  background: color-mix(in srgb, var(--surface) 28%, transparent);
-  box-shadow: 0 1.25rem 3.5rem rgb(38 29 23 / 0.045);
-  backdrop-filter: blur(9px);
+  background: color-mix(in srgb, var(--surface) 16%, transparent);
+  box-shadow: 0 0.8rem 2.5rem rgb(0 0 0 / 0.04);
+  backdrop-filter: none;
+  transition: background 300ms ease, border-color 300ms ease;
 }
 
 .lcb-intro {
@@ -810,8 +814,8 @@ body:has(.landing-home) .public-chime-canvas {
 .lcb-social::before { display: none; }
 
 .lcb-footer {
-  background: color-mix(in srgb, var(--surface) 36%, transparent);
-  backdrop-filter: blur(10px);
+  background: color-mix(in srgb, var(--surface) 18%, transparent);
+  backdrop-filter: none;
 }
 
 @media (max-width: 899px) {

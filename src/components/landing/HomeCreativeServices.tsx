@@ -1,5 +1,6 @@
 import { ArrowUpRight } from "lucide-react";
 import Link from "next/link";
+import { SakuraCorner, SakuraCrest } from "./NatureOrnament";
 
 const services = [
   { title: "Editorial Modeling", description: "Collaborating on high-fashion and conceptual editorials." },
@@ -10,9 +11,13 @@ const services = [
 
 export function HomeCreativeServices() {
   return (
-    <section className="lcb-services" aria-labelledby="creative-services-heading">
+    <section className="lcb-services relative overflow-hidden" aria-labelledby="creative-services-heading">
+      <SakuraCorner position="top-right" />
       <div className="lcb-services__intro">
-        <p className="lcb-kicker">Services</p>
+        <p className="lcb-kicker flex items-center gap-2">
+          <span>Services</span>
+          <SakuraCrest className="h-3 w-3 opacity-75" />
+        </p>
         <h2 id="creative-services-heading">Creative Collaborations</h2>
         <p>A selective approach to creative partnerships, visual narratives, and nature-led aesthetics.</p>
         <Link href="/about" prefetch={false} className="lcb-text-link">About the Studio</Link>

@@ -1,14 +1,19 @@
 import Link from "next/link";
 import { Lock } from "lucide-react";
 import type { Album } from "@/lib/types";
+import { SakuraCorner, SakuraCrest } from "./NatureOrnament";
 
 export function HomePrivateExperience({ albums }: { albums: Album[] }) {
   const publicCovers = albums.filter((album) => album.status === "public" && album.cover_url).slice(0, 2);
 
   return (
-    <section className="lcb-threshold" aria-labelledby="private-experience-heading">
+    <section className="lcb-threshold relative overflow-hidden" aria-labelledby="private-experience-heading">
+      <SakuraCorner position="top-right" />
       <div className="lcb-threshold__public">
-        <p className="lcb-kicker">Open collection</p>
+        <p className="lcb-kicker flex items-center gap-2">
+          <span>Open collection</span>
+          <SakuraCrest className="h-3 w-3 opacity-75" />
+        </p>
         <h2 id="private-experience-heading">Public Journals</h2>
         <div className="lcb-threshold__prints" aria-hidden="true">
           {publicCovers.map((album, index) => (

@@ -5,6 +5,7 @@ import Image from "next/image";
 import { ChevronLeft, ChevronRight, Play } from "lucide-react";
 import type { LandingAdminStoriesSettings, PublicAdminStory } from "@/lib/types";
 import { StoryPlayer } from "@/components/landing/StoryPlayer";
+import { SakuraCorner, SakuraCrest } from "./NatureOrnament";
 
 function formatDuration(value: number | null) {
   if (!value || !Number.isFinite(value)) return null;
@@ -58,10 +59,14 @@ export function HomeAdminStories({ settings, items }: { settings: LandingAdminSt
   if (items.length === 0) return null;
 
   return (
-    <section className="lcb-stories" aria-labelledby="founder-stories-heading">
+    <section className="lcb-stories relative overflow-hidden" aria-labelledby="founder-stories-heading">
+      <SakuraCorner position="top-right" />
       <div className="lcb-stories__heading">
         <div>
-          <p>{settings.eyebrow}</p>
+          <p className="flex items-center gap-2">
+            <span>{settings.eyebrow}</span>
+            <SakuraCrest className="h-3 w-3 opacity-75" />
+          </p>
           <h2 id="founder-stories-heading">{settings.heading}</h2>
         </div>
         <div className="lcb-stories__controls" aria-label="Founder Stories rail controls">

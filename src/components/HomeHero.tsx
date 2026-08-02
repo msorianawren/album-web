@@ -122,7 +122,7 @@ export function HomeHero({ landing, settings, locale = "en", dict }: HomeHeroPro
     <section className="relative isolate overflow-hidden">
       <div className="page-shell-1440 grid min-w-0 gap-8 pb-8 pt-6 sm:pb-16 sm:pt-16 lg:min-h-[760px] lg:grid-cols-[0.86fr_1.14fr]">
         <ScrollReveal className="relative z-10 flex min-w-0 flex-col justify-center">
-          <p className="mb-5 inline-flex w-fit max-w-full items-center gap-2 rounded-full border border-[var(--glass-border)] bg-[var(--glass-bg)] px-4 py-2 text-[0.68rem] font-semibold uppercase text-text-secondary shadow-sm backdrop-blur-md sm:text-xs">
+          <p className="mb-5 inline-flex w-fit max-w-full items-center gap-2 rounded-full border border-[var(--glass-border)] bg-[var(--glass-bg)] px-4 py-2 text-[0.68rem] font-semibold uppercase text-text-secondary shadow-sm sm:text-xs">
             <Sparkles className="h-3.5 w-3.5 text-muted-accent" aria-hidden="true" />
             <span className="truncate">{dict?.landing?.premium_portfolio || "Premium model portfolio"}</span>
           </p>
@@ -135,13 +135,13 @@ export function HomeHero({ landing, settings, locale = "en", dict }: HomeHeroPro
               {primaryCtaLabel}
               <ArrowRight className="h-4 w-4" aria-hidden="true" />
             </a>
-            <a href={secondaryHref} className="inline-flex h-12 items-center justify-center gap-2 rounded-full border border-[var(--glass-border)] bg-[var(--glass-bg)] px-6 text-sm font-semibold uppercase text-text-primary shadow-[0_8px_30px_rgb(0,0,0,0.04)] backdrop-blur-md transition-all duration-300 hover:-translate-y-0.5 hover:bg-surface/35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.98]">
+            <a href={secondaryHref} className="inline-flex h-12 items-center justify-center gap-2 rounded-full border border-[var(--glass-border)] bg-[var(--glass-bg)] px-6 text-sm font-semibold uppercase text-text-primary shadow-[0_8px_30px_rgb(0,0,0,0.04)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-surface/35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.98]">
               <Camera className="h-4 w-4" aria-hidden="true" />
               {secondaryCtaLabel}
             </a>
           </div>
 
-          <div className="mt-8 grid max-w-xl grid-cols-1 overflow-hidden rounded-[1.4rem] border border-border bg-surface/35 shadow-xl shadow-text-primary/5 backdrop-blur sm:mt-10 sm:grid-cols-3">
+          <div className="mt-8 grid max-w-xl grid-cols-1 overflow-hidden rounded-[1.4rem] border border-border bg-surface/35 shadow-xl shadow-text-primary/5 sm:mt-10 sm:grid-cols-3">
             {stats.map((stat) => (
               <div key={`${stat.label}-${stat.value}`} className="min-w-0 border-b border-border p-4 transition-colors hover:bg-surface/50 last:border-b-0 sm:border-b-0 sm:border-r sm:last:border-r-0">
                 <p className="break-words text-lg font-semibold text-text-primary">{stat.value}</p>
@@ -173,7 +173,7 @@ export function HomeHero({ landing, settings, locale = "en", dict }: HomeHeroPro
             </div>
           </DepthSurface>
 
-          <div className="relative w-full rounded-[1.4rem] border border-border bg-surface/42 p-3 shadow-2xl shadow-text-primary/10 backdrop-blur sm:absolute sm:bottom-8 sm:right-0 sm:w-[52%] sm:rounded-[1.6rem]">
+          <div className="relative w-full rounded-[1.4rem] border border-border bg-surface/42 p-3 shadow-2xl shadow-text-primary/10 sm:absolute sm:bottom-8 sm:right-0 sm:w-[52%] sm:rounded-[1.6rem]">
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-[0.8fr_1fr]">
               <div className="overflow-hidden rounded-[1.1rem]">
                 {/* eslint-disable-next-line @next/next/no-img-element */}

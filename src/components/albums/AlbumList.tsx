@@ -1,3 +1,6 @@
+"use client";
+
+import { useState, useEffect } from "react";
 import { Camera } from "lucide-react";
 import { AlbumCard } from "@/components/albums/AlbumCard";
 import type { AlbumStatus } from "@/lib/types";
@@ -59,13 +62,64 @@ function sectionCopy(status: AlbumStatus, dict?: AppDictionary) {
   };
 }
 
+function getGridColsClass(cols: number): string {
+  switch (cols) {
+    case 1:
+      return "grid-cols-1";
+    case 2:
+      return "grid-cols-2";
+    case 3:
+      return "grid-cols-2 sm:grid-cols-3";
+    case 4:
+      return "grid-cols-2 sm:grid-cols-3 lg:grid-cols-4";
+    case 5:
+      return "grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5";
+    case 6:
+      return "grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6";
+    case 7:
+      return "grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-7";
+    case 8:
+      return "grid-cols-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8";
+    case 9:
+      return "grid-cols-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-7 xl:grid-cols-9";
+    case 10:
+      return "grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10";
+    default:
+      return "grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5";
+  }
+}
+
 export function AlbumList({ sections, query, dict, locale = "en" }: AlbumListProps) {
+  const [cols, setCols] = useState<number>(query.cols || 5);
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("preferred_album_cols");
+      if (saved) {
+        const parsed = parseInt(saved, 10);
+        if (parsed >= 1 && parsed <= 10) {
+          setCols(parsed);
+        }
+      }
+    } catch {}
+  }, []);
+
+  const handleColsChange = (newCols: number) => {
+    setCols(newCols);
+    try {
+      localStorage.setItem("preferred_album_cols", String(newCols));
+      const url = new URL(window.location.href);
+      url.searchParams.set("cols", String(newCols));
+      window.history.replaceState(null, "", url.toString());
+    } catch {}
+  };
+
   const visibleStatuses = query.status ? [query.status] : orderedStatuses;
   const displayedAlbums = visibleStatuses.flatMap((status) => sections[status]?.albums ?? []);
 
   if (!displayedAlbums.length && !visibleStatuses.some((status) => sections[status]?.hasMore)) {
     return (
-      <section className="mx-auto flex w-full max-w-[1200px] flex-col items-center px-6 py-32 text-center">
+      <section className="mx-auto flex w-full max-w-[1480px] flex-col items-center px-6 py-32 text-center">
         <div className="mb-10 flex h-24 w-24 items-center justify-center rounded-full border border-border/40 bg-surface/30 text-text-secondary/30">
           <Camera className="h-10 w-10" aria-hidden="true" />
         </div>
@@ -81,14 +135,14 @@ export function AlbumList({ sections, query, dict, locale = "en" }: AlbumListPro
 
   return (
     <PrivateAlbumSelectionProvider>
-      <section id="albums" className="mx-auto w-full max-w-[1200px] px-6 pb-32">
-        <ScrollReveal className="mb-12 flex flex-col justify-between gap-10 md:flex-row md:items-end">
+      <section id="albums" className="mx-auto w-full max-w-[1480px] px-4 sm:px-6 lg:px-8 pb-24">
+        <ScrollReveal className="mb-10 flex flex-col justify-between gap-8 md:flex-row md:items-end">
           <div className="min-w-0 max-w-xl">
-            <p className="mb-4 block text-[0.65rem] font-semibold uppercase tracking-[0.25em] text-text-secondary">Selected Books</p>
-            <h2 className="mb-6 font-serif text-[2.2rem] font-light leading-none text-text-primary md:text-5xl">
+            <p className="mb-3 block text-[0.65rem] font-semibold uppercase tracking-[0.25em] text-text-secondary">Selected Books</p>
+            <h2 className="mb-4 font-serif text-[2.2rem] font-light leading-none text-text-primary md:text-5xl">
               {dict?.albums?.public_albums || "Public Archives"}
             </h2>
-            <p className="max-w-[420px] text-[1rem] font-light leading-[1.6] text-text-secondary">
+            <p className="max-w-[420px] text-[0.95rem] font-light leading-[1.6] text-text-secondary">
               {dict?.albums?.public_albums_desc || "Browse public editorials, updating diaries, and featured visual works."}
             </p>
           </div>
@@ -118,36 +172,21 @@ export function AlbumList({ sections, query, dict, locale = "en" }: AlbumListPro
           const isPrivate = status === "private";
 
           return (
-            <div key={status} className="mb-24 border-t border-border/40 pt-16 last:mb-0">
-              <div className="mb-10 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+            <div key={status} className="mb-16 border-t border-border/40 pt-10 last:mb-0">
+              <div className="mb-8 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
                 <div className="max-w-2xl">
-                  <p className="mb-4 block text-[0.65rem] font-semibold uppercase tracking-[0.25em] text-text-secondary">{copy.eyebrow}</p>
-                  <h2 className="mb-6 font-serif text-[2.2rem] font-light leading-none text-text-primary md:text-5xl">{copy.title}</h2>
-                  <p className="max-w-[520px] text-[1rem] font-light leading-[1.6] text-text-secondary">{copy.description}</p>
+                  <p className="mb-2 block text-[0.65rem] font-semibold uppercase tracking-[0.25em] text-text-secondary">{copy.eyebrow}</p>
+                  <h2 className="mb-3 font-serif text-[1.8rem] font-light leading-none text-text-primary md:text-4xl">{copy.title}</h2>
+                  <p className="max-w-[520px] text-[0.92rem] font-light leading-[1.6] text-text-secondary">{copy.description}</p>
                 </div>
                 <div className="flex flex-wrap items-center gap-3 text-sm text-text-secondary">
                   <span>{page.albums.length} loaded</span>
-                  <AlbumColsSelect defaultValue={query.cols} />
+                  <AlbumColsSelect value={cols} onChange={handleColsChange} />
                   <AlbumPageSizeSelect defaultValue={query.limit} />
                 </div>
               </div>
 
-              <div 
-                className={`grid gap-4 sm:gap-6 ${
-                  {
-                    1: "grid-cols-1",
-                    2: "grid-cols-2",
-                    3: "grid-cols-2 sm:grid-cols-3",
-                    4: "grid-cols-2 sm:grid-cols-3 lg:grid-cols-4",
-                    5: "grid-cols-2 sm:grid-cols-3 lg:grid-cols-5",
-                    6: "grid-cols-2 sm:grid-cols-3 lg:grid-cols-6",
-                    7: "grid-cols-2 sm:grid-cols-3 lg:grid-cols-7",
-                    8: "grid-cols-2 sm:grid-cols-3 lg:grid-cols-8",
-                    9: "grid-cols-2 sm:grid-cols-3 lg:grid-cols-9",
-                    10: "grid-cols-2 sm:grid-cols-3 lg:grid-cols-10",
-                  }[query.cols] || "grid-cols-2 sm:grid-cols-3 lg:grid-cols-5"
-                }`}
-              >
+              <div className={`grid gap-3 sm:gap-3.5 md:gap-4 lg:gap-5 ${getGridColsClass(cols)}`}>
                 {page.albums.map((album, index) => {
                   const isSelectable = isPrivate && !accessResolvedStatuses.has(album.access_request_status ?? "");
                   const isLcpCandidate = index === 0 && status === visibleStatuses[0];

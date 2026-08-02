@@ -1,22 +1,24 @@
 "use client";
 
-import { useRouter, useSearchParams } from "next/navigation";
+interface AlbumColsSelectProps {
+  value?: number;
+  defaultValue?: number;
+  onChange?: (cols: number) => void;
+}
 
-export function AlbumColsSelect({ defaultValue }: { defaultValue: number }) {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-
-  const changeCols = (cols: number) => {
-    const params = new URLSearchParams(searchParams.toString());
-    params.set("cols", String(cols));
-    router.push(`/albums?${params.toString()}`);
-  };
+export function AlbumColsSelect({ value, defaultValue = 5, onChange }: AlbumColsSelectProps) {
+  const currentValue = value ?? defaultValue;
 
   return (
     <select
-      value={defaultValue}
-      onChange={(event) => changeCols(Number(event.target.value))}
-      className="rounded-full border border-border bg-surface px-4 py-2 text-sm text-text-primary outline-none"
+      value={currentValue}
+      onChange={(event) => {
+        const newCols = Number(event.target.value);
+        if (onChange) {
+          onChange(newCols);
+        }
+      }}
+      className="rounded-full border border-border bg-surface px-4 py-2 text-sm text-text-primary outline-none cursor-pointer transition hover:border-text-primary/40 focus:border-text-primary"
       aria-label="Columns"
     >
       {[2, 3, 4, 5, 6, 7, 8, 9, 10].map((size) => (

@@ -1,8 +1,9 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useState } from "react";
 import { Play } from "lucide-react";
 import type { LandingMediaItem } from "@/lib/types";
+import { SakuraCorner, SakuraCrest } from "./NatureOrnament";
 
 export function HomeMediaGallery({ items }: { items: LandingMediaItem[] }) {
   const displayItems = [...items].filter((item) => item.enabled && item.url.trim()).sort((a, b) => a.order - b.order);
@@ -22,9 +23,13 @@ export function HomeMediaGallery({ items }: { items: LandingMediaItem[] }) {
   if (displayItems.length === 0) return null;
 
   return (
-    <section className="lcb-gallery" aria-labelledby="selected-works-heading">
+    <section className="lcb-gallery relative overflow-hidden" aria-labelledby="selected-works-heading">
+      <SakuraCorner position="top-right" />
       <div className="lcb-section-heading">
-        <p>Loose frames</p>
+        <p className="flex items-center gap-2">
+          <span>Loose frames</span>
+          <SakuraCrest className="h-3 w-3 opacity-75" />
+        </p>
         <h2 id="selected-works-heading">Selected Works</h2>
       </div>
 

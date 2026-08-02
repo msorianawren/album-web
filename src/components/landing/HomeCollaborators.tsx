@@ -1,5 +1,6 @@
 import { ArrowUpRight } from "lucide-react";
 import type { CollaboratorProfile } from "@/lib/types";
+import { SakuraCorner, SakuraCrest } from "./NatureOrnament";
 
 export function HomeCollaborators({ collaborators }: { collaborators: CollaboratorProfile[] }) {
   const displayCollaborators = [...collaborators]
@@ -10,9 +11,13 @@ export function HomeCollaborators({ collaborators }: { collaborators: Collaborat
   if (displayCollaborators.length === 0) return null;
 
   return (
-    <section className="lcb-collaborators" aria-labelledby="creative-partners-heading" data-count={displayCollaborators.length}>
+    <section className="lcb-collaborators relative overflow-hidden" aria-labelledby="creative-partners-heading" data-count={displayCollaborators.length}>
+      <SakuraCorner position="top-right" />
       <div className="lcb-section-heading">
-        <p>Credits</p>
+        <p className="flex items-center gap-2">
+          <span>Credits</span>
+          <SakuraCrest className="h-3 w-3 opacity-75" />
+        </p>
         <h2 id="creative-partners-heading">Creative Partners</h2>
       </div>
 

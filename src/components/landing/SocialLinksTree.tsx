@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef } from "react";
 import type { LandingSocialLink, SiteSettings } from "@/lib/types";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { SakuraCorner, SakuraCrest } from "./NatureOrnament";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -112,8 +113,12 @@ export function SocialLinksTree({ links, settings }: { links: LandingSocialLink[
   }
 
   return (
-    <section ref={containerRef} className="relative z-20 mx-auto w-full max-w-[800px] bg-transparent px-6 py-32 text-center">
+    <section ref={containerRef} className="lcb-social relative z-20 mx-auto w-full max-w-[800px] overflow-hidden bg-transparent px-6 py-32 text-center">
+      <SakuraCorner position="top-right" />
       <div className="mb-20">
+        <div className="mb-3 flex items-center justify-center gap-2">
+          <SakuraCrest className="h-4 w-4 opacity-80" />
+        </div>
         <h2 className="font-serif text-3xl font-normal italic text-text-primary drop-shadow-sm sm:text-4xl">Follow the branches of my visual world.</h2>
         <p className="mx-auto mt-4 max-w-md text-sm font-medium leading-relaxed text-text-secondary">Portraits, travel notes, behind-the-scenes moments, and selected updates live across the channels I choose to share.</p>
       </div>
@@ -146,7 +151,7 @@ export function SocialLinksTree({ links, settings }: { links: LandingSocialLink[
                   <path d="M0 15 C 20 15, 30 10, 50 15"/><circle cx="45" cy="15" r="3" fill="currentColor"/>
                 </svg>
 
-                <a href={link.url} target="_blank" rel="noreferrer" data-nature-surface="social-card" className={`social-card group relative flex w-full max-w-[280px] items-center gap-4 rounded-[1.2rem] border-2 border-border bg-surface/32 px-5 py-4 text-text-primary shadow-[0_4px_20px_rgb(0,0,0,0.06)] backdrop-blur-md transition-all duration-300 hover:-translate-y-1 hover:border-accent hover:bg-surface/44 hover:shadow-[0_8px_30px_rgb(0,0,0,0.12)] ${isLeft ? "mr-0 sm:mr-10" : "ml-0 sm:ml-10"}`}>
+                <a href={link.url} target="_blank" rel="noreferrer" data-nature-surface="social-card" className={`social-card group relative flex w-full max-w-[280px] items-center gap-4 rounded-[1.2rem] border-2 border-border bg-surface/32 px-5 py-4 text-text-primary shadow-[0_4px_20px_rgb(0,0,0,0.06)] transition-all duration-300 hover:-translate-y-1 hover:border-accent hover:bg-surface/44 hover:shadow-[0_8px_30px_rgb(0,0,0,0.12)] ${isLeft ? "mr-0 sm:mr-10" : "ml-0 sm:ml-10"}`}>
                   <div className="absolute inset-0 -z-10 rounded-[1.2rem] bg-accent/5 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
                   <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-border/50 bg-surface-secondary/36 text-text-secondary shadow-sm transition-colors duration-300 group-hover:bg-accent group-hover:text-accent-foreground">{ICONS[link.platform] || ICONS.Instagram}</div>
                   <div className="flex flex-col items-start text-left">

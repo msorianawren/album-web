@@ -57,7 +57,7 @@ export default async function AlbumsPage({ searchParams }: AlbumsPageProps) {
       <NatureAnimatedBackground config={landing.background_settings} />
       <main className="relative z-10 min-h-screen bg-transparent">
         <AppHeader />
-      <section className="mx-auto max-w-[1200px] px-6 py-20 sm:py-32">
+      <section className="mx-auto max-w-[1480px] px-4 sm:px-6 lg:px-8 py-16 sm:py-24">
         <div className="max-w-4xl">
           <p className="text-[0.68rem] font-semibold uppercase tracking-[0.25em] text-text-secondary mb-4">
             {dict.albums.archive_subtitle}
@@ -71,7 +71,7 @@ export default async function AlbumsPage({ searchParams }: AlbumsPageProps) {
         </div>
       </section>
       <AlbumList
-        key={`${browseQuery.status ?? "all"}|${browseQuery.limit}|${browseQuery.cols}|${browseQuery.page}`}
+        key={`${browseQuery.status ?? "all"}|${browseQuery.limit}|${browseQuery.page}`}
         sections={sections}
         query={{ status: browseQuery.status, limit: browseQuery.limit, cols: browseQuery.cols, page: browseQuery.page }}
         dict={dict}

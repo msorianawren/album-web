@@ -9,12 +9,12 @@ import type { LandingBackgroundSettings } from "@/lib/types";
 
 const defaultBackgroundSettings: LandingBackgroundSettings = {
   enabled: true,
-  preset: "mist",
-  intensity: 50,
-  opacity: 45,
+  preset: "sakura",
+  intensity: 100,
+  opacity: 100,
   speed: 50,
   density: 50,
-  blur: 2,
+  blur: 0,
   accent_color_1: null,
   accent_color_2: null,
   custom_url: null,
