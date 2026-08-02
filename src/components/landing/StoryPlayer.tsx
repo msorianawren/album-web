@@ -90,10 +90,14 @@ export function StoryPlayer({
   useEffect(() => {
     const dialog = dialogRef.current;
     if (!dialog) return;
-    // showModal() must run before video can be fetched by Safari iOS.
-    // requestAnimationFrame ensures the dialog is visible and painted before
-    // React mounts the video element on the next render cycle.
     dialog.showModal();
+    // Safari iOS suspends media loading for elements that were not visible when
+    // the browser first encountered them. Calling video.load() after showModal()
+    // resets the suspended state so Safari will actually fetch and decode the video.
+    const video = videoRef.current;
+    if (video) {
+      video.load();
+    }
     return () => {
       closeTimelineRef.current?.kill();
       videoRef.current?.pause();
@@ -107,12 +111,16 @@ export function StoryPlayer({
     if (!video) return;
     video.muted = false;
     video.volume = 1;
-    // Defer play() by one task so the dialog is fully painted and Safari
-    // does not immediately suspend the media element.
+    // When switching videos (key={current.id} remounts the element), Safari iOS
+    // also suspends the new element until load() is called explicitly.
+    // We call load() here to un-suspend, then play() to start.
+    // setTimeout(0) defers until after the browser paints, giving Safari time to
+    // register the dialog as the active top-layer context.
     const id = window.setTimeout(() => {
+      video.load();
       void video.play().catch(() => {
-        // Unmuted autoplay blocked (iOS Safari policy) → retry muted.
-        // Native controls remain so the user can unmute manually.
+        // Unmuted autoplay blocked → retry muted so video always starts.
+        // Native controls remain so the user can tap to unmute.
         video.muted = true;
         void video.play().catch(() => {});
       });
@@ -159,8 +167,8 @@ export function StoryPlayer({
             poster={current.poster_url}
             controls
             playsInline
-            // webkit-playsinline is required for inline playback in iOS Safari WebViews
             {...({ "webkit-playsinline": "true" } as Record<string, string>)}
+            crossOrigin="anonymous"
             preload="auto"
             autoPlay
             onEnded={() => { if (currentIndex < items.length - 1) next(); }}
