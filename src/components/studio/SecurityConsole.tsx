@@ -477,9 +477,23 @@ export function SecurityConsole({
                         {log.actor_email ? (
                           <span className="font-medium text-text-primary">{log.actor_email}</span>
                         ) : (
-                          <span className="inline-flex items-center rounded-md bg-surface/80 px-2 py-0.5 text-xs text-text-secondary border border-border/50 font-normal">
-                            Guest / Public Visitor
-                          </span>
+                          <div className="flex flex-col gap-1 items-start">
+                            <span className="inline-flex items-center gap-1 rounded-md bg-amber-500/10 px-2 py-0.5 text-xs text-amber-500 border border-amber-500/20 font-mono font-medium">
+                              Guest ({log.guest_visitor_name || (log.metadata?.guest_name as string) || "Visitor"})
+                            </span>
+                            {log.guest_visitor_id && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setSelectedVisitorId(log.guest_visitor_id!);
+                                  setActiveTab("visitors");
+                                }}
+                                className="text-[11px] text-accent-primary hover:underline font-normal"
+                              >
+                                View activity →
+                              </button>
+                            )}
+                          </div>
                         )}
                       </td>
                       <td className="py-3 pr-4">

@@ -5,6 +5,7 @@ import { apiError, apiSuccess, toServerError } from "@/lib/errors";
 import { setSessionCookies } from "@/lib/session-cookies";
 import { createAnonSupabase, supabase } from "@/lib/supabase";
 import { safeAuthNext } from "@/lib/auth-redirect";
+import { linkGuestToUser } from "@/lib/guest-visitor";
 
 export async function POST(request: NextRequest) {
   try {
@@ -34,6 +35,11 @@ export async function POST(request: NextRequest) {
       .maybeSingle();
     const profile = await upsertUserProfile(data.user);
     const isNewUser = !existingProfile;
+
+    const guestId = request.cookies.get("gid")?.value;
+    if (guestId) {
+      void linkGuestToUser(guestId, data.user.id);
+    }
 
     await supabase.from("audit_logs").insert({
       actor_user_id: data.user.id,
