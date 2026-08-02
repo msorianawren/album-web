@@ -49,8 +49,19 @@ function drawWrenFlight(
   context.fillStyle = gradient;
   context.fillRect(0, 0, width, height);
 
-  // Parallax Clouds/Background elements (pseudo-random based on state.tickCounter)
-  context.fillStyle = "rgba(255, 255, 255, 0.15)";
+  const horizon = height * 0.72;
+  const sunX = width * 0.76;
+  const sunY = height * 0.2;
+  const sun = context.createRadialGradient(sunX, sunY, 4, sunX, sunY, width * 0.14);
+  sun.addColorStop(0, "rgba(255, 241, 199, 0.94)");
+  sun.addColorStop(1, "rgba(255, 241, 199, 0)");
+  context.fillStyle = sun;
+  context.beginPath();
+  context.arc(sunX, sunY, width * 0.14, 0, Math.PI * 2);
+  context.fill();
+
+  // Soft parallax clouds and a two-layer woodland horizon establish depth.
+  context.fillStyle = "rgba(255, 255, 255, 0.14)";
   for (let i = 0; i < 3; i++) {
     const cloudX = (width + ((i * 300 - state.tickCounter * (1 + i)) % (width + 200))) - 100;
     const cloudY = height * 0.2 + (i * 50);
@@ -58,6 +69,19 @@ function drawWrenFlight(
     context.ellipse(cloudX, cloudY, 80 + i * 20, 25 + i * 10, 0, 0, Math.PI * 2);
     context.fill();
   }
+  context.fillStyle = "rgba(42, 89, 75, 0.34)";
+  context.beginPath();
+  context.moveTo(0, horizon);
+  for (let x = 0; x <= width + 40; x += 40) {
+    const canopyY = horizon - 26 - Math.sin((x + state.tickCounter * 0.18) * 0.026) * 18;
+    context.quadraticCurveTo(x + 20, canopyY, x + 40, horizon - 14);
+  }
+  context.lineTo(width, height);
+  context.lineTo(0, height);
+  context.closePath();
+  context.fill();
+  context.fillStyle = "rgba(24, 66, 53, 0.52)";
+  context.fillRect(0, horizon + 20, width, height - horizon);
 
   const t = state.complete ? 1 : Math.max(0, Math.min(1, interpolation));
 
@@ -89,6 +113,15 @@ function drawWrenFlight(
     context.beginPath();
     context.roundRect(x, gapCenter + gapHalf, w, height - (gapCenter + gapHalf) + 10, w/3);
     context.fill();
+
+    context.fillStyle = "rgba(133, 194, 120, 0.78)";
+    for (let leaf = 0; leaf < 4; leaf += 1) {
+      const leafY = (leaf + 1) * height / 6;
+      const sway = Math.sin(state.tickCounter * 0.08 + leaf * 1.7) * w * 0.14;
+      context.beginPath();
+      context.ellipse(x + w * 0.5 + sway, leafY, w * 0.38, height * 0.018, leaf % 2 ? 0.55 : -0.55, 0, Math.PI * 2);
+      context.fill();
+    }
   }
 
   // Draw the wren with a velocity-led glide and an impulse-driven wingbeat.
