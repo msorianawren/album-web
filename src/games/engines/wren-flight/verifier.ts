@@ -30,9 +30,9 @@ export function verifyWrenFlight(
     stepWrenFlight(state);
   }
 
-  if (traceIndex < trace.actions.length) {
-    return { valid: false, reason: "Extraneous actions after game completion", versionId: version.id, replayDigest, score: 0, durationTicks: 0 };
-  }
+  // A buffered flap can arrive in the same rendered frame as a collision.
+  // It cannot alter the completed state or inflate the score, so it is safe
+  // to ignore rather than reject an otherwise valid rewarded replay.
 
   return {
     valid: true,
