@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
-import type { GameDifficulty, GamePublishedVersion, GameReplayTrace, GameVerificationResult } from "../../core/types";
-import { createSnakeState, queueSnakeDirection, stepSnake, type SnakeDirection } from "./model";
+import type { GameDifficulty, GamePublishedVersion, GameReplayTrace, GameVerificationResult } from "../../core/types.ts";
+import { createSnakeState, queueSnakeDirection, stepSnake, type SnakeDirection } from "./model.ts";
 
 export function verifySnake(
   version: GamePublishedVersion,

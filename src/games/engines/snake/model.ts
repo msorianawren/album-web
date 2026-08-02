@@ -35,8 +35,8 @@ export interface SnakeState {
   complete: boolean;
 }
 
-const POWER_UP_DURATION_TICKS = 50;
-const COMBO_WINDOW_TICKS = 20;
+const POWER_UP_DURATION_TICKS = 65;
+const COMBO_WINDOW_TICKS = 28;
 
 const vectors: Record<SnakeDirection, SnakePoint> = {
   up: { x: 0, y: -1 },
@@ -141,16 +141,13 @@ export function stepSnake(state: SnakeState): SnakeStepResult {
   const head = state.body[0];
   const next = { x: head.x + vector.x, y: head.y + vector.y };
 
-  const ghostActive = state.ghostUntil > state.tick;
-  if (ghostActive) {
-    next.x = (next.x + state.width) % state.width;
-    next.y = (next.y + state.height) % state.height;
-  } else if (next.x < 0 || next.x >= state.width || next.y < 0 || next.y >= state.height) {
-    state.complete = true;
-    return { event: "crash" };
-  }
+  // Toroidal wrap-around: entering any wall exits on opposite border
+  next.x = (next.x + state.width) % state.width;
+  next.y = (next.y + state.height) % state.height;
 
-  if (state.body.some((segment) => samePoint(segment, next))) {
+  // Self-collision check (ghost power-up gives immunity to self-collision)
+  const ghostActive = state.ghostUntil > state.tick;
+  if (!ghostActive && state.body.some((segment) => samePoint(segment, next))) {
     state.complete = true;
     return { event: "crash" };
   }

@@ -26,11 +26,15 @@ const powerUpStyle: Record<SnakePowerUpType, { color: string; label: string; sym
   shrink: { color: "#5eead4", label: "Tail trim", symbol: "✦" },
 };
 
+function getBaseStepMs(speed: "slow" | "normal" | "fast") {
+  return speed === "slow" ? 190 : speed === "normal" ? 145 : 100;
+}
+
 function getSnakeStepMs(speed: "slow" | "normal" | "fast", state: SnakeState) {
-  const base = speed === "slow" ? 150 : speed === "normal" ? 100 : 70;
-  const levelAcceleration = Math.min(32, (state.level - 1) * 8);
-  const speedBurst = state.speedBoostUntil > state.tick ? 24 : 0;
-  return Math.max(42, base - levelAcceleration - speedBurst);
+  const base = getBaseStepMs(speed);
+  const levelAcceleration = Math.min(25, (state.level - 1) * 3.5);
+  const speedBurst = state.speedBoostUntil > state.tick ? 18 : 0;
+  return Math.max(55, Math.round(base - levelAcceleration - speedBurst));
 }
 
 function getCanvasPoint(canvas: HTMLCanvasElement, state: SnakeState, point: SnakePoint) {
@@ -84,107 +88,164 @@ function drawSnake(
     }
   }
 
-  // Draw a subtle border around the play area
-  context.strokeStyle = "rgba(255,255,255,.05)";
-  context.lineWidth = 1;
+  // Draw a subtle border around the play area with a gentle wrap glow
+  context.strokeStyle = "rgba(255, 255, 255, 0.12)";
+  context.lineWidth = 1.5;
   context.strokeRect(offsetX, offsetY, state.width * cell, state.height * cell);
 
-  // Calculate interpolated positions
-  // If the game is complete, don't interpolate further than 1
+  // Calculate interpolated positions with seamless toroidal wrap handling
   const t = state.complete ? 1 : Math.max(0, Math.min(1, interpolation));
   
-  const getInterpolated = (prev: SnakePoint | undefined, curr: SnakePoint) => {
+  const getWrappedInterpolated = (prev: SnakePoint | undefined, curr: SnakePoint) => {
     if (!prev) return { x: curr.x, y: curr.y };
-    // If the distance is > 1 (e.g. wrapped or teleported), don't interpolate
-    if (Math.abs(curr.x - prev.x) > 1 || Math.abs(curr.y - prev.y) > 1) {
+    
+    let dx = curr.x - prev.x;
+    if (dx < -1) dx += state.width;
+    else if (dx > 1) dx -= state.width;
+    
+    let dy = curr.y - prev.y;
+    if (dy < -1) dy += state.height;
+    else if (dy > 1) dy -= state.height;
+
+    if (Math.abs(dx) > 1 || Math.abs(dy) > 1) {
       return { x: curr.x, y: curr.y };
     }
-    return {
-      x: prev.x + (curr.x - prev.x) * t,
-      y: prev.y + (curr.y - prev.y) * t
-    };
+
+    let continuousX = prev.x + dx * t;
+    let continuousY = prev.y + dy * t;
+
+    continuousX = (continuousX % state.width + state.width) % state.width;
+    continuousY = (continuousY % state.height + state.height) % state.height;
+
+    return { x: continuousX, y: continuousY };
   };
 
   const bodyPoints = state.body.map((segment, index) => {
-    // A segment's previous position is where it was last tick.
-    // In our logic, each segment moved to the position of the one before it,
-    // so previousBody[index] holds its old location.
     const prev = previousBody[index] || segment;
-    return getInterpolated(prev, segment);
+    return getWrappedInterpolated(prev, segment);
   });
+
+  // Clip the snake drawing to the board bounds so crossing segments never spill outside or distort
+  context.save();
+  context.beginPath();
+  context.rect(offsetX, offsetY, state.width * cell, state.height * cell);
+  context.clip();
 
   if (bodyPoints.length > 0) {
     const head = bodyPoints[0];
+    const isGhost = state.ghostUntil > state.tick;
     
     // Draw Snake Body Path
     context.lineCap = "round";
     context.lineJoin = "round";
     context.lineWidth = cell * 0.76;
-    context.shadowColor = "rgba(255, 247, 232, 0.4)";
-    context.shadowBlur = cell * 0.5;
+    context.shadowColor = isGhost ? "rgba(167, 139, 250, 0.9)" : "rgba(255, 247, 232, 0.4)";
+    context.shadowBlur = cell * (isGhost ? 0.8 : 0.5);
 
-    // We draw from tail to head
+    // Draw from tail to head
     for (let i = bodyPoints.length - 1; i > 0; i--) {
       const start = bodyPoints[i];
       const end = bodyPoints[i - 1];
       
-      if (Math.abs(start.x - end.x) > 1.5 || Math.abs(start.y - end.y) > 1.5) continue;
+      const alpha = isGhost 
+        ? Math.max(0.45, 0.92 - i * 0.03) 
+        : Math.max(0.4, 1 - i * 0.04);
 
-      context.beginPath();
-      context.moveTo(offsetX + start.x * cell + cell * 0.5, offsetY + start.y * cell + cell * 0.5);
-      context.lineTo(offsetX + end.x * cell + cell * 0.5, offsetY + end.y * cell + cell * 0.5);
-      // Bright neon cyan body fading
-      context.strokeStyle = `rgba(0, 212, 255, ${Math.max(0.4, 1 - i * 0.04)})`;
-      context.stroke();
+      context.strokeStyle = isGhost 
+        ? `rgba(167, 139, 250, ${alpha})`
+        : `rgba(0, 212, 255, ${alpha})`;
+
+      const dx = end.x - start.x;
+      const dy = end.y - start.y;
+      const wrapsX = Math.abs(dx) > 1.5;
+      const wrapsY = Math.abs(dy) > 1.5;
+
+      if (!wrapsX && !wrapsY) {
+        // Normal segment
+        context.beginPath();
+        context.moveTo(offsetX + start.x * cell + cell * 0.5, offsetY + start.y * cell + cell * 0.5);
+        context.lineTo(offsetX + end.x * cell + cell * 0.5, offsetY + end.y * cell + cell * 0.5);
+        context.stroke();
+      } else {
+        // Dual-portal wrapped segment: draw 2 halves projected through boundaries
+        const virtualEndX = dx < -1.5 ? end.x + state.width : dx > 1.5 ? end.x - state.width : end.x;
+        const virtualEndY = dy < -1.5 ? end.y + state.height : dy > 1.5 ? end.y - state.height : end.y;
+
+        const virtualStartX = dx < -1.5 ? start.x - state.width : dx > 1.5 ? start.x + state.width : start.x;
+        const virtualStartY = dy < -1.5 ? start.y - state.height : dy > 1.5 ? start.y + state.height : start.y;
+
+        // Half 1: exiting start border
+        context.beginPath();
+        context.moveTo(offsetX + start.x * cell + cell * 0.5, offsetY + start.y * cell + cell * 0.5);
+        context.lineTo(offsetX + virtualEndX * cell + cell * 0.5, offsetY + virtualEndY * cell + cell * 0.5);
+        context.stroke();
+
+        // Half 2: entering end border
+        context.beginPath();
+        context.moveTo(offsetX + virtualStartX * cell + cell * 0.5, offsetY + virtualStartY * cell + cell * 0.5);
+        context.lineTo(offsetX + end.x * cell + cell * 0.5, offsetY + end.y * cell + cell * 0.5);
+        context.stroke();
+      }
     }
 
-    // Draw Head
-    context.shadowBlur = cell * 0.8;
-    context.shadowColor = "rgba(0, 255, 255, 0.9)";
-    context.fillStyle = "#e0fbfc";
-    context.beginPath();
-    context.arc(
-      offsetX + head.x * cell + cell * 0.5, 
-      offsetY + head.y * cell + cell * 0.5, 
-      cell * 0.38, 
-      0, 
-      Math.PI * 2
-    );
-    context.fill();
+    // Helper to draw head + eyes at any grid offset
+    const drawHeadAt = (hx: number, hy: number) => {
+      const headCenterX = offsetX + hx * cell + cell * 0.5;
+      const headCenterY = offsetY + hy * cell + cell * 0.5;
 
-    // Draw Eyes
-    context.shadowBlur = 0;
-    context.fillStyle = "#17271f";
-    const eyeOffset = cell * 0.15;
-    const eyeRadius = cell * 0.08;
-    
-    let dx = 0;
-    let dy = 0;
-    if (state.direction === "up") dy = -1;
-    if (state.direction === "down") dy = 1;
-    if (state.direction === "left") dx = -1;
-    if (state.direction === "right") dx = 1;
+      context.save();
+      context.shadowBlur = isGhost ? cell * 1.1 : cell * 0.8;
+      context.shadowColor = isGhost ? "rgba(167, 139, 250, 0.95)" : "rgba(0, 255, 255, 0.9)";
+      context.fillStyle = isGhost ? "#f3e8ff" : "#e0fbfc";
+      context.beginPath();
+      context.arc(headCenterX, headCenterY, cell * 0.38, 0, Math.PI * 2);
+      context.fill();
 
-    // Normal to direction
-    const nx = dy;
-    const ny = -dx;
+      // Draw Eyes
+      context.shadowBlur = 0;
+      context.fillStyle = isGhost ? "#581c87" : "#17271f";
+      const eyeOffset = cell * 0.15;
+      const eyeRadius = cell * 0.08;
+      
+      let dx = 0;
+      let dy = 0;
+      if (state.direction === "up") dy = -1;
+      if (state.direction === "down") dy = 1;
+      if (state.direction === "left") dx = -1;
+      if (state.direction === "right") dx = 1;
 
-    context.beginPath();
-    context.arc(
-      offsetX + head.x * cell + cell * 0.5 + dx * eyeOffset + nx * eyeOffset,
-      offsetY + head.y * cell + cell * 0.5 + dy * eyeOffset + ny * eyeOffset,
-      eyeRadius, 0, Math.PI * 2
-    );
-    context.fill();
+      const nx = dy;
+      const ny = -dx;
 
-    context.beginPath();
-    context.arc(
-      offsetX + head.x * cell + cell * 0.5 + dx * eyeOffset - nx * eyeOffset,
-      offsetY + head.y * cell + cell * 0.5 + dy * eyeOffset - ny * eyeOffset,
-      eyeRadius, 0, Math.PI * 2
-    );
-    context.fill();
+      context.beginPath();
+      context.arc(
+        headCenterX + dx * eyeOffset + nx * eyeOffset,
+        headCenterY + dy * eyeOffset + ny * eyeOffset,
+        eyeRadius, 0, Math.PI * 2
+      );
+      context.fill();
+
+      context.beginPath();
+      context.arc(
+        headCenterX + dx * eyeOffset - nx * eyeOffset,
+        headCenterY + dy * eyeOffset - ny * eyeOffset,
+        eyeRadius, 0, Math.PI * 2
+      );
+      context.fill();
+      context.restore();
+    };
+
+    // Draw primary head
+    drawHeadAt(head.x, head.y);
+
+    // If head is close to any boundary (< 1 cell), draw wrapped projection on opposite border
+    if (head.x < 1) drawHeadAt(head.x + state.width, head.y);
+    if (head.x > state.width - 1) drawHeadAt(head.x - state.width, head.y);
+    if (head.y < 1) drawHeadAt(head.x, head.y + state.height);
+    if (head.y > state.height - 1) drawHeadAt(head.x, head.y - state.height);
   }
+
+  context.restore(); // Restore board clip
 
   // Draw Detailed Berry (Food)
   const pulse = Math.sin(performance.now() / 200) * 0.05 + 0.95;
@@ -233,7 +294,7 @@ function drawSnake(
     context.font = `700 ${Math.max(10, cell * 0.42)}px system-ui`;
     context.textAlign = "center";
     context.textBaseline = "middle";
-    context.fillText(power.symbol, centerX, centerY + 1);
+context.fillText(power.symbol, centerX, centerY + 1);
     context.restore();
   }
 
@@ -306,14 +367,24 @@ export default function SnakeGame({
   const setDirection = useCallback((direction: SnakeDirection) => {
     if (!runtimeRef.current) return;
     const tick = runtimeRef.current.tick;
-    actionQueueRef.current.push({ tick, dir: direction });
+    const lastPendingDir = actionQueueRef.current.length > 0
+      ? actionQueueRef.current[actionQueueRef.current.length - 1].dir
+      : stateRef.current.direction;
+    const oppositeDir = ({ up: "down", down: "up", left: "right", right: "left" } as const)[lastPendingDir];
+    if (direction !== lastPendingDir && direction !== oppositeDir) {
+      if (actionQueueRef.current.length < 2) {
+        actionQueueRef.current.push({ tick, dir: direction });
+      } else {
+        actionQueueRef.current[1] = { tick, dir: direction };
+      }
+    }
   }, []);
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const runtime = createFixedStepRuntime({
-      stepMs: speed === "slow" ? 150 : speed === "normal" ? 100 : 70,
+      stepMs: getBaseStepMs(speed),
       targetRenderFps: quality === "low" ? 30 : 60,
       onTick(tick) {
         previousBodyRef.current = stateRef.current.body.map(p => ({ ...p }));
@@ -496,7 +567,7 @@ export default function SnakeGame({
         formatVersion: 1,
         engineVersion: "snake-v1",
         seed: session.seed,
-        fixedStepMs: speed === "slow" ? 150 : speed === "normal" ? 100 : 70,
+        fixedStepMs: getBaseStepMs(speed),
         actions: traceRef.current,
       };
       
@@ -527,7 +598,7 @@ export default function SnakeGame({
       title="Wren Trail Snake"
       status={status}
       score={score}
-      detail="Guide a ribbon-tailed wren through a quiet moonlit garden. Target: 30 points to earn rewards."
+      detail="Guide a ribbon-tailed wren through a quiet moonlit garden. Move freely through borders into the opposite edge. Target: 30 points to earn rewards."
       onStart={start}
       onPause={pause}
       onRestart={restart}

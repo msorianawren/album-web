@@ -1,7 +1,7 @@
 import { describe, it } from "node:test";
 import assert from "node:assert";
-import { verifySnake } from "./verifier";
-import type { GamePublishedVersion, GameDifficulty, GameReplayTrace } from "../../core/types";
+import { verifySnake } from "./verifier.ts";
+import type { GamePublishedVersion, GameDifficulty, GameReplayTrace } from "../../core/types.ts";
 
 describe("Snake Verifier", () => {
   const mockVersion: GamePublishedVersion = {
@@ -27,6 +27,22 @@ describe("Snake Verifier", () => {
     };
     const result = verifySnake(mockVersion, mockDifficulty, trace);
     assert.strictEqual(result.valid, true);
+  });
+
+  it("should allow snake to wrap around borders without dying", () => {
+    // Board is 20x15. Head starts at (10, 7) moving right.
+    // Moving straight right for 25 ticks will cross right border (x=19 -> 0) and continue.
+    const trace: GameReplayTrace = {
+      formatVersion: 1,
+      engineVersion: "snake-v1",
+      seed: "test-seed-wrap",
+      fixedStepMs: 100,
+      actions: []
+    };
+    const result = verifySnake(mockVersion, mockDifficulty, trace);
+    assert.strictEqual(result.valid, true);
+    // Since it doesn't crash on the wall and has no self-bite actions, duration should reach MAX_TICKS or food completion
+    assert.ok(result.durationTicks > 30);
   });
 
   it("should fail an invalid engine version", () => {

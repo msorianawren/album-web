@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
-import type { GameDifficulty, GamePublishedVersion, GameReplayTrace, GameVerificationResult } from "../../core/types";
-import { createFeatherMergeState, moveFeatherMerge, type MergeDirection } from "./model";
+import type { GameDifficulty, GamePublishedVersion, GameReplayTrace, GameVerificationResult } from "../../core/types.ts";
+import { createFeatherMergeState, moveFeatherMerge, type MergeDirection } from "./model.ts";
 
 export function verifyFeatherMerge(
   version: GamePublishedVersion,
@@ -32,6 +32,6 @@ export function verifyFeatherMerge(
     versionId: version.id,
     replayDigest,
     score: state.score < 500 ? 0 : state.score,
-    durationTicks: step,
+    durationTicks: Math.max(1, step),
   };
 }
