@@ -37,19 +37,32 @@ export async function GET(request: NextRequest, { params }: Params) {
       if (userProfile?.email) linkedUserEmail = userProfile.email;
     }
 
-    // 3. Fetch guest album activity with album titles
+    // 3. Fetch guest album activity
     const { data: activityData, error: activityError } = await client
       .from("guest_album_activity")
-      .select(`
-        id, album_id, media_id, event_type, created_at, album_status_at_event, metadata, source,
-        albums!guest_album_activity_album_id_fkey(title, slug, status)
-      `)
+      .select("id, album_id, media_id, event_type, created_at, album_status_at_event, metadata, source")
       .eq("guest_visitor_id", visitorId)
       .order("created_at", { ascending: false });
 
     if (activityError) throw activityError;
 
-    const activities = activityData ?? [];
+    const rawActivities = activityData ?? [];
+
+    // Batch fetch album metadata for all unique album_ids
+    const albumIds = Array.from(
+      new Set(rawActivities.map((a) => a.album_id).filter(Boolean)),
+    ) as string[];
+    const albumMap = new Map<string, { title: string; slug: string; status: string }>();
+
+    if (albumIds.length > 0) {
+      const { data: albums } = await client
+        .from("albums")
+        .select("id, title, slug, status")
+        .in("id", albumIds);
+      albums?.forEach((alb) => {
+        albumMap.set(alb.id, { title: alb.title, slug: alb.slug, status: alb.status });
+      });
+    }
 
     // Aggregates
     const viewedAlbumSet = new Set<string>();
@@ -62,9 +75,8 @@ export async function GET(request: NextRequest, { params }: Params) {
     const viewedMap = new Map<string, { album_id: string; title: string; count: number; last_at: string }>();
     const downloadedMap = new Map<string, { album_id: string; title: string; count: number; last_at: string }>();
 
-    activities.forEach((act) => {
-      // TypeScript cast for album join
-      const albumObj = Array.isArray(act.albums) ? act.albums[0] : act.albums;
+    const activities = rawActivities.map((act) => {
+      const albumObj = act.album_id ? albumMap.get(act.album_id) ?? null : null;
       const albumTitle = albumObj?.title ?? "Unknown Album";
       const albumId = act.album_id ?? "unknown";
 
@@ -85,6 +97,11 @@ export async function GET(request: NextRequest, { params }: Params) {
         current.count++;
         downloadedMap.set(albumId, current);
       }
+
+      return {
+        ...act,
+        albums: albumObj,
+      };
     });
 
     // 4. Also fetch audit logs for this guest visitor (last 50)
