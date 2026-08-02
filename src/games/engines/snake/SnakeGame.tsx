@@ -329,6 +329,7 @@ export default function SnakeGame({
   const [score, setScore] = useState(0);
   const [speed, setSpeed] = useState<"slow" | "normal" | "fast">("normal");
   const [completion, setCompletion] = useState<FinalizeGameSessionResponse | null>(null);
+  const [completionError, setCompletionError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [hud, setHud] = useState<{ level: number; combo: number; activePower: SnakePowerUpType | null }>({
     level: 1,
@@ -491,6 +492,7 @@ export default function SnakeGame({
 
     if (status === "complete" || status === "ready") {
       setCompletion(null);
+      setCompletionError(null);
       setScore(0);
       actionQueueRef.current = [];
       traceRef.current = [];
@@ -576,14 +578,21 @@ export default function SnakeGame({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ nonce: session.nonce, replay: trace }),
       })
-        .then((res) => (res.ok ? res.json() : null))
-        .then((json) => {
-          if (json?.data) {
-            setCompletion(json.data);
-            window.dispatchEvent(new CustomEvent("wren-feathers-update", {
-              detail: { rewardGranted: json.data.rewardGranted, balanceAfter: json.data.balanceAfter }
-            }));
+        .then(async (res) => {
+          const json = await res.json().catch(() => null);
+          if (!res.ok || !json?.data) {
+            throw new Error(json?.message ?? "Unable to award Wren Feathers for this session.");
           }
+          return json;
+        })
+        .then((json) => {
+          setCompletion(json.data);
+          window.dispatchEvent(new CustomEvent("wren-feathers-update", {
+            detail: { rewardGranted: json.data.rewardGranted, balanceAfter: json.data.balanceAfter }
+          }));
+        })
+        .catch((error: unknown) => {
+          setCompletionError(error instanceof Error ? error.message : "Unable to award Wren Feathers for this session.");
         })
         .finally(() => {
           setSubmitting(false);
@@ -654,7 +663,12 @@ export default function SnakeGame({
       )}
       {completion && completion.rewardGranted === 0 && (
         <div className="mt-2 rounded-xl bg-surface/50 p-4 text-center text-sm text-text-secondary">
-          Target of 30 points not reached. No feathers awarded.
+          Today&apos;s Snake reward limit has been reached. Come back tomorrow for more Wren Feathers.
+        </div>
+      )}
+      {completionError && (
+        <div className="mt-2 rounded-xl bg-rose-500/10 p-4 text-center text-sm text-rose-700 dark:text-rose-300">
+          {completionError}
         </div>
       )}
       {!completion && status === "complete" && !signedIn && (
