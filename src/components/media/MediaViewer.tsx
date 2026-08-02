@@ -462,10 +462,7 @@ export function MediaViewer({
                       src={viewerTarget.src}
                       poster={delivery?.card.src ?? undefined}
                       controls
-                      playsInline
-                      // WebKit attribute for mobile iOS WebViews
-                      {...{ "webkit-playsinline": "true", "x5-playsinline": "true" }}
-                      preload="auto"
+                      preload="metadata"
                       controlsList={protectAssets ? "nodownload" : undefined}
                       className="h-auto w-auto max-h-full max-w-full object-contain shadow-2xl shadow-black/40 sm:rounded-[18px]"
                       onError={() => setFailedVideos((current) => ({ ...current, [item.id]: true }))}
