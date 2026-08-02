@@ -105,8 +105,14 @@ export function StoryPlayer({
     if (!video) return;
     video.muted = false;
     video.volume = 1;
+    // iOS Safari requires a user gesture for unmuted autoplay.
+    // If the browser rejects the play promise, retry with muted=true
+    // so the video always starts; the native controls let the user unmute.
     void video.play().catch(() => {
-      // Native controls remain available when browser playback policy intervenes.
+      video.muted = true;
+      void video.play().catch(() => {
+        // Controls remain available – user can press play manually.
+      });
     });
   }, [current.id, currentIndex, onIndexChange]);
 

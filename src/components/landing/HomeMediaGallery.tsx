@@ -1,12 +1,23 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { Play } from "lucide-react";
 import type { LandingMediaItem } from "@/lib/types";
 
 export function HomeMediaGallery({ items }: { items: LandingMediaItem[] }) {
   const displayItems = [...items].filter((item) => item.enabled && item.url.trim()).sort((a, b) => a.order - b.order);
   const [activeVideoId, setActiveVideoId] = useState<string | null>(null);
+
+  // Ref callback: called when the video element mounts after user clicks.
+  // Running play() here keeps it inside the user-gesture chain so Safari
+  // does not block autoplay. Falls back to muted if unmuted is denied.
+  const videoMountRef = useCallback((el: HTMLVideoElement | null) => {
+    if (!el) return;
+    void el.play().catch(() => {
+      el.muted = true;
+      void el.play().catch(() => {});
+    });
+  }, []);
 
   if (displayItems.length === 0) return null;
 
@@ -22,7 +33,7 @@ export function HomeMediaGallery({ items }: { items: LandingMediaItem[] }) {
           <figure key={item.id} className="lcb-gallery__frame" data-slot={(index % 6) + 1}>
             {item.type === "video" ? (
               activeVideoId === item.id ? (
-                <video src={item.url} poster={item.poster_url || undefined} controls playsInline preload="metadata" />
+                <video ref={videoMountRef} src={item.url} poster={item.poster_url || undefined} controls playsInline preload="metadata" />
               ) : (
                 <button type="button" onClick={() => setActiveVideoId(item.id)} aria-label={`Load video${item.title ? `: ${item.title}` : ""}`}>
                   {item.poster_url ? (
