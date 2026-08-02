@@ -13,11 +13,20 @@ export function getRequestIp(request?: NextRequest | null) {
 
 export function getRequestIpWhois(request?: NextRequest | null) {
   if (!request) return null;
+  const rawCity = request.headers.get("x-vercel-ip-city");
+  let city = rawCity;
+  if (rawCity) {
+    try {
+      city = decodeURIComponent(rawCity);
+    } catch {
+      // keep raw if decode fails
+    }
+  }
   return {
     ip: getRequestIp(request),
     country: request.headers.get("x-vercel-ip-country"),
     region: request.headers.get("x-vercel-ip-region"),
-    city: request.headers.get("x-vercel-ip-city"),
+    city,
     latitude: request.headers.get("x-vercel-ip-latitude"),
     longitude: request.headers.get("x-vercel-ip-longitude"),
   };

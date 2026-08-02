@@ -761,25 +761,10 @@ export function SettingsCenter({
                   ))}
                 </div>
               </div>
-
-              <div className="mt-8 border-t border-border pt-8">
-                <h3 className="mb-4 font-serif text-xl text-text-primary">Section Visibility</h3>
-                <div className="grid gap-4 md:grid-cols-2">
-                  <Toggle label="Editorial Intro" checked={landing.section_toggles?.editorial_intro !== false} onChange={(v) => updateLanding("section_toggles", { ...landing.section_toggles, editorial_intro: v })} />
-                  <Toggle label="Album Worlds" checked={landing.section_toggles?.album_worlds !== false} onChange={(v) => updateLanding("section_toggles", { ...landing.section_toggles, album_worlds: v })} />
-                  <Toggle label="Media Gallery" checked={landing.section_toggles?.media_gallery !== false} onChange={(v) => updateLanding("section_toggles", { ...landing.section_toggles, media_gallery: v })} />
-                  <Toggle label="Social Links Tree" checked={landing.section_toggles?.social_tree !== false} onChange={(v) => updateLanding("section_toggles", { ...landing.section_toggles, social_tree: v })} />
-                  <Toggle label="Private Experience" checked={landing.section_toggles?.private_experience !== false} onChange={(v) => updateLanding("section_toggles", { ...landing.section_toggles, private_experience: v })} />
-                  <Toggle label="Creative Services" checked={landing.section_toggles?.creative_services !== false} onChange={(v) => updateLanding("section_toggles", { ...landing.section_toggles, creative_services: v })} />
-                  <Toggle label="Collaborators" checked={landing.section_toggles?.collaborators !== false} onChange={(v) => updateLanding("section_toggles", { ...landing.section_toggles, collaborators: v })} />
-                  <Toggle label="Personal Letter" checked={landing.section_toggles?.personal_letter !== false} onChange={(v) => updateLanding("section_toggles", { ...landing.section_toggles, personal_letter: v })} />
-                  <Toggle label="Founder Stories" checked={landing.admin_stories_settings?.enabled === true} onChange={(v) => updateLanding("admin_stories_settings", { ...(landing.admin_stories_settings!), enabled: v })} />
-                </div>
-              </div>
             </div>
             <LandingPreview landing={landing} activeLandingLocale={activeLandingLocale} />
           </div>
-          {landing.admin_stories_settings ? <AdminStoryEditor copy={{ eyebrow: getAdminStoryLocalized("eyebrow"), heading: getAdminStoryLocalized("heading") }} onCopyChange={(copy) => {
+          {landing.admin_stories_settings ? <AdminStoryEditor value={landing.admin_stories_settings} onChange={(value) => updateLanding("admin_stories_settings", value)} copy={{ eyebrow: getAdminStoryLocalized("eyebrow"), heading: getAdminStoryLocalized("heading") }} onCopyChange={(copy) => {
             if (activeLandingLocale === "en") {
               updateLanding("admin_stories_settings", { ...landing.admin_stories_settings!, ...copy });
             } else {
@@ -787,7 +772,22 @@ export function SettingsCenter({
               translations[activeLandingLocale] = { ...translations[activeLandingLocale], admin_stories_eyebrow: copy.eyebrow, admin_stories_heading: copy.heading };
               updateLanding("translations", translations);
             }
-          }} /> : null}
+          }} uploadPoster={async (file) => uploadLandingAsset("media", file)} uploadVideo={async (file) => uploadLandingAsset("media", file)} /> : null}
+
+          <div className="mt-8 border-t border-border pt-8">
+            <h3 className="mb-4 font-serif text-xl text-text-primary">Section Visibility</h3>
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+              <Toggle label="Editorial Intro" checked={landing.section_toggles?.editorial_intro !== false} onChange={(v) => updateLanding("section_toggles", { ...landing.section_toggles, editorial_intro: v })} />
+              <Toggle label="Album Worlds" checked={landing.section_toggles?.album_worlds !== false} onChange={(v) => updateLanding("section_toggles", { ...landing.section_toggles, album_worlds: v })} />
+              <Toggle label="Media Gallery" checked={landing.section_toggles?.media_gallery !== false} onChange={(v) => updateLanding("section_toggles", { ...landing.section_toggles, media_gallery: v })} />
+              <Toggle label="Social Links Tree" checked={landing.section_toggles?.social_tree !== false} onChange={(v) => updateLanding("section_toggles", { ...landing.section_toggles, social_tree: v })} />
+              <Toggle label="Private Experience" checked={landing.section_toggles?.private_experience !== false} onChange={(v) => updateLanding("section_toggles", { ...landing.section_toggles, private_experience: v })} />
+              <Toggle label="Creative Services" checked={landing.section_toggles?.creative_services !== false} onChange={(v) => updateLanding("section_toggles", { ...landing.section_toggles, creative_services: v })} />
+              <Toggle label="Collaborators" checked={landing.section_toggles?.collaborators !== false} onChange={(v) => updateLanding("section_toggles", { ...landing.section_toggles, collaborators: v })} />
+              <Toggle label="Personal Letter" checked={landing.section_toggles?.personal_letter !== false} onChange={(v) => updateLanding("section_toggles", { ...landing.section_toggles, personal_letter: v })} />
+              <Toggle label="Founder Stories" checked={landing.admin_stories_settings?.enabled === true} onChange={(v) => updateLanding("admin_stories_settings", { ...(landing.admin_stories_settings!), enabled: v })} />
+            </div>
+          </div>
         </Panel>
       ) : null}
 

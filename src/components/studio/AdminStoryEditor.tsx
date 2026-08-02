@@ -1,159 +1,304 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import Image from "next/image";
-import { ArrowDown, ArrowUp, Loader2, RotateCcw, Trash2, Upload, X } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import type { AdminStory } from "@/lib/types";
-import { isPortraitStory } from "@/lib/admin-stories/contract";
-import { readApiData, uploadBlobDirectly, type StoryListResponse } from "@/lib/admin-stories/client";
-import { createStoryPoster, inspectStoryVideo, type StoryVideoMetadata } from "@/lib/admin-stories/video";
+import type { LandingAdminStoriesSettings, AdminStory } from "@/lib/types";
+import { createAdminStory, deleteAdminStory, fetchAdminStories } from "./adminStoriesActions";
+import { Trash2, Loader2, Upload, Video, Image as ImageIcon, Play, CheckCircle2 } from "lucide-react";
+import clsx from "clsx";
 
-interface UploadDraft { file: File; poster: Blob; posterPreview: string; metadata: StoryVideoMetadata }
-interface PresignResponse { storyId: string; video: { uploadUrl: string; r2Key: string }; poster: { uploadUrl: string; r2Key: string } }
-type UploadState = "idle" | "reading_metadata" | "generating_poster" | "ready" | "requesting_upload" | "uploading_video" | "uploading_poster" | "finalizing" | "success" | "error";
-
-function formatBytes(value: number | null) {
-  if (value === null) return "Legacy metadata";
-  if (value < 1024 * 1024) return `${Math.ceil(value / 1024)} KB`;
-  return `${(value / 1024 / 1024).toFixed(1)} MB`;
+function extractPoster(videoFile: File): Promise<File> {
+  return new Promise((resolve, reject) => {
+    const video = document.createElement("video");
+    const url = URL.createObjectURL(videoFile);
+    video.src = url;
+    video.muted = true;
+    video.playsInline = true;
+    
+    video.onloadeddata = () => {
+      video.currentTime = Math.min(0.5, video.duration / 2); // Grab frame at 0.5s or halfway if short
+    };
+    
+    video.onseeked = () => {
+      const canvas = document.createElement("canvas");
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) {
+        URL.revokeObjectURL(url);
+        return reject(new Error("Canvas context missing"));
+      }
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      
+      canvas.toBlob((blob) => {
+        URL.revokeObjectURL(url);
+        if (!blob) return reject(new Error("Blob generation failed"));
+        resolve(new File([blob], videoFile.name.replace(/\.[^/.]+$/, "") + "-poster.jpg", { type: "image/jpeg" }));
+      }, "image/jpeg", 0.85);
+    };
+    
+    video.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error("Video loading failed"));
+    };
+  });
 }
 
-export function AdminStoryEditor({ copy, onCopyChange }: { copy: { eyebrow: string; heading: string }; onCopyChange: (copy: { eyebrow: string; heading: string }) => void }) {
+export function AdminStoryEditor({
+  value,
+  onChange,
+  copy,
+  onCopyChange,
+  uploadVideo,
+  uploadPoster,
+}: {
+  value: LandingAdminStoriesSettings;
+  onChange: (value: LandingAdminStoriesSettings) => void;
+  copy: { eyebrow: string; heading: string };
+  onCopyChange: (copy: { eyebrow: string; heading: string }) => void;
+  uploadVideo?: (file: File) => Promise<string | void>;
+  uploadPoster?: (file: File) => Promise<string | void>;
+}) {
   const [stories, setStories] = useState<AdminStory[]>([]);
-  const [limits, setLimits] = useState<StoryListResponse["limits"] | null>(null);
-  const [draft, setDraft] = useState<UploadDraft | null>(null);
-  const [caption, setCaption] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [uploadState, setUploadState] = useState<UploadState>("idle");
-  const [progress, setProgress] = useState({ video: 0, poster: 0, total: 0 });
-  const [message, setMessage] = useState("");
-  const [fileInputKey, setFileInputKey] = useState(0);
-  const uploadController = useRef<AbortController | null>(null);
+  const [videoFile, setVideoFile] = useState<File | null>(null);
+  const [posterFile, setPosterFile] = useState<File | null>(null);
+  
+  // Status states
+  const [uploadState, setUploadState] = useState<"idle" | "extracting" | "uploading_video" | "uploading_poster" | "finalizing">("idle");
+  const [posterPreview, setPosterPreview] = useState<string | null>(null);
 
   useEffect(() => {
-    let active = true;
-    void fetch("/api/admin/stories", { cache: "no-store" })
-      .then((response) => readApiData<StoryListResponse>(response))
-      .then((data) => { if (active) { setStories(data.stories); setLimits(data.limits); } })
-      .catch((error) => { if (active) setMessage(error instanceof Error ? error.message : "Stories could not be loaded."); });
-    return () => { active = false; };
+    fetchAdminStories().then(setStories).catch(console.error);
   }, []);
-  useEffect(() => () => { if (draft) URL.revokeObjectURL(draft.posterPreview); }, [draft]);
 
-  async function refreshStories() {
-    const data = await readApiData<StoryListResponse>(await fetch("/api/admin/stories", { cache: "no-store" }));
-    setStories(data.stories); setLimits(data.limits);
-  }
-
-  function clearDraft() {
-    uploadController.current?.abort();
-    setDraft(null); setCaption(""); setProgress({ video: 0, poster: 0, total: 0 }); setUploadState("idle"); setFileInputKey((key) => key + 1);
-  }
-
-  async function chooseVideo(file: File | null) {
+  async function handleVideoSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
     if (!file) return;
-    setMessage("Reading video metadata…"); setUploadState("reading_metadata"); setBusy(true);
+    setVideoFile(file);
+    
+    // Auto extract poster
+    setUploadState("extracting");
     try {
-      if (file.type !== "video/mp4" && file.type !== "video/webm") throw new Error("Choose an MP4 or WebM video.");
-      if (limits && file.size > limits.maxVideoSizeBytes) throw new Error(`Video exceeds the ${formatBytes(limits.maxVideoSizeBytes)} limit.`);
-      const metadata = await inspectStoryVideo(file);
-      if (limits && metadata.durationSeconds > limits.maxDurationSeconds) throw new Error(`Video exceeds the ${limits.maxDurationSeconds}-second limit.`);
-      if (!isPortraitStory(metadata.width, metadata.height)) throw new Error("Choose a vertical 9:16 video. Landscape videos are not accepted.");
-      setUploadState("generating_poster"); setMessage("Generating a WebP poster…");
-      const poster = await createStoryPoster(file);
-      setDraft({ file, poster, posterPreview: URL.createObjectURL(poster), metadata });
-      setUploadState("ready"); setMessage("Poster generated. Review it, then upload.");
-    } catch (error) {
-      setDraft(null); setUploadState("error"); setMessage(error instanceof Error ? error.message : "Video validation failed.");
-    } finally { setBusy(false); }
-  }
-
-  async function uploadStory() {
-    if (!draft) return;
-    setBusy(true); setProgress({ video: 0, poster: 0, total: 0 }); setUploadState("requesting_upload"); setMessage("Preparing direct upload…");
-    const controller = new AbortController(); uploadController.current = controller;
-    let slots: PresignResponse | null = null;
-    try {
-      const metadata = {
-        video: { filename: draft.file.name, mimeType: draft.file.type, size: draft.file.size, width: draft.metadata.width, height: draft.metadata.height, durationSeconds: draft.metadata.durationSeconds },
-        poster: { filename: "poster.webp", mimeType: "image/webp", size: draft.poster.size, width: 720, height: 1280 },
-      };
-      slots = await readApiData<PresignResponse>(await fetch("/api/admin/stories/presign", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(metadata), signal: controller.signal }));
-      setUploadState("uploading_video"); setMessage("Uploading video directly to media storage…");
-      await uploadBlobDirectly({ uploadUrl: slots.video.uploadUrl, body: draft.file, contentType: draft.file.type, signal: controller.signal, onProgress: (value) => setProgress({ video: Math.round(value * 100), poster: 0, total: Math.round(value * 90) }) });
-      setUploadState("uploading_poster"); setMessage("Uploading generated poster…");
-      await uploadBlobDirectly({ uploadUrl: slots.poster.uploadUrl, body: draft.poster, contentType: "image/webp", signal: controller.signal, onProgress: (value) => setProgress({ video: 100, poster: Math.round(value * 100), total: 90 + Math.round(value * 10) }) });
-      setUploadState("finalizing"); setMessage("Verifying media…");
-      const finalized = await readApiData<{ story: AdminStory }>(await fetch("/api/admin/stories/finalize", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ storyId: slots.storyId, video: { ...metadata.video, r2Key: slots.video.r2Key }, poster: { ...metadata.poster, r2Key: slots.poster.r2Key }, caption }), signal: controller.signal }));
-      setStories((current) => [...current, finalized.story]);
-      clearDraft(); setProgress({ video: 100, poster: 100, total: 100 }); setUploadState("success"); setMessage("Story uploaded and published. Enable Founder Stories and Save Landing if the section is still hidden.");
-    } catch (error) {
-      setUploadState("error");
-      let cleanupFailed = false;
-      if (slots) {
-        const cleanup = await fetch("/api/admin/stories/cancel", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ storyId: slots.storyId, videoR2Key: slots.video.r2Key, posterR2Key: slots.poster.r2Key }) }).catch(() => null);
-        cleanupFailed = !cleanup?.ok;
-      }
-      const reason = error instanceof DOMException && error.name === "AbortError" ? "Upload cancelled." : error instanceof Error ? error.message : "Upload failed. You can retry.";
-      setMessage(cleanupFailed ? `${reason} Temporary storage cleanup needs attention.` : reason);
-    } finally { setBusy(false); uploadController.current = null; }
-  }
-
-  async function updateStory(id: string, patch: { caption?: string | null; is_published?: boolean }) {
-    try {
-      const data = await readApiData<{ story: AdminStory }>(await fetch(`/api/admin/stories/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(patch) }));
-      setStories((current) => current.map((story) => story.id === id ? data.story : story));
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Story update failed.");
-      await refreshStories().catch(() => undefined);
+      const extractedPoster = await extractPoster(file);
+      setPosterFile(extractedPoster);
+      setPosterPreview(URL.createObjectURL(extractedPoster));
+    } catch (err) {
+      console.error("Poster extraction failed:", err);
+      // Let them pick manually if it fails
+    } finally {
+      setUploadState("idle");
     }
   }
 
-  async function move(index: number, direction: -1 | 1) {
-    const target = index + direction;
-    if (target < 0 || target >= stories.length) return;
-    const reordered = [...stories]; [reordered[index], reordered[target]] = [reordered[target], reordered[index]];
-    setStories(reordered);
-    try {
-      await readApiData(await fetch("/api/admin/stories/reorder", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ids: reordered.map((story) => story.id) }) }));
-    } catch (error) { setStories(stories); setMessage(error instanceof Error ? error.message : "Reordering failed."); await refreshStories().catch(() => undefined); }
+  function handlePosterSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setPosterFile(file);
+    setPosterPreview(URL.createObjectURL(file));
   }
 
-  async function remove(story: AdminStory) {
-    if (!window.confirm("Delete this story and its video/poster from media storage?")) return;
+  async function handleCreateStory() {
+    if (!videoFile || !posterFile || !uploadVideo || !uploadPoster) return;
     try {
-      await readApiData<{ cleanupPending: boolean }>(await fetch(`/api/admin/stories/${story.id}`, { method: "DELETE" }));
-      setStories((current) => current.filter((item) => item.id !== story.id));
-      setMessage("Story and its media were deleted.");
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Story deletion failed.");
-      await refreshStories().catch(() => undefined);
+      setUploadState("uploading_video");
+      const videoUrl = await uploadVideo(videoFile);
+      if (!videoUrl) throw new Error("Video upload failed");
+
+      setUploadState("uploading_poster");
+      const posterUrl = await uploadPoster(posterFile);
+      if (!posterUrl) throw new Error("Poster upload failed");
+      
+      setUploadState("finalizing");
+      const newStory = await createAdminStory(videoUrl, posterUrl);
+      setStories(prev => [newStory, ...prev]);
+      
+      onChange({
+        ...value,
+        selectedItemIds: [...value.selectedItemIds, newStory.id]
+      });
+      
+      setVideoFile(null);
+      setPosterFile(null);
+      setPosterPreview(null);
+    } catch (err) {
+      console.error(err);
+      alert("Failed to create story");
+    } finally {
+      setUploadState("idle");
     }
   }
+
+  const isWorking = uploadState !== "idle";
 
   return (
-    <section className="mt-8 border-t border-border pt-8" aria-labelledby="founder-stories-admin-heading">
-      <div className="mb-6"><h3 id="founder-stories-admin-heading" className="font-serif text-2xl text-text-primary">Founder Stories</h3><p className="mt-2 max-w-2xl text-sm text-text-secondary">Upload a vertical video once. The browser creates its poster and sends both files directly to media storage. Visibility and order update immediately; heading changes use Save Landing.</p></div>
-      <div className="mb-8 grid gap-4 md:grid-cols-2">
-        <label className="text-sm font-medium text-text-secondary">Eyebrow<Input className="mt-1.5" value={copy.eyebrow} onChange={(event) => onCopyChange({ ...copy, eyebrow: event.target.value })} maxLength={80} /></label>
-        <label className="text-sm font-medium text-text-secondary">Heading<Input className="mt-1.5" value={copy.heading} onChange={(event) => onCopyChange({ ...copy, heading: event.target.value })} maxLength={140} /></label>
-      </div>
-      <div className="mb-10 rounded-[1.25rem] border border-border bg-surface/55 p-5 sm:p-6">
-        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_13rem]">
-          <div>
-            <label className="text-sm font-medium text-text-primary">Vertical video (MP4 or WebM)<Input key={fileInputKey} className="mt-2" type="file" accept="video/mp4,video/webm" disabled={busy} onChange={(event) => void chooseVideo(event.target.files?.[0] ?? null)} /></label>
-            <label className="mt-4 block text-sm font-medium text-text-primary">Caption (optional)<Input className="mt-2" value={caption} onChange={(event) => setCaption(event.target.value)} maxLength={300} disabled={busy} /></label>
-            {draft ? <dl className="mt-4 grid grid-cols-2 gap-2 text-xs text-text-secondary"><div><dt>Dimensions</dt><dd className="text-text-primary">{draft.metadata.width} × {draft.metadata.height}</dd></div><div><dt>Duration</dt><dd className="text-text-primary">{draft.metadata.durationSeconds.toFixed(1)}s</dd></div><div><dt>Video</dt><dd className="text-text-primary">{formatBytes(draft.file.size)}</dd></div><div><dt>Poster</dt><dd className="text-text-primary">WebP · {formatBytes(draft.poster.size)}</dd></div></dl> : null}
-            {busy || progress.total > 0 ? <div className="mt-5" aria-label={`Upload progress ${progress.total}%`}><div className="h-2 overflow-hidden rounded-full bg-border"><div className="h-full bg-accent transition-[width]" style={{ width: `${progress.total}%` }} /></div><p className="mt-2 text-xs text-text-secondary">Video {progress.video}% · Poster {progress.poster}% · Total {progress.total}%</p></div> : null}
-            {message ? <p role="status" data-upload-state={uploadState} className="mt-4 text-sm text-text-secondary">{message}</p> : null}
-            <div className="mt-5 flex flex-wrap gap-2"><Button onClick={() => void uploadStory()} disabled={!draft || busy}>{busy ? <Loader2 className="size-4 animate-spin" /> : <Upload className="size-4" />}Upload Story</Button>{["requesting_upload", "uploading_video", "uploading_poster"].includes(uploadState) ? <Button variant="secondary" onClick={() => uploadController.current?.abort()}><X className="size-4" />Cancel upload</Button> : null}{draft && !busy ? <Button variant="ghost" onClick={clearDraft}><RotateCcw className="size-4" />Clear selection</Button> : null}</div>
-          </div>
-          <div className="relative mx-auto aspect-[9/16] w-full max-w-[13rem] overflow-hidden rounded-[1rem] border border-border bg-background/60">{draft ? <Image src={draft.posterPreview} alt="Generated story poster preview" fill sizes="208px" unoptimized className="object-cover" /> : <div className="grid size-full place-items-center px-5 text-center text-xs text-text-secondary">Your generated 9:16 poster will appear here.</div>}</div>
+    <div className="mt-12 pt-8">
+      <div className="mb-8 flex items-center justify-between border-b border-border/50 pb-4">
+        <div>
+          <h3 className="font-serif text-2xl text-text-primary">Founder Stories (Admin)</h3>
+          <p className="mt-1 text-sm text-text-secondary">Manage full-screen portrait videos displayed on the landing page.</p>
         </div>
       </div>
-      <div className="space-y-3"><h4 className="font-medium text-text-primary">Manage stories</h4>{stories.length === 0 ? <p className="text-sm text-text-secondary">No stories yet.</p> : stories.map((story, index) => { const legacy = !story.video_r2_key || !story.poster_r2_key; return <article key={story.id} className="grid gap-4 rounded-[1rem] border border-border bg-surface/55 p-4 sm:grid-cols-[5rem_minmax(0,1fr)_auto] sm:items-center"><div className="relative aspect-[9/16] w-20 overflow-hidden rounded-xl"><Image src={story.poster_url} alt="" fill sizes="80px" unoptimized className="object-cover" /></div><div className="min-w-0"><Input aria-label="Story caption" defaultValue={story.caption ?? ""} maxLength={300} onBlur={(event) => { if (event.target.value.trim() !== (story.caption ?? "")) void updateStory(story.id, { caption: event.target.value }); }} /><p className="mt-2 text-xs text-text-secondary">{story.width && story.height ? `${story.width} × ${story.height}` : "Legacy dimensions"} · {story.duration_seconds === null ? "Legacy duration" : `${story.duration_seconds.toFixed(1)}s`} · {formatBytes(story.file_size)} · {story.mime_type ?? "Legacy MIME"}</p><p className={`mt-1 text-xs font-semibold uppercase tracking-wider ${legacy ? "text-amber-600" : story.is_published ? "text-emerald-600" : "text-text-secondary"}`}>{legacy ? "Legacy — storage keys unavailable" : story.is_published ? "Published" : "Hidden"}</p></div><div className="flex flex-wrap gap-2 sm:justify-end"><Button variant="secondary" onClick={() => void updateStory(story.id, { is_published: !story.is_published })}>{story.is_published ? "Hide" : "Publish"}</Button><Button variant="icon" aria-label="Move story up" disabled={index === 0} onClick={() => void move(index, -1)}><ArrowUp className="size-4" /></Button><Button variant="icon" aria-label="Move story down" disabled={index === stories.length - 1} onClick={() => void move(index, 1)}><ArrowDown className="size-4" /></Button><Button variant="icon" aria-label="Delete story" onClick={() => void remove(story)}><Trash2 className="size-4 text-red-500" /></Button></div></article>; })}</div>
-    </section>
+
+      <div className="mb-10 grid gap-6 md:grid-cols-2">
+        <div className="rounded-[1rem] border border-border/50 bg-surface/30 p-6 backdrop-blur-md shadow-sm transition-all hover:bg-surface/50">
+          <label className="mb-2 block text-sm font-medium text-text-secondary">Section Eyebrow</label>
+          <Input 
+            value={copy.eyebrow} 
+            onChange={(e) => onCopyChange({ ...copy, eyebrow: e.target.value })} 
+            placeholder="Behind the scenes" 
+            maxLength={80} 
+            className="bg-background/50 border-border/40 focus:border-text-primary"
+          />
+        </div>
+        <div className="rounded-[1rem] border border-border/50 bg-surface/30 p-6 backdrop-blur-md shadow-sm transition-all hover:bg-surface/50">
+          <label className="mb-2 block text-sm font-medium text-text-secondary">Section Heading</label>
+          <Input 
+            value={copy.heading} 
+            onChange={(e) => onCopyChange({ ...copy, heading: e.target.value })} 
+            placeholder="Founder Stories" 
+            maxLength={140} 
+            className="bg-background/50 border-border/40 focus:border-text-primary"
+          />
+        </div>
+      </div>
+      
+      <div className="mb-12 overflow-hidden rounded-[1.25rem] border border-border/60 bg-gradient-to-b from-surface/80 to-surface/40 p-1 backdrop-blur-xl shadow-sm">
+        <div className="rounded-[1.15rem] border border-white/5 bg-background/40 p-6 sm:p-8">
+          <div className="mb-6 flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-text-primary/10 text-text-primary">
+              <Upload className="h-5 w-5" />
+            </div>
+            <h4 className="text-lg font-medium text-text-primary">Upload New Story</h4>
+          </div>
+
+          <div className="grid gap-8 md:grid-cols-2">
+            <div className="group relative rounded-xl border-2 border-dashed border-border/60 bg-surface/30 p-6 text-center transition-all hover:border-text-primary/30 hover:bg-surface/60">
+              <Input 
+                type="file" 
+                accept="video/mp4,video/webm" 
+                onChange={handleVideoSelect}
+                disabled={isWorking}
+                className="absolute inset-0 z-10 h-full w-full cursor-pointer opacity-0"
+              />
+              <Video className="mx-auto mb-3 h-8 w-8 text-text-secondary/60 group-hover:text-text-primary/70 transition-colors" />
+              <p className="text-sm font-medium text-text-primary">Select Video (MP4/WebM)</p>
+              <p className="mt-1 text-xs text-text-tertiary">{videoFile ? videoFile.name : "Drag & drop or click to browse"}</p>
+            </div>
+
+            <div className={clsx("group relative rounded-xl border-2 border-dashed p-6 text-center transition-all", posterFile ? "border-transparent bg-black" : "border-border/60 bg-surface/30 hover:border-text-primary/30 hover:bg-surface/60")}>
+              <Input 
+                type="file" 
+                accept="image/jpeg,image/webp,image/png" 
+                onChange={handlePosterSelect}
+                disabled={isWorking}
+                className="absolute inset-0 z-20 h-full w-full cursor-pointer opacity-0"
+              />
+              {posterPreview ? (
+                <>
+                  <img src={posterPreview} className="absolute inset-0 h-full w-full object-cover rounded-xl opacity-60 mix-blend-screen" alt="Poster preview" />
+                  <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-black/40 rounded-xl transition-opacity group-hover:bg-black/60">
+                    <CheckCircle2 className="mb-2 h-8 w-8 text-white/90" />
+                    <p className="text-sm font-medium text-white shadow-sm">Poster Ready</p>
+                    <p className="text-xs text-white/70 shadow-sm mt-1">Click to override default frame</p>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <ImageIcon className="mx-auto mb-3 h-8 w-8 text-text-secondary/60 group-hover:text-text-primary/70 transition-colors" />
+                  <p className="text-sm font-medium text-text-primary">Poster Image (Auto-generated)</p>
+                  <p className="mt-1 text-xs text-text-tertiary">Select a video first, or upload custom</p>
+                </>
+              )}
+            </div>
+          </div>
+
+          <div className="mt-8 flex flex-col items-center justify-between gap-4 border-t border-border/40 pt-6 sm:flex-row">
+            <div className="flex items-center gap-3 text-sm font-medium">
+              {uploadState === "extracting" && <><Loader2 className="h-4 w-4 animate-spin text-text-secondary" /><span className="text-text-secondary">Extracting poster frame...</span></>}
+              {uploadState === "uploading_video" && <><Loader2 className="h-4 w-4 animate-spin text-text-primary" /><span className="text-text-primary">Uploading video to edge storage...</span></>}
+              {uploadState === "uploading_poster" && <><Loader2 className="h-4 w-4 animate-spin text-text-primary" /><span className="text-text-primary">Uploading poster image...</span></>}
+              {uploadState === "finalizing" && <><Loader2 className="h-4 w-4 animate-spin text-text-primary" /><span className="text-text-primary">Finalizing story...</span></>}
+            </div>
+            
+            <Button 
+              onClick={handleCreateStory} 
+              disabled={!videoFile || !posterFile || isWorking}
+              className="min-w-[160px] rounded-full shadow-sm hover:shadow-md"
+            >
+              {isWorking ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Upload className="mr-2 h-4 w-4" />
+              )}
+              {isWorking ? "Processing..." : "Publish Story"}
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      <div className="space-y-6">
+        <h4 className="font-serif text-xl text-text-primary">Manage Stories</h4>
+        {stories.length === 0 ? (
+          <div className="rounded-[1rem] border border-border border-dashed p-12 text-center text-text-tertiary">
+            <Play className="mx-auto mb-4 h-10 w-10 opacity-30" />
+            <p>No stories found. Upload your first story above.</p>
+          </div>
+        ) : (
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {stories.map(story => {
+              const isSelected = value.selectedItemIds.includes(story.id);
+              return (
+                <div key={story.id} className={clsx("group relative overflow-hidden rounded-2xl border-2 transition-all hover:shadow-md", isSelected ? 'border-text-primary shadow-sm' : 'border-border/60 hover:border-text-primary/40')}>
+                  <div className="aspect-[9/16] relative bg-black">
+                    <img 
+                      src={story.thumbnail_url || (story as any).poster_url} 
+                      alt="" 
+                      className="absolute inset-0 h-full w-full object-cover opacity-90 transition-opacity group-hover:opacity-100"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                    
+                    <div className="absolute bottom-4 left-4 right-4 flex flex-col gap-3">
+                      <Button
+                        variant={isSelected ? "primary" : "secondary"}
+                        className="w-full text-xs font-semibold uppercase tracking-wider backdrop-blur-md"
+                        onClick={() => {
+                          onChange({
+                            ...value,
+                            selectedItemIds: isSelected 
+                              ? value.selectedItemIds.filter(id => id !== story.id)
+                              : [...value.selectedItemIds, story.id]
+                          });
+                        }}
+                      >
+                        {isSelected ? "Visible on Page" : "Hidden"}
+                      </Button>
+                      
+                      <button
+                        className="mx-auto flex h-9 w-9 items-center justify-center rounded-full bg-black/40 text-red-400 transition-colors backdrop-blur-md hover:bg-red-500/20 hover:text-red-300"
+                        onClick={async () => {
+                          if (confirm("Permanently delete this story? This action cannot be undone.")) {
+                            await deleteAdminStory(story.id);
+                            setStories(s => s.filter(x => x.id !== story.id));
+                            if (isSelected) {
+                              onChange({
+                                ...value,
+                                selectedItemIds: value.selectedItemIds.filter(id => id !== story.id)
+                              });
+                            }
+                          }
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
   );
 }

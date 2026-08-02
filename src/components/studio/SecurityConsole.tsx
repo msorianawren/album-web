@@ -457,7 +457,13 @@ export function SecurityConsole({
                         {formatDate(log.created_at)}
                       </td>
                       <td className="py-3 pr-4 text-text-primary">
-                        {log.actor_email ?? "Unknown"}
+                        {log.actor_email ? (
+                          <span className="font-medium text-text-primary">{log.actor_email}</span>
+                        ) : (
+                          <span className="inline-flex items-center rounded-md bg-surface/80 px-2 py-0.5 text-xs text-text-secondary border border-border/50 font-normal">
+                            Guest / Public Visitor
+                          </span>
+                        )}
                       </td>
                       <td className="py-3 pr-4">
                         <p className="font-semibold text-text-primary">{actionLabel(log.action)}</p>
@@ -484,7 +490,7 @@ export function SecurityConsole({
                         {(log.metadata?.ip_info as Record<string, string> | undefined)?.city || (log.metadata?.ip_info as Record<string, string> | undefined)?.country ? (
                           <>
                             <span className="block font-semibold text-text-primary">
-                              {(log.metadata?.ip_info as Record<string, string> | undefined)?.city ? `${(log.metadata?.ip_info as Record<string, string> | undefined)?.city}, ` : ""}
+                              {(log.metadata?.ip_info as Record<string, string> | undefined)?.city ? `${decodeURIComponent((log.metadata?.ip_info as Record<string, string> | undefined)?.city ?? "")}, ` : ""}
                               {(log.metadata?.ip_info as Record<string, string> | undefined)?.country || ""}
                             </span>
                             <span className="text-xs">{log.ip_address}</span>
