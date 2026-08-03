@@ -613,7 +613,7 @@ export async function getAlbumMediaPage({
     .select(mediaSelect)
     .eq("album_id", album.id)
     .is("deleted_at", null)
-    .in("processing_status", ["ready", "processed", "uploaded", "processing"])
+    .in("processing_status", ["ready", "processed", "uploaded", "processing", "queued"])
     .order("sort_order", { ascending: true })
     .order("created_at", { ascending: true })
     .range(offset, offset + pageSize);

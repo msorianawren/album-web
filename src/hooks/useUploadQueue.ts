@@ -268,11 +268,17 @@ export function useUploadQueue(settings: SiteSettings) {
       if (queueRef.current.find(q => q.id === item.id)?.status === "cancelled") return;
 
       if (completePayload.data.queued) {
+        // The /api/upload/complete endpoint now returns the full media record so we
+        // can immediately surface it in AlbumEditor with a "processing" badge,
+        // without any extra round-trip.
+        const pendingItem = completePayload.data.media as StudioMediaItem | undefined;
         updateItem(item.id, {
           status: "done",
           progress: 100,
           message: "Upload complete. Image queued for safe processing.",
+          result: pendingItem,
         });
+        if (pendingItem && onCompleteCallback) onCompleteCallback(pendingItem);
       } else {
         const result = completePayload.data.media as StudioMediaItem;
         updateItem(item.id, { status: "done", progress: 100, message: "Upload and processing complete.", result });

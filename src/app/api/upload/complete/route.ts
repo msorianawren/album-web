@@ -8,6 +8,8 @@ import { verifyAndQueueImageUpload } from "@/lib/media/processing-jobs";
 import { scheduleQueuedImageProcessing } from "@/lib/media/schedule-processing";
 import { getSiteSettings } from "@/lib/site-settings";
 import { validateUploadMetadata } from "@/lib/upload-validation";
+import { normalizeMedia } from "@/lib/albums";
+import { projectPrivateMediaForClient } from "@/lib/private-media";
 
 export const runtime = "nodejs";
 
@@ -42,8 +44,18 @@ export async function POST(request: NextRequest) {
       revalidateTag(`album:${job.data.album_id}:media`, "max");
       revalidateTag("albums:public", "max");
       revalidatePath(`/albums/${job.data.album_id}`);
+      // Fetch the full media row so the client can immediately surface it in the
+      // media list with a processing indicator instead of showing "0 items".
+      const mediaRow = await client
+        .from("media")
+        .select("*")
+        .eq("id", mediaId)
+        .maybeSingle();
+      const mediaData = mediaRow.data 
+        ? projectPrivateMediaForClient(normalizeMedia(mediaRow.data as any)) 
+        : { id: mediaId, processing_status: queued.status };
       return apiSuccess(
-        { media: { id: mediaId, processing_status: queued.status }, queued: queued.status !== "ready" },
+        { media: mediaData, queued: queued.status !== "ready" },
         { status: queued.status === "ready" ? 200 : 202 },
       );
     }

@@ -10,7 +10,7 @@ import { isMediaUuid, parseSingleByteRange } from "@/lib/private-media-range";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const browserVariants = new Set<PrivateMediaVariant>(["thumbnail", "medium", "poster", "display"]);
+const browserVariants = new Set<PrivateMediaVariant>(["thumbnail", "card", "medium", "poster", "display", "original"]);
 
 interface PrivateMediaContentProps {
   params: Promise<{ id: string }>;
