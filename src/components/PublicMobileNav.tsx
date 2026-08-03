@@ -40,7 +40,7 @@ export function PublicMobileNav({ session, navItems }: PublicMobileNavProps) {
           onClick={close}
         />
         <div
-          className={`absolute bottom-0 right-0 top-0 flex w-[min(23rem,100vw)] flex-col overflow-y-auto border-l border-border bg-surface p-4 pb-[max(1rem,env(safe-area-inset-bottom))] shadow-2xl shadow-text-primary/20 transition-transform duration-300 ${
+          className={`absolute bottom-0 right-0 top-0 flex w-[min(23rem,100vw)] h-full min-h-[100dvh] flex-col overflow-y-auto border-l border-border bg-surface p-4 pt-[max(1.25rem,env(safe-area-inset-top))] pb-[max(1.25rem,env(safe-area-inset-bottom))] shadow-2xl shadow-text-primary/20 transition-transform duration-300 ${
             open ? "translate-x-0" : "translate-x-full"
           }`}
         >

@@ -37,9 +37,9 @@ export function HomeHero({ landing, settings, locale = "en", dict }: HomeHeroPro
       <section className="relative isolate flex min-h-[90vh] flex-col justify-center overflow-hidden py-20 lg:py-32">
         <div className="page-shell-1440 grid min-w-0 items-center gap-16 lg:grid-cols-[1.2fr_0.8fr]">
           <ScrollReveal className="relative z-10 order-2 flex min-w-0 flex-col justify-center lg:order-1">
-            <p className="mb-8 text-xs font-semibold uppercase tracking-[0.3em] text-text-secondary">{eyebrow}</p>
-            <h1 className="mb-8 max-w-4xl break-words font-serif text-[3.5rem] leading-[0.85] text-text-primary sm:text-7xl lg:text-[7.5rem]">{headline}</h1>
-            <p className="mb-10 max-w-2xl break-words font-serif text-2xl italic leading-tight text-text-secondary/80 sm:text-3xl lg:text-4xl">{subheadline}</p>
+            <p className="mb-6 text-xs font-semibold uppercase tracking-[0.3em] text-text-secondary sm:mb-8">{eyebrow}</p>
+            <h1 className="mb-6 max-w-4xl break-words font-serif text-[2.6rem] leading-[0.9] text-text-primary sm:mb-8 sm:text-7xl lg:text-[7.5rem]">{headline}</h1>
+            <p className="mb-8 max-w-2xl break-words font-serif text-xl italic leading-tight text-text-secondary/80 sm:mb-10 sm:text-3xl lg:text-4xl">{subheadline}</p>
             <p className="max-w-xl break-words text-[1.05rem] font-light leading-[1.8] text-text-secondary">{body}</p>
             <div className="mt-12 flex flex-wrap items-center gap-8 border-t border-border/50 pt-8">
               <a href={primaryHref} className="group flex items-center gap-3 text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-text-primary transition-colors duration-300 hover:text-accent">
@@ -78,8 +78,8 @@ export function HomeHero({ landing, settings, locale = "en", dict }: HomeHeroPro
       <section className="relative isolate flex min-h-[70vh] flex-col justify-center overflow-hidden py-32 text-center">
         <div className="page-shell-1440 flex flex-col items-center">
           <ScrollReveal className="relative z-10 mx-auto flex max-w-4xl min-w-0 flex-col items-center">
-            <h1 className="max-w-4xl break-words text-[3rem] font-light leading-[1.05] text-text-primary sm:text-6xl lg:text-[6.5rem]">{headline}</h1>
-            <p className="mt-8 max-w-2xl break-words text-[1.1rem] font-light leading-8 text-text-secondary/90">{subheadline}</p>
+            <h1 className="max-w-4xl break-words text-[2.5rem] font-light leading-[1.08] text-text-primary sm:text-6xl lg:text-[6.5rem]">{headline}</h1>
+            <p className="mt-6 max-w-2xl break-words text-base font-light leading-7 text-text-secondary/90 sm:mt-8 sm:text-[1.1rem] sm:leading-8">{subheadline}</p>
             <div className="mt-12 flex w-full flex-col justify-center gap-4 sm:flex-row">
               <a href={primaryHref} className="inline-flex h-12 items-center justify-center border border-border/50 px-8 text-[0.75rem] font-semibold uppercase tracking-[0.1em] text-text-primary transition-all duration-300 hover:bg-surface/30">{primaryCtaLabel}</a>
             </div>
@@ -126,10 +126,10 @@ export function HomeHero({ landing, settings, locale = "en", dict }: HomeHeroPro
             <Sparkles className="h-3.5 w-3.5 text-muted-accent" aria-hidden="true" />
             <span className="truncate">{dict?.landing?.premium_portfolio || "Premium model portfolio"}</span>
           </p>
-          <h1 className="max-w-3xl break-words text-[2.8rem] font-semibold leading-[0.92] text-text-primary sm:text-7xl lg:text-8xl">{headline}</h1>
-          <p className="mt-4 text-sm font-semibold uppercase tracking-[0.28em] text-text-secondary">{eyebrow}</p>
-          <p className="mt-6 max-w-2xl break-words text-xl leading-8 text-text-primary/86 sm:text-3xl sm:leading-10">{subheadline}</p>
-          <p className="mt-5 max-w-2xl break-words text-base leading-8 text-text-secondary">{body}</p>
+          <h1 className="max-w-3xl break-words text-[2.4rem] font-semibold leading-[0.95] text-text-primary sm:text-7xl lg:text-8xl">{headline}</h1>
+          <p className="mt-3 text-xs font-semibold uppercase tracking-[0.24em] text-text-secondary sm:mt-4 sm:text-sm sm:tracking-[0.28em]">{eyebrow}</p>
+          <p className="mt-5 max-w-2xl break-words text-lg leading-7 text-text-primary/86 sm:mt-6 sm:text-3xl sm:leading-10">{subheadline}</p>
+          <p className="mt-4 max-w-2xl break-words text-sm leading-7 text-text-secondary sm:mt-5 sm:text-base sm:leading-8">{body}</p>
           <div className="mt-10 flex flex-col gap-3 sm:flex-row sm:gap-4">
             <a href={primaryHref} className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-accent px-6 text-sm font-semibold uppercase text-accent-foreground shadow-2xl shadow-text-primary/10 transition-all duration-300 hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.98]">
               {primaryCtaLabel}

@@ -15,6 +15,7 @@ import {
 import { AlbumPagination } from "@/components/albums/AlbumPagination";
 import { AlbumPageSizeSelect } from "@/components/albums/AlbumPageSizeSelect";
 import { AlbumColsSelect } from "@/components/albums/AlbumColsSelect";
+import { AlbumStatusSelect } from "@/components/albums/AlbumStatusSelect";
 
 interface AlbumListProps {
   sections: AlbumSections;
@@ -136,33 +137,13 @@ export function AlbumList({ sections, query, dict, locale = "en" }: AlbumListPro
   return (
     <PrivateAlbumSelectionProvider>
       <section id="albums" className="mx-auto w-full max-w-[1480px] px-4 sm:px-6 lg:px-8 pb-24">
-        <ScrollReveal className="mb-10 flex flex-col justify-between gap-8 md:flex-row md:items-end">
-          <div className="min-w-0 max-w-xl">
-            <p className="mb-3 block text-[0.65rem] font-semibold uppercase tracking-[0.25em] text-text-secondary">Selected Books</p>
-            <h2 className="mb-4 font-serif text-[2.2rem] font-light leading-none text-text-primary md:text-5xl">
-              {dict?.albums?.public_albums || "Public Archives"}
-            </h2>
-            <p className="max-w-[420px] text-[0.95rem] font-light leading-[1.6] text-text-secondary">
-              {dict?.albums?.public_albums_desc || "Browse public editorials, updating diaries, and featured visual works."}
-            </p>
+        <ScrollReveal className="mb-8 flex flex-wrap items-center justify-between gap-4 border-b border-border/30 pb-5">
+          <div className="flex items-center gap-3">
+            <span className="text-[0.65rem] uppercase tracking-[0.22em] font-semibold text-text-secondary">
+              {dict?.albums?.all_statuses || "Filter Status"}
+            </span>
+            <AlbumStatusSelect currentStatus={query.status ?? ""} dict={dict} />
           </div>
-
-          <form action="/albums" className="flex items-center gap-3">
-            <input type="hidden" name="limit" value={query.limit} />
-            <select
-              name="status"
-              className="h-11 shrink-0 appearance-none rounded-full border border-border/40 bg-surface/20 px-4 text-[0.8rem] text-text-secondary outline-none transition focus:border-text-primary/30"
-              defaultValue={query.status ?? ""}
-            >
-              <option value="">{dict?.albums?.all_statuses || "All"}</option>
-              <option value="public">{dict?.albums?.status_public || "Public"}</option>
-              <option value="updating">{dict?.albums?.status_updating || "Updating"}</option>
-              <option value="private">{dict?.albums?.status_private || "Private"}</option>
-            </select>
-            <button type="submit" className="h-11 border-b border-text-primary px-1 text-[0.7rem] font-semibold uppercase tracking-[0.14em] text-text-primary transition-colors hover:border-accent hover:text-accent">
-              Apply
-            </button>
-          </form>
         </ScrollReveal>
 
         {visibleStatuses.map((status) => {
@@ -179,8 +160,10 @@ export function AlbumList({ sections, query, dict, locale = "en" }: AlbumListPro
                   <h2 className="mb-3 font-serif text-[1.8rem] font-light leading-none text-text-primary md:text-4xl">{copy.title}</h2>
                   <p className="max-w-[520px] text-[0.92rem] font-light leading-[1.6] text-text-secondary">{copy.description}</p>
                 </div>
-                <div className="flex flex-wrap items-center gap-3 text-sm text-text-secondary">
-                  <span>{page.albums.length} loaded</span>
+                <div className="relative z-30 flex flex-wrap items-center gap-2.5 text-xs text-text-secondary pointer-events-auto">
+                  <span className="px-3 py-1.5 rounded-full bg-surface/65 border border-border/40 font-medium backdrop-blur-md">
+                    {page.albums.length} loaded
+                  </span>
                   <AlbumColsSelect value={cols} onChange={handleColsChange} />
                   <AlbumPageSizeSelect defaultValue={query.limit} />
                 </div>
@@ -189,7 +172,7 @@ export function AlbumList({ sections, query, dict, locale = "en" }: AlbumListPro
               <div className={`grid gap-3 sm:gap-3.5 md:gap-4 lg:gap-5 ${getGridColsClass(cols)}`}>
                 {page.albums.map((album, index) => {
                   const isSelectable = isPrivate && !accessResolvedStatuses.has(album.access_request_status ?? "");
-                  const isLcpCandidate = index === 0 && status === visibleStatuses[0];
+                  const isLcpCandidate = index < 6 && status === visibleStatuses[0];
                   
                   return (
                     <div key={album.id} className="relative">

@@ -28,6 +28,8 @@ import { cookies } from "next/headers";
 import { getDictionary } from "@/lib/getDictionary";
 import { albumPageQuerySchema } from "@/lib/validators";
 
+import { AlbumCameraBackground } from "@/components/albums/AlbumCameraBackground";
+
 export default async function AlbumsPage({ searchParams }: AlbumsPageProps) {
   const session = await getPublicSession();
   const userClient = session.userId ? await createAuthenticatedUserClient() : null;
@@ -56,6 +58,7 @@ export default async function AlbumsPage({ searchParams }: AlbumsPageProps) {
     <>
       <NatureAnimatedBackground config={landing.background_settings} />
       <main className="relative z-10 min-h-screen bg-transparent">
+        <AlbumCameraBackground />
         <AppHeader />
       <section className="mx-auto max-w-[1480px] px-4 sm:px-6 lg:px-8 py-16 sm:py-24">
         <div className="max-w-4xl">
@@ -70,13 +73,15 @@ export default async function AlbumsPage({ searchParams }: AlbumsPageProps) {
           </p>
         </div>
       </section>
-      <AlbumList
-        key={`${browseQuery.status ?? "all"}|${browseQuery.limit}|${browseQuery.page}`}
-        sections={sections}
-        query={{ status: browseQuery.status, limit: browseQuery.limit, cols: browseQuery.cols, page: browseQuery.page }}
-        dict={dict}
-        locale={locale}
-      />
+      <div className="relative z-20">
+        <AlbumList
+          key={`${browseQuery.status ?? "all"}|${browseQuery.limit}|${browseQuery.page}`}
+          sections={sections}
+          query={{ status: browseQuery.status, limit: browseQuery.limit, cols: browseQuery.cols, page: browseQuery.page }}
+          dict={dict}
+          locale={locale}
+        />
+      </div>
         <AccessRequestModal />
       </main>
     </>

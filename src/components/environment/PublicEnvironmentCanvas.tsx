@@ -1,5 +1,6 @@
 "use client";
 
+import "@/lib/three-compat";
 import { Canvas } from "@react-three/fiber";
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import type { ChimeAnchorRect } from "@/lib/wind-chime-anchors";

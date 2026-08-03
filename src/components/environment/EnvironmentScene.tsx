@@ -110,7 +110,7 @@ export function EnvironmentScene({
         )}
       </group> : null}
       
-      {!dev.atmosphereOnly && !dev.vegetationOnly && (
+      {!dev.atmosphereOnly && !dev.vegetationOnly && anchors.length > 0 && (
         <WindChimeScene
           anchors={anchors.slice(0, quality.chimeCap)}
           reducedMotion={reducedMotion}

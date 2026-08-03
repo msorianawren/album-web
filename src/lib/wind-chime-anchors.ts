@@ -38,10 +38,10 @@ export function getWindChimeAnchors(pathname: string): ChimeAnchorSlot[] {
     || pathname === "/login"
     || pathname.startsWith("/auth/")
     || pathname === "/boycott"
+    || pathname === "/albums"
+    || pathname.startsWith("/albums/")
   ) return [];
   if (pathname === "/") return createSlots("home");
-  if (pathname === "/albums") return createSlots("albums");
-  if (pathname.startsWith("/albums/")) return createSlots("album-detail");
   if (pathname === "/about") return createSlots("about");
   if (pathname === "/contact") return createSlots("contact");
   if (pathname === "/games") return createSlots("games");

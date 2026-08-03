@@ -120,11 +120,11 @@ export function AccessRequestModal() {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-md animate-in fade-in duration-200">
-      <div className="relative flex max-h-[92vh] w-full max-w-2xl flex-col overflow-hidden rounded-[1.75rem] border border-border bg-surface shadow-2xl animate-in zoom-in-95 duration-200">
-        <div className="flex items-center justify-between border-b border-border px-6 py-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-3 sm:p-4 backdrop-blur-md animate-in fade-in duration-200">
+      <div className="relative flex max-h-[90dvh] w-full max-w-2xl flex-col overflow-hidden rounded-[1.5rem] sm:rounded-[1.75rem] border border-border bg-surface shadow-2xl animate-in zoom-in-95 duration-200">
+        <div className="flex items-center justify-between border-b border-border px-5 py-4 sm:px-6">
           <div>
-            <h3 className="text-lg font-semibold text-text-primary">Request private access</h3>
+            <h3 className="text-base sm:text-lg font-semibold text-text-primary">Request private access</h3>
             <p className="mt-1 text-xs text-text-secondary">
               {intent.scope === "all_private"
                 ? "Requesting all private albums."
@@ -134,7 +134,7 @@ export function AccessRequestModal() {
           <button
             type="button"
             onClick={() => setIntent(null)}
-            className="rounded-full p-2 text-text-secondary transition hover:bg-surface-secondary hover:text-text-primary"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-text-secondary transition hover:bg-surface-secondary hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             aria-label="Close request form"
           >
             <X className="h-5 w-5" />
