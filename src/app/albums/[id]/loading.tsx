@@ -3,7 +3,7 @@ import { Skeleton } from "@/components/ui/Skeleton";
 
 export default function AlbumLoading() {
   return (
-    <main className="min-h-screen bg-background">
+    <main className="relative z-10 min-h-screen bg-transparent">
       <AppHeader />
       <section className="mx-auto w-full max-w-[1440px] px-4 py-10 sm:px-8 lg:px-12">
         <Skeleton className="h-5 w-36" />

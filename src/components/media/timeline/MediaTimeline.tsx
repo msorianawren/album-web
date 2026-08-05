@@ -33,7 +33,7 @@ import {
   loadScrollPosition,
 } from "@/lib/timeline/engine";
 import type { DateGroup, ScrubberEntry, TimelineMediaItem } from "@/lib/timeline/types";
-import { emitScrollBusy } from "@/lib/timeline/scroll-busy";
+// import { emitScrollBusy } from "@/lib/timeline/scroll-busy";
 import { viewerIndexFromMediaId, viewerUrlForMedia, viewerUrlWithoutMedia } from "@/lib/media/viewer-routes";
 import type { AlbumStatus, Media } from "@/lib/types";
 import { isMediaReadyForDelivery } from "@/lib/media/delivery";
@@ -254,7 +254,7 @@ export function MediaTimeline({
   const updateScrollState = useCallback(() => {
     const container = containerRef.current;
     if (!container) return;
-    emitScrollBusy();
+    //emitScrollBusy();
     const maxScroll = Math.max(0, totalHeight - window.innerHeight);
     const top = Math.max(0, Math.min(maxScroll, -container.getBoundingClientRect().top));
     lastScrollRef.current = top;
