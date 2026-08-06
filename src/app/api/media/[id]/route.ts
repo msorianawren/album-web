@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import { logAuditEvent } from "@/lib/audit";
 import { getTrustedAdminDatabase } from "@/lib/db/admin";
 import { apiError, apiSuccess } from "@/lib/errors";
-import { deleteR2Objects } from "@/lib/r2";
+import { purgeMediaR2Keys } from "@/lib/r2";
 import { enforceRateLimit } from "@/lib/security-rate-limit";
 import { getSiteSettings } from "@/lib/site-settings";
 import { mediaUpdateSchema } from "@/lib/validators";
@@ -154,7 +154,9 @@ export async function DELETE(request: NextRequest, { params }: MediaRouteProps) 
 
   const { data: media, error: selectError } = await client
     .from("media")
-    .select("r2_key,thumbnail_r2_key,medium_r2_key,poster_r2_key")
+    .select(
+      "r2_key,thumbnail_r2_key,medium_r2_key,large_r2_key,poster_r2_key,public_r2_key,original_private_r2_key,avif_thumbnail_r2_key,avif_medium_r2_key,avif_large_r2_key",
+    )
     .eq("id", id)
     .single();
 
@@ -162,13 +164,13 @@ export async function DELETE(request: NextRequest, { params }: MediaRouteProps) 
     return apiError("NOT_FOUND", "Media not found.", 404);
   }
 
+  const { data: privateAssets } = await client
+    .from("private_media_assets")
+    .select("object_key,legacy_object_key,bucket_role")
+    .eq("media_id", id);
+
   try {
-    await deleteR2Objects([
-      media.r2_key,
-      media.thumbnail_r2_key,
-      media.medium_r2_key,
-      media.poster_r2_key,
-    ]);
+    await purgeMediaR2Keys([media], privateAssets ?? []);
   } catch {
     return apiError("UPLOAD_FAILED", "R2 delete failed.", 500);
   }

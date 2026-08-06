@@ -7,7 +7,7 @@ import { classifyDataFailure } from "@/lib/app-failure";
 import { getTrustedAdminDatabase } from "@/lib/db/admin";
 import { createAuthenticatedUserClient } from "@/lib/db/user";
 import { apiError, apiSuccess, toServerError } from "@/lib/errors";
-import { deleteR2Objects } from "@/lib/r2";
+import { purgeMediaR2Keys } from "@/lib/r2";
 import { enforceRateLimit } from "@/lib/security-rate-limit";
 import { getSiteSettings } from "@/lib/site-settings";
 import { albumUpdateSchema } from "@/lib/validators";
@@ -119,6 +119,8 @@ export async function PATCH(request: NextRequest, { params }: AlbumRouteProps) {
     revalidateTag("albums:private", "max");
     revalidateTag(`album:${id}:media`, "max");
     revalidatePath(`/albums/${albumRecord.slug}`);
+    revalidatePath("/albums");
+    revalidatePath("/");
     return apiSuccess({ album: data });
   } catch (error) {
     return toServerError(error);
@@ -191,12 +193,16 @@ export async function DELETE(request: NextRequest, { params }: AlbumRouteProps) 
     });
     revalidateTag("albums:public", "max");
     revalidateTag(`album:${id}:media`, "max");
+    revalidatePath("/albums");
+    revalidatePath("/");
     return apiSuccess({ deleted: true, softDeleted: true });
   }
 
   const { data: mediaRows, error: mediaError } = await client
     .from("media")
-    .select("r2_key,thumbnail_r2_key,medium_r2_key,poster_r2_key")
+    .select(
+      "r2_key,thumbnail_r2_key,medium_r2_key,large_r2_key,poster_r2_key,public_r2_key,original_private_r2_key,avif_thumbnail_r2_key,avif_medium_r2_key,avif_large_r2_key",
+    )
     .eq("album_id", id);
 
   if (mediaError) {
@@ -206,6 +212,11 @@ export async function DELETE(request: NextRequest, { params }: AlbumRouteProps) 
       "api.albums.delete",
     );
   }
+
+  const { data: privateAssetRows } = await client
+    .from("private_media_assets")
+    .select("object_key,legacy_object_key,bucket_role")
+    .eq("album_id", id);
 
   const { error } = await client.from("albums").delete().eq("id", id);
   if (error) {
@@ -217,14 +228,7 @@ export async function DELETE(request: NextRequest, { params }: AlbumRouteProps) 
   }
 
   try {
-    await deleteR2Objects(
-      (mediaRows ?? []).flatMap((item) => [
-        item.r2_key,
-        item.thumbnail_r2_key,
-        item.medium_r2_key,
-        item.poster_r2_key,
-      ]),
-    );
+    await purgeMediaR2Keys(mediaRows ?? [], privateAssetRows ?? []);
   } catch {
     return apiError(
       "UPLOAD_FAILED",
@@ -243,5 +247,7 @@ export async function DELETE(request: NextRequest, { params }: AlbumRouteProps) 
   });
   revalidateTag("albums:public", "max");
   revalidateTag(`album:${id}:media`, "max");
+  revalidatePath("/albums");
+  revalidatePath("/");
   return apiSuccess({ deleted: true });
 }

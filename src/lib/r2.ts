@@ -128,25 +128,97 @@ export async function putR2Object({
 
 export async function deleteR2Objects(
   keys: Array<string | null | undefined>,
-  bucketRole: R2BucketRole = "public"
+  bucketRole: R2BucketRole = "public",
 ) {
-  const objects = keys
-    .filter((key): key is string => Boolean(key))
-    .map((Key) => ({ Key }));
+  const filtered = keys
+    .filter((key): key is string => Boolean(key?.trim()))
+    .map((Key) => ({ Key: Key.trim() }));
 
-  if (!objects.length) return;
+  if (!filtered.length) return;
 
-  await withStorageFailure("r2.delete_objects", () =>
-    getR2ClientForRole(bucketRole).send(
-      new DeleteObjectsCommand({
-        Bucket: getR2BucketForRole(bucketRole),
-        Delete: {
-          Objects: objects,
-          Quiet: true,
-        },
-      }),
-    ),
-  );
+  const client = getR2ClientForRole(bucketRole);
+  const bucket = getR2BucketForRole(bucketRole);
+
+  // S3 / R2 DeleteObjectsCommand accepts maximum 1000 objects per API call
+  const BATCH_SIZE = 1000;
+  for (let i = 0; i < filtered.length; i += BATCH_SIZE) {
+    const batch = filtered.slice(i, i + BATCH_SIZE);
+    await withStorageFailure("r2.delete_objects", () =>
+      client.send(
+        new DeleteObjectsCommand({
+          Bucket: bucket,
+          Delete: {
+            Objects: batch,
+            Quiet: true,
+          },
+        }),
+      ),
+    );
+  }
+}
+
+export interface MediaR2KeysRow {
+  r2_key?: string | null;
+  thumbnail_r2_key?: string | null;
+  medium_r2_key?: string | null;
+  large_r2_key?: string | null;
+  poster_r2_key?: string | null;
+  public_r2_key?: string | null;
+  original_private_r2_key?: string | null;
+  avif_thumbnail_r2_key?: string | null;
+  avif_medium_r2_key?: string | null;
+  avif_large_r2_key?: string | null;
+}
+
+export interface PrivateAssetKeyRow {
+  object_key?: string | null;
+  legacy_object_key?: string | null;
+  bucket_role?: R2BucketRole | null;
+}
+
+export async function purgeMediaR2Keys(
+  mediaRows: MediaR2KeysRow[],
+  privateAssetRows: PrivateAssetKeyRow[] = [],
+) {
+  const publicKeys = new Set<string>();
+  const privateKeys = new Set<string>();
+
+  for (const item of mediaRows) {
+    if (item.r2_key) publicKeys.add(item.r2_key);
+    if (item.thumbnail_r2_key) publicKeys.add(item.thumbnail_r2_key);
+    if (item.medium_r2_key) publicKeys.add(item.medium_r2_key);
+    if (item.large_r2_key) publicKeys.add(item.large_r2_key);
+    if (item.poster_r2_key) publicKeys.add(item.poster_r2_key);
+    if (item.public_r2_key) publicKeys.add(item.public_r2_key);
+    if (item.avif_thumbnail_r2_key) publicKeys.add(item.avif_thumbnail_r2_key);
+    if (item.avif_medium_r2_key) publicKeys.add(item.avif_medium_r2_key);
+    if (item.avif_large_r2_key) publicKeys.add(item.avif_large_r2_key);
+
+    if (item.original_private_r2_key) privateKeys.add(item.original_private_r2_key);
+  }
+
+  for (const asset of privateAssetRows) {
+    const role = asset.bucket_role === "private" ? "private" : "public";
+    if (asset.object_key) {
+      if (role === "private") privateKeys.add(asset.object_key);
+      else publicKeys.add(asset.object_key);
+    }
+    if (asset.legacy_object_key) {
+      if (role === "private") privateKeys.add(asset.legacy_object_key);
+      else publicKeys.add(asset.legacy_object_key);
+    }
+  }
+
+  if (publicKeys.size > 0) {
+    await deleteR2Objects(Array.from(publicKeys), "public");
+  }
+  if (privateKeys.size > 0) {
+    try {
+      await deleteR2Objects(Array.from(privateKeys), "private");
+    } catch {
+      // Ignore if private bucket is not configured
+    }
+  }
 }
 
 export async function getPresignedPutUrl({

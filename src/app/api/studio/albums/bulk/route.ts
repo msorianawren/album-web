@@ -3,7 +3,7 @@ import { revalidateTag } from "next/cache";
 import { logAuditEvent } from "@/lib/audit";
 import { getTrustedAdminDatabase } from "@/lib/db/admin";
 import { apiError, apiSuccess, toServerError } from "@/lib/errors";
-import { deleteR2Objects } from "@/lib/r2";
+import { purgeMediaR2Keys } from "@/lib/r2";
 import { slugify } from "@/lib/utils";
 
 interface BulkActionPayload {
@@ -111,10 +111,17 @@ export async function POST(request: NextRequest) {
     }
 
     if (action === "permanent_delete") {
-      // 1. Fetch media R2 keys for all target albums
+      // 1. Fetch media R2 keys for all target albums (including all 10 derivative fields)
       const { data: mediaRows } = await client
         .from("media")
-        .select("r2_key,thumbnail_r2_key,medium_r2_key,poster_r2_key")
+        .select(
+          "r2_key,thumbnail_r2_key,medium_r2_key,large_r2_key,poster_r2_key,public_r2_key,original_private_r2_key,avif_thumbnail_r2_key,avif_medium_r2_key,avif_large_r2_key",
+        )
+        .in("album_id", ids);
+
+      const { data: privateAssetRows } = await client
+        .from("private_media_assets")
+        .select("object_key,legacy_object_key,bucket_role")
         .in("album_id", ids);
 
       // 2. Delete album rows from Supabase (cascades or deletes media)
@@ -127,20 +134,11 @@ export async function POST(request: NextRequest) {
         return apiError("SERVER_ERROR", deleteError.message, 500);
       }
 
-      // 3. Purge R2 objects
-      const keysToDelete = (mediaRows ?? []).flatMap((item) => [
-        item.r2_key,
-        item.thumbnail_r2_key,
-        item.medium_r2_key,
-        item.poster_r2_key,
-      ]).filter(Boolean) as string[];
-
-      if (keysToDelete.length > 0) {
-        try {
-          await deleteR2Objects(keysToDelete);
-        } catch {
-          // Log warning but return success for DB deletion
-        }
+      // 3. Purge R2 objects from public and private buckets
+      try {
+        await purgeMediaR2Keys(mediaRows ?? [], privateAssetRows ?? []);
+      } catch {
+        // Log warning but return success for DB deletion
       }
 
       await logAuditEvent({
@@ -149,7 +147,7 @@ export async function POST(request: NextRequest) {
         action: "admin_bulk_permanent_delete_albums",
         targetType: "album",
         targetId: ids.join(","),
-        metadata: { count: ids.length, purgedR2Keys: keysToDelete.length },
+        metadata: { count: ids.length, purgedMediaCount: (mediaRows ?? []).length },
       });
 
       revalidateTag("albums:public", "max");
