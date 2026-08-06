@@ -666,20 +666,23 @@ export async function getAlbum(
     }
 
     if (album.status === "private") {
-      const { data: canReadPrivate, error: accessError } = await userClient!.rpc(
-        "can_access_private_album",
-        { target_album_id: album.id },
-      );
-      if (accessError) throw classifyDataFailure(accessError, "albums.private_access");
-      if (canReadPrivate !== true) {
-        return {
-          ...album,
-          cover_url: album.safe_preview_url ?? null,
-          media: [],
-          download_allowed: false,
-          locked: true,
-          private_message: privateAlbumMessage,
-        };
+      const isAuthorizedAdmin = isAdmin || Boolean(session?.isAdmin || session?.isFounder);
+      if (!isAuthorizedAdmin) {
+        const { data: canReadPrivate, error: accessError } = await userClient!.rpc(
+          "can_access_private_album",
+          { target_album_id: album.id },
+        );
+        if (accessError) throw classifyDataFailure(accessError, "albums.private_access");
+        if (canReadPrivate !== true) {
+          return {
+            ...album,
+            cover_url: album.safe_preview_url ?? null,
+            media: [],
+            download_allowed: false,
+            locked: true,
+            private_message: privateAlbumMessage,
+          };
+        }
       }
     }
 

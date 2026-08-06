@@ -28,13 +28,25 @@ export async function GET(request: NextRequest, { params }: PrivateMediaContentP
     const asset = await authorizePrivateMediaAsset(request, id, variant);
     if (!asset) return apiError("NOT_FOUND", "Media not found.", 404);
 
-    const signedUrl = await getPresignedGetUrl({
-      key: asset.objectKey,
-      expiresIn: 3600,
-      bucketRole: asset.bucketRole,
-    });
+    if (asset.bucketRole === "public" && process.env.R2_PUBLIC_URL) {
+      const publicBase = process.env.R2_PUBLIC_URL.replace(/\/$/, "");
+      return NextResponse.redirect(`${publicBase}/${asset.objectKey}`);
+    }
 
-    return NextResponse.redirect(signedUrl);
+    try {
+      const signedUrl = await getPresignedGetUrl({
+        key: asset.objectKey,
+        expiresIn: 3600,
+        bucketRole: asset.bucketRole,
+      });
+      return NextResponse.redirect(signedUrl);
+    } catch {
+      if (process.env.R2_PUBLIC_URL) {
+        const publicBase = process.env.R2_PUBLIC_URL.replace(/\/$/, "");
+        return NextResponse.redirect(`${publicBase}/${asset.objectKey}`);
+      }
+      throw new Error("Unable to resolve asset URL");
+    }
   } catch (error) {
     return toServerError(error, request, "api.private_media.content");
   }

@@ -268,7 +268,8 @@ async function getPrivateAssetRecord(
     .single();
   if (legacy.error || !legacy.data) return null;
   const objectKey = legacyAssetForVariant(legacy.data, variant, mediaType);
-  if (!objectKey || !(await verifiedObject(objectKey, "public"))) return null;
+  if (!objectKey) return null;
+
   return {
     objectKey,
     bucketRole: "public" as const,
@@ -305,11 +306,14 @@ export async function authorizePrivateMediaAsset(
   const albumRelation = Array.isArray(media.albums) ? media.albums[0] : media.albums;
   if (!albumRelation || albumRelation.status !== "private") return null;
 
-  const { data: canAccess, error: accessError } = await userClient.rpc(
-    "can_access_private_album",
-    { target_album_id: media.album_id },
-  );
-  if (accessError || canAccess !== true) return null;
+  const isAuthorizedAdmin = Boolean(session.isAdmin || session.isFounder);
+  if (!isAuthorizedAdmin) {
+    const { data: canAccess, error: accessError } = await userClient.rpc(
+      "can_access_private_album",
+      { target_album_id: media.album_id },
+    );
+    if (accessError || canAccess !== true) return null;
+  }
 
   const mediaType = media.media_type === "video" ? "video" : "image";
   const asset = await getPrivateAssetRecord(media.id, variant, mediaType);
