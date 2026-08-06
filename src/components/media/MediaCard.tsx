@@ -45,8 +45,8 @@ export function MediaCard({
 
   return (
     <div
-      className="media-grid-item group relative mb-4 block w-full break-inside-avoid overflow-hidden rounded-3xl bg-surface-secondary text-left"
-      style={{ aspectRatio, contentVisibility: "auto", containIntrinsicSize: "360px 480px" }}
+      className="media-grid-item group relative block w-full overflow-hidden rounded-3xl bg-surface-secondary text-left"
+      style={{ aspectRatio }}
       onContextMenu={protectAssets ? (event) => event.preventDefault() : undefined}
     >
       <button

@@ -94,14 +94,14 @@ export function PrivateAlbumSelectionBar() {
   if (selectedIds.size === 0) return null;
 
   return (
-    <div className="sticky bottom-4 z-40 mx-auto mt-10 flex max-w-3xl flex-col gap-3 rounded-[1.5rem] border border-border bg-background/90 p-4 shadow-2xl backdrop-blur sm:flex-row sm:items-center sm:justify-between">
-      <div className="text-sm text-text-primary">
-        <span className="font-semibold">{selectedIds.size}</span> album{selectedIds.size === 1 ? "" : "s"} selected
+    <div className="sticky bottom-[max(1rem,env(safe-area-inset-bottom))] z-40 mx-auto mt-10 flex max-w-[calc(100vw-1.25rem)] sm:max-w-3xl flex-col gap-3 rounded-[1.5rem] border border-border bg-background/95 p-3.5 sm:p-4 shadow-2xl backdrop-blur-xl sm:flex-row sm:items-center sm:justify-between">
+      <div className="text-xs sm:text-sm font-medium text-text-primary px-1">
+        <span className="font-bold text-accent">{selectedIds.size}</span> album{selectedIds.size === 1 ? "" : "s"} selected
       </div>
-      <div className="flex flex-wrap gap-2">
-        <Button onClick={() => openRequestModal("selected_albums")}>Request selected albums</Button>
-        <Button variant="secondary" onClick={() => openRequestModal("all_private")}>Request all private albums</Button>
-        <Button variant="ghost" onClick={clearSelection}>Clear selection</Button>
+      <div className="flex flex-wrap items-center gap-2">
+        <Button onClick={() => openRequestModal("selected_albums")} className="text-[0.65rem] sm:text-xs">Request selected albums</Button>
+        <Button variant="secondary" onClick={() => openRequestModal("all_private")} className="text-[0.65rem] sm:text-xs">Request all private albums</Button>
+        <Button variant="ghost" onClick={clearSelection} className="text-[0.65rem] sm:text-xs">Clear selection</Button>
       </div>
     </div>
   );

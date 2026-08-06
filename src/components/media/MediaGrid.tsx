@@ -33,6 +33,25 @@ interface MediaGridProps {
   defaultSortMode?: string | null;
 }
 
+function useColumnCount() {
+  const [cols, setCols] = useState(4);
+
+  useEffect(() => {
+    const updateCols = () => {
+      const w = window.innerWidth;
+      if (w < 640) setCols(1);
+      else if (w < 768) setCols(2);
+      else if (w < 1024) setCols(3);
+      else setCols(4);
+    };
+    updateCols();
+    window.addEventListener("resize", updateCols);
+    return () => window.removeEventListener("resize", updateCols);
+  }, []);
+
+  return cols;
+}
+
 export function MediaGrid({
   albumId,
   media,
@@ -43,6 +62,7 @@ export function MediaGrid({
 }: MediaGridProps) {
   const storageKey = `album:${albumId}:sort`;
   const defaultMode = parseMediaSortMode(defaultSortMode, "smart");
+  const columnCount = useColumnCount();
   const [currentIndex, setCurrentIndex] = useState<number | null>(null);
   const [sortMode, setSortMode] = useState<MediaSortMode>(() => {
     if (typeof window === "undefined") return defaultMode;
@@ -77,6 +97,20 @@ export function MediaGrid({
     () => sortedMedia.slice(0, visibleCount),
     [sortedMedia, visibleCount],
   );
+
+  const columns = useMemo(() => {
+    const result: Array<Array<{ item: Media; originalIndex: number }>> = Array.from(
+      { length: columnCount },
+      () => [],
+    );
+
+    visibleMedia.forEach((item, index) => {
+      const colIndex = index % columnCount;
+      result[colIndex].push({ item, originalIndex: index });
+    });
+
+    return result;
+  }, [visibleMedia, columnCount]);
 
   const chooseSortMode = useCallback((value: MediaSortMode) => {
     startTransition(() => {
@@ -248,18 +282,26 @@ export function MediaGrid({
         </div>
       </div>
 
-      <div id="media-grid" className="columns-1 gap-3 sm:columns-2 sm:gap-4 md:columns-3 lg:columns-4">
-        {visibleMedia.map((item, index) => (
-          <MediaCard
-            key={item.id}
-            media={item}
-            index={viewerIndexById.get(item.id) ?? index}
-            downloadAllowed={downloadAllowed}
-            albumStatus={albumStatus}
-            protectAssets={protectAssets}
-            onOpen={openMedia}
-            priority={index === 0}
-          />
+      <div
+        id="media-grid"
+        className="grid gap-3 sm:gap-4"
+        style={{ gridTemplateColumns: `repeat(${columnCount}, minmax(0, 1fr))` }}
+      >
+        {columns.map((colItems, colIdx) => (
+          <div key={colIdx} className="flex flex-col gap-3 sm:gap-4">
+            {colItems.map(({ item, originalIndex }) => (
+              <MediaCard
+                key={item.id}
+                media={item}
+                index={viewerIndexById.get(item.id) ?? originalIndex}
+                downloadAllowed={downloadAllowed}
+                albumStatus={albumStatus}
+                protectAssets={protectAssets}
+                onOpen={openMedia}
+                priority={originalIndex < 4}
+              />
+            ))}
+          </div>
         ))}
       </div>
       {visibleCount < sortedMedia.length ? (
