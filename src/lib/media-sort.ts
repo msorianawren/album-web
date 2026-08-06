@@ -13,7 +13,6 @@ export const mediaSortModes = [
   "landscape_first",
   "aspect_group",
   "type",
-  "liked_desc",
   "commented_desc",
   "viewed_desc",
   "featured",
@@ -35,7 +34,6 @@ export const mediaSortLabels: Record<MediaSortMode, string> = {
   landscape_first: "Landscape first",
   aspect_group: "Aspect ratio groups",
   type: "Image / video",
-  liked_desc: "Most liked",
   commented_desc: "Most commented",
   viewed_desc: "Most viewed",
   featured: "Featured first",
@@ -134,8 +132,6 @@ export function sortMedia(media: Media[], mode: MediaSortMode, seed = "album"): 
         return aspectGroup(left) - aspectGroup(right) || stableTie(left, right);
       case "type":
         return left.media_type.localeCompare(right.media_type) || stableTie(left, right);
-      case "liked_desc":
-        return (right.like_count ?? 0) - (left.like_count ?? 0) || stableTie(left, right);
       case "commented_desc":
         return (right.comment_count ?? 0) - (left.comment_count ?? 0) || stableTie(left, right);
       case "viewed_desc":

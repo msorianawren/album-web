@@ -245,7 +245,7 @@ export function MediaGrid({
         </div>
 
         <div className="hidden flex-wrap items-center gap-2 lg:flex">
-          {(["smart", "manual", "taken_desc", "portrait_first", "liked_desc", "shuffle"] as MediaSortMode[]).map((mode) => (
+          {(["smart", "manual", "taken_desc", "portrait_first", "shuffle"] as MediaSortMode[]).map((mode) => (
             <button
               key={mode}
               type="button"

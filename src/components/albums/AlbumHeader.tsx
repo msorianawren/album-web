@@ -9,6 +9,8 @@ import type { AlbumDetail } from "@/lib/types";
 import { formatMediaCount } from "@/lib/utils";
 import type { AppDictionary } from "@/lib/i18n";
 
+import { AlbumLikeButton } from "@/components/albums/AlbumLikeButton";
+
 interface AlbumHeaderProps {
   album: AlbumDetail;
   dict?: AppDictionary;
@@ -55,6 +57,7 @@ export function AlbumHeader({ album, dict }: AlbumHeaderProps) {
         </p>
         <AlbumMemoryHint albumId={album.id} dict={dict} />
         <div className="mt-12 flex flex-wrap gap-4 items-center">
+          <AlbumLikeButton albumId={album.id} initialCount={album.like_count ?? 0} />
           <ShareButton title={album.title} />
           {album.download_allowed ? (
             <DownloadButton href={`/api/albums/${album.id}/download`} label="Download album" />

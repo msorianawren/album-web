@@ -2,7 +2,6 @@
 
 import { memo } from "react";
 import { DownloadButton } from "@/components/media/DownloadButton";
-import { MediaLikeButton } from "@/components/media/MediaLikeButton";
 import { ReliableMediaImage } from "@/components/media/ReliableMediaImage";
 import { getMediaDeliveryDescriptor } from "@/lib/media/delivery";
 import type { AlbumStatus, Media } from "@/lib/types";
@@ -40,7 +39,6 @@ export const ViewerFilmstrip = memo(function ViewerFilmstrip({ media, item, curr
 
       <div className="flex w-full max-w-[min(56rem,calc(100vw-2rem))] flex-col gap-3 rounded-[1.2rem] border border-lightbox-border bg-white/5 p-3 backdrop-blur-md sm:flex-row sm:items-center sm:justify-between">
         <div className="flex shrink-0 items-center justify-center gap-2">
-          <MediaLikeButton mediaId={item.id} />
           {downloadAllowed && delivery.downloadHref ? <DownloadButton href={delivery.downloadHref} /> : null}
         </div>
         {media.length > 1 ? (

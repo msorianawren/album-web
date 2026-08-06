@@ -1,6 +1,5 @@
 import { Clock3, Play, TriangleAlert } from "lucide-react";
 import { DownloadButton } from "@/components/media/DownloadButton";
-import { MediaLikeButton } from "@/components/media/MediaLikeButton";
 import { ReliableMediaImage } from "@/components/media/ReliableMediaImage";
 import { getMediaDeliveryDescriptor } from "@/lib/media/delivery";
 import type { AlbumStatus, Media } from "@/lib/types";
@@ -112,14 +111,13 @@ export function MediaCard({
         )}
       </button>
 
-      {!isUnavailable ? <div className="pointer-events-none absolute inset-0 flex items-end justify-end bg-overlay p-3 opacity-0 transition duration-250 ease-out group-hover:opacity-100 group-focus-within:opacity-100">
-        <div className="pointer-events-auto flex items-center gap-2">
-          <MediaLikeButton mediaId={media.id} compact />
-          {downloadAllowed ? (
+      {!isUnavailable && downloadAllowed ? (
+        <div className="pointer-events-none absolute inset-0 flex items-end justify-end bg-overlay p-3 opacity-0 transition duration-250 ease-out group-hover:opacity-100 group-focus-within:opacity-100">
+          <div className="pointer-events-auto flex items-center gap-2">
             <DownloadButton href={delivery.downloadHref ?? `/api/media/${media.id}/download`} compact />
-          ) : null}
+          </div>
         </div>
-      </div> : null}
+      ) : null}
     </div>
   );
 }
