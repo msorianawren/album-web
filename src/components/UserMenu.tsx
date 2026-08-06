@@ -26,6 +26,7 @@ interface UserMenuProps {
 
 export function UserMenu({ session, dict }: UserMenuProps) {
   const [open, setOpen] = useState(false);
+  const [feathers, setFeathers] = useState(session.wrenFeathers ?? 0);
   const { preferences: environmentPreferences, updatePreference: updateEnvironmentPreference } = useEnvironmentPreferences({ userId: session.userId });
   const theme = environmentPreferences.phase;
   useResolvedEnvironmentPhase(theme);
@@ -34,6 +35,21 @@ export function UserMenu({ session, dict }: UserMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null);
   const pathname = usePathname() ?? "";
   const searchParams = useSearchParams();
+
+  useEffect(() => {
+    setFeathers(session.wrenFeathers ?? 0);
+  }, [session.wrenFeathers]);
+
+  useEffect(() => {
+    const handleUpdate = (e: Event) => {
+      const customEvent = e as CustomEvent<{ balanceAfter: number }>;
+      if (typeof customEvent.detail?.balanceAfter === "number") {
+        setFeathers(customEvent.detail.balanceAfter);
+      }
+    };
+    window.addEventListener("wren-feathers-update", handleUpdate);
+    return () => window.removeEventListener("wren-feathers-update", handleUpdate);
+  }, []);
   const canOpenAssistant =
     assistantPreferences.mode !== "off" && isOrianaCompanionRuntimePath(pathname);
 
@@ -199,7 +215,7 @@ export function UserMenu({ session, dict }: UserMenuProps) {
                 Wren Feathers
               </span>
               <span className="rounded-full border border-border bg-background px-2 py-0.5 text-xs font-semibold tabular-nums text-text-secondary">
-                {session.wrenFeathers ?? 0}
+                {feathers}
               </span>
             </Link>
           ) : null}

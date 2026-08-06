@@ -487,7 +487,7 @@ export default function SnakeGame({
     };
   }, [onEngineStatusChange, playSfx, quality, setDirection, speed, togglePause]);
 
-  const start = useCallback(async () => {
+  const start = useCallback(() => {
     void startAudio();
 
     if (status === "complete" || status === "ready") {
@@ -497,42 +497,47 @@ export default function SnakeGame({
       actionQueueRef.current = [];
       traceRef.current = [];
 
-      let nextSeed = generatePracticeSeed();
-      
+      const nextSeed = generatePracticeSeed();
+      setCurrentSeed(nextSeed);
+      stateRef.current = createSnakeState(nextSeed);
+      runtimeRef.current?.reset();
+      runtimeRef.current?.setStepMs(getSnakeStepMs(speed, stateRef.current));
+      particlesRef.current.clear();
+      shakeRef.current.reset();
+      lastRenderAtRef.current = null;
+      setHud({ level: 1, combo: 0, activePower: null });
+
+      runtimeRef.current?.start();
+      setStatus("running");
+      onEngineStatusChange?.("running");
+
       if (signedIn) {
-        try {
-          const response = await fetch("/api/game-sessions", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ gameSlug: "snake", difficultyKey: "standard" }),
-          });
-          if (response.ok) {
-            const { data } = await response.json();
-            nextSeed = data.seed;
-            sessionRef.current = { id: data.sessionId, nonce: data.nonce, seed: data.seed };
-          } else {
+        fetch("/api/game-sessions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ gameSlug: "snake", difficultyKey: "standard" }),
+        })
+          .then(async (response) => {
+            if (response.ok) {
+              const { data } = await response.json();
+              sessionRef.current = { id: data.sessionId, nonce: data.nonce, seed: data.seed };
+            } else {
+              sessionRef.current = null;
+            }
+          })
+          .catch(() => {
             sessionRef.current = null;
-          }
-        } catch (e) {
-          sessionRef.current = null;
-        }
+          });
+      } else {
+        sessionRef.current = null;
       }
-      
-    setCurrentSeed(nextSeed);
-    stateRef.current = createSnakeState(nextSeed);
-    runtimeRef.current?.reset();
-    runtimeRef.current?.setStepMs(getSnakeStepMs(speed, stateRef.current));
-    particlesRef.current.clear();
-    shakeRef.current.reset();
-    lastRenderAtRef.current = null;
-    setHud({ level: 1, combo: 0, activePower: null });
+      return;
     }
-    
+
     runtimeRef.current?.start();
     setStatus("running");
     onEngineStatusChange?.("running");
   }, [onEngineStatusChange, signedIn, speed, startAudio, status]);
-
 
   const restart = useCallback(() => {
     runtimeRef.current?.pause();

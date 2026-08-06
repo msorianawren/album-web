@@ -226,7 +226,7 @@ export default function FeatherMergeGame({
     setUndoAvailable(historyRef.current.length > 0);
   }, [status, undosLeft]);
 
-  const start = useCallback(async () => {
+  const start = useCallback(() => {
     void startAudio();
 
     if (status === "complete" || status === "ready") {
@@ -238,31 +238,37 @@ export default function FeatherMergeGame({
       setUndosLeft(3);
       setUndoAvailable(false);
 
-      let nextSeed = generatePracticeSeed();
-
-      if (signedIn) {
-        try {
-          const response = await fetch("/api/game-sessions", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ gameSlug: "feather-merge", difficultyKey: "standard" }),
-          });
-          if (response.ok) {
-            const { data } = await response.json();
-            nextSeed = data.seed;
-            sessionRef.current = { id: data.sessionId, nonce: data.nonce, seed: data.seed };
-          } else {
-            sessionRef.current = null;
-          }
-        } catch {
-          sessionRef.current = null;
-        }
-      }
-
+      const nextSeed = generatePracticeSeed();
       setCurrentSeed(nextSeed);
       stateRef.current = createFeatherMergeState(nextSeed);
       setCells([...stateRef.current.cells]);
       runtimeRef.current?.reset();
+
+      runtimeRef.current?.start();
+      setStatus("running");
+      onEngineStatusChange?.("running");
+
+      if (signedIn) {
+        fetch("/api/game-sessions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ gameSlug: "feather-merge", difficultyKey: "standard" }),
+        })
+          .then(async (response) => {
+            if (response.ok) {
+              const { data } = await response.json();
+              sessionRef.current = { id: data.sessionId, nonce: data.nonce, seed: data.seed };
+            } else {
+              sessionRef.current = null;
+            }
+          })
+          .catch(() => {
+            sessionRef.current = null;
+          });
+      } else {
+        sessionRef.current = null;
+      }
+      return;
     }
 
     runtimeRef.current?.start();

@@ -90,37 +90,43 @@ export default function QuietMeadowGame({
     }
   }, [status, updateState]);
 
-  const start = useCallback(async () => {
+  const start = useCallback(() => {
     void startAudio();
+
     if (status === "complete" || status === "ready") {
       setCompletion(null);
       traceRef.current = [];
       actionCounterRef.current = 0;
 
-      let nextSeed = generatePracticeSeed();
-      
-      if (signedIn) {
-        try {
-          const response = await fetch("/api/game-sessions", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ gameSlug: "quiet-meadow" }),
-          });
-          if (response.ok) {
-            const { data } = await response.json();
-            nextSeed = data.seed;
-            sessionRef.current = { id: data.sessionId, nonce: data.nonce, seed: data.seed };
-          } else {
-            sessionRef.current = null;
-          }
-        } catch (e) {
-          sessionRef.current = null;
-        }
-      }
-      
+      const nextSeed = generatePracticeSeed();
       setCurrentSeed(nextSeed);
       stateRef.current = createQuietMeadowState(quietMeadowDifficulties[difficulty], nextSeed);
       setState(stateRef.current);
+
+      setStatus("running");
+      onEngineStatusChange?.("running");
+
+      if (signedIn) {
+        fetch("/api/game-sessions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ gameSlug: "quiet-meadow" }),
+        })
+          .then(async (response) => {
+            if (response.ok) {
+              const { data } = await response.json();
+              sessionRef.current = { id: data.sessionId, nonce: data.nonce, seed: data.seed };
+            } else {
+              sessionRef.current = null;
+            }
+          })
+          .catch(() => {
+            sessionRef.current = null;
+          });
+      } else {
+        sessionRef.current = null;
+      }
+      return;
     }
     
     setStatus("running");

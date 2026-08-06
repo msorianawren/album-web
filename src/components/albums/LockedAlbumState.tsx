@@ -33,6 +33,12 @@ export function LockedAlbumState({
         setPurchaseMessage(payload?.message ?? "Could not complete the Feather unlock.");
         return;
       }
+      const newBalance = payload?.data?.balanceAfter;
+      if (typeof newBalance === "number") {
+        window.dispatchEvent(new CustomEvent("wren-feathers-update", {
+          detail: { deduction: price, balanceAfter: newBalance }
+        }));
+      }
       router.refresh();
     } catch {
       setPurchaseMessage("Could not complete the Feather unlock. Please try again.");

@@ -297,42 +297,47 @@ export default function EchoChimesGame({
     };
   }, [handlePress, onEngineStatusChange, playChimeAudio, playSfx, quality, togglePause]);
 
-  const start = useCallback(async () => {
+  const start = useCallback(() => {
     void startAudio();
-    
+
     if (status === "complete" || status === "ready") {
       setCompletion(null);
-      setDidNotQualify(false);
       setCompletionError(null);
       setScore(0);
       actionRef.current = [];
       traceRef.current = [];
       ripplesRef.current = [];
       
-      let nextSeed = generatePracticeSeed();
-      
-      if (signedIn) {
-        try {
-          const response = await fetch("/api/game-sessions", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ gameSlug: "echo-chimes", difficultyKey: "standard" }),
-          });
-          if (response.ok) {
-            const { data } = await response.json();
-            nextSeed = data.seed;
-            sessionRef.current = { id: data.sessionId, nonce: data.nonce, seed: data.seed };
-          } else {
-            sessionRef.current = null;
-          }
-        } catch (e) {
-          sessionRef.current = null;
-        }
-      }
-      
+      const nextSeed = generatePracticeSeed();
       setCurrentSeed(nextSeed);
       stateRef.current = createEchoChimesState(nextSeed);
       runtimeRef.current?.reset();
+
+      runtimeRef.current?.start();
+      setStatus("running");
+      onEngineStatusChange?.("running");
+
+      if (signedIn) {
+        fetch("/api/game-sessions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ gameSlug: "echo-chimes", difficultyKey: "standard" }),
+        })
+          .then(async (response) => {
+            if (response.ok) {
+              const { data } = await response.json();
+              sessionRef.current = { id: data.sessionId, nonce: data.nonce, seed: data.seed };
+            } else {
+              sessionRef.current = null;
+            }
+          })
+          .catch(() => {
+            sessionRef.current = null;
+          });
+      } else {
+        sessionRef.current = null;
+      }
+      return;
     }
     
     runtimeRef.current?.start();

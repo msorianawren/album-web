@@ -8,21 +8,22 @@ export function LiveFeatherBadge({ initialBalance = 0, tooltipText }: { initialB
   const [balance, setBalance] = useState(initialBalance ?? 0);
   const [animate, setAnimate] = useState(false);
   const [lastReward, setLastReward] = useState<number | null>(null);
+  const [deductAnimate, setDeductAnimate] = useState(false);
+  const [lastDeduction, setLastDeduction] = useState<number | null>(null);
   const badgeRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleUpdate = (e: Event) => {
-      const customEvent = e as CustomEvent<{ rewardGranted: number; balanceAfter: number }>;
-      const { rewardGranted, balanceAfter } = customEvent.detail;
+      const customEvent = e as CustomEvent<{ rewardGranted?: number; deduction?: number; balanceAfter: number }>;
+      const { rewardGranted = 0, deduction = 0, balanceAfter } = customEvent.detail;
       
       setBalance(balanceAfter);
       
       if (rewardGranted > 0) {
         setLastReward(rewardGranted);
         setAnimate(true);
-        setTimeout(() => setAnimate(false), 2000); // Reset animation state
+        setTimeout(() => setAnimate(false), 2200);
         
-        // Fire confetti from the badge location
         if (badgeRef.current) {
           const rect = badgeRef.current.getBoundingClientRect();
           const x = (rect.left + rect.width / 2) / window.innerWidth;
@@ -32,11 +33,16 @@ export function LiveFeatherBadge({ initialBalance = 0, tooltipText }: { initialB
             particleCount: 50,
             spread: 60,
             origin: { x, y },
-            colors: ['#f59e0b', '#fbbf24', '#fcd34d'], // Gold/Feather colors
+            colors: ['#f59e0b', '#fbbf24', '#fcd34d'],
             disableForReducedMotion: true,
             zIndex: 100
           });
         }
+      } else if (deduction > 0 || rewardGranted < 0) {
+        const spent = deduction > 0 ? deduction : Math.abs(rewardGranted);
+        setLastDeduction(spent);
+        setDeductAnimate(true);
+        setTimeout(() => setDeductAnimate(false), 2200);
       }
     };
 
@@ -48,10 +54,11 @@ export function LiveFeatherBadge({ initialBalance = 0, tooltipText }: { initialB
     <div className="group relative flex items-center shrink-0 cursor-help" ref={badgeRef}>
       <div 
         className={`flex h-9 sm:h-10 items-center justify-center gap-1.5 sm:gap-2 rounded-full border border-[var(--glass-border)] bg-[var(--glass-bg)] px-3 sm:px-4 text-xs sm:text-sm font-semibold tracking-wide shadow-sm backdrop-blur-md transition-all duration-500
-          ${animate ? "scale-105 sm:scale-110 border-accent/60 bg-accent/10 text-accent shadow-accent/20" : "text-text-primary hover:bg-surface/70"}
+          ${animate ? "scale-105 sm:scale-110 border-accent/60 bg-accent/10 text-accent shadow-accent/20" : ""}
+          ${deductAnimate ? "scale-105 sm:scale-110 border-rose-500/60 bg-rose-500/10 text-rose-500 shadow-rose-500/20" : "text-text-primary hover:bg-surface/70"}
         `}
       >
-        <Sparkles className={`h-3.5 w-3.5 sm:h-4 sm:w-4 ${animate ? "text-accent animate-pulse" : "text-muted-accent"}`} />
+        <Sparkles className={`h-3.5 w-3.5 sm:h-4 sm:w-4 ${animate ? "text-accent animate-pulse" : deductAnimate ? "text-rose-500 animate-pulse" : "text-muted-accent"}`} />
         <span className="tabular-nums">{balance}</span>
       </div>
       
@@ -59,6 +66,13 @@ export function LiveFeatherBadge({ initialBalance = 0, tooltipText }: { initialB
       {animate && lastReward !== null && (
         <div className="pointer-events-none absolute -top-5 sm:-top-6 right-2 animate-bounce text-sm font-bold text-accent drop-shadow-md z-50">
           +{lastReward}
+        </div>
+      )}
+
+      {/* Floating -X deduction animation */}
+      {deductAnimate && lastDeduction !== null && (
+        <div className="pointer-events-none absolute -top-5 sm:-top-6 right-2 animate-bounce text-sm font-bold text-rose-500 drop-shadow-md z-50">
+          -{lastDeduction}
         </div>
       )}
       

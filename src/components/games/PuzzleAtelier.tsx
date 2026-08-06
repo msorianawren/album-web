@@ -256,7 +256,7 @@ export function PuzzleAtelier({ initialChallenges, initialResults, signedIn, cop
     }
   }
 
-  const newGame = useCallback(async (nextChallenge: PuzzleChallenge, nextMode: PuzzleMode, nextGrid: PuzzleGridSize) => {
+  const newGame = useCallback((nextChallenge: PuzzleChallenge, nextMode: PuzzleMode, nextGrid: PuzzleGridSize) => {
     if (!nextChallenge) return;
     const nextSeed = `${nextChallenge.id}:${nextChallenge.baseSeed}:${nextMode}:${nextGrid}`;
     setBoard(createPuzzleBoard(nextSeed, nextMode, nextGrid));
@@ -268,17 +268,15 @@ export function PuzzleAtelier({ initialChallenges, initialResults, signedIn, cop
     startedRef.current = null;
     setAttemptId(null);
     setCompletion(null);
-    if (signedIn) {
-      try {
-        const response = await fetch("/api/games/attempts", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ challengeId: nextChallenge.id, mode: nextMode, gridSize: nextGrid }) });
-        const payload = await response.json();
-        if (response.ok && payload.success) setAttemptId(payload.data.attempt.attemptId);
-        else toast.info(copy.offline ?? "Playing offline. Sign in again to claim Feathers.");
-      } catch {
-        toast.info(copy.offline ?? "Playing offline. Sign in again to claim Feathers.");
-      }
+    if (signedIn && !nextChallenge.id.startsWith("custom-")) {
+      fetch("/api/games/attempts", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ challengeId: nextChallenge.id, mode: nextMode, gridSize: nextGrid }) })
+        .then(async (response) => {
+          const payload = await response.json().catch(() => null);
+          if (response.ok && payload?.success) setAttemptId(payload.data.attempt.attemptId);
+        })
+        .catch(() => undefined);
     }
-  }, [copy.offline, signedIn, toast]);
+  }, [signedIn]);
 
   useEffect(() => {
     if (!challenge) return;
