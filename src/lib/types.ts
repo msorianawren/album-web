@@ -41,6 +41,9 @@ export interface Album {
   order_updated_by?: string | null;
   created_at: string;
   updated_at?: string;
+  deleted_at?: string | null;
+  deleted_by?: string | null;
+  delete_reason?: string | null;
   translations?: TranslationMap;
   preview_items?: AlbumPreviewItem[];
 }

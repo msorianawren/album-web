@@ -148,7 +148,21 @@ export async function DELETE(request: NextRequest, { params }: AlbumRouteProps) 
     return apiError("RATE_LIMITED", "Too many admin changes. Please wait before trying again.", 429);
   }
 
-  if (settings.enable_soft_delete) {
+  const isPermanent = request.nextUrl.searchParams.get("permanent") === "true";
+
+  if (settings.enable_soft_delete && !isPermanent) {
+    // Fetch existing slug so we can free it up for new albums with the same name
+    const { data: existingAlbum } = await client
+      .from("albums")
+      .select("slug")
+      .eq("id", id)
+      .maybeSingle();
+
+    const currentSlug = existingAlbum?.slug ?? id;
+    const freedSlug = currentSlug.includes("__deleted_")
+      ? currentSlug
+      : `${currentSlug}__deleted_${Date.now()}`;
+
     const { error } = await client
       .from("albums")
       .update({
@@ -156,6 +170,7 @@ export async function DELETE(request: NextRequest, { params }: AlbumRouteProps) 
         deleted_by: session.userId,
         delete_reason: "Deleted from Studio",
         status: "private",
+        slug: freedSlug,
       })
       .eq("id", id);
 

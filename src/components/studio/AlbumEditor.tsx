@@ -229,6 +229,48 @@ export function AlbumEditor({ album, settings }: { album: AlbumDetail; settings:
     toast.success(nextRank ? "Media marked as featured." : "Media removed from featured order.");
   }
 
+  const [selectedMediaIds, setSelectedMediaIds] = useState<Set<string>>(new Set());
+
+  const allMediaSelected = useMemo(() => {
+    if (!media.length) return false;
+    return media.every((m) => selectedMediaIds.has(m.id));
+  }, [media, selectedMediaIds]);
+
+  function toggleSelectAllMedia() {
+    setSelectedMediaIds((current) => {
+      if (allMediaSelected) return new Set();
+      return new Set(media.map((m) => m.id));
+    });
+  }
+
+  function toggleSelectMedia(id: string) {
+    setSelectedMediaIds((current) => {
+      const next = new Set(current);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  async function deleteSelectedMedia() {
+    const ids = Array.from(selectedMediaIds);
+    if (!ids.length) return;
+    if (!window.confirm(`Permanently remove ${ids.length} selected item(s) from this album and Cloudflare R2?`)) return;
+
+    toast.info(`Deleting ${ids.length} selected media item(s)...`);
+    const results = await Promise.all(
+      ids.map((id) => fetch(`/api/media/${id}`, { method: "DELETE" }).then((r) => r.json())),
+    );
+
+    const deletedSet = new Set(
+      ids.filter((_, idx) => results[idx]?.success),
+    );
+
+    setMedia((current) => current.filter((item) => !deletedSet.has(item.id)));
+    setSelectedMediaIds(new Set());
+    toast.success(`Removed ${deletedSet.size} media item(s).`);
+  }
+
   async function deleteMedia(item: Media) {
     if (!window.confirm(`Remove "${item.title ?? item.original_filename ?? "this media"}" from this album and R2?`)) return;
     const response = await fetch(`/api/media/${item.id}`, { method: "DELETE" });
@@ -238,6 +280,11 @@ export function AlbumEditor({ album, settings }: { album: AlbumDetail; settings:
       return;
     }
     setMedia((current) => current.filter((mediaItem) => mediaItem.id !== item.id));
+    setSelectedMediaIds((current) => {
+      const next = new Set(current);
+      next.delete(item.id);
+      return next;
+    });
     toast.success("Media removed.");
   }
 
@@ -476,16 +523,45 @@ export function AlbumEditor({ album, settings }: { album: AlbumDetail; settings:
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-text-secondary">Image management</p>
             <h2 className="mt-2 text-2xl font-semibold text-text-primary">{media.length} item{media.length === 1 ? "" : "s"}</h2>
           </div>
-          <Button variant="secondary" onClick={deleteAlbum} className="w-full sm:w-auto">
-            <Trash2 className="h-4 w-4" />
-            Delete album
-          </Button>
+          <div className="flex flex-wrap items-center gap-2">
+            {selectedMediaIds.size > 0 && (
+              <Button variant="secondary" className="border-red-500/40 text-red-500 hover:bg-red-500/10" onClick={deleteSelectedMedia}>
+                <Trash2 className="h-4 w-4" />
+                Delete selected ({selectedMediaIds.size})
+              </Button>
+            )}
+            <Button variant="secondary" onClick={deleteAlbum} className="w-full sm:w-auto">
+              <Trash2 className="h-4 w-4" />
+              Delete album
+            </Button>
+          </div>
         </div>
         {media.length ? (
-          <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-            {media.map((item, index) => (
-              <article key={item.id} className="overflow-hidden rounded-[1.2rem] border border-border bg-background/60">
-                <div className="relative aspect-[4/3] bg-surface-secondary">
+          <>
+            <div className="mt-4 flex items-center gap-2 text-sm text-text-secondary">
+              <label className="inline-flex items-center gap-2 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={allMediaSelected}
+                  onChange={toggleSelectAllMedia}
+                  className="h-4 w-4 accent-[var(--accent)] rounded cursor-pointer"
+                />
+                <span className="font-medium text-text-primary">Select all photos</span>
+              </label>
+            </div>
+            <div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+              {media.map((item, index) => (
+                <article key={item.id} className={`overflow-hidden rounded-[1.2rem] border transition-colors ${selectedMediaIds.has(item.id) ? "border-accent bg-accent/5" : "border-border bg-background/60"}`}>
+                  <div className="relative aspect-[4/3] bg-surface-secondary">
+                    <label className="absolute left-3 top-3 z-10 inline-flex h-7 w-7 items-center justify-center rounded-full bg-background/80 backdrop-blur shadow cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={selectedMediaIds.has(item.id)}
+                        onChange={() => toggleSelectMedia(item.id)}
+                        className="h-4 w-4 accent-[var(--accent)] cursor-pointer"
+                        aria-label={`Select ${item.title ?? item.original_filename ?? "media"}`}
+                      />
+                    </label>
                   {item.media_type === "image" ? (
                     <ReliableMediaImage
                       target={getMediaDeliveryDescriptor(item, { albumStatus: status }).card}
@@ -553,7 +629,8 @@ export function AlbumEditor({ album, settings }: { album: AlbumDetail; settings:
                 </div>
               </article>
             ))}
-          </div>
+            </div>
+          </>
         ) : (
           <div className="mt-5 rounded-[1.2rem] border border-dashed border-border p-8 text-center text-sm text-text-secondary">
             This album has no media yet. Add files above to start the living preview and gallery.

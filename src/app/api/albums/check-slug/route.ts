@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
       return apiError("INVALID_INPUT", "Slug is required.", 400);
     }
 
-    let query = database.client.from("albums").select("id").eq("slug", slug).limit(1);
+    let query = database.client.from("albums").select("id").eq("slug", slug).is("deleted_at", null).limit(1);
 
     if (excludeId) {
       query = query.neq("id", excludeId);

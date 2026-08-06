@@ -8,7 +8,7 @@ export default async function StudioAlbumsPage({
   searchParams: Promise<{ q?: string }>;
 }) {
   const params = await searchParams;
-  const albums = await getStudioAlbums(300);
+  const albums = await getStudioAlbums(300, true);
 
   return (
     <div className="grid gap-5">

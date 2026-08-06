@@ -60,14 +60,13 @@ function commentWithAlbum(row: UnknownRow): StudioCommentItem {
   };
 }
 
-export async function getStudioAlbums(limit = 200): Promise<Album[]> {
+export async function getStudioAlbums(limit = 200, includeDeleted = false): Promise<Album[]> {
   noStore();
-  const { data } = await supabase
-    .from("albums")
-    .select("*")
-    .is("deleted_at", null)
-    .order("updated_at", { ascending: false })
-    .limit(limit);
+  let query = supabase.from("albums").select("*");
+  if (!includeDeleted) {
+    query = query.is("deleted_at", null);
+  }
+  const { data } = await query.order("updated_at", { ascending: false }).limit(limit);
   return (data ?? []).map((row) => normalizeAlbum(row));
 }
 
