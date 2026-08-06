@@ -127,19 +127,15 @@ export function AlbumOrderManager({ initialAlbums }: { initialAlbums: Album[] })
     const sorted = [...initialAlbums].sort((a, b) => {
       if (a.status !== b.status) return 0;
       
-      if (a.status === "public") {
-        if (a.public_sort_order != null && b.public_sort_order != null) return a.public_sort_order - b.public_sort_order;
-        if (a.public_sort_order != null) return -1;
-        if (b.public_sort_order != null) return 1;
-      } else if (a.status === "private") {
-        if (a.private_sort_order != null && b.private_sort_order != null) return a.private_sort_order - b.private_sort_order;
-        if (a.private_sort_order != null) return -1;
-        if (b.private_sort_order != null) return 1;
-      } else if (a.status === "updating") {
-        if (a.updating_sort_order != null && b.updating_sort_order != null) return a.updating_sort_order - b.updating_sort_order;
-        if (a.updating_sort_order != null) return -1;
-        if (b.updating_sort_order != null) return 1;
-      }
+      const getOrder = (item: Album) => {
+        if (item.status === "public") return item.public_sort_order ?? 0;
+        if (item.status === "private") return item.private_sort_order ?? 0;
+        if (item.status === "updating") return item.updating_sort_order ?? 0;
+        return 0;
+      };
+
+      const diff = getOrder(a) - getOrder(b);
+      if (diff !== 0) return diff;
       
       return fallbackSort(a, b);
     });

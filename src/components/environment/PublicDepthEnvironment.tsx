@@ -124,7 +124,9 @@ function PublicDepthEnvironmentContent({ pathname }: { pathname: string }) {
   const handleWebglUnavailable = useCallback(() => setWebglUnavailable(true), []);
   const [viewportWidth, reducedMotion, saveData, documentVisible] = capabilitySnapshot.split(":");
   const artistEnabled = artistSnapshot.endsWith(":true");
-  const preset = preferences.preset === "default" ? normalizeArtistPreset(artistSnapshot) : preferences.preset;
+  const rawPreset = preferences.preset === "default" ? normalizeArtistPreset(artistSnapshot) : preferences.preset;
+  const isLowProfile = preferences.performanceProfile === "low" || rawPreset === "none";
+  const preset = isLowProfile ? "none" : rawPreset;
   const environmentState = getEnvironmentState(preset, phase);
   const quality = useMemo(
     () => resolveEnvironmentQuality(mode, Number(viewportWidth), saveData === "true"),
@@ -136,11 +138,11 @@ function PublicDepthEnvironmentContent({ pathname }: { pathname: string }) {
     [isAlbum, pathname],
   );
   const rects = useChimeAnchorRects(slots);
-  const showEnvironment = artistEnabled && !mediaViewerOpen && !gameRuntimeSuspended;
+  const showEnvironment = !isLowProfile && artistEnabled && !mediaViewerOpen && !gameRuntimeSuspended;
   // The artist background can be disabled independently of the physical chimes.
   // Keeping their lifecycle separate prevents a background refresh from making
   // the interactive instruments disappear.
-  const interactiveChimesEnabled = !isAlbum && !mediaViewerOpen && !gameRuntimeSuspended && quality.enabled;
+  const interactiveChimesEnabled = !isLowProfile && !isAlbum && !mediaViewerOpen && !gameRuntimeSuspended && quality.enabled;
   const environmentRects = useMemo(
     () => interactiveChimesEnabled ? rects : [],
     [interactiveChimesEnabled, rects],
@@ -148,7 +150,7 @@ function PublicDepthEnvironmentContent({ pathname }: { pathname: string }) {
   const activeRects = useMemo(() => environmentRects.filter((rect) => rect.visible), [environmentRects]);
   const chimeLabel = locale === "vi" ? "Nghe chuông gió" : "Play the wind chime";
   const scrollBusy = useScrollBusy();
-  const canvasActive = (showEnvironment || interactiveChimesEnabled) && documentVisible === "true" && reducedMotion !== "true" && !scrollBusy;
+  const canvasActive = !isLowProfile && (showEnvironment || interactiveChimesEnabled) && documentVisible === "true" && reducedMotion !== "true" && !scrollBusy;
   const playChime = useCallback((rect: typeof activeRects[number]) => {
     const pan = Math.max(-.65, Math.min(.65, (rect.left + rect.widthPx / 2) / Math.max(1, Number(viewportWidth)) * 2 - 1));
     // A direct, deliberate tap must remain audible even when the background's

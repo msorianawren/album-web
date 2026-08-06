@@ -46,7 +46,7 @@ export function AudioUXProvider({
 
   const handleClick = useCallback(
     (e: MouseEvent) => {
-      if (!soundEnabled || !audioUX.isReady || gameRuntimeSuspended) return;
+      if (!soundEnabled || gameRuntimeSuspended) return;
 
       let target = e.target as HTMLElement | null;
       let shouldPlayClick = false;
@@ -63,7 +63,7 @@ export function AudioUXProvider({
           break;
         }
 
-        if (tagName === "button" || tagName === "a" || role === "button" || type === "button") {
+        if (tagName === "button" || tagName === "a" || tagName === "select" || tagName === "input" || role === "button" || type === "button") {
           shouldPlayClick = true;
           break;
         }
@@ -88,7 +88,7 @@ export function AudioUXProvider({
   }, [handleClick]);
 
   useEffect(() => {
-    if (!soundEnabled || !isReady || gameRuntimeSuspended) {
+    if (!soundEnabled || gameRuntimeSuspended) {
       audioUX.stopAmbient();
       return;
     }
@@ -105,9 +105,7 @@ export function AudioUXProvider({
         console.warn("Optional ambient audio failed to start.", error);
       }
     });
-    
-    return () => {};
-  }, [soundEnabled, ambientSound, ambientVolume, defaultAmbient, isReady, gameRuntimeSuspended]);
+  }, [soundEnabled, ambientSound, ambientVolume, defaultAmbient, gameRuntimeSuspended]);
 
   return null;
 }

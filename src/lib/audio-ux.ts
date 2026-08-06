@@ -65,7 +65,11 @@ class AudioUXSystem {
 
   // A soft pentatonic chime for clicking buttons
   public playClickSound(type: ClickSoundType = "water") {
+    if (!this.context) this.init();
     if (!this.context) return;
+    if (this.context.state === "suspended") {
+      void this.context.resume();
+    }
     const now = this.context.currentTime;
     
     const gain = this.context.createGain();
@@ -150,7 +154,11 @@ class AudioUXSystem {
   }
 
   public playMenuSound() {
+    if (!this.context) this.init();
     if (!this.context) return;
+    if (this.context.state === "suspended") {
+      void this.context.resume();
+    }
     const now = this.context.currentTime;
     
     const osc = this.context.createOscillator();
@@ -404,15 +412,19 @@ class AudioUXSystem {
   }
 
   public setAmbientVolume(vol: number) {
-    this.ambientVolume = vol;
+    this.ambientVolume = Math.max(0, Math.min(1, vol));
+    const audioWindow = typeof window !== "undefined" ? (window as WindowWithAudioFallback) : null;
+    if (audioWindow?.__albumBgAudio) {
+      audioWindow.__albumBgAudio.volume = this.ambientVolume;
+    }
     if (this.ambientNodes && this.ambientNodes.gain && this.context) {
       const now = this.context.currentTime;
-      this.ambientNodes.gain.gain.linearRampToValueAtTime(vol, now + 0.1);
+      this.ambientNodes.gain.gain.linearRampToValueAtTime(this.ambientVolume, now + 0.1);
     }
   }
 
   public preloadAmbient() {
-    if (!this.context) return;
+    if (typeof window === "undefined") return;
     const ambientTypes: AmbientSoundType[] = [
       "piano",
       "pad",
@@ -426,7 +438,11 @@ class AudioUXSystem {
     ];
     ambientTypes.forEach((type) => {
       const url = this.getAmbientUrl(type);
-      if (url) void this.loadAmbientBuffer(url);
+      if (url) {
+        const audio = new Audio();
+        audio.preload = "auto";
+        audio.src = url;
+      }
     });
   }
 
@@ -444,86 +460,73 @@ class AudioUXSystem {
     if (!this.ambientNodes) return;
     const now = this.context?.currentTime || 0;
     
-    // Fade out much faster (0.5s instead of 1s)
-    this.ambientNodes.gain.gain.linearRampToValueAtTime(0, now + 0.5);
+    this.ambientNodes.gain.gain.linearRampToValueAtTime(0, now + 0.2);
     
     setTimeout(() => {
       this.ambientNodes?.oscillators.forEach(o => o.stop());
       this.ambientNodes?.noiseBuffers.forEach(n => n.stop());
       this.ambientNodes?.gain.disconnect();
       this.ambientNodes = null;
-    }, 600);
+    }, 250);
   }
 
   public async playAmbient(type: AmbientSoundType) {
-    if (type === "auto" || type === "silence" || !this.context) {
+    if (type === "silence") {
       this.stopAmbient();
       return;
     }
-    
-    if (this.currentPlayingType === type && this.ambientNodes) {
-      return; // Already playing this track, don't interrupt
+
+    const resolvedType = type === "auto" ? "drone" : type;
+    const url = this.getAmbientUrl(resolvedType);
+
+    if (!url) {
+      this.stopAmbient();
+      return;
     }
 
-    // Always stop existing before starting new
+    const audioWindow = typeof window !== "undefined" ? (window as WindowWithAudioFallback) : null;
+
+    if (this.currentPlayingType === resolvedType && audioWindow?.__albumBgAudio) {
+      audioWindow.__albumBgAudio.volume = this.ambientVolume;
+      if (audioWindow.__albumBgAudio.paused) {
+        audioWindow.__albumBgAudio.play().catch(() => {});
+      }
+      return;
+    }
+
     this.stopAmbient();
-    this.currentPlayingType = type;
+    this.currentPlayingType = resolvedType;
 
-    // Minecraft tracks have long empty intros/outros. Trim them.
-    const trackOffsets: Record<string, { start: number, end: number }> = {
-      "piano": { start: 2, end: 4 }, // Key
-      "pad": { start: 1, end: 4 }, // Subwoofer Lullaby
-      "cave": { start: 2, end: 4 }, // Living Mice
-      "harp": { start: 1, end: 4 }, // Haggstrom
-      "rain": { start: 2, end: 4 }, // Minecraft Theme
-      "drone": { start: 6, end: 4 }, // Oxygene (takes very long to start)
-      "sweden": { start: 2, end: 4 }, // Sweden
-      "wethands": { start: 1, end: 4 }, // Wet Hands
-      "miceonvenus": { start: 2, end: 4 } // Mice on Venus
-    };
+    try {
+      if (audioWindow) {
+        const audio = new Audio(url);
+        audio.loop = true;
+        audio.volume = this.ambientVolume;
+        audioWindow.__albumBgAudio = audio;
 
-    const url = this.getAmbientUrl(type);
-    if (url) {
-      const now = this.context.currentTime;
-      const gain = this.context.createGain();
-      gain.gain.setValueAtTime(0, now);
-      // Fade in fast (0.5s instead of 2s) so user hears it immediately
-      gain.gain.linearRampToValueAtTime(this.ambientVolume, now + 0.5); 
-      gain.connect(this.context.destination);
-
-      this.ambientNodes = { oscillators: [], noiseBuffers: [], gain };
-      const currentGain = gain;
-
-      try {
-        const buffer = await this.loadAmbientBuffer(url);
-
-        if (!buffer) {
-          this.stopAmbient();
-          return;
+        const playPromise = audio.play();
+        if (playPromise !== undefined) {
+          playPromise.catch((err) => {
+            if (process.env.NODE_ENV !== "production") {
+              console.warn("Ambient audio play blocked by browser, waiting for user gesture:", err);
+            }
+            const enablePlay = () => {
+              if (audioWindow.__albumBgAudio === audio) {
+                audio.play().catch(() => {});
+              }
+              window.removeEventListener("pointerdown", enablePlay);
+              window.removeEventListener("click", enablePlay);
+              window.removeEventListener("keydown", enablePlay);
+            };
+            window.addEventListener("pointerdown", enablePlay, { once: true });
+            window.addEventListener("click", enablePlay, { once: true });
+            window.addEventListener("keydown", enablePlay, { once: true });
+          });
         }
-
-        if (!this.ambientNodes || this.ambientNodes.gain !== currentGain) return;
-
-        const source = this.context.createBufferSource();
-        source.buffer = buffer;
-        source.loop = true;
-        
-        const offsets = trackOffsets[type] || { start: 0, end: 0 };
-        source.loopStart = offsets.start;
-        
-        if (buffer.duration > 10) {
-          source.loopEnd = buffer.duration - offsets.end;
-        }
-        
-        source.connect(currentGain);
-        source.start(this.context.currentTime, offsets.start);
-
-        this.ambientNodes.noiseBuffers.push(source);
-      } catch (e) {
-        if (process.env.NODE_ENV !== "production") {
-          console.warn("Failed to play optional background audio", e);
-        }
-        this.currentPlayingType = null;
+      }
+    } catch (e) {
+      if (process.env.NODE_ENV !== "production") {
+        console.warn("Failed to play ambient background audio", e);
       }
     }
   }

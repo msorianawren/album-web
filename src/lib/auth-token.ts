@@ -1,6 +1,7 @@
 import "server-only";
 import { cookies, headers } from "next/headers";
 import type { NextRequest } from "next/server";
+import { createAnonSupabase } from "@/lib/supabase";
 
 function extractTokenFromCookieValue(value: string) {
   if (!value) return null;
@@ -31,5 +32,27 @@ export async function getAccessTokenFromRuntime(request?: NextRequest) {
       .getAll()
       .find((cookie) => cookie.name.startsWith("sb-") && cookie.name.endsWith("-auth-token"));
 
-  return tokenCookie ? extractTokenFromCookieValue(tokenCookie.value) : null;
+  const accessToken = tokenCookie ? extractTokenFromCookieValue(tokenCookie.value) : null;
+  if (accessToken) return accessToken;
+
+  // Attempt automatic refresh if sb-access-token is missing/expired but sb-refresh-token is present
+  const refreshTokenCookie = cookieStore.get("sb-refresh-token");
+  const refreshToken = refreshTokenCookie?.value;
+  if (!refreshToken) return null;
+
+  try {
+    const anonSupabase = createAnonSupabase();
+    const { data, error } = await anonSupabase.auth.refreshSession({ refresh_token: refreshToken });
+    if (error || !data.session) return null;
+
+    const newAccessToken = data.session.access_token;
+    const newRefreshToken = data.session.refresh_token;
+
+    cookieStore.set("sb-access-token", newAccessToken);
+    cookieStore.set("sb-refresh-token", newRefreshToken);
+
+    return newAccessToken;
+  } catch {
+    return null;
+  }
 }

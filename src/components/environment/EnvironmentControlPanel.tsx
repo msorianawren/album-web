@@ -31,6 +31,7 @@ type NumericPreferenceKey =
   | "dropletAmount";
 
 const presetLabels: Record<EnvironmentPresetId, string> = {
+  none: "No theme (Static)",
   sakura: "Sakura Garden",
   fireflies: "Firefly Grove",
   snow: "Winter Courtyard",
@@ -163,7 +164,32 @@ export function EnvironmentControlPanel({
         </div>
       </div>
 
-      <div className="mt-7 grid gap-5 md:grid-cols-2">
+      <div className="mt-7 grid gap-5 md:grid-cols-3">
+        <label className="grid gap-2 text-sm font-medium text-text-primary">
+          Performance Profile
+          <select
+            value={preferences.performanceProfile}
+            onChange={(event) => {
+              const profile = event.target.value as EnvironmentPreferences["performanceProfile"];
+              updatePreference("performanceProfile", profile);
+              if (profile === "low") {
+                updatePreference("preset", "none");
+              } else if (preferences.preset === "none") {
+                updatePreference("preset", "default");
+              }
+            }}
+            className="min-h-11 rounded-lg border border-border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+          >
+            <option value="low">Low — No theme, No 3D</option>
+            <option value="medium">Medium — Themes, No 3D</option>
+            <option value="high">High — Themes & Full 3D</option>
+          </select>
+          <span className="text-xs font-normal text-text-secondary">
+            {preferences.performanceProfile === "low" && "Super lightweight, static bg, zero 3D models."}
+            {preferences.performanceProfile === "medium" && "Atmospheric theme particles without 3D models."}
+            {preferences.performanceProfile === "high" && "Full visual experience with 3D camera & clock."}
+          </span>
+        </label>
         <label className="grid gap-2 text-sm font-medium text-text-primary">
           Environment preset
           <select
@@ -241,24 +267,11 @@ export function EnvironmentControlPanel({
         </div>
       </div>
 
-      <div className="mt-7 grid gap-4 border-t border-border pt-6 sm:grid-cols-2">
-        <label className="grid gap-2 text-sm font-medium text-text-primary">
-          <span className="inline-flex items-center gap-2"><Gauge className="h-4 w-4 text-muted-accent" aria-hidden="true" /> Depth-effects quality</span>
-          <select
-            value={depthMode}
-            onChange={(event) => setDepthMode(event.target.value as DepthEffectsMode)}
-            className="min-h-11 rounded-lg border border-border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-          >
-            <option value="auto">Auto</option>
-            <option value="full">Full</option>
-            <option value="reduced">Reduced</option>
-            <option value="off">Off (static atmosphere)</option>
-          </select>
-        </label>
+      <div className="mt-7 flex flex-wrap items-center justify-between gap-4 border-t border-border pt-6">
         <button
           type="button"
           onClick={() => setSoundEnabled(!soundEnabled)}
-          className="flex min-h-11 items-center justify-between gap-3 self-end rounded-lg border border-border bg-background px-4 text-sm font-medium transition hover:bg-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="flex min-h-11 items-center justify-between gap-3 rounded-lg border border-border bg-background px-4 text-sm font-medium transition hover:bg-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           aria-pressed={!soundEnabled}
         >
           <span className="inline-flex items-center gap-2">
@@ -267,16 +280,13 @@ export function EnvironmentControlPanel({
           </span>
           <span className="text-xs uppercase text-text-secondary">{soundEnabled ? "On" : "Muted"}</span>
         </button>
-      </div>
 
-      <div className="mt-6 flex flex-wrap gap-3">
-        <button type="button" onClick={reset} className="inline-flex min-h-11 items-center gap-2 rounded-full border border-border bg-background px-4 text-sm font-medium transition hover:bg-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-          <RotateCcw className="h-4 w-4" aria-hidden="true" /> Reset to Artist Defaults
-        </button>
-        <button type="button" onClick={reduceDecoration} className="inline-flex min-h-11 items-center gap-2 rounded-full border border-border bg-background px-4 text-sm font-medium transition hover:bg-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-          <Leaf className="h-4 w-4" aria-hidden="true" /> Reduced Decoration
-        </button>
-        <span className="inline-flex items-center gap-2 px-2 text-xs text-text-secondary"><WandSparkles className="h-4 w-4" aria-hidden="true" /> 18 curated scene states</span>
+        <div className="flex flex-wrap items-center gap-3">
+          <button type="button" onClick={reset} className="inline-flex min-h-11 items-center gap-2 rounded-full border border-border bg-background px-4 text-sm font-medium transition hover:bg-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+            <RotateCcw className="h-4 w-4" aria-hidden="true" /> Reset to Defaults
+          </button>
+          <span className="inline-flex items-center gap-2 px-2 text-xs text-text-secondary"><WandSparkles className="h-4 w-4" aria-hidden="true" /> 3 Performance Tiers</span>
+        </div>
       </div>
     </section>
   );

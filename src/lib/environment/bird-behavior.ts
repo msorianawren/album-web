@@ -4,6 +4,7 @@ import type { EnvironmentPresetId } from "./preferences.ts";
 export type BirdState = "flying" | "flocking" | "approaching" | "perched" | "taking_off" | "leaving_scene";
 
 const presetActivity: Record<EnvironmentPresetId, number> = {
+  none: 0,
   sakura: 1,
   fireflies: .76,
   snow: .32,

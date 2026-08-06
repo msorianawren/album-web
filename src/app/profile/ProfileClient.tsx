@@ -1,10 +1,11 @@
 "use client";
 
-import { Leaf, Volume2, VolumeX, BookOpen, Clock, ShieldCheck, HeartHandshake, EyeOff, ArrowLeft, ImageIcon, RotateCcw, UploadCloud } from "lucide-react";
+import { Leaf, Volume2, VolumeX, BookOpen, Clock, ShieldCheck, HeartHandshake, EyeOff, ArrowLeft, ImageIcon, RotateCcw, UploadCloud, Gauge } from "lucide-react";
 import { AssistantPreferencesPanel } from "@/components/assistant/AssistantPreferencesPanel";
 import { EnvironmentControlPanel } from "@/components/environment/EnvironmentControlPanel";
 import { useAlbumViewMemory } from "@/hooks/useAlbumViewMemory";
 import { useUIPreferences, ClickSoundType, AmbientSoundType } from "@/hooks/useUIPreferences";
+import { useEnvironmentPreferences } from "@/hooks/useEnvironmentPreferences";
 import { useToast } from "@/hooks/useToast";
 import { useRouter } from "next/navigation";
 import { useRef } from "react";
@@ -29,6 +30,10 @@ export default function ProfileClient({
   const router = useRouter();
   const { toast } = useToast();
   const { memory, isClient } = useAlbumViewMemory();
+  const { preferences, updatePreference } = useEnvironmentPreferences({
+    userId,
+    initialPreferences: initialEnvironmentPreferences,
+  });
   const { 
     soundEnabled, setSoundEnabled,
     clickSound, setClickSound,
@@ -201,6 +206,90 @@ export default function ProfileClient({
                 Silent Mode is active. Turn on to experience tactile click sounds and nature-inspired background ambience.
               </p>
             )}
+          </div>
+
+          {/* Performance Profile Card */}
+          <div className="rounded-[1.4rem] border border-border bg-surface/60 backdrop-blur-xl p-6 shadow-xl shadow-text-primary/5 col-span-full">
+            <div className="flex items-center justify-between mb-2">
+              <h2 className="text-lg font-semibold flex items-center gap-2">
+                <Gauge className="w-5 h-5 text-muted-accent" />
+                Performance Profile
+              </h2>
+              <span className="text-xs text-text-secondary">
+                Default: Desktop = High, Mobile = Low
+              </span>
+            </div>
+            <p className="text-xs text-text-secondary mb-4">
+              Adjust animation complexity and 3D WebGL models for maximum battery life and instant loading.
+            </p>
+
+            <div className="grid gap-3 sm:grid-cols-3">
+              <button
+                type="button"
+                onClick={() => {
+                  updatePreference("performanceProfile", "low");
+                  updatePreference("preset", "none");
+                  toast.success("Performance set to Low (Super lightweight, static bg, zero 3D models).");
+                }}
+                className={`p-4 rounded-xl border text-left transition-all ${
+                  preferences.performanceProfile === "low"
+                    ? "border-accent bg-accent/10 font-semibold"
+                    : "border-border bg-background/50 hover:border-border"
+                }`}
+              >
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-sm font-semibold text-text-primary">Low</span>
+                  {preferences.performanceProfile === "low" && <span className="text-xs text-accent">Active</span>}
+                </div>
+                <p className="text-xs text-text-secondary">
+                  No theme (Static BG), zero 3D models (camera & clock disabled). Core features prioritized.
+                </p>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  updatePreference("performanceProfile", "medium");
+                  if (preferences.preset === "none") updatePreference("preset", "default");
+                  toast.success("Performance set to Medium (Atmospheric themes, zero 3D models).");
+                }}
+                className={`p-4 rounded-xl border text-left transition-all ${
+                  preferences.performanceProfile === "medium"
+                    ? "border-accent bg-accent/10 font-semibold"
+                    : "border-border bg-background/50 hover:border-border"
+                }`}
+              >
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-sm font-semibold text-text-primary">Medium</span>
+                  {preferences.performanceProfile === "medium" && <span className="text-xs text-accent">Active</span>}
+                </div>
+                <p className="text-xs text-text-secondary">
+                  1 of 6 themes enabled (Sakura default). Zero 3D models (camera & clock disabled).
+                </p>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  updatePreference("performanceProfile", "high");
+                  if (preferences.preset === "none") updatePreference("preset", "default");
+                  toast.success("Performance set to High (Full themes & 3D WebGL models enabled).");
+                }}
+                className={`p-4 rounded-xl border text-left transition-all ${
+                  preferences.performanceProfile === "high"
+                    ? "border-accent bg-accent/10 font-semibold"
+                    : "border-border bg-background/50 hover:border-border"
+                }`}
+              >
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-sm font-semibold text-text-primary">High</span>
+                  {preferences.performanceProfile === "high" && <span className="text-xs text-accent">Active</span>}
+                </div>
+                <p className="text-xs text-text-secondary">
+                  1 of 6 themes enabled. Full 3D camera & mechanical clockwork models active.
+                </p>
+              </button>
+            </div>
           </div>
         </section>
 

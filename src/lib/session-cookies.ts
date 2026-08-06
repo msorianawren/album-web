@@ -29,15 +29,10 @@ export function setSessionCookies(
   session: SessionCookiePayload,
   request?: NextRequest,
 ) {
-  const accessMaxAge =
-    Number.isFinite(session.expires_in) && Number(session.expires_in) > 0
-      ? Number(session.expires_in)
-      : accessCookieFallbackMaxAge;
-
   response.cookies.set(
     sessionCookieNames.access,
     session.access_token,
-    cookieOptions(accessMaxAge),
+    cookieOptions(rememberedBrowserMaxAge),
   );
   response.cookies.set(
     sessionCookieNames.refresh,

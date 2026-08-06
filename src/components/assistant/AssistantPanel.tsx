@@ -152,6 +152,10 @@ export function AssistantPanel({
     if (gameAction && currentPath === "/games") {
       document.dispatchEvent(new CustomEvent("oriana-games-assist", { detail: { action: gameAction } }));
     }
+    if (action.href && action.href.startsWith("http")) {
+      window.open(action.href, "_blank", "noopener,noreferrer");
+      return;
+    }
     if (action.href && action.href.startsWith("/")) {
       window.location.assign(action.href);
       return;
@@ -192,24 +196,18 @@ export function AssistantPanel({
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[100] flex items-end justify-center p-0 sm:items-center sm:justify-end sm:p-4"
+      className="fixed inset-0 z-[100] flex items-end justify-center p-0 sm:items-center sm:justify-end sm:p-4 pointer-events-none"
       role="dialog"
       aria-modal="true"
       aria-label={copy.title}
       data-testid="oriana-companion-overlay"
     >
-      <button
-        type="button"
-        aria-label={copy.closeLabel}
-        className="absolute inset-0 bg-text-primary/45 backdrop-blur-md"
-        onClick={onClose}
-      />
       <section
         ref={panelRef}
         tabIndex={-1}
         data-testid="oriana-companion-panel"
         className={cn(
-          "relative z-10 flex w-full max-h-[min(88dvh,720px)] flex-col overflow-hidden rounded-t-[2rem] border border-border bg-surface shadow-2xl shadow-text-primary/25 outline-none",
+          "pointer-events-auto relative z-10 flex w-full max-h-[min(88dvh,720px)] flex-col overflow-hidden rounded-t-[2rem] border border-border bg-surface shadow-2xl shadow-text-primary/25 outline-none",
           "sm:h-[min(720px,calc(100dvh-32px))] sm:w-[min(420px,calc(100vw-32px))] sm:rounded-[2rem]",
         )}
       >

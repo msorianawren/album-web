@@ -76,6 +76,28 @@ export async function POST(request: NextRequest) {
     const slug = parsed.data.slug ?? slugify(parsed.data.title);
     const status =
       typeof body.status === "string" ? parsed.data.status : settings.default_album_status;
+
+    // Calculate initial sort order so new albums land at position #1 (Top)
+    const sortColumn =
+      status === "public"
+        ? "public_sort_order"
+        : status === "updating"
+          ? "updating_sort_order"
+          : "private_sort_order";
+
+    const { data: minRow } = await client
+      .from("albums")
+      .select(sortColumn)
+      .eq("status", status)
+      .is("deleted_at", null)
+      .not(sortColumn, "is", null)
+      .order(sortColumn, { ascending: true })
+      .limit(1)
+      .maybeSingle();
+
+    const minOrder = (minRow as Record<string, number | null> | null)?.[sortColumn];
+    const initialSortOrder = typeof minOrder === "number" ? minOrder - 10 : 10;
+
     const { data, error } = await client
       .from("albums")
       .insert({
@@ -87,6 +109,7 @@ export async function POST(request: NextRequest) {
         cover_url: parsed.data.cover_url,
         feather_purchase_enabled: parsed.data.feather_purchase_enabled ?? true,
         feather_price: parsed.data.feather_price ?? null,
+        [sortColumn]: initialSortOrder,
       })
       .select(ALBUM_DETAIL_SELECT)
       .single();

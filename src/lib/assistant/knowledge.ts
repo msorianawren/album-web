@@ -12,6 +12,7 @@ export type AssistantQuickActionId =
   | "request_status"
   | "zip_help"
   | "contact"
+  | "telegram"
   | "notifications"
   | "phone_policy"
   | "login"
@@ -60,6 +61,7 @@ const quickActionCopy: Record<AssistantLocale, Partial<Record<AssistantQuickActi
     request_status: "Check request status",
     zip_help: "Download ZIP help",
     contact: "Contact Oriana Wren",
+    telegram: "Telegram (@orianawren)",
     notifications: "Notifications",
     phone_policy: "Phone policy",
     login: "Sign in",
@@ -76,6 +78,7 @@ const quickActionCopy: Record<AssistantLocale, Partial<Record<AssistantQuickActi
     request_status: "Kiểm tra trạng thái",
     zip_help: "Trợ giúp tải ZIP",
     contact: "Liên hệ Oriana Wren",
+    telegram: "Telegram (@orianawren)",
     notifications: "Thông báo",
     phone_policy: "Chính sách số điện thoại",
     login: "Đăng nhập",
@@ -167,6 +170,7 @@ const quickActionQuestions: Record<AssistantLocale, Partial<Record<AssistantQuic
     request_status: "How do I check my request status?",
     zip_help: "How does ZIP download work?",
     contact: "How do I contact Oriana Wren?",
+    telegram: "What is the official Telegram contact link?",
     notifications: "How do notifications work?",
     phone_policy: "Why is my phone number requested?",
     login: "How do I login?",
@@ -183,6 +187,7 @@ const quickActionQuestions: Record<AssistantLocale, Partial<Record<AssistantQuic
     request_status: "Kiểm tra trạng thái yêu cầu thế nào?",
     zip_help: "Tải ZIP hoạt động thế nào?",
     contact: "Liên hệ Oriana Wren thế nào?",
+    telegram: "Kênh Telegram chính thức là gì?",
     notifications: "Thông báo hoạt động thế nào?",
     phone_policy: "Vì sao cần số điện thoại?",
     login: "Đăng nhập thế nào?",
@@ -281,7 +286,7 @@ export function getAssistantQuickActions(locale: AssistantLocale): AssistantQuic
   return [
     qa(locale, "private_access", "/albums"),
     qa(locale, "request_status", "/albums"),
-    qa(locale, "zip_help"),
+    qa(locale, "telegram", "https://t.me/orianawren"),
     qa(locale, "contact", "/contact"),
     qa(locale, "notifications"),
     qa(locale, "phone_policy"),

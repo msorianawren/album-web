@@ -65,6 +65,33 @@ export function UserMenu({ session, dict }: UserMenuProps) {
     };
   }, []);
 
+  useEffect(() => {
+    if (!session.userId && typeof window !== "undefined") {
+      const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+      if (!url || !key) return;
+
+      import("@supabase/supabase-js").then(({ createClient }) => {
+        const client = createClient(url, key);
+        client.auth.getSession().then(({ data }) => {
+          if (data.session?.access_token && data.session?.refresh_token) {
+            fetch("/api/auth/session", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                access_token: data.session.access_token,
+                refresh_token: data.session.refresh_token,
+                expires_in: data.session.expires_in,
+              }),
+            }).then((res) => {
+              if (res.ok) window.location.reload();
+            }).catch(() => {});
+          }
+        });
+      });
+    }
+  }, [session.userId]);
+
   async function logout() {
     await fetch("/api/auth/login", { method: "DELETE" });
     window.location.href = "/";

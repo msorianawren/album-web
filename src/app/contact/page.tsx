@@ -2,7 +2,7 @@ import { AppHeader } from "@/components/AppHeader";
 import { getSiteSettings } from "@/lib/site-settings";
 import { getLandingPage } from "@/lib/landing";
 import { NatureAnimatedBackground } from "@/components/landing/NatureAnimatedBackground";
-import { Lock, Camera, Download, Mail } from "lucide-react";
+import { Lock, Camera, Download, Mail, Send, ExternalLink } from "lucide-react";
 import { ContactForm } from "@/components/contact/ContactForm";
 import { CopyEmailButton } from "@/components/contact/CopyEmailButton";
 import { getPublicSession } from "@/lib/auth";
@@ -115,7 +115,7 @@ export default async function ContactPage() {
                   : "Direct contact is currently being prepared. Check back later or request access via the album pages."}
               </p>
               
-                <div className="mt-12">
+                <div className="mt-8 space-y-6">
                   <div className="flex items-center space-x-4">
                     <div className="flex h-12 w-12 items-center justify-center rounded-full bg-surface/80 border border-border">
                       <Mail className="h-5 w-5 text-accent" />
@@ -127,6 +127,26 @@ export default async function ContactPage() {
                           {settings.contact_email || "Unavailable"}
                         </p>
                         {settings.contact_email && <CopyEmailButton email={settings.contact_email} />}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center space-x-4">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-surface/80 border border-border">
+                      <Send className="h-5 w-5 text-accent" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-medium uppercase tracking-wider text-text-secondary">Telegram Direct</p>
+                      <div className="flex items-center mt-0.5">
+                        <a
+                          href="https://t.me/orianawren"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm font-medium text-accent hover:underline flex items-center gap-1.5"
+                        >
+                          @orianawren
+                          <ExternalLink className="h-3.5 w-3.5" />
+                        </a>
                       </div>
                     </div>
                   </div>

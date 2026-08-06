@@ -1,11 +1,30 @@
 import type { EnvironmentPhasePreference } from "./phase.ts";
 
-export const ENVIRONMENT_PRESET_IDS = ["sakura", "fireflies", "snow", "autumn", "mist", "rain"] as const;
+export const ENVIRONMENT_PRESET_IDS = ["none", "sakura", "fireflies", "snow", "autumn", "mist", "rain"] as const;
 export type EnvironmentPresetId = typeof ENVIRONMENT_PRESET_IDS[number];
 export type EnvironmentPresetPreference = "default" | EnvironmentPresetId;
 
+export type PerformanceProfile = "low" | "medium" | "high";
+
+export function getDefaultPerformanceProfile(): PerformanceProfile {
+  if (typeof window === "undefined") return "high";
+  try {
+    const saved = window.localStorage.getItem("oriana_performance_profile");
+    if (saved === "low" || saved === "medium" || saved === "high") {
+      return saved;
+    }
+    const isMobileOrTablet =
+      window.innerWidth < 1024 ||
+      /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Touch/i.test(navigator.userAgent);
+    return isMobileOrTablet ? "low" : "high";
+  } catch {
+    return "high";
+  }
+}
+
 export type EnvironmentPreferences = {
   version: 2;
+  performanceProfile: PerformanceProfile;
   preset: EnvironmentPresetPreference;
   phase: EnvironmentPhasePreference;
   windSpeed: number;
@@ -33,6 +52,7 @@ export const ENVIRONMENT_PROFILE_METADATA_KEY = "environment_preferences";
 
 export const artistEnvironmentDefaults: EnvironmentPreferences = {
   version: 2,
+  performanceProfile: "high",
   preset: "default",
   phase: "auto",
   windSpeed: 34,
@@ -94,11 +114,22 @@ function normalizePhase(value: unknown): EnvironmentPhasePreference {
     : "auto";
 }
 
+function normalizePerformanceProfile(value: unknown): PerformanceProfile {
+  return value === "low" || value === "medium" || value === "high"
+    ? value
+    : getDefaultPerformanceProfile();
+}
+
 export function normalizeEnvironmentPreferences(value: unknown): EnvironmentPreferences {
   const input = isRecord(value) ? value : {};
+  const performanceProfile = normalizePerformanceProfile(input.performanceProfile);
+  const rawPreset = normalizePreset(input.preset);
+  const preset = performanceProfile === "low" && rawPreset === "default" ? "none" : rawPreset;
+
   return {
     version: 2,
-    preset: normalizePreset(input.preset),
+    performanceProfile,
+    preset,
     phase: normalizePhase(input.phase),
     windSpeed: clamp(input.windSpeed, artistEnvironmentDefaults.windSpeed),
     gustStrength: clamp(input.gustStrength, artistEnvironmentDefaults.gustStrength),
@@ -131,7 +162,8 @@ export function migrateLegacyEnvironmentPreferences(storage: Pick<Storage, "getI
   }
   const legacyPreset = storage.getItem("ui_bg_theme");
   const legacyPhase = storage.getItem("album-theme");
-  return normalizeEnvironmentPreferences({ preset: legacyPreset, phase: legacyPhase });
+  const legacyProfile = storage.getItem("oriana_performance_profile");
+  return normalizeEnvironmentPreferences({ preset: legacyPreset, phase: legacyPhase, performanceProfile: legacyProfile });
 }
 
 export function readEnvironmentPreferences() {
@@ -146,6 +178,7 @@ export function readEnvironmentPreferences() {
 export function writeEnvironmentPreferences(value: EnvironmentPreferences) {
   const preferences = normalizeEnvironmentPreferences(value);
   window.localStorage.setItem(ENVIRONMENT_PREFERENCES_KEY, JSON.stringify(preferences));
+  window.localStorage.setItem("oriana_performance_profile", preferences.performanceProfile);
   window.localStorage.setItem("ui_bg_theme", preferences.preset);
   window.localStorage.setItem("album-theme", preferences.phase);
   window.dispatchEvent(new CustomEvent(ENVIRONMENT_PREFERENCES_EVENT));

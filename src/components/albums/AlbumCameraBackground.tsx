@@ -21,5 +21,7 @@ export function AlbumCameraBackground() {
     return resolveActiveEnvironment(preferences, fallback, phase);
   }, [preferences, phase, artistSnapshot]);
 
+  if (preferences.performanceProfile !== "high") return null;
+
   return <AlbumCamera environment={activeEnvironment.state} />;
 }

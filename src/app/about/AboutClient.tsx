@@ -109,11 +109,13 @@ export function AboutClient({ profile }: AboutClientProps) {
       data-about-phase={activeEnvironment.phase}
       style={readabilityTokens}
     >
-      <AboutClockwork
-        displayName={profile.display_name || "Oriana Wren"}
-        chapterCount={Math.max(1, (profile.career?.length || 0) + (profile.education?.length || 0) + (profile.achievements?.length || 0))}
-        environment={activeEnvironment.state}
-      />
+      {preferences.performanceProfile === "high" && (
+        <AboutClockwork
+          displayName={profile.display_name || "Oriana Wren"}
+          chapterCount={Math.max(1, (profile.career?.length || 0) + (profile.education?.length || 0) + (profile.achievements?.length || 0))}
+          environment={activeEnvironment.state}
+        />
+      )}
       
       {profile._is_demo && (
         <div className="fixed top-0 left-0 w-full z-[100] bg-surface-secondary/90 border-b border-border py-2 text-center px-4 backdrop-blur-md shadow-sm">
