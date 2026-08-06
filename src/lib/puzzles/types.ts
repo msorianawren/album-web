@@ -1,6 +1,6 @@
 export const puzzleModes = ["sliding", "swap"] as const;
 export const puzzleGridSizes = [3, 4, 5] as const;
-export const puzzleCollections = ["featured", "editorial_portraits", "traditional_elegance", "travel_stories", "seasonal"] as const;
+export const puzzleCollections = ["featured", "editorial_portraits", "traditional_elegance", "travel_stories", "seasonal", "custom_uploads", "public_albums"] as const;
 
 export type PuzzleMode = (typeof puzzleModes)[number];
 export type PuzzleGridSize = (typeof puzzleGridSizes)[number];
@@ -59,4 +59,6 @@ export const collectionLabels: Record<PuzzleCollection, string> = {
   traditional_elegance: "Traditional Elegance",
   travel_stories: "Travel Stories",
   seasonal: "Seasonal Collections",
+  custom_uploads: "Custom Uploads",
+  public_albums: "Public Albums",
 };

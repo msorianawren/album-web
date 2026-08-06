@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Check, ChevronLeft, Eye, Play, RotateCcw, Share2, Sparkles } from "lucide-react";
+import { Check, ChevronLeft, Eye, Image as ImageIcon, Play, RotateCcw, Share2, Sparkles, Upload } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/hooks/useToast";
@@ -135,7 +135,11 @@ export function PuzzleAtelier({ initialChallenges, initialResults, signedIn, cop
   unavailable?: boolean;
 }) {
   const { toast } = useToast();
-  const [challengeId, setChallengeId] = useState(initialChallenges[0]?.id ?? "");
+  const [customChallenges, setCustomChallenges] = useState<PuzzleChallenge[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const allChallenges = useMemo(() => [...customChallenges, ...initialChallenges], [customChallenges, initialChallenges]);
+  const [challengeId, setChallengeId] = useState(allChallenges[0]?.id ?? "");
   const [mode, setMode] = useState<PuzzleMode>("sliding");
   const [grid, setGrid] = useState<PuzzleGridSize>(3);
   const [board, setBoard] = useState<PuzzleTile[]>([]);
@@ -152,7 +156,7 @@ export function PuzzleAtelier({ initialChallenges, initialResults, signedIn, cop
   const [isFinalizing, setIsFinalizing] = useState(false);
   const startedRef = useRef<number | null>(null);
 
-  const challenge = initialChallenges.find((item) => item.id === challengeId) ?? null;
+  const challenge = allChallenges.find((item) => item.id === challengeId) ?? allChallenges[0] ?? null;
   const selectableModes = challenge?.allowedModes ?? modes;
   const selectableGrids = challenge?.allowedGridSizes ?? grids;
   const activeMode = challenge?.allowedModes.includes(mode) ? mode : (challenge?.allowedModes[0] ?? mode);
@@ -160,6 +164,97 @@ export function PuzzleAtelier({ initialChallenges, initialResults, signedIn, cop
   const currentKey = challenge ? resultKey(challenge.id, activeMode, activeGrid) : "";
   const currentResult = results[currentKey];
   const estimatedReward = challenge ? estimatePuzzleReward(activeGrid, activeMode, challenge.rewardMultiplier) : 0;
+
+  function handleCustomUpload(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please select a valid image file.");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const dataUrl = e.target?.result as string;
+      if (!dataUrl) return;
+      const customItem: PuzzleChallenge = {
+        id: `custom-${Date.now()}`,
+        title: file.name.replace(/\.[^/.]+$/, ""),
+        description: "Custom uploaded image puzzle",
+        imageUrl: dataUrl,
+        previewUrl: dataUrl,
+        collection: "custom_uploads",
+        sourceType: "game_asset",
+        sourceMediaId: null,
+        focalX: 50,
+        focalY: 50,
+        allowedModes: ["sliding", "swap"],
+        allowedGridSizes: [3, 4, 5],
+        visibility: "public",
+        targets: {
+          "3": { seconds: 300, moves: 100 },
+          "4": { seconds: 600, moves: 200 },
+          "5": { seconds: 900, moves: 300 },
+        },
+        rewardMultiplier: 1,
+        baseSeed: `seed-${Date.now()}`,
+        status: "published",
+        publishedAt: new Date().toISOString(),
+      };
+      setCustomChallenges((prev) => [customItem, ...prev]);
+      setChallengeId(customItem.id);
+      toast.success(`Uploaded "${customItem.title}" to puzzle board!`);
+    };
+    reader.readAsDataURL(file);
+    event.target.value = "";
+  }
+
+  async function loadPublicAlbumPhotos() {
+    try {
+      const res = await fetch("/api/albums?status=public&limit=20");
+      const json = await res.json();
+      const albums = json?.data?.page?.albums ?? [];
+      const publicItems: PuzzleChallenge[] = albums
+        .filter((a: { cover_url?: string; title: string; id: string }) => Boolean(a.cover_url))
+        .map((a: { cover_url: string; title: string; id: string }, index: number) => ({
+          id: `public-album-${a.id}`,
+          title: a.title,
+          description: "Public Album Cover",
+          imageUrl: a.cover_url,
+          previewUrl: a.cover_url,
+          collection: "public_albums",
+          sourceType: "album_media",
+          sourceMediaId: a.id,
+          focalX: 50,
+          focalY: 50,
+          allowedModes: ["sliding", "swap"],
+          allowedGridSizes: [3, 4, 5],
+          visibility: "public",
+          targets: {
+            "3": { seconds: 300, moves: 100 },
+            "4": { seconds: 600, moves: 200 },
+            "5": { seconds: 900, moves: 300 },
+          },
+          rewardMultiplier: 1,
+          baseSeed: `seed-album-${index}`,
+          status: "published",
+          publishedAt: new Date().toISOString(),
+        }));
+
+      if (publicItems.length > 0) {
+        setCustomChallenges((prev) => {
+          const existingIds = new Set(prev.map((item) => item.id));
+          const newItems = publicItems.filter((item) => !existingIds.has(item.id));
+          return [...newItems, ...prev];
+        });
+        setChallengeId(publicItems[0].id);
+        toast.success(`Loaded ${publicItems.length} public album photos!`);
+      } else {
+        toast.info("No public album photos found.");
+      }
+    } catch {
+      toast.error("Could not load public album photos.");
+    }
+  }
 
   const newGame = useCallback(async (nextChallenge: PuzzleChallenge, nextMode: PuzzleMode, nextGrid: PuzzleGridSize) => {
     if (!nextChallenge) return;
@@ -275,20 +370,27 @@ export function PuzzleAtelier({ initialChallenges, initialResults, signedIn, cop
     if (isSolved(nextBoard)) void finish(nextTrace, nextMoves);
   }
 
-  const collections = useMemo(() => [...new Set(initialChallenges.map((item) => item.collection))], [initialChallenges]);
+  const collections = useMemo(() => [...new Set(allChallenges.map((item) => item.collection))], [allChallenges]);
   const [collection, setCollection] = useState<string>("all");
-  const visibleChallenges = initialChallenges.filter((item) => collection === "all" || item.collection === collection);
+  const visibleChallenges = allChallenges.filter((item) => collection === "all" || item.collection === collection);
 
   if (unavailable) {
     return <section className="mx-auto max-w-3xl px-6 py-24 text-center"><p className="text-sm uppercase tracking-[0.18em] text-text-secondary">{copy.unavailable ?? "Puzzle Atelier is being prepared. Please return shortly."}</p></section>;
   }
 
-  if (!initialChallenges.length) {
+  if (!allChallenges.length) {
     return <section className="mx-auto max-w-3xl px-6 py-24 text-center"><p className="text-sm uppercase tracking-[0.18em] text-text-secondary">{copy.empty ?? "No published puzzle challenges yet."}</p></section>;
   }
 
   return (
     <section className="mx-auto w-full max-w-[1320px] px-4 py-10 sm:px-6 sm:py-16 lg:px-10">
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={handleCustomUpload}
+      />
       <header className="max-w-3xl">
         <p className="text-[0.68rem] font-semibold uppercase tracking-[0.24em] text-text-secondary">{copy.eyebrow ?? "Interactive editorial studies"}</p>
         <h1 className="mt-4 font-serif text-5xl font-light leading-none text-text-primary sm:text-7xl">{copy.title ?? "Oriana Puzzle Atelier"}</h1>
@@ -302,13 +404,27 @@ export function PuzzleAtelier({ initialChallenges, initialResults, signedIn, cop
         </div>
 
         <aside className="order-1 grid content-start gap-4 xl:order-2">
-          <div className="rounded-[1.4rem] border border-border bg-surface/80 p-4 shadow-lg shadow-text-primary/5">
-            <label className="text-xs font-semibold uppercase tracking-[0.16em] text-text-secondary">{copy.collection ?? "Collection"}</label>
-            <select value={collection} onChange={(event) => { setCollection(event.target.value); const next = initialChallenges.find((item) => event.target.value === "all" || item.collection === event.target.value); if (next) setChallengeId(next.id); }} className="mt-2 h-11 w-full rounded-xl border border-border bg-background px-3 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-ring">
-              <option value="all">{copy.allCollections ?? "All collections"}</option>
-              {collections.map((item) => <option key={item} value={item}>{item.replaceAll("_", " ")}</option>)}
-            </select>
-            <div className="mt-4 grid gap-2">
+          <div className="rounded-[1.4rem] border border-border bg-surface/80 p-4 shadow-lg shadow-text-primary/5 space-y-3">
+            <div className="flex flex-col gap-2">
+              <Button variant="secondary" onClick={() => fileInputRef.current?.click()} className="w-full justify-center gap-2">
+                <Upload className="h-4 w-4" />
+                Upload Custom Photo
+              </Button>
+              <Button variant="ghost" onClick={loadPublicAlbumPhotos} className="w-full justify-center gap-2 text-xs">
+                <ImageIcon className="h-4 w-4 text-muted-accent" />
+                Load Public Album Photos
+              </Button>
+            </div>
+
+            <div>
+              <label className="text-xs font-semibold uppercase tracking-[0.16em] text-text-secondary">{copy.collection ?? "Collection"}</label>
+              <select value={collection} onChange={(event) => { setCollection(event.target.value); const next = allChallenges.find((item) => event.target.value === "all" || item.collection === event.target.value); if (next) setChallengeId(next.id); }} className="mt-2 h-11 w-full rounded-xl border border-border bg-background px-3 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-ring">
+                <option value="all">{copy.allCollections ?? "All collections"}</option>
+                {collections.map((item) => <option key={item} value={item}>{item.replaceAll("_", " ")}</option>)}
+              </select>
+            </div>
+
+            <div className="mt-4 grid gap-2 max-h-72 overflow-y-auto pr-1">
               {visibleChallenges.map((item) => <button key={item.id} type="button" onClick={() => setChallengeId(item.id)} className={`flex min-h-16 items-center gap-3 rounded-xl border p-2 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${item.id === challengeId ? "border-accent bg-background" : "border-border bg-surface-secondary/40 hover:bg-background"}`}>
                 {item.previewUrl ? <span className="h-12 w-12 shrink-0 rounded-lg bg-cover bg-center" style={{ backgroundImage: `url("${item.previewUrl}")` }} /> : <span className="h-12 w-12 shrink-0 rounded-lg bg-surface-secondary" />}
                 <span className="min-w-0"><span className="block truncate font-serif text-lg text-text-primary">{item.title}</span><span className="block truncate text-xs text-text-secondary">{item.description}</span></span>

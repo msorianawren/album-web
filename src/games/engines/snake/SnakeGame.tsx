@@ -607,7 +607,7 @@ export default function SnakeGame({
       title="Wren Trail Snake"
       status={status}
       score={score}
-      detail="Guide a ribbon-tailed wren through a quiet moonlit garden. Move freely through borders into the opposite edge. Target: 30 points to earn rewards."
+      detail="Guide a ribbon-tailed wren through a quiet moonlit garden. Move freely through borders into the opposite edge. Eat berries to score points and collect Wren Feathers."
       onStart={start}
       onPause={pause}
       onRestart={restart}

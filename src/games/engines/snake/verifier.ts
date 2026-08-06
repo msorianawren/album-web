@@ -38,7 +38,7 @@ export function verifySnake(
     valid: true,
     versionId: version.id,
     replayDigest,
-    score: state.score < 30 ? 0 : state.score,
+    score: state.score,
     durationTicks: tick,
   };
 }
